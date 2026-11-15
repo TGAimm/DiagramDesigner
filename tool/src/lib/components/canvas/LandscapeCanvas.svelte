@@ -64,6 +64,15 @@
 		type Rail
 	} from '#lib/landscape/apis.ts';
 	import { apiBodies } from '#lib/model/model.ts';
+	import {
+		loadRouter,
+		routeLines,
+		routerReady,
+		type Rect,
+		type RouteEnd,
+		type Side
+	} from '#lib/landscape/route.ts';
+	import wasmUrl from 'libavoid-js/dist/libavoid.wasm?url';
 	import { untrack } from 'svelte';
 	import LandscapeNode, { type LandscapeNodeData } from './LandscapeNode.svelte';
 	import ConnectionEdge from './ConnectionEdge.svelte';
@@ -299,6 +308,52 @@
 			: b.x1 <= a.x0
 				? (['l', 'r'] as const)
 				: (['r', 'r'] as const);
+
+	// ------------------------------------------------------------ routing
+	let routed = $state(routerReady());
+	loadRouter(wasmUrl).then(() => (routed = true));
+
+	/** Boxes lines go round: every shown box but an open one, with its rail; open boxes' rails. */
+	const obstacles = $derived.by(() => {
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built and returned whole
+		const out = new Map<string, Rect>();
+		for (const b of boxes) {
+			if (open.has(b.id) || (b.parentId && !open.has(b.parentId))) continue;
+			const r = rails.get(b.id);
+			out.set(b.id, {
+				x0: b.absX,
+				y0: b.absY,
+				x1: b.absX + b.width + (r ? r.width / 2 : 0),
+				y1: b.absY + b.height
+			});
+		}
+		for (const [id, r] of rails) {
+			if (!open.has(id)) continue;
+			const b = boxById.get(id)!;
+			const x0 = b.absX + b.width - r.width / 2;
+			const y0 = b.absY + r.top;
+			out.set(`rail:${id}`, { x0, y0, x1: x0 + r.width, y1: y0 + r.height });
+		}
+		return out;
+	});
+
+	/**
+	 * Where a line ends for the router: on the box or rail it sits on, by whichever side routes
+	 * best (`only` if given; an api on a closed box's rail its outer side), or on side `side` of
+	 * an open box.
+	 */
+	function routeEnd(
+		e: { node: LandscapeBox; anchor: string; x0: number; x1: number; y: number },
+		side: Side,
+		only?: Side
+	): RouteEnd {
+		const end = { x0: e.x0, x1: e.x1, y: e.y };
+		const rail = `rail:${e.node.id}`;
+		const api = e.anchor.startsWith('api:');
+		const on = api && obstacles.has(rail) ? rail : e.node.id;
+		if (!obstacles.has(on)) return { ...end, sides: [side] };
+		return { ...end, on, sides: only ? [only] : api && on === e.node.id ? ['r'] : ['l', 'r'] };
+	}
 
 	interface LitLine {
 		id: string;
@@ -553,14 +608,44 @@
 
 	const rest = $derived(restLines(model, boxes, shownEdges));
 
+	/** A box's name bar as a line end: a card's bar, or the middle of any other box. */
+	const headEnd = (b: LandscapeBox) => ({
+		node: b,
+		anchor: 'head',
+		x0: b.absX,
+		x1: b.absX + b.width,
+		y: b.absY + (b.view || b.logic ? TABLE.head / 2 : b.height / 2)
+	});
+
+	// Lines at rest and lit lines are routed apart, so a hover never moves the lines at rest.
+	const restRoutes = $derived.by(() => {
+		if (!routed) return new Map();
+		const lines = rest.flatMap((l) => {
+			if (!mounted.has(l.source) || !mounted.has(l.target)) return [];
+			if (l.parentId && !open.has(l.parentId)) return [];
+			const a = headEnd(boxById.get(l.source)!);
+			const b = headEnd(boxById.get(l.target)!);
+			const [ss, ts] = sides(a, b);
+			return [{ id: l.id, s: routeEnd(a, ss), t: routeEnd(b, ts) }];
+		});
+		return routeLines(obstacles, lines);
+	});
+	const litRoutes = $derived.by(() => {
+		if (!routed) return new Map();
+		const lines = lit.map((l) => {
+			const sameCard = l.s.node === l.t.node;
+			return {
+				id: l.id,
+				s: routeEnd(l.s, l.sides[0], sameCard ? 'r' : undefined),
+				t: routeEnd(l.t, l.sides[1], sameCard ? 'r' : undefined)
+			};
+		});
+		return routeLines(obstacles, lines);
+	});
+
 	/** A line at rest: grey, on the two boxes' name bars, wider the more it merges. */
 	function restEdge(l: RestLine, dim: boolean) {
-		const a = boxById.get(l.source)!;
-		const b = boxById.get(l.target)!;
-		const [ss, ts] = sides(
-			{ x0: a.absX, x1: a.absX + a.width },
-			{ x0: b.absX, x1: b.absX + b.width }
-		);
+		const [ss, ts] = sides(headEnd(boxById.get(l.source)!), headEnd(boxById.get(l.target)!));
 		const only = (ks: LinkKind[]) => l.kinds.every((k) => ks.includes(k));
 		const pattern = only(['from']) ? 'from' : only(['calls', 'handles']) ? 'calls' : '';
 		return {
@@ -574,6 +659,7 @@
 			// them, over the box they share.
 			zIndex: -1,
 			data: {
+				points: restRoutes.get(l.id),
 				title: `${l.count} connection${l.count > 1 ? 's' : ''}: ${l.kinds.map((k) => KIND_NAME[k]).join(', ')}`
 			},
 			class: [
@@ -602,6 +688,7 @@
 			targetHandle: `${l.t.anchor}:${l.sides[1]}`,
 			type: 'connection',
 			zIndex: 1000,
+			data: { points: litRoutes.get(l.id) },
 			class: `conn lit ${l.kind}`,
 			...(l.kind === 'model'
 				? { markerStart: `sdv-diamond-${token}` }
@@ -663,12 +750,14 @@
 			string,
 			{ key: string; x: number; y: number; angle: number; kind: LinkKind; end: End; name: string }
 		>();
-		for (const l of lit)
-			for (const [end, side] of [
-				[l.s, l.sides[0]],
-				[l.t, l.sides[1]]
+		for (const l of lit) {
+			const route = litRoutes.get(l.id);
+			for (const [end, side, at] of [
+				[l.s, l.sides[0], route?.[0]],
+				[l.t, l.sides[1], route?.at(-1)]
 			] as const) {
-				const px = (side === 'l' ? end.x0 : end.x1) * zoom + vx;
+				// Where the line ends: as routed, or on the side it would leave by.
+				const px = (at?.x ?? (side === 'l' ? end.x0 : end.x1)) * zoom + vx;
 				const py = end.y * zoom + vy;
 				const key = `${end.node.id}|${end.anchor}`;
 				if ((px >= 0 && px <= cw && py >= 0 && py <= ch) || out.has(key)) continue;
@@ -685,6 +774,7 @@
 					name: endName(end)
 				});
 			}
+		}
 		return [...out.values()];
 	});
 

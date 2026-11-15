@@ -51,7 +51,7 @@ describe('layout options', () => {
 		expect(left('b').absX + left('b').width).toBeLessThanOrEqual(left('a').absX);
 	});
 
-	it('lays out each level as if every line were drawn, out of its box too', () => {
+	it('lays out as if every box were open and every line drawn, across borders too', () => {
 		// In each system one model refers to another, so it has two layers. b's y refers to a's q.
 		const model = loadStrings({
 			'a/a.system.yaml': 'id: a\n',
@@ -71,6 +71,23 @@ describe('layout options', () => {
 		expect(box('q').absX).toBeGreaterThan(box('m1').absX + box('m1').width);
 		expect(box('y').absX + box('y').width).toBeLessThan(box('n2').absX);
 		for (const id of ['m1', 'm2', 'q']) expect(inside(box(id), box('a'))).toBe(true);
+	});
+
+	it('packs boxes no line ties together to the shape asked', () => {
+		const files: Record<string, string> = {};
+		for (const id of 'abcdefgh') files[`${id}/${id}.system.yaml`] = `id: ${id}\n`;
+		const loose = loadStrings(files).model;
+		const extent = (aspect: number) => {
+			const boxes = layoutLandscape(loose, true, { ...DEFAULT_LAYOUT, aspect });
+			return {
+				w: Math.max(...boxes.map((b) => b.absX + b.width)),
+				h: Math.max(...boxes.map((b) => b.absY + b.height))
+			};
+		};
+		const tall = extent(0.3);
+		const wide = extent(4);
+		expect(tall.h).toBeGreaterThan(tall.w);
+		expect(wide.w).toBeGreaterThan(wide.h);
 	});
 
 	it('scales the room between systems and between boxes inside', () => {

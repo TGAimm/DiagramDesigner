@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import adapter from '@sveltejs/adapter-static';
 import { defineConfig } from 'vitest/config';
 import { sveltekit } from '@sveltejs/kit/vite';
@@ -34,6 +35,17 @@ export default defineConfig({
 		}),
 		sdvPlugin()
 	],
+	resolve: {
+		alias: [
+			// libavoid's package exports only its script, not the WebAssembly the script loads.
+			{
+				find: /^libavoid-js\/dist\/libavoid\.wasm/,
+				replacement: fileURLToPath(
+					new URL('./node_modules/libavoid-js/dist/libavoid.wasm', import.meta.url)
+				)
+			}
+		]
+	},
 	server: { host: 'localhost' },
 	preview: { host: 'localhost' },
 	test: {

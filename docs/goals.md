@@ -28,8 +28,6 @@ Open goals only. **Remove a goal once it is achieved**; keep this list lean.
 
 ## References
 
-- Route lines round cards instead of across them, so a lit line never runs over another
-  card's rows.
 - Cardinality at line ends from `required`/`nullable` (1 vs 0..1, crow's foot for `many`).
 - Trace the whole `from` chain of a field, upstream and downstream, not just one hop.
 - Keyboard navigation in the inspector: step between linked rows, Enter to follow.
