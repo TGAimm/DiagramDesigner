@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	DEFAULT_LAYOUT,
 	fieldRowY,
 	FOLD,
 	LEAF,
@@ -26,6 +27,45 @@ const inside = (child: Box, parent: Box) =>
 	child.absY >= parent.absY &&
 	child.absX + child.width <= parent.absX + parent.width &&
 	child.absY + child.height <= parent.absY + parent.height;
+
+describe('layout options', () => {
+	// System `b` depends on `a`; system `c` stands alone.
+	const linked = loadStrings({
+		'a/a.system.yaml': 'id: a\n',
+		'a/x.model.yaml': 'id: x\nownedBy: a\nfields: [{ id: x-id, name: id, type: uuid, pk: true }]\n',
+		'b/b.system.yaml': 'id: b\n',
+		'b/y.model.yaml': 'id: y\nownedBy: b\nfields: [{ id: y-x, name: x, type: uuid, ref: x-id }]\n',
+		'c/c.system.yaml': 'id: c\n'
+	}).model;
+	const at = (opts: Partial<typeof DEFAULT_LAYOUT>) => {
+		const boxes = layoutLandscape(linked, true, { ...DEFAULT_LAYOUT, ...opts });
+		return (id: string) => boxes.find((b) => b.id === id)!;
+	};
+
+	it('puts what is depended on first, in the direction asked', () => {
+		const right = at({});
+		expect(right('a').absX + right('a').width).toBeLessThanOrEqual(right('b').absX);
+		const down = at({ direction: 'DOWN' });
+		expect(down('a').absY + down('a').height).toBeLessThanOrEqual(down('b').absY);
+		const left = at({ direction: 'LEFT' });
+		expect(left('b').absX + left('b').width).toBeLessThanOrEqual(left('a').absX);
+	});
+
+	it('scales the room between systems and between boxes inside', () => {
+		const apart = (box: ReturnType<typeof at>) => box('b').absX - box('a').absX - box('a').width;
+		expect(apart(at({ spacing: 2 })) - apart(at({}))).toBeCloseTo(120);
+		// The fixture's two erp modules share no connection, so ELK packs them, a gap apart.
+		const { model } = loadFixture();
+		for (const spacing of [1, 2]) {
+			const boxes = layoutLandscape(model, true, { ...DEFAULT_LAYOUT, spacing });
+			const [i, o] = ['inventory', 'orders'].map((id) => boxes.find((b) => b.id === id)!);
+			const [first, second] = i.absX < o.absX || i.absY < o.absY ? [i, o] : [o, i];
+			expect(
+				Math.max(second.absX - first.absX - first.width, second.absY - first.absY - first.height)
+			).toBeCloseTo(32 * spacing);
+		}
+	});
+});
 
 describe('landscape layout', () => {
 	const boxes = layoutLandscape(model);

@@ -65,8 +65,27 @@ interface Item {
 export const LEAF = { font: 15, padX: 18, height: 52, minWidth: 100 };
 /** A closed group's name scales with the box, so a system reads the same at any size. */
 export const groupFont = (width: number, height: number) => Math.min(width * 0.085, height * 0.2);
-const GAP = 32;
-const SYSTEM_GAP = 120;
+
+/** The ELK options a viewer can change in Settings. */
+export interface LayoutOptions {
+	/** Which way connections run: what is depended on comes first. */
+	direction: 'RIGHT' | 'DOWN' | 'LEFT' | 'UP';
+	/** Scales the room between boxes: 120 px between systems, 32 inside a box at 1. */
+	spacing: number;
+	placement: 'NETWORK_SIMPLEX' | 'BRANDES_KOEPF' | 'LINEAR_SEGMENTS' | 'SIMPLE';
+	/** Width over height that unconnected groups are packed into. */
+	aspect: number;
+	/** File order breaks ties between equally good layouts. */
+	fileOrder: boolean;
+}
+
+export const DEFAULT_LAYOUT: LayoutOptions = {
+	direction: 'RIGHT',
+	spacing: 1,
+	placement: 'NETWORK_SIMPLEX',
+	aspect: 1.6,
+	fileOrder: true
+};
 const PAD = 32;
 /** Room above the children for the open box's header. */
 export const HEADER = 48;
@@ -466,27 +485,29 @@ interface Block extends Size {
 
 /**
  * Siblings laid out by ELK's layered algorithm along their connections: what is depended on
- * left of what depends on it, crossings few, unconnected groups packed side by side. File
- * order breaks ties. Each box keeps its own size, plus the room right of it for its rail.
+ * before what depends on it (in `opts.direction`), crossings few, unconnected groups packed
+ * to `opts.aspect`. File order breaks ties if `opts.fileOrder`. Each box keeps its own size, plus the room right of it for its rail.
  */
 function layered(
 	items: { id: string; size: Size }[],
 	links: [string, string][],
-	gap: number
+	gap: number,
+	opts: LayoutOptions
 ): Block {
 	const g = elkLayout({
 		id: 'root',
 		layoutOptions: {
 			'elk.algorithm': 'layered',
-			'elk.direction': 'RIGHT',
+			'elk.direction': opts.direction,
+			'elk.aspectRatio': String(opts.aspect),
 			'elk.padding': '[top=0,left=0,bottom=0,right=0]',
 			'elk.spacing.nodeNode': String(gap),
 			'elk.spacing.componentComponent': String(gap),
 			'elk.layered.spacing.nodeNodeBetweenLayers': String(gap),
 			// Lines are drawn by the canvas, so ELK keeps no room between layers for its own.
 			'elk.edgeRouting': 'POLYLINE',
-			'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
-			'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX'
+			'elk.layered.considerModelOrder.strategy': opts.fileOrder ? 'NODES_AND_EDGES' : 'NONE',
+			'elk.layered.nodePlacement.strategy': opts.placement
 		},
 		children: items.map(({ id, size }) => ({
 			id,
@@ -511,7 +532,13 @@ function layered(
  * a table card in the entity storing it. A model stored where it is owned is one table card.
  * With `fold` off every card is sized to show all its fields.
  */
-export function layoutLandscape(model: Model, fold = true): LandscapeBox[] {
+export function layoutLandscape(
+	model: Model,
+	fold = true,
+	opts: LayoutOptions = DEFAULT_LAYOUT
+): LandscapeBox[] {
+	const gap = 32 * opts.spacing;
+	const systemGap = 120 * opts.spacing;
 	const out: LandscapeBox[] = [];
 	const sizes = new Map<string, Size>();
 	const cards = new Map<string, { cols: TableColumn[]; fields: ModelField[] }>();
@@ -633,7 +660,8 @@ export function layoutLandscape(model: Model, fold = true): LandscapeBox[] {
 			b = layered(
 				items.map((item) => ({ id: item.id, size: measure(item) })),
 				[...(links.get(parent)?.values() ?? [])],
-				gap
+				gap,
+				opts
 			);
 			blocks.set(parent, b);
 		}
@@ -646,7 +674,7 @@ export function layoutLandscape(model: Model, fold = true): LandscapeBox[] {
 		const kids = kidsBy.get(item.id)!;
 		const info = model.elements.get(item.el);
 		if (kids.length) {
-			const b = arrange(item.id, kids, GAP);
+			const b = arrange(item.id, kids, gap);
 			size = { width: b.width + 2 * PAD, height: b.height + HEADER + PAD };
 		} else if (info && item.view) {
 			const owner = item.ref ? model.elements.get(info.parentId ?? '')?.name : undefined;
@@ -719,7 +747,7 @@ export function layoutLandscape(model: Model, fold = true): LandscapeBox[] {
 			if (kids.length)
 				place(
 					kids,
-					GAP,
+					gap,
 					{
 						x: absX + PAD,
 						y: absY + HEADER,
@@ -731,7 +759,12 @@ export function layoutLandscape(model: Model, fold = true): LandscapeBox[] {
 		}
 	}
 
-	if (roots.length) place(roots, SYSTEM_GAP, { x: 0, y: 0, ...arrange('', roots, SYSTEM_GAP) });
+	if (roots.length)
+		place(roots, systemGap, {
+			x: 0,
+			y: 0,
+			...arrange('', roots, systemGap)
+		});
 	return out;
 }
 

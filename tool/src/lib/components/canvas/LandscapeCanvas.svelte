@@ -85,7 +85,8 @@
 	let ch = $state(1);
 	let nodes = $state.raw<Node[]>([]);
 	let edges = $state.raw<Edge[]>([]);
-	let fitted = false;
+	/** The layout the view was last fitted to: a new one is fitted again. */
+	let fittedTo: unknown;
 	// Set once the first fit has landed; before it the camera is a placeholder.
 	let ready = $state(false);
 	/** The key explaining the canvas's marks is shown. */
@@ -93,7 +94,7 @@
 
 	// Render everything: every box and rail open, every card unfolded, at any zoom.
 	const all = $derived(settings.detail === 'all');
-	const boxes = $derived(layoutLandscape(design.model, !all));
+	const boxes = $derived(layoutLandscape(design.model, !all, settings.layout));
 	const rels = $derived(relationsOf(design.model));
 	const boxById = $derived(new Map(boxes.map((b) => [b.id, b])));
 	// Every connection, less the kinds the key hides.
@@ -517,8 +518,8 @@
 					} satisfies LandscapeNodeData
 				};
 			});
-		if (!fitted && boxes.length) {
-			fitted = true;
+		if (fittedTo !== settings.layout && boxes.length) {
+			fittedTo = settings.layout;
 			requestAnimationFrame(() =>
 				requestAnimationFrame(() => flow.fitView({ padding: 0.08 }).then(() => (ready = true)))
 			);
