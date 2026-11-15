@@ -1,7 +1,7 @@
-/** A row in one card (box): a model field, or a logic unit on a logic card. */
+/** A row in one box: a model field, a logic unit on a logic card, or an api on a rail. */
 export interface FieldRef {
 	box: string;
-	/** Field or logic unit id. */
+	/** Field, logic unit or (on a rail) api id. */
 	field: string;
 }
 
@@ -11,8 +11,10 @@ export interface FieldRef {
  */
 export class ViewState {
 	selectedNodes = $state.raw<string[]>([]);
-	/** The field row under the pointer, or the inspector entry under it. */
+	/** The row or api under the pointer, or the inspector entry under it. */
 	hover = $state.raw<FieldRef | null>(null);
+	/** A box whose name bar is under the pointer; every connection of what it holds is drawn. */
+	hoverBox = $state.raw<string | null>(null);
 	/** The field row clicked; its links stay drawn and the inspector shows them. */
 	field = $state.raw<FieldRef | null>(null);
 	/** The api clicked on a rail; a card beside it shows it. */
@@ -35,4 +37,6 @@ export class ViewState {
 	hotApis = $state.raw<Record<string, true>>({});
 	/** Boxes holding the other end of a focused link, outlined so a closed box shows where. */
 	peerBoxes = $state.raw<Record<string, true>>({});
+	/** Kinds of connection hidden from the key, by key entry. */
+	hidden = $state.raw<Record<string, true>>({});
 }

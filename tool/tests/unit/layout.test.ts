@@ -2,15 +2,14 @@ import { describe, expect, it } from 'vitest';
 import {
 	fieldRowY,
 	FOLD,
-	focusLinks,
 	LEAF,
 	layoutLandscape,
-	modelLinks,
 	relationsOf,
 	shownRows,
 	TABLE
 } from '../../src/lib/landscape/layout';
 import { railGroups, railOf } from '../../src/lib/landscape/apis';
+import { edgesOf, restLines } from '../../src/lib/landscape/connections';
 import { sequenceOf } from '../../src/lib/landscape/sequence';
 import { GLYPH, textWidth } from '../../src/lib/render/text';
 import { loadFixture, loadStrings } from './helpers';
@@ -185,9 +184,9 @@ describe('landscape layout', () => {
 			['orderId', 'qty']
 		]);
 		expect([box('t').view, boxes.filter((b) => b.elementId === 't').length]).toEqual(['table', 1]);
-		expect(modelLinks(m, boxes).map((l) => [l.id, l.kind])).toEqual([
-			['db>l.l-o', 'ref'],
-			['o.o-ls', 'model']
+		expect(restLines(m, boxes, edgesOf(m)).map((l) => [l.id, l.kinds])).toEqual([
+			['db>l>db>o', ['ref']],
+			['o>l', ['model']]
 		]);
 	});
 
@@ -240,17 +239,14 @@ describe('landscape layout', () => {
 		for (const x of cards) for (const y of cards) if (x !== y) expect(overlap(x, y)).toBe(false);
 	});
 
-	it('links field refs to sibling cards, facing each other', () => {
-		const links = modelLinks(tables, layoutLandscape(tables));
-		expect(links.map((l) => [l.id, l.kind, l.target, l.sourceHandle, l.targetHandle])).toEqual([
-			// A ref to a field ends on that field's row; a ref to a model on its name bar.
-			['b.b-a', 'ref', 'a', 'out:b-a:l', 'in:a-id:r'],
-			['b.b-up', 'ref', 'b', 'out:b-up:r', 'head:r'],
-			// A held model ends on the held card's name bar.
-			['b.b-c', 'model', 'c', 'out:b-c:l', 'head:r'],
-			// Stacked in one column, so joined round the right.
-			['d.d-a', 'ref', 'a', 'out:d-a:r', 'head:r'],
-			['d.d-c', 'model', 'c', 'out:d-c:r', 'head:r']
+	it('joins sibling cards at rest, one line per pair and direction', () => {
+		const lines = restLines(tables, layoutLandscape(tables), edgesOf(tables));
+		// b's ref to its own model is inside one card, so it has no line.
+		expect(lines.map((l) => [l.id, l.kinds, l.count, l.parentId])).toEqual([
+			['b>a', ['ref'], 1, 's'],
+			['b>c', ['model'], 1, 's'],
+			['d>a', ['ref'], 1, 's'],
+			['d>c', ['model'], 1, 's']
 		]);
 	});
 
@@ -293,22 +289,14 @@ describe('landscape layout', () => {
 		expect(rels.in.get('src-n')!.map((l) => l.field)).toEqual(['copy-n', 'dto-n']);
 	});
 
-	it('draws lineage between sibling cards, but not inside one card', () => {
-		const links = modelLinks(lineage, layoutLandscape(lineage));
-		expect(links.map((l) => [l.id, l.kind, l.target])).toEqual([
-			['copy.copy-id', 'ref', 'src'],
-			['copy.copy-n.src-n', 'from', 'src']
+	it('merges connections at rest, lifted to siblings, so no line crosses a border', () => {
+		const lines = restLines(lineage, layoutLandscape(lineage), edgesOf(lineage));
+		// copy's ref and lineage merge; lineage inside copy has no line; dto in module api
+		// derives from src in module db, so the two modules are joined.
+		expect(lines.map((l) => [l.id, l.kinds, l.count, l.parentId])).toEqual([
+			['api>db', ['from'], 1, 's'],
+			['copy>src', ['ref', 'from'], 2, 'db']
 		]);
-	});
-
-	it('draws the links of a focused field across boxes, both ways', () => {
-		const boxes = layoutLandscape(lineage);
-		const links = focusLinks(lineage, relationsOf(lineage), boxes, 'src', 'src-n');
-		expect(links.map((l) => [l.source, l.sourceField, l.target, l.targetField])).toEqual([
-			['copy', 'copy-n', 'src', 'src-n'],
-			['dto', 'dto-n', 'src', 'src-n']
-		]);
-		expect(links[1].parentId).toBe('api');
 	});
 });
 
@@ -407,18 +395,16 @@ describe('logic cards', () => {
 		expect(rels.in.get('post')!.map((l) => [l.kind, l.field])).toEqual([['handles', 'add']]);
 	});
 
-	it('draws a focused unit’s reads, writes and calls, but not its apis', () => {
-		const rels = relationsOf(shop);
-		const links = focusLinks(shop, rels, boxes, 'svc#logic', 'add');
-		expect(links.map((l) => [l.id, l.target, l.targetHandle.replace(/:[lr]$/, '')])).toEqual([
-			['svc#logic.add.reads.cart', 'cart', 'head'],
-			['svc#logic.add.writes.cart-qty', 'cart', 'in:cart-qty'],
-			['svc#logic.add.calls.load', 'svc#logic', 'in:load']
+	it('points every connection at what it depends on', () => {
+		const edges = edgesOf(shop).filter((e) => ['add', 'post', 'load'].includes(e.from));
+		expect(edges.map((e) => [e.kind, e.from, e.to])).toEqual([
+			['handles', 'post', 'add'],
+			['reads', 'add', 'cart'],
+			['writes', 'add', 'cart-qty'],
+			['calls', 'add', 'load'],
+			['reads', 'load', 'cart'],
+			['body', 'post', 'cart']
 		]);
-		// From the field's side, the unit naming it writes into it.
-		expect(
-			focusLinks(shop, rels, boxes, 'cart', 'cart-qty').map((l) => [l.source, l.sourceField])
-		).toEqual([['svc#logic', 'add']]);
 	});
 
 	it('reads a unit’s steps as a sequence, lifelines in first-use order', () => {

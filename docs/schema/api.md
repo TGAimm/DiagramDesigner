@@ -70,8 +70,10 @@ responses:
   box round it: one rail per box, with the apis grouped under the element owning them.
 - Click an endpoint: a card beside its row shows params, request and responses. Models the
   bodies use are outlined (subtitle says which parts: `request`, `201`), rows a trimmed body
-  leaves out are dimmed, and a line joins each to the row. Hover an own-shape field to draw
-  its dashed lineage to the fields it goes into or comes from; untraced fields are marked.
+  leaves out are dimmed, and a line runs from the row to each, and to the units handling or
+  calling it (see [Connections](README.md#connections)). Hovering a rail row draws the same.
+  Hover an own-shape field to add its dashed lineage to the fields it comes from or goes into
+  (arrow at the source); untraced fields are marked.
 - Model rows sent into or returned by own-shape fields show an `API n` count. The field
   inspector lists **Fed by apis** and **Returned by apis**, saying whether a rename of the
   field changes the api (the model itself) or not (an own shape keeps its own names).

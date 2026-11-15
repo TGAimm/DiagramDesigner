@@ -23,8 +23,12 @@
 		incoming?: Record<string, { ref: number; from: number; api: number }>;
 		/** Selection, focus and flash; read here so they never rebuild the nodes. */
 		state: ViewState;
-		/** A field row, or a logic card's unit row, was hovered, left or clicked. */
+		/** A field row, a logic card's unit row or a rail's api row was hovered, left or clicked. */
 		onfield?: (field: string, ev: 'enter' | 'leave' | 'click') => void;
+		/** The box is open, its children shown. */
+		open?: boolean;
+		/** The name bar (a card's, an open box's tab, or a closed box) was hovered or left. */
+		onbox?: (ev: 'enter' | 'leave') => void;
 		/** Rail on this box's right border: its own apis, and those of hidden boxes inside it. */
 		rail?: RailView;
 		onapi?: (api: string) => void;
@@ -42,7 +46,8 @@
 		open: boolean;
 		groups: {
 			title?: string;
-			apis: { id: string; name: string; method: string; path: string }[];
+			/** `y`: the row's middle in the rail at full size. */
+			apis: { id: string; name: string; method: string; path: string; y: number }[];
 		}[];
 	}
 </script>
@@ -72,6 +77,7 @@
 	} from '#lib/landscape/layout.ts';
 	import { RAIL } from '#lib/landscape/apis.ts';
 	import { settings } from '#lib/client/settings.svelte.ts';
+	import { untrack } from 'svelte';
 	import EntityGlyph from './EntityGlyph.svelte';
 
 	let { id, data, width = 0, height = 0 }: NodeProps = $props();
@@ -93,10 +99,17 @@
 		!expanded && (d.fields ?? []).slice(FOLD).some((f) => hot?.[f.id] || picked === f.id)
 	);
 	const updateNodeInternals = useUpdateNodeInternals();
-	// Handles move with their rows; Svelte Flow measures them only when told.
+	// Handles move with their rows and as rails open; Svelte Flow measures them only when told.
 	$effect(() => {
 		void expanded;
+		void d.rail?.open;
 		updateNodeInternals(id);
+	});
+	// Opening or closing swaps the hovered part (the whole box, or its tab) without a leave.
+	const isOpen = $derived(!!d.open);
+	$effect(() => {
+		void isOpen;
+		return () => untrack(() => d.onbox?.('leave'));
 	});
 	function toggle(e: MouseEvent) {
 		e.stopPropagation();
@@ -148,7 +161,14 @@
 >
 	{#if d.group}
 		<!-- Open, the box wears its closed colour as a name tab, so its type still reads. -->
-		<div class="header"><EntityGlyph kind={glyph} />{d.name}</div>
+		<div
+			class="header"
+			role="presentation"
+			onmouseenter={() => d.onbox?.('enter')}
+			onmouseleave={() => d.onbox?.('leave')}
+		>
+			<EntityGlyph kind={glyph} />{d.name}
+		</div>
 	{/if}
 	{#if d.table}
 		{@const cols = d.table}
@@ -159,7 +179,13 @@
 			style:--pad="{TABLE.pad}px"
 			style:--row="{TABLE.rowHeight}px"
 		>
-			<div class="thead" style:height="{TABLE.head}px">
+			<div
+				class="thead"
+				role="presentation"
+				style:height="{TABLE.head}px"
+				onmouseenter={() => d.onbox?.('enter')}
+				onmouseleave={() => d.onbox?.('leave')}
+			>
 				<div class="name" style:font-size="{TABLE.title}px">
 					<EntityGlyph kind={d.view === 'table' ? 'table' : 'class'} />{d.name}
 				</div>
@@ -253,9 +279,9 @@
 													</svg>
 												{:else if s === 'from' && f.from?.length}
 													<svg width={LINK.icon} height={LINK.icon} viewBox="0 0 14 14">
-														<path d="M13 7H5" stroke-dasharray="2 1.6" /><path
+														<path d="M1 7h8" stroke-dasharray="2 1.6" /><path
 															class="fill"
-															d="M6 3.5 1 7l5 3.5Z"
+															d="M8 3.5 13 7 8 10.5Z"
 														/>
 													</svg>{#if f.derived}<i>ƒ</i>{/if}
 												{:else if (s === 'inRef' || s === 'inFrom' || s === 'inApi') && n}
@@ -296,42 +322,25 @@
 				</div>
 			{/if}
 		</div>
-		<!-- Invisible line ends: one each side of the header, and of every row with a link. -->
-		<Handle type="target" id="head:l" position={Position.Left} style="top:{TABLE.head / 2}px" />
-		<Handle type="target" id="head:r" position={Position.Right} style="top:{TABLE.head / 2}px" />
+		<!-- Invisible line ends, each side of the name bar and of every row. -->
+		<Handle type="source" id="head:l" position={Position.Left} style="top:{TABLE.head / 2}px" />
+		<Handle type="source" id="head:r" position={Position.Right} style="top:{TABLE.head / 2}px" />
 		{#each d.fields ?? [] as f, i (f.id)}
-			{#if f.ref || f.model || f.from?.length}
-				<Handle
-					type="source"
-					id="out:{f.id}:l"
-					position={Position.Left}
-					style="top:{fieldRowY(i, count, expanded)}px"
-				/>
-				<Handle
-					type="source"
-					id="out:{f.id}:r"
-					position={Position.Right}
-					style="top:{fieldRowY(i, count, expanded)}px"
-				/>
-			{/if}
-			<Handle
-				type="target"
-				id="in:{f.id}:l"
-				position={Position.Left}
-				style="top:{fieldRowY(i, count, expanded)}px"
-			/>
-			<Handle
-				type="target"
-				id="in:{f.id}:r"
-				position={Position.Right}
-				style="top:{fieldRowY(i, count, expanded)}px"
-			/>
+			{@const y = fieldRowY(i, count, expanded)}
+			<Handle type="source" id="row:{f.id}:l" position={Position.Left} style="top:{y}px" />
+			<Handle type="source" id="row:{f.id}:r" position={Position.Right} style="top:{y}px" />
 		{/each}
 	{:else if d.logic}
 		{@const cols = d.logic.cols}
 		{@const rows = d.logic.rows}
 		<div class="face table logic" style:--pad="{TABLE.pad}px" style:--row="{TABLE.rowHeight}px">
-			<div class="thead" style:height="{TABLE.head}px">
+			<div
+				class="thead"
+				role="presentation"
+				style:height="{TABLE.head}px"
+				onmouseenter={() => d.onbox?.('enter')}
+				onmouseleave={() => d.onbox?.('leave')}
+			>
 				<div class="name" style:font-size="{TABLE.title}px"><EntityGlyph kind="logic" />Logic</div>
 				<div class="note" style:font-size="{TABLE.note}px">{logicNote(rows.length)}</div>
 			</div>
@@ -363,16 +372,25 @@
 				{/each}
 			</div>
 		</div>
-		<Handle type="target" id="head:l" position={Position.Left} style="top:{TABLE.head / 2}px" />
-		<Handle type="target" id="head:r" position={Position.Right} style="top:{TABLE.head / 2}px" />
+		<Handle type="source" id="head:l" position={Position.Left} style="top:{TABLE.head / 2}px" />
+		<Handle type="source" id="head:r" position={Position.Right} style="top:{TABLE.head / 2}px" />
 		{#each rows as u, i (u.id)}
 			{@const y = logicRowY(i)}
-			<Handle type="source" id="out:{u.id}:l" position={Position.Left} style="top:{y}px" />
-			<Handle type="source" id="out:{u.id}:r" position={Position.Right} style="top:{y}px" />
-			<Handle type="target" id="in:{u.id}:l" position={Position.Left} style="top:{y}px" />
-			<Handle type="target" id="in:{u.id}:r" position={Position.Right} style="top:{y}px" />
+			<Handle type="source" id="row:{u.id}:l" position={Position.Left} style="top:{y}px" />
+			<Handle type="source" id="row:{u.id}:r" position={Position.Right} style="top:{y}px" />
 		{/each}
 	{:else}
+		<!-- Closed, the whole box is its name bar; lines at rest end on its sides. -->
+		{#if !d.open}
+			<div
+				class="hit"
+				role="presentation"
+				onmouseenter={() => d.onbox?.('enter')}
+				onmouseleave={() => d.onbox?.('leave')}
+			></div>
+		{/if}
+		<Handle type="source" id="head:l" position={Position.Left} />
+		<Handle type="source" id="head:r" position={Position.Right} />
 		<div
 			class="face"
 			style:font-size="{font}px"
@@ -393,6 +411,12 @@
 			style:width="{r.width}px"
 			style:height="{r.height}px"
 		>
+			<!-- An api's line ends on its row, or the rail's middle while the rail is closed. -->
+			{#each r.groups.flatMap((g) => g.apis) as a (a.id)}
+				{@const y = r.open ? a.y * r.scale : r.height / 2}
+				<Handle type="source" id="api:{a.id}:l" position={Position.Left} style="top:{y}px" />
+				<Handle type="source" id="api:{a.id}:r" position={Position.Right} style="top:{y}px" />
+			{/each}
 			{#if r.open}
 				<div
 					class="rail-inner"
@@ -422,6 +446,8 @@
 								style:padding="0 {RAIL.pad}px"
 								style:gap="{RAIL.gap}px"
 								title={a.name}
+								onmouseenter={() => d.onfield?.(a.id, 'enter')}
+								onmouseleave={() => d.onfield?.(a.id, 'leave')}
 								onclick={(e) => {
 									e.stopPropagation();
 									d.onapi?.(a.id);
@@ -480,6 +506,8 @@
 	:global(.svelte-flow__node.open) > .node.group > .header {
 		opacity: 1;
 		transition-delay: 0.1s;
+		/* Open, the tab is the box's name bar: hovering it draws the box's connections. */
+		pointer-events: auto;
 	}
 	.node.peer-box {
 		outline: 2px solid var(--sdv-link-ref);
@@ -488,6 +516,10 @@
 	.node.selected {
 		outline: 2px solid var(--sdv-selection);
 		outline-offset: 2px;
+	}
+	.hit {
+		position: absolute;
+		inset: 0;
 	}
 	.face {
 		position: absolute;

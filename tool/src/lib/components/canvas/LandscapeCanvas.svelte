@@ -3,9 +3,9 @@
 	import {
 		Background,
 		BackgroundVariant,
+		ConnectionMode,
 		ControlButton,
 		Controls,
-		MarkerType,
 		SvelteFlow,
 		useSvelteFlow,
 		useViewport,
@@ -22,21 +22,28 @@
 	import type { ViewState } from '#lib/client/view-state.svelte.ts';
 	import {
 		fieldRowY,
-		focusLinks,
 		incomingCount,
 		layoutLandscape,
 		linkTarget,
 		logicRowY,
-		modelLinks,
 		refLabel,
 		relationsOf,
 		shownRows,
 		TABLE,
 		typeText,
 		type FieldLink,
-		type LandscapeBox,
-		type ModelLink
+		type LandscapeBox
 	} from '#lib/landscape/layout.ts';
+	import {
+		apiOf,
+		edgesOf,
+		homeOf,
+		leavesOf,
+		restLines,
+		within,
+		type LinkKind,
+		type RestLine
+	} from '#lib/landscape/connections.ts';
 	import { apiHosts, openBoxes, railOpen, READABLE } from '#lib/landscape/open.ts';
 	import { sequenceOf, sequenceWidth } from '#lib/landscape/sequence.ts';
 	import SequenceDiagram from './SequenceDiagram.svelte';
@@ -55,6 +62,7 @@
 	import { apiBodies } from '#lib/model/model.ts';
 	import { untrack } from 'svelte';
 	import LandscapeNode, { type LandscapeNodeData } from './LandscapeNode.svelte';
+	import ConnectionEdge from './ConnectionEdge.svelte';
 	import EntityGlyph from './EntityGlyph.svelte';
 
 	/**
@@ -67,6 +75,7 @@
 	const flow = useSvelteFlow();
 	const viewport = useViewport();
 	const nodeTypes = { landscape: LandscapeNode };
+	const edgeTypes = { connection: ConnectionEdge };
 	// How long a closed box's children stay mounted while they fade out (the CSS transitions).
 	const FADE_MS = 300;
 
@@ -85,12 +94,10 @@
 	const boxes = $derived(layoutLandscape(design.model, !all));
 	const rels = $derived(relationsOf(design.model));
 	const boxById = $derived(new Map(boxes.map((b) => [b.id, b])));
-	// The row being looked at: under the pointer, else clicked. Its links are drawn wherever
-	// the other end is, so a link across modules or systems shows too.
-	const focus = $derived(view.hover ?? view.field);
-	const focused = $derived(
-		focus ? focusLinks(design.model, rels, boxes, focus.box, focus.field) : []
-	);
+	// Every connection, less the kinds the key hides.
+	const allEdges = $derived(edgesOf(design.model));
+	const shownEdges = $derived(allEdges.filter((e) => !view.hidden[KEY_OF[e.kind]]));
+	const leavesBy = $derived(new Map(boxes.map((b) => [b.id, new Set(leavesOf(design.model, b))])));
 	const label = (id: string) => refLabel(design.model, id) ?? id;
 	/** Where row `i` of a card sits, folded or expanded as it is now; logic cards never fold. */
 	const rowY = (b: LandscapeBox, i: number) =>
@@ -140,19 +147,14 @@
 		}, FADE_MS);
 	});
 
-	// Mounted: roots, children of open or closing boxes, and the far ends of focused lines
-	// (with the boxes round them), so a line to a closed box still has an end.
-	const mounted = $derived.by(() => {
-		const out = boxes
-			.filter((b) => !b.parentId || open.has(b.parentId) || closing.has(b.parentId))
-			.map((b) => b.id);
-		for (const l of focused)
-			for (let id: string | undefined = l.source === focus?.box ? l.target : l.source; id;) {
-				out.push(id);
-				id = boxById.get(id)?.parentId;
-			}
-		return new Set(out);
-	});
+	// Mounted: roots, and children of open or closing boxes.
+	const mounted = $derived(
+		new Set(
+			boxes
+				.filter((b) => !b.parentId || open.has(b.parentId) || closing.has(b.parentId))
+				.map((b) => b.id)
+		)
+	);
 
 	// Apis sit on a rail across the right border of their parent's box, or of the nearest shown
 	// box round it, one rail per box.
@@ -177,6 +179,157 @@
 		while (s.parentId && !open.has(s.parentId)) s = boxById.get(s.parentId)!;
 		return s;
 	};
+
+	// ------------------------------------------------------------ connections
+	/** The key entry each kind of connection is listed and hidden under. */
+	const KEY_OF: Record<LinkKind, string> = {
+		ref: 'ref',
+		body: 'ref',
+		model: 'model',
+		from: 'from',
+		reads: 'reads',
+		writes: 'writes',
+		calls: 'calls',
+		handles: 'calls'
+	};
+	/** The colour token of each kind of line. */
+	const LINK_TOKEN: Record<LinkKind, string> = {
+		ref: 'ref',
+		body: 'ref',
+		model: 'ref',
+		from: 'from',
+		reads: 'ref',
+		writes: 'write',
+		calls: 'call',
+		handles: 'call'
+	};
+
+	/**
+	 * What is looked at: a row, api or name bar under the pointer, else what is clicked. A row
+	 * or api focuses its own connections (with the hovered field of a picked api's shape); a
+	 * box those of everything in it.
+	 */
+	const focus = $derived.by((): { box: string; leaf?: string } | null => {
+		if (view.hover) return { box: view.hover.box, leaf: view.hover.field };
+		if (view.hoverBox) return { box: view.hoverBox };
+		const host = view.api ? hostOf(view.api) : undefined;
+		if (view.api && host) return { box: host.id, leaf: view.api };
+		if (view.field) return { box: view.field.box, leaf: view.field.field };
+		if (view.selectedNodes[0]) return { box: view.selectedNodes[0] };
+		return null;
+	});
+
+	/** One end of a lit line: the node and handle it ends on, and where that is. */
+	interface End {
+		leaf: string;
+		/** The box the leaf is drawn in; `node` unless that is hidden. */
+		home: LandscapeBox;
+		node: LandscapeBox;
+		/** `row:<id>`, `api:<id>` or `head`. */
+		anchor: string;
+		/** The node's left and right edges and the anchor's height, in canvas px. */
+		x0: number;
+		x1: number;
+		y: number;
+		/** Ends on the box round the leaf, or a closed rail, so that is outlined. */
+		peer: boolean;
+	}
+
+	/** Where a leaf drawn in box `home` ends a line: its row, its rail row, or a shown box. */
+	function endOf(leaf: string, home: LandscapeBox): End | undefined {
+		const api = apiOf(design.model, leaf);
+		if (api) {
+			const host = hostOf(api);
+			const r = host && rails.get(host.id);
+			if (!host || !r) return undefined;
+			const listed = openRails.has(host.id);
+			const left = host.absX + host.width - r.width / 2;
+			return {
+				leaf: api,
+				home,
+				node: host,
+				anchor: `api:${api}`,
+				x0: left,
+				x1: left + r.width,
+				y: host.absY + r.top + (listed ? (railRowY(r, api) ?? 0) * r.scale : r.height / 2),
+				peer: !listed
+			};
+		}
+		const node = shownBox(home);
+		const row = node === home ? rowOf(home, leaf) : -1;
+		return {
+			leaf,
+			home,
+			node,
+			anchor: row >= 0 ? `row:${leaf}` : 'head',
+			x0: node.absX,
+			x1: node.absX + node.width,
+			y:
+				node.absY +
+				(row >= 0 ? rowY(home, row) : node.view || node.logic ? TABLE.head / 2 : node.height / 2),
+			peer: node !== home
+		};
+	}
+
+	/** The sides two ends leave and enter by: facing each other, or both right when stacked. */
+	const sides = (a: { x0: number; x1: number }, b: { x0: number; x1: number }) =>
+		b.x0 >= a.x1
+			? (['r', 'l'] as const)
+			: b.x1 <= a.x0
+				? (['l', 'r'] as const)
+				: (['r', 'r'] as const);
+
+	interface LitLine {
+		id: string;
+		kind: LinkKind;
+		/** The end that depends on the other. */
+		s: End;
+		t: End;
+		sides: readonly ['l' | 'r', 'l' | 'r'];
+	}
+
+	/**
+	 * The focused connections, one hop each way, each to wherever its other end is: its row if
+	 * that shows, else the shown box round it. For a box, those with an end outside it; a card
+	 * keeps lineage between its own rows, drawn round its right side.
+	 */
+	const lit = $derived.by((): LitLine[] => {
+		const f = focus && boxById.get(focus.box);
+		if (!focus || !f) return [];
+		const leaves = focus.leaf
+			? new Set([focus.leaf, ...(focus.leaf === view.api && view.apiField ? [view.apiField] : [])])
+			: new Set(within(boxes, f.id).flatMap((b) => [...(leavesBy.get(b.id) ?? [])]));
+		const inside = within(boxes, f.id);
+		const homeIn = (leaf: string) =>
+			apiOf(design.model, leaf)
+				? homeOf(design.model, boxes, f, leaf)
+				: inside.find((b) => leavesBy.get(b.id)?.has(leaf));
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built and returned whole
+		const out = new Map<string, LitLine>();
+		for (const e of shownEdges) {
+			const fromIn = leaves.has(e.from);
+			const toIn = leaves.has(e.to);
+			if ((!fromIn && !toIn) || (!focus.leaf && f.group && fromIn && toIn)) continue;
+			const [mine, theirs] = fromIn ? [e.from, e.to] : [e.to, e.from];
+			const mineHome = homeIn(mine);
+			const theirHome = mineHome && homeOf(design.model, boxes, mineHome, theirs);
+			const a = mineHome && endOf(mine, mineHome);
+			const b = theirHome && endOf(theirs, theirHome);
+			if (!a || !b) continue;
+			const [s, t] = fromIn ? [a, b] : [b, a];
+			const sameCard = s.node === t.node;
+			// One box: only two of a card's rows are joined.
+			if (
+				sameCard &&
+				(s.anchor === t.anchor || !s.anchor.startsWith('row:') || !t.anchor.startsWith('row:'))
+			)
+				continue;
+			const id = `${e.kind}|${s.node.id}|${s.anchor}|${t.node.id}|${t.anchor}`;
+			if (!out.has(id))
+				out.set(id, { id, kind: e.kind, s, t, sides: sameCard ? ['r', 'r'] : sides(s, t) });
+		}
+		return [...out.values()];
+	});
 
 	function onfield(box: string, field: string, ev: 'enter' | 'leave' | 'click') {
 		if (ev === 'enter') view.hover = { box, field };
@@ -204,7 +357,13 @@
 				title: g.title,
 				apis: g.apis.map((a) => {
 					const def = el(a)!.def;
-					return { id: a, name: el(a)!.name, method: def.method ?? '', path: def.path ?? '' };
+					return {
+						id: a,
+						name: el(a)!.name,
+						method: def.method ?? '',
+						path: def.path ?? '',
+						y: railRowY(r, a) ?? 0
+					};
 				})
 			}))
 		};
@@ -217,17 +376,6 @@
 		if (!b || !r) return;
 		const zoom = Math.max(viewport.current.zoom, (READABLE / (RAIL.font * r.scale)) * 1.05);
 		flow.setCenter(b.absX + b.width, b.absY + r.top + r.height / 2, { zoom, duration: 600 });
-	}
-
-	/** The rows a field of the picked api's own shape sends into or comes from. */
-	function apiFieldTargets(id: string | null) {
-		const f = id ? design.model.apiFields.get(id) : undefined;
-		const host = f && hostOf(f.apiId);
-		if (!f || !host) return [];
-		return (f.def.to ?? f.def.from ?? []).flatMap((field) => {
-			const box = linkTarget(design.model, boxes, host, field);
-			return box ? [{ box, field }] : [];
-		});
 	}
 
 	// Boxes the picked api's bodies use, outlined with the parts using them, and the rows a
@@ -266,43 +414,25 @@
 		view.selectedNodes = [];
 	}
 
-	// Rows to light, by box: the focused row, and the row at the far end of each of its lines.
-	// Nodes read it from the view state, so focus changes never rebuild them.
+	// Rows to light, by box: the focused row, and the rows at the ends of its lines; apis on
+	// rails likewise. Nodes read them from the view state, so focus changes never rebuild them.
+	// An end on a box round its leaf, or on a closed rail, outlines that box.
 	$effect(() => {
 		const out: Record<string, Record<string, 'self' | 'peer'>> = {};
-		const lit = (box: string, field: string | undefined, how: 'self' | 'peer') => {
-			if (!field) return;
+		const apis: Record<string, true> = {};
+		const peers: Record<string, true> = {};
+		const mark = (box: string, field: string, how: 'self' | 'peer') => {
 			const rows = (out[box] ??= {});
 			if (rows[field] !== 'self') rows[field] = how;
 		};
-		if (focus) lit(focus.box, focus.field, 'self');
-		for (const t of apiFieldTargets(view.apiField)) lit(t.box.id, t.field, 'peer');
-		// The units handling or calling the picked api.
-		for (const l of view.api ? (rels.in.get(view.api) ?? []) : []) {
-			const u = boxes.find((b) => b.logic?.rows.some((r) => r.id === l.field));
-			if (u) lit(u.id, l.field, 'peer');
-		}
-		for (const l of focused) {
-			lit(l.source, l.sourceField, 'peer');
-			lit(l.target, l.targetField, 'peer');
-		}
-		view.hot = out;
-		// A far end inside a closed box is hidden; outline the closed box that shows instead.
-		const far = focused.flatMap((l) => (l.source === focus?.box ? [l.target] : [l.source]));
-		const peers: Record<string, true> = {};
-		for (const id of far) {
-			let shown = boxById.get(id);
-			while (shown?.parentId && !open.has(shown.parentId)) shown = boxById.get(shown.parentId);
-			if (shown && shown.id !== id) peers[shown.id] = true;
-		}
-		// Apis a focused unit handles or calls light their rail rows, or a closed rail's box.
-		const apis: Record<string, true> = {};
-		for (const l of focus && isUnit(focus.field) ? (rels.out.get(focus.field) ?? []) : [])
-			if (isApiEl(l.to)) {
-				apis[l.to] = true;
-				const host = hostOf(l.to);
-				if (host && !openRails.has(host.id)) peers[host.id] = true;
+		if (focus?.leaf) mark(focus.box, focus.leaf, 'self');
+		for (const l of lit)
+			for (const end of [l.s, l.t]) {
+				if (end.peer) peers[end.node.id] = true;
+				if (end.anchor.startsWith('api:')) apis[end.leaf] = true;
+				else if (end.anchor.startsWith('row:')) mark(end.node.id, end.leaf, 'peer');
 			}
+		view.hot = out;
 		view.hotApis = apis;
 		view.peerBoxes = peers;
 	});
@@ -357,6 +487,11 @@
 						incoming: counts,
 						state: view,
 						onfield: (field, ev) => onfield(b.id, field, ev),
+						open: open.has(b.id),
+						onbox: (ev) => {
+							if (ev === 'enter') view.hoverBox = b.id;
+							else if (view.hoverBox === b.id) view.hoverBox = null;
+						},
 						rail: railView(b.id),
 						onapi,
 						onrail: () => openRail(b.id)
@@ -371,56 +506,160 @@
 		}
 	});
 
-	$effect(() => {
-		// Lines fade with their box's children, through the same CSS variables as the nodes.
-		// While a row is focused its lines are lit, drawn over the cards so none reads as
-		// another row's, and the rest dimmed. Lines to cards in other boxes are added and
-		// always visible.
-		const lit = new Set(focused.map((l) => l.id));
-		const base = modelLinks(design.model, boxes).filter(
-			(l) => mounted.has(l.source) && mounted.has(l.target)
+	const rest = $derived(restLines(design.model, boxes, shownEdges));
+
+	/** A line at rest: grey, on the two boxes' name bars, wider the more it merges. */
+	function restEdge(l: RestLine, dim: boolean) {
+		const a = boxById.get(l.source)!;
+		const b = boxById.get(l.target)!;
+		const [ss, ts] = sides(
+			{ x0: a.absX, x1: a.absX + a.width },
+			{ x0: b.absX, x1: b.absX + b.width }
 		);
-		const baseIds = new Set(base.map((l) => l.id));
+		const only = (ks: LinkKind[]) => l.kinds.every((k) => ks.includes(k));
+		const pattern = only(['from']) ? 'from' : only(['calls', 'handles']) ? 'calls' : '';
+		return {
+			id: `rest:${l.id}`,
+			source: l.source,
+			target: l.target,
+			sourceHandle: `head:${ss}`,
+			targetHandle: `head:${ts}`,
+			type: 'connection',
+			// Svelte Flow adds this to the higher level of the two boxes, so the line sits under
+			// them, over the box they share.
+			zIndex: -1,
+			data: {
+				title: `${l.count} connection${l.count > 1 ? 's' : ''}: ${l.kinds.map((k) => KIND_NAME[k]).join(', ')}`
+			},
+			class: [
+				'conn rest',
+				pattern,
+				l.count >= 10 ? 'w3' : l.count > 1 ? 'w2' : 'w1',
+				dim && 'dim',
+				l.parentId && !open.has(l.parentId) && 'off'
+			]
+				.filter(Boolean)
+				.join(' '),
+			// A held model has a UML composition diamond at the holder; all else an arrow at what
+			// the start depends on.
+			...(only(['model']) ? { markerStart: 'sdv-diamond-rest' } : { markerEnd: 'sdv-arrow-rest' })
+		};
+	}
+
+	/** A lit line: in its kind's colour, over the cards, from row to row where they show. */
+	function litEdge(l: LitLine) {
+		const token = LINK_TOKEN[l.kind];
+		return {
+			id: `lit:${l.id}`,
+			source: l.s.node.id,
+			target: l.t.node.id,
+			sourceHandle: `${l.s.anchor}:${l.sides[0]}`,
+			targetHandle: `${l.t.anchor}:${l.sides[1]}`,
+			type: 'connection',
+			zIndex: 1000,
+			class: `conn lit ${l.kind}`,
+			...(l.kind === 'model'
+				? { markerStart: `sdv-diamond-${token}` }
+				: { markerEnd: `sdv-arrow-${token}` })
+		};
+	}
+
+	$effect(() => {
 		edges = [
-			...base.map((l) => edge(l, focus ? (lit.has(l.id) ? 'hot' : 'dim') : '')),
-			...focused.filter((l) => !baseIds.has(l.id)).map((l) => edge(l, 'hot cross'))
+			...rest
+				.filter((l) => mounted.has(l.source) && mounted.has(l.target))
+				.map((l) => restEdge(l, !!focus)),
+			...lit.map(litEdge)
 		];
 	});
 
-	/** The colour token of each kind of line. */
-	const LINK_TOKEN: Record<FieldLink['kind'], string> = {
-		ref: 'ref',
-		model: 'ref',
-		from: 'from',
-		handles: 'ref',
-		reads: 'ref',
-		writes: 'write',
-		calls: 'call'
-	};
+	/** Arrowheads and diamonds, grey for lines at rest and in each kind's colour when lit. */
+	const MARKS = [
+		['rest', 'var(--sdv-edge)'],
+		...['ref', 'from', 'write', 'call'].map((t) => [t, `var(--sdv-link-${t})`])
+	];
+	/** Line ends are 10px on screen. */
+	const mark = $derived(10 / viewport.current.zoom);
 
-	function edge(l: ModelLink, state: string) {
-		const parent = l.parentId ? boxById.get(l.parentId) : undefined;
-		const hotLine = state.includes('hot');
-		const color = hotLine ? `var(--sdv-link-${LINK_TOKEN[l.kind]})` : 'var(--sdv-edge)';
-		const arrow = { type: MarkerType.ArrowClosed, width: 14, height: 14, color };
-		return {
-			...l,
-			// Svelte Flow adds this to the higher level of the two tables, so the line sits one
-			// level below them: under the tables, over their module. A lit line goes on top.
-			zIndex: hotLine ? 1000 : -1,
-			type: 'smoothstep',
-			pathOptions: { borderRadius: 0 },
-			class: `model-link ${l.kind} ${state} ${parent && !open.has(parent.id) ? 'off' : ''}`,
-			// A foreign key points at the key; a held model has a UML composition diamond at the
-			// holder (defined below); lineage points at the derived field, the way data flows, and
-			// so do a unit's reads (at the unit) and writes (at the model). A call points at the callee.
-			...(l.kind === 'ref' || l.kind === 'writes' || l.kind === 'calls'
-				? { markerEnd: arrow }
-				: l.kind === 'from' || l.kind === 'reads'
-					? { markerStart: arrow }
-					: { markerStart: hotLine ? 'sdv-composition-hot' : 'sdv-composition' })
-		};
+	/** The key's line entries; each hides its kinds when clicked (see `KEY_OF`). */
+	const KEY_LINES: {
+		id: string;
+		label: string;
+		token: string;
+		dash?: string;
+		diamond?: boolean;
+	}[] = [
+		{ id: 'ref', label: 'Refers to, api body uses', token: 'ref' },
+		{ id: 'model', label: 'Holds', token: 'ref', diamond: true },
+		{ id: 'from', label: 'Derives from', token: 'from', dash: '4 3' },
+		{ id: 'reads', label: 'Reads', token: 'ref' },
+		{ id: 'writes', label: 'Writes', token: 'write' },
+		{ id: 'calls', label: 'Calls, handled by', token: 'call', dash: '1.5 2.5' }
+	];
+
+	/** What an end shows: an api by method and path, else its name. */
+	function endName(end: End) {
+		const def = el(end.leaf)?.def;
+		if (def?.kind === 'api') return `${def.method} ${def.path}`;
+		return refLabel(design.model, end.leaf) ?? el(end.leaf)?.name ?? end.leaf;
 	}
+
+	/**
+	 * Lit lines' ends off the canvas: a wedge on its edge, on the way from the centre to the
+	 * end and pointing at it. Clicking it flies there.
+	 */
+	const wedges = $derived.by(() => {
+		const { x: vx, y: vy, zoom } = viewport.current;
+		const cx = cw / 2;
+		const cy = ch / 2;
+		const inset = 16;
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built and returned whole
+		const out = new Map<
+			string,
+			{ key: string; x: number; y: number; angle: number; kind: LinkKind; end: End; name: string }
+		>();
+		for (const l of lit)
+			for (const [end, side] of [
+				[l.s, l.sides[0]],
+				[l.t, l.sides[1]]
+			] as const) {
+				const px = (side === 'l' ? end.x0 : end.x1) * zoom + vx;
+				const py = end.y * zoom + vy;
+				const key = `${end.node.id}|${end.anchor}`;
+				if ((px >= 0 && px <= cw && py >= 0 && py <= ch) || out.has(key)) continue;
+				const dx = px - cx;
+				const dy = py - cy;
+				const k = Math.min(Math.abs((cx - inset) / dx), Math.abs((cy - inset) / dy));
+				out.set(key, {
+					key,
+					x: cx + dx * k,
+					y: cy + dy * k,
+					angle: (Math.atan2(dy, dx) * 180) / Math.PI,
+					kind: l.kind,
+					end,
+					name: endName(end)
+				});
+			}
+		return [...out.values()];
+	});
+
+	/** Flies to a line's end: its row, or the box it ends on. */
+	function goEnd(end: End) {
+		if (end.anchor.startsWith('row:')) flyTo({ box: end.home, field: end.leaf });
+		else flyTo({ box: end.node });
+	}
+
+	/** What each kind is called in the key and a line's hover text. */
+	const KIND_NAME: Record<LinkKind, string> = {
+		ref: 'refers to',
+		body: 'api body uses',
+		model: 'holds',
+		from: 'derives from',
+		reads: 'reads',
+		writes: 'writes',
+		calls: 'calls',
+		handles: 'handled by'
+	};
 
 	// ------------------------------------------------------------ inspector
 	/** Where a card sits: its enclosing entities, outermost first, boundaries skipped. */
@@ -510,33 +749,34 @@
 			return {
 				title: `${el(info.modelId)?.name}.${def.name}`,
 				type: typeText(def, (id) => refLabel(design.model, id)),
-				// Glyphs point the way the link goes: → this field to the entry, ← the entry to it.
+				// Glyphs point at what depends on what: → this field on the entry, ← the entry on
+				// this field; dashed for lineage.
 				sections: [
 					{ label: 'References', kind: 'ref', glyph: '→', entries: outOf('ref') },
 					{ label: 'Holds', kind: 'model', glyph: '◆', entries: outOf('model') },
 					{
 						label: 'Source',
 						kind: 'from',
-						glyph: '⇠',
+						glyph: '⇢',
 						entries: outOf('from'),
 						note: def.derived
 					},
 					{ label: 'Referenced by', kind: 'ref', glyph: '←', entries: inOf('ref') },
-					{ label: 'Feeds', kind: 'from', glyph: '⇢', entries: inOf('from') },
+					{ label: 'Feeds', kind: 'from', glyph: '⇠', entries: inOf('from') },
 					{
 						label: 'Fed by apis',
 						kind: 'from',
-						glyph: '⇠',
+						glyph: '⇢',
 						entries: (uses.fedBy.get(f.field) ?? []).map(apiEntry)
 					},
 					{
 						label: 'Returned by apis',
 						kind: 'from',
-						glyph: '⇢',
+						glyph: '⇠',
 						entries: (uses.returnedBy.get(f.field) ?? []).map(apiEntry)
 					},
-					{ label: 'Read by logic', kind: 'ref', glyph: '⇢', entries: touchedBy('reads') },
-					{ label: 'Written by logic', kind: 'writes', glyph: '⇠', entries: touchedBy('writes') }
+					{ label: 'Read by logic', kind: 'ref', glyph: '←', entries: touchedBy('reads') },
+					{ label: 'Written by logic', kind: 'writes', glyph: '←', entries: touchedBy('writes') }
 				].filter((s) => s.entries.length)
 			};
 		}
@@ -694,53 +934,6 @@
 	const unitW = $derived(Math.max(420, unitCard?.seq ? sequenceWidth(unitCard.seq) + 2 : 0));
 	const unitPos = $derived(beside(fieldAnchor, unitW));
 
-	/**
-	 * Lines from the picked api's row, in screen px: solid to each model its bodies use, and
-	 * dashed to the fields a hovered field of its own shape sends into or comes from.
-	 */
-	const apiLines = $derived.by(() => {
-		const host = view.api ? hostOf(view.api) : undefined;
-		if (!view.api || !host || !apiAnchor) return [];
-		const { x: vx, y: vy, zoom } = viewport.current;
-		const out: { d: string; arrow: string; kind: 'ref' | 'from' }[] = [];
-		const draw = (t: LandscapeBox, y: number, kind: 'ref' | 'from', arrowAtRail = false) => {
-			const tl = t.absX * zoom + vx;
-			const tr = (t.absX + t.width) * zoom + vx;
-			const ty = y * zoom + vy;
-			const leftward = tr <= apiAnchor.left;
-			const x0 = leftward ? apiAnchor.left : apiAnchor.right;
-			const x1 = x0 + (leftward ? -12 : 12);
-			const tx = leftward ? tr : tl;
-			const head = (x: number, y: number, dir: number) =>
-				`M${x} ${y} L${x - dir * 9} ${y - 4.5} L${x - dir * 9} ${y + 4.5} Z`;
-			out.push({
-				d: `M${x0} ${apiAnchor.y} H${x1} V${ty} H${tx}`,
-				arrow: arrowAtRail
-					? head(x0, apiAnchor.y, leftward ? 1 : -1)
-					: head(tx, ty, tx < x1 ? -1 : 1),
-				kind
-			});
-		};
-		for (const u of bodyModels(design.model, view.api)) {
-			const t = linkTarget(design.model, boxes, host, u.model);
-			if (!t) continue;
-			const s = shownBox(t);
-			draw(s, s === t && t.view ? t.absY + TABLE.head / 2 : s.absY + s.height / 2, 'ref');
-		}
-		const f = view.apiField ? design.model.apiFields.get(view.apiField) : undefined;
-		for (const t of apiFieldTargets(view.apiField)) {
-			const s = shownBox(t.box);
-			const i = t.box.fields?.findIndex((x) => x.id === t.field) ?? -1;
-			draw(
-				s,
-				s === t.box && i >= 0 ? t.box.absY + rowY(t.box, i) : s.absY + s.height / 2,
-				'from',
-				f?.part !== 'request'
-			);
-		}
-		return out;
-	});
-
 	/** Picks an api from the inspector and centres on the box owning it. */
 	function showApi(id: string) {
 		const owner = el(id)?.parentId;
@@ -858,6 +1051,8 @@
 		bind:nodes
 		{edges}
 		{nodeTypes}
+		{edgeTypes}
+		connectionMode={ConnectionMode.Loose}
 		colorMode={theme.current}
 		minZoom={0.05}
 		maxZoom={64}
@@ -895,34 +1090,51 @@
 			</ControlButton>
 		</Controls>
 	</SvelteFlow>
+	<!-- Line ends keep one size on screen at any zoom, like the lines. -->
 	<svg class="defs" aria-hidden="true">
 		<defs>
-			<marker
-				id="sdv-composition"
-				viewBox="0 0 16 10"
-				refX="16"
-				refY="5"
-				markerWidth="16"
-				markerHeight="10"
-				markerUnits="userSpaceOnUse"
-				orient="auto-start-reverse"
-			>
-				<path d="M0,5 L8,0 L16,5 L8,10 Z" fill="var(--sdv-edge)" />
-			</marker>
-			<marker
-				id="sdv-composition-hot"
-				viewBox="0 0 16 10"
-				refX="16"
-				refY="5"
-				markerWidth="16"
-				markerHeight="10"
-				markerUnits="userSpaceOnUse"
-				orient="auto-start-reverse"
-			>
-				<path d="M0,5 L8,0 L16,5 L8,10 Z" fill="var(--sdv-link-ref)" />
-			</marker>
+			{#each MARKS as [id, color] (id)}
+				<marker
+					id="sdv-arrow-{id}"
+					viewBox="0 0 10 10"
+					refX="10"
+					refY="5"
+					markerWidth={mark}
+					markerHeight={mark}
+					markerUnits="userSpaceOnUse"
+					orient="auto-start-reverse"
+				>
+					<path d="M0,1 L10,5 L0,9 Z" fill={color} />
+				</marker>
+				<marker
+					id="sdv-diamond-{id}"
+					viewBox="0 0 16 10"
+					refX="16"
+					refY="5"
+					markerWidth={mark * 1.6}
+					markerHeight={mark}
+					markerUnits="userSpaceOnUse"
+					orient="auto-start-reverse"
+				>
+					<path d="M0,5 L8,0 L16,5 L8,10 Z" fill={color} />
+				</marker>
+			{/each}
 		</defs>
 	</svg>
+	{#each wedges as w (w.key)}
+		<button
+			class="wedge"
+			style:left="{w.x}px"
+			style:top="{w.y}px"
+			style:transform="rotate({w.angle}deg)"
+			style:--c="var(--sdv-link-{LINK_TOKEN[w.kind]})"
+			title="Go to {w.name}"
+			aria-label="Go to {w.name}"
+			onclick={() => goEnd(w.end)}
+		>
+			<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M20 10 1 4.5v11Z" /></svg>
+		</button>
+	{/each}
 	{#if keyOpen}
 		<!-- What is drawn, beside the button that opened it. Lines and marks: the Atoms board. -->
 		<aside class="key" aria-label="Key">
@@ -937,24 +1149,37 @@
 			<div class="k"><EntityGlyph kind="api" />APIs<span class="sw api"></span></div>
 			<hr />
 			<div class="k"><span class="ex"><span class="dashed"></span></span>Owned elsewhere</div>
-			<div class="k">
-				<svg class="ex" viewBox="0 0 30 10"
-					><path d="M1 5h22" stroke="var(--sdv-edge)" stroke-width="1.4" /><path
-						d="M29 5 22 1.5v7Z"
-						fill="var(--sdv-edge)"
-					/></svg
-				>Refers to (key)
-			</div>
-			<div class="k">
-				<svg class="ex" viewBox="0 0 30 10"
-					><path
-						d="M8 5h21"
-						stroke="var(--sdv-edge)"
-						stroke-width="1.4"
-						stroke-dasharray="4 3"
-					/><path d="M1 5 8 1.5v7Z" fill="var(--sdv-edge)" /></svg
-				>Derives from
-			</div>
+			<hr />
+			<p class="hint">
+				Grey at rest; hover or click to light. The arrow points at what the start depends on. Click
+				to hide a kind.
+			</p>
+			{#each KEY_LINES as k (k.id)}
+				<button
+					class="k line"
+					class:off={view.hidden[k.id]}
+					aria-pressed={!view.hidden[k.id]}
+					title={view.hidden[k.id] ? 'Show these lines' : 'Hide these lines'}
+					onclick={() => {
+						const next = { ...view.hidden };
+						if (next[k.id]) delete next[k.id];
+						else next[k.id] = true;
+						view.hidden = next;
+					}}
+				>
+					<svg class="ex" viewBox="0 0 30 10" style:--c="var(--sdv-link-{k.token})"
+						><path
+							d={k.diamond ? 'M10 5h19' : 'M1 5h21'}
+							stroke="var(--c)"
+							stroke-width="1.6"
+							stroke-dasharray={k.dash}
+						/><path
+							d={k.diamond ? 'M1 5 5.5 2 10 5 5.5 8Z' : 'M29 5 22 1.5v7Z'}
+							fill="var(--c)"
+						/></svg
+					>{k.label}
+				</button>
+			{/each}
 		</aside>
 	{/if}
 	<!-- Beside the clicked row, moving with the canvas, so it reads next to what it describes. -->
@@ -1067,12 +1292,6 @@
 		</aside>
 	{:else if apiCard && cardPos}
 		{@const api = apiCard}
-		<svg class="api-lines" aria-hidden="true">
-			{#each apiLines as l, i (i)}
-				<path class="line {l.kind}" d={l.d} />
-				<path class="head {l.kind}" d={l.arrow} />
-			{/each}
-		</svg>
 		<!-- Beside the picked row, moving with the canvas, so the api and what it uses share a view. -->
 		<aside
 			class="inspector"
@@ -1141,7 +1360,7 @@
 							<span class="name">{f.name}</span>
 							<span class="where">{f.type}</span>
 							{#if !f.traced}<span class="untraced"><TriangleAlert size={12} /></span
-								>{:else if f.title}<span class="traced">{b.part === 'request' ? '→' : '←'}</span
+								>{:else if f.title}<span class="traced">{b.part === 'request' ? '⇠' : '⇢'}</span
 								>{/if}
 						</div>
 					{/each}
@@ -1192,52 +1411,102 @@
 	/* Boxes and lines fade in when mounted and out before they are unmounted (FADE_MS). Children
 	   come in after their box's face has gone, and go before it returns, so labels never overlap. */
 	.canvas :global(.svelte-flow__node),
-	.canvas :global(.svelte-flow__edge.model-link) {
+	.canvas :global(.svelte-flow__edge.conn.rest) {
 		transition: opacity 0.18s ease-out 0.1s;
 		@starting-style {
 			opacity: 0;
 		}
 	}
 	.canvas :global(.svelte-flow__node.ghost),
-	.canvas :global(.svelte-flow__edge.model-link.off) {
+	.canvas :global(.svelte-flow__edge.conn.off) {
 		opacity: 0;
 		transition-delay: 0s;
 	}
-	.canvas :global(.svelte-flow__edge.model-link) {
-		pointer-events: none;
-	}
-	.canvas :global(.model-link .svelte-flow__edge-path) {
+	/* Every line keeps its width on screen at any zoom: at rest 1, 1.75 or 2.5px by how many
+	   connections it merges (hover one for the count), lit 2px. Solid is structure, dashed
+	   lineage, dotted control. */
+	.canvas :global(.conn .svelte-flow__edge-path) {
 		stroke: var(--sdv-edge);
+		stroke-width: 1;
+		vector-effect: non-scaling-stroke;
 		transition: opacity 0.12s;
 	}
-	.canvas :global(.model-link.from .svelte-flow__edge-path) {
+	.canvas :global(.conn.w2 .svelte-flow__edge-path) {
+		stroke-width: 1.75;
+	}
+	.canvas :global(.conn.w3 .svelte-flow__edge-path) {
+		stroke-width: 2.5;
+	}
+	.canvas :global(.conn.from .svelte-flow__edge-path) {
 		stroke-dasharray: 5 4;
 	}
-	.canvas :global(.model-link.dim .svelte-flow__edge-path) {
-		opacity: 0.25;
-	}
-	/* A lit line keeps 2px on screen at any zoom, so it is found from far out too. */
-	.canvas :global(.model-link.hot .svelte-flow__edge-path) {
-		stroke: var(--sdv-link-ref);
-		stroke-width: 2;
-		vector-effect: non-scaling-stroke;
-	}
-	.canvas :global(.model-link.hot.from .svelte-flow__edge-path) {
-		stroke: var(--sdv-link-from);
-	}
-	.canvas :global(.model-link.hot.writes .svelte-flow__edge-path) {
-		stroke: var(--sdv-link-write);
-	}
-	.canvas :global(.model-link.calls .svelte-flow__edge-path) {
+	.canvas :global(.conn.calls .svelte-flow__edge-path),
+	.canvas :global(.conn.handles .svelte-flow__edge-path) {
 		stroke-dasharray: 2 3;
 	}
-	.canvas :global(.model-link.hot.calls .svelte-flow__edge-path) {
+	.canvas :global(.conn.dim .svelte-flow__edge-path) {
+		opacity: 0.25;
+	}
+	/* Lit lines are over the cards, so they never take the pointer from a row. */
+	.canvas :global(.svelte-flow__edge.conn.lit) {
+		pointer-events: none;
+	}
+	.canvas :global(.conn.lit .svelte-flow__edge-path) {
+		stroke: var(--sdv-link-ref);
+		stroke-width: 2;
+	}
+	.canvas :global(.conn.lit.from .svelte-flow__edge-path) {
+		stroke: var(--sdv-link-from);
+	}
+	.canvas :global(.conn.lit.writes .svelte-flow__edge-path) {
+		stroke: var(--sdv-link-write);
+	}
+	.canvas :global(.conn.lit.calls .svelte-flow__edge-path),
+	.canvas :global(.conn.lit.handles .svelte-flow__edge-path) {
 		stroke: var(--sdv-link-call);
 	}
-	/* A line to another box is drawn whatever the zoom, so it shows where the other end is. */
-	.canvas :global(.svelte-flow__edge.model-link.cross) {
-		opacity: 1;
-		transition: none;
+	.wedge {
+		position: absolute;
+		z-index: 9;
+		width: 22px;
+		height: 22px;
+		margin: -11px 0 0 -11px;
+		padding: 0;
+		border: none;
+		background: none;
+		cursor: pointer;
+	}
+	.wedge svg {
+		display: block;
+		width: 100%;
+		height: 100%;
+		fill: var(--c);
+		filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
+	}
+	.key .line {
+		width: 100%;
+		border: none;
+		background: none;
+		color: inherit;
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+	}
+	.key .line:hover {
+		background: color-mix(in srgb, var(--sdv-selection) 8%, transparent);
+	}
+	.key .line.off {
+		color: var(--sdv-text-muted);
+		text-decoration: line-through;
+	}
+	.key .line.off .ex {
+		opacity: 0.35;
+	}
+	.key .hint {
+		margin: 2px 12px 4px;
+		font-size: 11px;
+		line-height: 1.35;
+		color: var(--sdv-text-muted);
 	}
 	.canvas :global(.svelte-flow__controls-button.key-on) {
 		color: var(--sdv-selection);
@@ -1515,32 +1784,6 @@
 		align-items: center;
 		height: 18px;
 		color: var(--sdv-method-put);
-	}
-	.api-lines {
-		position: absolute;
-		inset: 0;
-		width: 100%;
-		height: 100%;
-		z-index: 9;
-		pointer-events: none;
-		overflow: visible;
-	}
-	.api-lines .line {
-		fill: none;
-		stroke-width: 2;
-	}
-	.api-lines .line.ref {
-		stroke: var(--sdv-link-ref);
-	}
-	.api-lines .line.from {
-		stroke: var(--sdv-link-from);
-		stroke-dasharray: 5 4;
-	}
-	.api-lines .head.ref {
-		fill: var(--sdv-link-ref);
-	}
-	.api-lines .head.from {
-		fill: var(--sdv-link-from);
 	}
 	.defs {
 		position: absolute;

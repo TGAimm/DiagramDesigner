@@ -46,9 +46,9 @@ steps:                           # the sequence, top to bottom
 - A module's units share one **Logic** card, the first box inside the module: one row per
   unit, its name and signature, `(productId, quantity) → Cart Line` (an output that is a
   model goes by the model's name). Nothing else: the rest is behind a click.
-- Hover a row to draw what its steps read (arrow at the unit), write (arrow at the model) and
-  call (dotted, arrow at the callee), and light those rows. Apis it handles or calls are lit
-  on their rail.
+- Hover a row to draw what its steps read and write (arrow at the model), call (dotted, arrow
+  at the callee) and the apis it handles (dotted, from the api's rail row), and light those
+  rows (see [Connections](README.md#connections)).
 - Click a row: the unit card opens beside it (over the canvas, centred, if there is no room)
   with typed inputs, outputs and fails, then the steps as a **sequence diagram**. Lifelines:
   the caller (apis it handles, units calling it), the unit, then each unit, api owner or model

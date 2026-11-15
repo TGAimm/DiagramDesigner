@@ -44,7 +44,9 @@ Technical / deployment architecture
   the camera and fades detail in and out (systems › modules › models). Models render as
   classes where they are owned (grouped with the models they alone hold) and as stored
   tables where they are stored, with keys, foreign-key and composition lines, and field
-  lineage. Clicking selects.
+  lineage. Connections follow one standard at every level: merged into one line between the
+  visible boxes at rest, lit one hop each way on hover, pinned on click
+  ([docs/schema/README.md](docs/schema/README.md#connections)). Clicking selects.
 - **Open goals:** [docs/goals.md](docs/goals.md).
 
 ## How it works

@@ -30,5 +30,4 @@ Open goals only. **Remove a goal once it is achieved**; keep this list lean.
   card's rows.
 - Cardinality at line ends from `required`/`nullable` (1 vs 0..1, crow's foot for `many`).
 - Trace the whole `from` chain of a field, upstream and downstream, not just one hop.
-- Show all links of a card at once from its name bar, without hovering row by row.
 - Keyboard navigation in the inspector: step between linked rows, Enter to follow.

@@ -422,8 +422,6 @@ export function logicRow(model: Model, id: string): LogicRow {
 	};
 }
 
-const LOGIC_KIND = Object.fromEntries(LOGIC_KEYS.map((k) => [k, true]));
-
 /** Room for the ƒ before a unit's name. */
 const FN_GLYPH = 14;
 
@@ -670,30 +668,6 @@ export function layoutLandscape(model: Model, fold = true): LandscapeBox[] {
 	return out;
 }
 
-/**
- * A line from a field's row to another table: a foreign key (`ref`, arrow at the target), a
- * held model (`model`, diamond at the holder, UML composition) or lineage (`from`, dashed,
- * arrow at the derived field).
- */
-export interface ModelLink {
-	id: string;
-	kind: FieldLink['kind'];
-	source: string;
-	target: string;
-	/** `out:<field id>:l` or `:r`. */
-	sourceHandle: string;
-	/**
-	 * `head:l` or `head:r` for a model, or a field its card does not show; else
-	 * `in:<field or unit id>:l` or `:r`.
-	 */
-	targetHandle: string;
-	/** The field or logic unit the link is written on. */
-	sourceField: string;
-	/** The field or unit pointed at, when its card shows it. */
-	targetField?: string;
-	parentId?: string;
-}
-
 const modelOf = (model: Model, id: string) => model.fields.get(id)?.modelId ?? id;
 /** Whether a card has a row for a field or logic unit. */
 const shows = (b: LandscapeBox, id: string) =>
@@ -723,86 +697,4 @@ export function linkTarget(
 		(model.fields.has(to) && !shows(o, to) ? 1e9 : 0) +
 		dist(o);
 	return cards.sort((a, b) => score(a) - score(b))[0];
-}
-
-/** A line from row `link.field` in card `b` to card `t`, the ends facing each other. */
-function line(b: LandscapeBox, t: LandscapeBox, link: FieldLink): ModelLink {
-	const [from, side] = t.absX >= b.absX + b.width ? 'rl' : t.absX + t.width <= b.absX ? 'lr' : 'rr';
-	const shown = shows(t, link.to);
-	// A field has one ref or model link but many of the rest, so those are named by their end.
-	const end =
-		link.kind === 'from'
-			? `.${link.to}`
-			: link.kind in LOGIC_KIND
-				? `.${link.kind}.${link.to}`
-				: '';
-	return {
-		id: `${b.id}.${link.field}${end}`,
-		kind: link.kind,
-		source: b.id,
-		target: t.id,
-		sourceHandle: `out:${link.field}:${from}`,
-		targetHandle: shown ? `in:${link.to}:${side}` : `head:${side}`,
-		sourceField: link.field,
-		targetField: shown ? link.to : undefined,
-		parentId: b.parentId
-	};
-}
-
-/** A field's links, in field order: `ref` or `model`, then each `from`. */
-const fieldLinks = (f: ModelField): FieldLink[] => [
-	...(f.ref || f.model
-		? [
-				{
-					kind: f.ref ? ('ref' as const) : ('model' as const),
-					field: f.id,
-					to: (f.ref ?? f.model)!
-				}
-			]
-		: []),
-	...(f.from ?? []).map((to) => ({ kind: 'from' as const, field: f.id, to }))
-];
-
-/**
- * Lines for links whose target card sits in the same box, so they never cross a boundary;
- * others show on hover (see `focusLinks`). Cards stacked in one column (or a card referring to
- * itself) are joined round the right side. Lineage inside one card is not drawn.
- */
-export function modelLinks(model: Model, boxes: LandscapeBox[]): ModelLink[] {
-	const out: ModelLink[] = [];
-	for (const b of boxes)
-		for (const f of b.fields ?? [])
-			for (const link of fieldLinks(f)) {
-				const el = modelOf(model, link.to);
-				const t = boxes.find((o) => o.view && o.parentId === b.parentId && o.elementId === el);
-				if (!t || (link.kind === 'from' && t === b)) continue;
-				out.push(line(b, t, link));
-			}
-	return out;
-}
-
-/**
- * Every line for one field or logic unit in one card, wherever the other end is: its own
- * links, and the fields and units linking to it. The other end is the nearest card showing it
- * (see `linkTarget`). Lineage inside one card is left out, and so are apis, which are on rails.
- */
-export function focusLinks(
-	model: Model,
-	rels: Relations,
-	boxes: LandscapeBox[],
-	boxId: string,
-	fieldId: string
-): ModelLink[] {
-	const b = boxes.find((o) => o.id === boxId);
-	if (!b) return [];
-	const out: ModelLink[] = [];
-	for (const link of rels.out.get(fieldId) ?? []) {
-		const t = linkTarget(model, boxes, b, link.to);
-		if (t && !(link.kind === 'from' && t === b)) out.push(line(b, t, link));
-	}
-	for (const link of rels.in.get(fieldId) ?? []) {
-		const s = linkTarget(model, boxes, b, link.field);
-		if (s && shows(s, link.field) && !(link.kind === 'from' && s === b)) out.push(line(s, b, link));
-	}
-	return out;
 }
