@@ -1,0 +1,14 @@
+id: mv0hqord4c
+parent: xmv85uqqsk
+name: Place order
+method: POST
+path: /checkout
+auth: session
+request:
+  fields:
+    - { id: epvecr09iw, name: note, type: string, nullable: true, to: [p2vo4bbov0] }
+responses:
+  - { status: 201, model: llns90zy3d, omit: [jzhfxrngck], description: Order placed }
+  - { status: 400, description: Cart is empty }
+  - { status: 401, description: Not signed in }
+  - { status: 422, description: Order refused by the ERP }

@@ -1,0 +1,26 @@
+id: jj8gf3v882
+parent: xmv85uqqsk
+name: placeOrder
+handles: [mv0hqord4c]
+inputs:
+  - { id: dow91bh1ha, name: note, type: string, nullable: true }
+outputs:
+  - { id: wwnykcmcu1, name: order, model: llns90zy3d }
+fails:
+  - { name: emptyCart, description: the cart has no lines }
+  - { name: notSignedIn, description: the cart has no customer }
+  - { name: refused, description: the ERP refused the order }
+steps:
+  - { call: tl04zzurg3, with: sessionId, gets: cart }
+  - if: cart has no lines
+    then:
+      - { fail: emptyCart }
+  - if: cart.customerId is null
+    then:
+      - { fail: notSignedIn }
+  - { call: a2uivekzaq, with: "cart.customerId, cart lines, note", gets: order }
+  - if: the ERP answers 400
+    then:
+      - { fail: refused }
+  - { write: uzi5stl672, note: delete the cart and its lines }
+  - { return: order }
