@@ -39,4 +39,11 @@ export class ViewState {
 	peerBoxes = $state.raw<Record<string, true>>({});
 	/** Kinds of connection hidden from the key, by key entry. */
 	hidden = $state.raw<Record<string, true>>({});
+	/** A unit being played: the choices made, the calls stepped into, and the step shown. */
+	play = $state.raw<{
+		unit: string;
+		choices: Record<string, number>;
+		into: string[];
+		at: number;
+	} | null>(null);
 }

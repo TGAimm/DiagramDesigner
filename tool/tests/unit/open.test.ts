@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { LandscapeBox } from '../../src/lib/landscape/layout';
-import { apiHosts, openBoxes, railOpen, type Camera } from '../../src/lib/landscape/open';
+import {
+	apiHosts,
+	openBoxes,
+	railOpen,
+	zoomToShow,
+	type Camera
+} from '../../src/lib/landscape/open';
 import type { Rail } from '../../src/lib/landscape/apis';
 
 const box = (
@@ -90,5 +96,15 @@ describe('api rail', () => {
 		// Rows 12 × 0.25 × 4 = 12px.
 		expect(railOpen(rail, 4)).toBe(true);
 		expect(railOpen(rail, 3.9)).toBe(false);
+	});
+});
+
+describe('zoomToShow', () => {
+	it('is the zoom opening every box round a box', () => {
+		// a opens when m's name reads (34px at zoom 1); m opens when its card's rows read (13px).
+		const t = boxes.find((b) => b.id === 't')!;
+		const z = zoomToShow(boxes, t);
+		expect(open(cam(0, 0, z))).toContain('m');
+		expect(open(cam(0, 0, z * 0.99))).not.toContain('m');
 	});
 });

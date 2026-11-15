@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ChevronLeft, TriangleAlert, X } from '@lucide/svelte';
+	import { ChevronLeft, Play, TriangleAlert, X } from '@lucide/svelte';
 	import {
 		Background,
 		BackgroundVariant,
@@ -44,9 +44,11 @@
 		type LinkKind,
 		type RestLine
 	} from '#lib/landscape/connections.ts';
-	import { apiHosts, openBoxes, railOpen, READABLE } from '#lib/landscape/open.ts';
+	import { apiHosts, openBoxes, railOpen, READABLE, zoomToShow } from '#lib/landscape/open.ts';
 	import { sequenceOf, sequenceWidth } from '#lib/landscape/sequence.ts';
 	import SequenceDiagram from './SequenceDiagram.svelte';
+	import PlayerBar from './PlayerBar.svelte';
+	import { runOf, stepOutOf, type PlayStep } from '#lib/landscape/play.ts';
 	import type { LogicField } from '#lib/model/schema.ts';
 	import {
 		apiUses,
@@ -432,6 +434,23 @@
 				if (end.anchor.startsWith('api:')) apis[end.leaf] = true;
 				else if (end.anchor.startsWith('row:')) mark(end.node.id, end.leaf, 'peer');
 			}
+		// The current step of a run: the unit taking it, and the other end.
+		if (step) {
+			const ends = endsOf(step);
+			for (const [id, e, how] of [
+				[step.from, ends.from, 'self'],
+				[step.to, ends.to, 'peer']
+			] as const) {
+				if (!e) continue;
+				const shown = shownBox(e.box);
+				if (e.api) {
+					apis[e.api] = true;
+					const host = hostOf(e.api);
+					if (host && !openRails.has(host.id)) peers[host.id] = true;
+				} else if (shown !== e.box || e.row === undefined) peers[shown.id] = true;
+				else mark(e.box.id, id, how);
+			}
+		}
 		view.hot = out;
 		view.hotApis = apis;
 		view.peerBoxes = peers;
@@ -1029,10 +1048,231 @@
 		view.field = null;
 		view.trail = [];
 	}
+
+	// ------------------------------------------------------------ play
+	// A unit played step by step: each step moves the camera to where it happens on the board
+	// and draws it there as a line between the real elements. Nothing moves on its own.
+
+	/** Kept clear for the player at the bottom of the canvas, in screen px. */
+	const PLAYER = 104;
+	const run = $derived(
+		view.play
+			? runOf(design.model, view.play.unit, view.play.choices, new Set(view.play.into))
+			: undefined
+	);
+	const playAt = $derived(run && view.play ? Math.min(view.play.at, run.steps.length - 1) : 0);
+	const step = $derived(run?.steps[playAt]);
+
+	/** Where an element a step names is drawn: a card and its row, or an api on a box's rail. */
+	interface PlayEnd {
+		box: LandscapeBox;
+		row?: number;
+		api?: string;
+	}
+	function playEndOf(id: string, near: LandscapeBox | undefined): PlayEnd | undefined {
+		if (isApiEl(id)) {
+			const owner = boxes.find((b) => b.apis?.includes(id) && !b.ref);
+			return owner && { box: owner, api: id };
+		}
+		const fits = (b: LandscapeBox) => !!b.logic && rowOf(b, id) >= 0;
+		const b = isUnit(id)
+			? (boxes.find((o) => fits(o) && !o.ref) ?? boxes.find(fits))
+			: near && linkTarget(design.model, boxes, near, id);
+		if (!b) return undefined;
+		const row = rowOf(b, id);
+		return { box: b, row: row >= 0 ? row : undefined };
+	}
+	/** Both ends of a step; a model is looked for near the unit taking the step. */
+	function endsOf(s: PlayStep) {
+		const unitBox = playEndOf(s.frame.at(-1)!, undefined)?.box;
+		return { from: playEndOf(s.from, unitBox), to: playEndOf(s.to, unitBox) };
+	}
+	/** An api's rail on its owner's box, as it is drawn once the box shows. */
+	const ownRail = (b: LandscapeBox) =>
+		railOf(design.model, railGroups(design.model, b.elementId, b.apis ?? []), b.height);
+
+	/** An end in canvas px, and the least zoom drawing it readably. */
+	function placeOf(e: PlayEnd) {
+		const b = e.box;
+		if (e.api) {
+			const r = ownRail(b);
+			const y = b.absY + r.top + (railRowY(r, e.api) ?? r.height / 2) * r.scale;
+			return {
+				x: b.absX + b.width - r.width / 2,
+				w: r.width,
+				y,
+				zoom: Math.max(zoomToShow(boxes, b), READABLE / (RAIL.font * r.scale))
+			};
+		}
+		const y = e.row !== undefined ? b.absY + rowY(b, e.row) : b.absY + TABLE.head / 2;
+		return { x: b.absX, w: b.width, y, zoom: zoomToShow(boxes, b) };
+	}
+
+	/**
+	 * Frames a step above the player: both ends, zoomed in no further than 100% and out no
+	 * further than where their rows are drawn. When both do not fit at that, the receiver.
+	 */
+	function frameStep(s: PlayStep) {
+		const { from, to } = endsOf(s);
+		const ends = [from, to].filter((e) => !!e);
+		if (!ends.length) return;
+		// A row hidden in a folded card is shown by expanding the card.
+		for (const e of ends)
+			if (
+				!all &&
+				e.box.fields &&
+				e.row !== undefined &&
+				e.row >= shownRows(e.box.fields.length, !!view.expanded[e.box.id])
+			)
+				view.expanded = { ...view.expanded, [e.box.id]: true };
+		const pad = 56;
+		const fit = (list: ReturnType<typeof placeOf>[]) => {
+			const left = Math.min(...list.map((p) => p.x));
+			const right = Math.max(...list.map((p) => p.x + p.w));
+			const top = Math.min(...list.map((p) => p.y)) - TABLE.rowHeight;
+			const bottom = Math.max(...list.map((p) => p.y)) + TABLE.rowHeight;
+			const most = Math.min(
+				(cw - 2 * pad) / (right - left),
+				(ch - PLAYER - 2 * pad) / (bottom - top)
+			);
+			const least = Math.max(...list.map((p) => p.zoom)) * 1.05;
+			return { cx: (left + right) / 2, cy: (top + bottom) / 2, most: Math.min(1, most), least };
+		};
+		let f = fit(ends.map(placeOf));
+		if (f.most < f.least && to) f = fit([placeOf(to)]);
+		const zoom = Math.max(f.least, f.most);
+		flow.setCenter(f.cx, f.cy + PLAYER / 2 / zoom, { zoom, duration: 400 });
+	}
+	// Each new step moves the camera; panning between steps is free.
+	$effect(() => {
+		const s = step;
+		const at = playAt;
+		if (!s || !ready) return;
+		untrack(() => frameStep(s));
+		void at;
+	});
+
+	/** An end on screen: the edges of what is drawn for it and the height of its row. */
+	function screenOf(e: PlayEnd) {
+		const { x: vx, y: vy, zoom } = viewport.current;
+		const host = e.api ? hostOf(e.api) : undefined;
+		const r = host && rails.get(host.id);
+		if (e.api && host && r) {
+			const left = host.absX + host.width - r.width / 2;
+			const row = openRails.has(host.id) ? railRowY(r, e.api) : undefined;
+			const y = host.absY + r.top + (row !== undefined ? row * r.scale : r.height / 2);
+			return { left: left * zoom + vx, right: (left + r.width) * zoom + vx, y: y * zoom + vy };
+		}
+		const s = shownBox(e.box);
+		const y =
+			s !== e.box
+				? s.absY + s.height / 2
+				: e.row !== undefined
+					? e.box.absY + rowY(e.box, e.row)
+					: e.box.absY + TABLE.head / 2;
+		return { left: s.absX * zoom + vx, right: (s.absX + s.width) * zoom + vx, y: y * zoom + vy };
+	}
+	const nameOf = (id: string) =>
+		isApiEl(id)
+			? `${el(id)!.def.method} ${el(id)!.def.path}`
+			: isUnit(id)
+				? el(id)!.name
+				: label(id);
+
+	/** The current step as drawn on the board, in screen px. */
+	const playDraw = $derived.by(() => {
+		if (!step) return undefined;
+		const ends = endsOf(step);
+		if (!ends.from || !ends.to) return undefined;
+		const a = screenOf(ends.from);
+		const b = screenOf(ends.to);
+		// A step the unit takes alone is written beside its row.
+		if (step.from === step.to) return { beside: { x: a.right + 12, y: a.y } };
+		let x0, x1, xm;
+		if (b.left >= a.right) [x0, x1, xm] = [a.right, b.left, (a.right + b.left) / 2];
+		else if (b.right <= a.left) [x0, x1, xm] = [a.left, b.right, (a.left + b.right) / 2];
+		else [x0, x1, xm] = [a.right, b.right, Math.max(a.right, b.right) + 28];
+		const head = (x: number, y: number, dir: number) =>
+			`M${x} ${y} L${x - dir * 9} ${y - 4.5} L${x - dir * 9} ${y + 4.5} Z`;
+		// At the receiver: what the sender depends on, as with every connection.
+		const arrow = head(x1, b.y, Math.sign(x1 - xm) || 1);
+		// When the camera framed only the receiver, the label goes beside the receiver, and the
+		// sender is named where its line leaves the screen.
+		const h = ch - PLAYER;
+		const outX = (x: number) => x < 0 || x > cw;
+		const outY = (y: number) => y < 0 || y > h;
+		const off = outX(x0) || outY(a.y);
+		const away = Math.sign(xm - x1) || 1;
+		const clampX = (x: number) => Math.min(Math.max(x, 8), cw - 8);
+		const clampY = (y: number) => Math.min(Math.max(y, 16), h - 16);
+		// Where the line, followed back from the receiver, leaves the screen.
+		const exit = outX(xm)
+			? { x: clampX(xm), y: b.y, align: xm > cw ? 'end' : 'start' }
+			: outY(a.y)
+				? { x: xm, y: clampY(a.y), align: 'center' }
+				: { x: clampX(x0), y: a.y, align: x0 > cw ? 'end' : 'start' };
+		return {
+			d: `M${x0} ${a.y} H${xm} V${b.y} H${x1}`,
+			arrow,
+			label: off
+				? { x: x1 + away * 14, y: b.y, align: away > 0 ? 'start' : 'end' }
+				: Math.abs(x1 - xm) > 60
+					? { x: (xm + x1) / 2, y: b.y, align: 'center' }
+					: { x: (x0 + xm) / 2, y: a.y, align: 'center' },
+			edge: off && { ...exit, text: nameOf(step.from) }
+		};
+	});
+
+	/** How far a label is moved left to sit at its anchor: by its start, middle or end. */
+	const SHIFT: Record<string, string> = { start: '0%', center: '-50%', end: '-100%' };
+
+	function startPlay(unit: string) {
+		unpin();
+		view.play = { unit, choices: {}, into: [], at: 0 };
+	}
+	function jump(at: number) {
+		if (view.play && run)
+			view.play = { ...view.play, at: Math.min(Math.max(at, 0), run.steps.length - 1) };
+	}
+	function pickBranch(option: number) {
+		if (!view.play || !step?.choice) return;
+		view.play = {
+			...view.play,
+			choices: { ...view.play.choices, [step.key]: option },
+			at: playAt + 1
+		};
+	}
+	function forward() {
+		if (step?.choice && step.choice.picked === undefined) return;
+		jump(playAt + 1);
+	}
+	function stepInto() {
+		if (!view.play || !step?.into) return;
+		view.play = { ...view.play, into: [...view.play.into, step.key], at: playAt + 1 };
+	}
+	function stepOut() {
+		if (run && step && step.frame.length > 1) jump(stepOutOf(run, playAt));
+	}
+	/** Keys while playing; returns whether the key was one. */
+	function playKey(e: KeyboardEvent) {
+		if (!view.play || search.open || e.metaKey || e.ctrlKey || e.altKey) return false;
+		const n = Number(e.key);
+		if (e.key === 'Escape') view.play = null;
+		else if (e.key === 'ArrowRight') forward();
+		else if (e.key === 'ArrowLeft') jump(playAt - 1);
+		else if (e.key === 'Home') jump(0);
+		else if (e.key === 'i') stepInto();
+		else if (e.key === 'o') stepOut();
+		else if (step?.choice && n >= 1 && n <= step.choice.options.length) pickBranch(n - 1);
+		else return false;
+		e.preventDefault();
+		return true;
+	}
 </script>
 
 <svelte:window
 	onkeydown={(e) => {
+		if (playKey(e)) return;
 		if (e.key === 'Escape') {
 			unpin();
 			keyOpen = false;
@@ -1285,7 +1525,14 @@
 			</div>
 			{#if u.seq}
 				<section class="seq-section">
-					<h4>Sequence</h4>
+					<h4 class="seq-head">
+						Sequence
+						<button
+							class="play"
+							onclick={() => startPlay(view.field!.field)}
+							title="Walk the board step by step"><Play size={12} fill="currentColor" />Play</button
+						>
+					</h4>
 					<SequenceDiagram seq={u.seq} onpick={go} />
 				</section>
 			{/if}
@@ -1388,6 +1635,53 @@
 				</section>
 			{/each}
 		</aside>
+	{/if}
+	{#if run && step}
+		{#if playDraw?.d}
+			<svg class="play-lines" aria-hidden="true">
+				<path class="line {step.kind}" d={playDraw.d} />
+				<path class="head {step.kind}" d={playDraw.arrow} />
+			</svg>
+			<div
+				class="play-label {step.kind}"
+				style:left="{playDraw.label.x}px"
+				style:top="{playDraw.label.y}px"
+				style:--ax={SHIFT[playDraw.label.align]}
+			>
+				{#if step.method}<b style:color="var(--sdv-method-{step.method.toLowerCase()})"
+						>{step.method}</b
+					>{step.text.slice(step.method.length)}{:else}{step.text}{/if}
+			</div>
+			{#if playDraw.edge}
+				<div
+					class="play-edge"
+					style:left="{playDraw.edge.x}px"
+					style:top="{playDraw.edge.y}px"
+					style:--ax={SHIFT[playDraw.edge.align]}
+				>
+					{playDraw.edge.text}
+				</div>
+			{/if}
+		{:else if playDraw?.beside}
+			<div
+				class="play-beside {step.kind}"
+				style:left="{playDraw.beside.x}px"
+				style:top="{playDraw.beside.y}px"
+			>
+				{#if step.choice}<i>{step.choice.label}</i>{/if}{step.text}
+			</div>
+		{/if}
+		<PlayerBar
+			{run}
+			at={playAt}
+			names={(id) => el(id)?.name ?? id}
+			onjump={jump}
+			onpick={pickBranch}
+			onforward={forward}
+			oninto={stepInto}
+			onout={stepOut}
+			onstop={() => (view.play = null)}
+		/>
 	{/if}
 	{#if search.open}
 		<SearchPalette onpick={pick} onclose={() => (search.open = false)} />
@@ -1784,6 +2078,141 @@
 		align-items: center;
 		height: 18px;
 		color: var(--sdv-method-put);
+	}
+	.inspector .seq-head {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+	.inspector .play {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		padding: 1px 8px 1px 6px;
+		border: 1px solid var(--sdv-model-stroke);
+		background: var(--sdv-model-fill);
+		color: var(--sdv-model-text);
+		font: inherit;
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0;
+		cursor: pointer;
+	}
+	.inspector .play:hover {
+		border-color: var(--sdv-selection);
+		color: var(--sdv-selection);
+	}
+	.play-lines {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		z-index: 9;
+		pointer-events: none;
+		overflow: visible;
+	}
+	.play-lines .line {
+		fill: none;
+		stroke-width: 2.5;
+		stroke: var(--sdv-model-text);
+	}
+	.play-lines .head {
+		fill: var(--sdv-model-text);
+	}
+	.play-lines .line.call {
+		stroke: var(--sdv-link-call);
+		stroke-dasharray: 2 4;
+		stroke-linecap: round;
+	}
+	.play-lines .head.call {
+		fill: var(--sdv-link-call);
+	}
+	.play-lines .line.read {
+		stroke: var(--sdv-link-ref);
+	}
+	.play-lines .head.read {
+		fill: var(--sdv-link-ref);
+	}
+	.play-lines .line.write {
+		stroke: var(--sdv-link-write);
+	}
+	.play-lines .head.write {
+		fill: var(--sdv-link-write);
+	}
+	.play-lines .line.gets,
+	.play-lines .line.return,
+	.play-lines .line.fail {
+		stroke-dasharray: 6 4;
+	}
+	.play-lines .line.gets {
+		stroke: var(--sdv-text-muted);
+	}
+	.play-lines .head.gets {
+		fill: var(--sdv-text-muted);
+	}
+	.play-lines .line.fail {
+		stroke: var(--sdv-method-put);
+	}
+	.play-lines .head.fail {
+		fill: var(--sdv-method-put);
+	}
+	.play-label,
+	.play-edge,
+	.play-beside {
+		position: absolute;
+		z-index: 9;
+		pointer-events: none;
+		white-space: nowrap;
+		font-size: 12px;
+		padding: 2px 8px;
+		background: var(--sdv-canvas-bg);
+		border: 1px solid currentColor;
+		color: var(--sdv-model-text);
+	}
+	.play-label {
+		transform: translate(var(--ax), calc(-100% - 6px));
+	}
+	.play-label b {
+		margin-right: 0.3em;
+	}
+	.play-label.call {
+		color: var(--sdv-link-call);
+	}
+	.play-label.read {
+		color: var(--sdv-link-ref);
+	}
+	.play-label.write {
+		color: var(--sdv-link-write);
+	}
+	.play-label.gets {
+		color: var(--sdv-text-muted);
+	}
+	.play-label.fail {
+		color: var(--sdv-method-put);
+	}
+	.play-edge {
+		transform: translate(var(--ax), -50%);
+		color: var(--sdv-text-muted);
+		border-style: dashed;
+	}
+	.play-beside {
+		transform: translateY(-50%);
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.play-beside.choice {
+		border-color: var(--sdv-selection);
+	}
+	.play-beside.note {
+		font-style: italic;
+		border-color: var(--sdv-model-stroke);
+	}
+	.play-beside i {
+		font-style: normal;
+		font-size: 11px;
+		font-weight: 700;
+		color: var(--sdv-selection);
 	}
 	.defs {
 		position: absolute;

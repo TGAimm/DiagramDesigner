@@ -55,5 +55,13 @@ steps:                           # the sequence, top to bottom
   it touches, in first-use order; a model shows the store holding it. Calls are solid with
   their `gets` returned dashed; reads and writes go to the model; returns and fails go back to
   the caller; `if` and `each` draw alt and loop boxes. Click a name or message to go there.
+- **Play** beside the card's Sequence heading walks the board one step at a time: the card
+  closes, a player docks under the canvas, and each step moves the camera to both its ends
+  (no further in than 100%, no further out than where their rows are drawn; else to the
+  receiver) and draws it there as one labelled line. Nothing advances on its own: step
+  forward or back, pick a branch at an `if` or `each` (the guard is written beside the row),
+  step into a called unit with steps (or the unit handling a called api) and out again. The
+  track has a mark per step on the chosen path; hover one for its message, click or drag to
+  jump. Keys: ← →, 1 2 for branches, I / O, Home, Esc.
 - A field's inspector lists **Read by logic** and **Written by logic**, including units that
   name its whole model. An api's card lists **Handled by** and **Called by**.

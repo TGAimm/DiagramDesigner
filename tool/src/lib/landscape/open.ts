@@ -33,12 +33,17 @@ export function inView(b: LandscapeBox, cam: Camera) {
 	);
 }
 
-export function openBoxes(boxes: LandscapeBox[], cam: Camera): Set<string> {
-	const byId = new Map(boxes.map((b) => [b.id, b]));
-	// Smallest text among each box's children, in canvas px.
+/** Smallest text among each box's children, in canvas px. */
+function innerFonts(boxes: LandscapeBox[]) {
 	const inner = new Map<string, number>();
 	for (const b of boxes)
 		if (b.parentId) inner.set(b.parentId, Math.min(inner.get(b.parentId) ?? Infinity, faceFont(b)));
+	return inner;
+}
+
+export function openBoxes(boxes: LandscapeBox[], cam: Camera): Set<string> {
+	const byId = new Map(boxes.map((b) => [b.id, b]));
+	const inner = innerFonts(boxes);
 	const open = new Set<string>();
 	for (const b of boxes) {
 		if (!b.group || (inner.get(b.id) ?? 0) * cam.zoom < READABLE || !inView(b, cam)) continue;
@@ -47,6 +52,20 @@ export function openBoxes(boxes: LandscapeBox[], cam: Camera): Set<string> {
 			open.add(p.id);
 	}
 	return open;
+}
+
+/** The least zoom at which every box round `b` is open, so `b` itself is drawn. */
+export function zoomToShow(boxes: LandscapeBox[], b: LandscapeBox): number {
+	const byId = new Map(boxes.map((o) => [o.id, o]));
+	const inner = innerFonts(boxes);
+	let zoom = 0;
+	for (
+		let p = b.parentId ? byId.get(b.parentId) : undefined;
+		p;
+		p = p.parentId ? byId.get(p.parentId) : undefined
+	)
+		zoom = Math.max(zoom, READABLE / inner.get(p.id)!);
+	return zoom;
 }
 
 /**
