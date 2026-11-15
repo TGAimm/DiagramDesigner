@@ -68,6 +68,7 @@
 		typeText
 	} from '#lib/landscape/layout.ts';
 	import { RAIL } from '#lib/landscape/apis.ts';
+	import { settings } from '#lib/client/settings.svelte.ts';
 
 	let { id, data, width = 0, height = 0 }: NodeProps = $props();
 	const d = $derived(data as LandscapeNodeData);
@@ -79,7 +80,9 @@
 	// A card of over FOLD fields shows the first ones and a row to show all. Expanded, it keeps
 	// its laid-out size and draws over whatever is below it (see `.node.expanded`).
 	const count = $derived(d.fields?.length ?? 0);
-	const expanded = $derived(!!d.state.expanded[id]);
+	// Render everything never folds a card.
+	const all = $derived(settings.detail === 'all');
+	const expanded = $derived(all || !!d.state.expanded[id]);
 	const shown = $derived(d.fields?.slice(0, shownRows(count, expanded)) ?? []);
 	// A lit row hidden in the fold lights the toggle row instead.
 	const hiddenHot = $derived(
@@ -125,7 +128,7 @@
 	class:selected={d.state.selectedNodes.includes(id)}
 	class:peer-box={d.state.peerBoxes[id]}
 	class:api-box={apiParts}
-	class:expanded={d.table && expanded}
+	class:expanded={d.table && expanded && !all}
 	style:--fill="var(--sdv-{d.kind}-fill, var(--sdv-container-fill))"
 	style:--stroke="var(--sdv-{d.kind}-stroke, var(--sdv-container-stroke))"
 	style:--text="var(--sdv-{d.kind}-text, var(--sdv-container-text))"
@@ -250,7 +253,7 @@
 							{/each}
 						</div>
 					{/each}
-					{#if foldable(count)}
+					{#if foldable(count) && !all}
 						<button
 							class="cell fold"
 							class:hot={hiddenHot}

@@ -12,6 +12,7 @@
 	} from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
 	import { design } from '#lib/client/store.svelte.ts';
+	import { settings } from '#lib/client/settings.svelte.ts';
 	import { theme } from '#lib/client/theme.svelte.ts';
 	import type { ViewState } from '#lib/client/view-state.svelte.ts';
 	import {
@@ -67,7 +68,9 @@
 	// Set once the first fit has landed; before it the camera is a placeholder.
 	let ready = $state(false);
 
-	const boxes = $derived(layoutLandscape(design.model));
+	// Render everything: every box and rail open, every card unfolded, at any zoom.
+	const all = $derived(settings.detail === 'all');
+	const boxes = $derived(layoutLandscape(design.model, !all));
 	const rels = $derived(relationsOf(design.model));
 	const boxById = $derived(new Map(boxes.map((b) => [b.id, b])));
 	// The row being looked at: under the pointer, else clicked. Its links are drawn wherever
@@ -81,7 +84,7 @@
 	const rowY = (b: LandscapeBox, i: number) =>
 		b.logic
 			? fieldRowY(i, b.logic.rows.length, true)
-			: fieldRowY(i, b.fields?.length ?? 0, !!view.expanded[b.id]);
+			: fieldRowY(i, b.fields?.length ?? 0, all || !!view.expanded[b.id]);
 	/** The row of a field or logic unit in a card, or -1. */
 	const rowOf = (b: LandscapeBox, id: string | undefined) =>
 		b.logic
@@ -104,9 +107,11 @@
 		const { x, y, zoom } = viewport.current;
 		if (!ready) return;
 		const was = untrack(() => open);
-		const next = openBoxes(boxes, { x, y, zoom, width: cw, height: ch });
+		const next = all
+			? new Set(boxes.filter((b) => b.group).map((b) => b.id))
+			: openBoxes(boxes, { x, y, zoom, width: cw, height: ch });
 		const listed = new Set(
-			[...railsFor(next)].filter(([, r]) => railOpen(r, zoom)).map(([id]) => id)
+			[...railsFor(next)].filter(([, r]) => all || railOpen(r, zoom)).map(([id]) => id)
 		);
 		if (
 			!sameSet(
@@ -706,7 +711,7 @@
 		const zoom = Math.min(Math.max(viewport.current.zoom, 0.8 / fill(area)), 0.92 / fill(t));
 		const row = rowOf(t, target.field);
 		// A row hidden in a folded card is shown by expanding the card.
-		if (t.fields && row >= shownRows(t.fields.length, !!view.expanded[t.id]))
+		if (!all && t.fields && row >= shownRows(t.fields.length, !!view.expanded[t.id]))
 			view.expanded = { ...view.expanded, [t.id]: true };
 		// Keep [start, start + size] on a canvas side of `side` pixels, if it fits.
 		const keep = (c: number, start: number, size: number, side: number) => {

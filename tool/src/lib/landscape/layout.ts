@@ -376,7 +376,8 @@ function tableLayout(
 	view: ModelView,
 	owner: string | undefined,
 	label: (id: string) => string | undefined,
-	rels: Relations
+	rels: Relations,
+	fold: boolean
 ): { size: Size; cols: TableColumn[] } {
 	const indexes = view === 'table' ? (def.indexes ?? []) : [];
 	const cols = fieldColumns(fields, view, label, rels);
@@ -389,7 +390,9 @@ function tableLayout(
 	);
 	const rows = (n: number) => (n ? n + 1 : 0);
 	// Laid out folded: an expanded card draws over what is below it rather than moving it.
-	const fieldRows = rows(shownRows(fields.length, false)) + (foldable(fields.length) ? 1 : 0);
+	const fieldRows = fold
+		? rows(shownRows(fields.length, false)) + (foldable(fields.length) ? 1 : 0)
+		: rows(fields.length);
 	const height = TABLE.head + (fieldRows + rows(indexes.length)) * TABLE.rowHeight;
 	return { size: { width: Math.ceil(width) + 2, height: height + 2 }, cols };
 }
@@ -523,8 +526,9 @@ function masonry(sizes: Size[], cols: number, gap: number): Block {
  *
  * A model is a class card in its owner, inside a boundary with the models only it holds, and
  * a table card in the entity storing it. A model stored where it is owned is one table card.
+ * With `fold` off every card is sized to show all its fields.
  */
-export function layoutLandscape(model: Model): LandscapeBox[] {
+export function layoutLandscape(model: Model, fold = true): LandscapeBox[] {
 	const out: LandscapeBox[] = [];
 	const sizes = new Map<string, Size>();
 	const cards = new Map<string, { cols: TableColumn[]; fields: ModelField[] }>();
@@ -605,7 +609,8 @@ export function layoutLandscape(model: Model): LandscapeBox[] {
 				item.view,
 				owner,
 				(id) => refLabel(model, id),
-				rels
+				rels,
+				fold
 			);
 			cards.set(item.id, { cols: t.cols, fields });
 			size = t.size;

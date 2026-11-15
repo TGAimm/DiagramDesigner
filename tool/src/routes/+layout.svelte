@@ -6,10 +6,12 @@
 	import { theme } from '#lib/client/theme.svelte.ts';
 	import { themeCss } from '#lib/theme/tokens.ts';
 	import DiagnosticsPanel from '#lib/components/DiagnosticsPanel.svelte';
+	import SettingsPanel from '#lib/components/SettingsPanel.svelte';
 	import type { ChangedEvent } from '#lib/server/vite-plugin.ts';
 
 	let { children } = $props();
 	let showDiagnostics = $state(false);
+	let showSettings = $state(false);
 
 	const errors = $derived(design.diagnostics.filter((d) => d.severity === 'error').length);
 	const warnings = $derived(design.diagnostics.length - errors);
@@ -51,7 +53,32 @@
 		>
 			{theme.current === 'dark' ? '☀' : '☾'}
 		</button>
+		<button
+			class="icon"
+			aria-expanded={showSettings}
+			aria-pressed={showSettings}
+			onclick={() => (showSettings = !showSettings)}
+			title="Settings"
+			aria-label="Settings"
+			data-testid="settings-toggle"
+		>
+			<svg
+				width="16"
+				height="16"
+				viewBox="0 0 16 16"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.4"
+				aria-hidden="true"
+				><circle cx="8" cy="8" r="2.2" /><path
+					d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"
+				/></svg
+			>
+		</button>
 	</header>
+	{#if showSettings}
+		<SettingsPanel onclose={() => (showSettings = false)} />
+	{/if}
 	<main>
 		{#if design.loadError}
 			<p class="load-error">Could not load the design: {design.loadError}</p>
@@ -68,6 +95,7 @@
 
 <style>
 	.app {
+		position: relative;
 		display: flex;
 		flex-direction: column;
 		height: 100vh;

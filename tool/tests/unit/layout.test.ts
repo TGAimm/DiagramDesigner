@@ -309,14 +309,15 @@ describe('landscape layout', () => {
 });
 
 describe('folded model cards', () => {
-	const card = (n: number) => {
+	const card = (n: number, fold = true) => {
 		const fields = Array.from({ length: n }, (_, i) => `  - { id: f${i}, name: f${i}, type: int }`);
 		return layoutLandscape(
 			loadStrings({
 				's/s.system.yaml': 'id: s\n',
 				's/m.module.yaml': 'id: m\nparent: s\n',
 				's/a.model.yaml': ['id: a', 'ownedBy: m', 'fields:', ...fields].join('\n')
-			}).model
+			}).model,
+			fold
 		).find((b) => b.id === 'a')!;
 	};
 
@@ -325,6 +326,11 @@ describe('folded model cards', () => {
 		expect(card(FOLD + 1).height).toBe(card(FOLD).height + TABLE.rowHeight);
 		expect(card(80).height).toBe(card(FOLD + 1).height);
 		expect(card(80).fields).toHaveLength(80);
+	});
+
+	it('lays out every row, with no toggle row, when folding is off', () => {
+		expect(card(80, false).height).toBe(card(FOLD, false).height + (80 - FOLD) * TABLE.rowHeight);
+		expect(card(FOLD, false).height).toBe(card(FOLD).height);
 	});
 
 	it('ends the lines of hidden rows on the toggle row until the card is expanded', () => {
