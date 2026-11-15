@@ -40,7 +40,8 @@ Technical / deployment architecture
 
 ## Status
 
-- **Working:** one canvas over the whole model. Layout is computed once; zooming only moves
+- **Working:** one canvas over the whole model. Layout is computed once, each level by ELK's
+  layered algorithm along the connections between its boxes; zooming only moves
   the camera and fades detail in and out (systems › modules › models). Models render as
   classes where they are owned (grouped with the models they alone hold) and as stored
   tables where they are stored, with keys, foreign-key and composition lines, and field

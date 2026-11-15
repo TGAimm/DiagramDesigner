@@ -46,11 +46,7 @@ describe('landscape layout', () => {
 			if (b.parentId) expect(index.get(b.parentId)!).toBeLessThan(index.get(b.id)!);
 	});
 
-	it('puts systems in one row in file order and nests children inside their parent', () => {
-		expect([box('erp').absY, box('erp').absX < box('webshop').absX]).toEqual([
-			box('webshop').absY,
-			true
-		]);
+	it('nests children inside their parent, siblings apart', () => {
 		expect(overlap(box('erp'), box('webshop'))).toBe(false);
 		for (const b of boxes.filter((b) => b.parentId)) {
 			const parent = box(b.parentId!);
@@ -227,13 +223,13 @@ describe('landscape layout', () => {
 		].join('\n')
 	}).model;
 
-	it('packs a level of tables as a masonry, each table at its own size', () => {
+	it('lays out a level along its connections, what is depended on left, each card at its own size', () => {
 		const boxes = layoutLandscape(tables);
 		const box = (id: string) => boxes.find((b) => b.id === id)!;
-		// Columns: [a, c, d] and [b]; c and d fill in under the short a.
-		expect(box('a').height).toBeLessThan(box('b').height);
-		expect([box('c').absX, box('d').absX]).toEqual([box('a').absX, box('a').absX]);
-		expect(box('d').absY).toBeGreaterThan(box('c').absY);
+		// b and d refer to a and hold c.
+		for (const from of ['b', 'd'])
+			for (const to of ['a', 'c'])
+				expect(box(to).absX + box(to).width).toBeLessThan(box(from).absX);
 		expect(box('a').width).not.toBe(box('c').width);
 		const cards = boxes.filter((b) => b.table);
 		for (const x of cards) for (const y of cards) if (x !== y) expect(overlap(x, y)).toBe(false);

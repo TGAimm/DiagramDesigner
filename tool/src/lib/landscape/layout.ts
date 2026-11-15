@@ -2,6 +2,8 @@ import { LOGIC_KEYS, type Model } from '../model/model';
 import type { Element, ModelField, ModelIndex } from '../model/schema';
 import { GLYPH, textWidth } from '../render/text';
 import { railGroups, railOf } from './apis';
+import { edgesOf } from './connections';
+import { elkLayout } from './elk';
 
 /** A model is drawn as a class where it is owned, as a table where it is stored. */
 export type ModelView = 'class' | 'table';
@@ -457,47 +459,52 @@ export const logicNote = (n: number) => `${n} logic unit${n === 1 ? '' : 's'}`;
 const leafWidth = (name: string) =>
 	Math.max(LEAF.minWidth, textWidth(name, LEAF.font, true) + GLYPH * LEAF.font + 2 * LEAF.padX);
 
-/** Where a box goes within a block of siblings, relative to the block. */
-interface Slot {
-	x: number;
-	y: number;
-	width: number;
-	height: number;
-}
-
+/** A block of siblings: where each goes, relative to the block, by box id. */
 interface Block extends Size {
-	slots: Slot[];
+	at: Map<string, { x: number; y: number }>;
 }
 
 /**
- * Masonry: each box goes to the shortest column, in order, and keeps its own size. A column
- * is as wide as its widest box; boxes are left-aligned in it.
+ * Siblings laid out by ELK's layered algorithm along their connections: what is depended on
+ * left of what depends on it, crossings few, unconnected groups packed side by side. File
+ * order breaks ties. Each box keeps its own size, plus the room right of it for its rail.
  */
-function masonry(sizes: Size[], cols: number, gap: number): Block {
-	const columns: number[][] = Array.from({ length: cols }, () => []);
-	const heights: number[] = Array(cols).fill(-gap);
-	sizes.forEach((s, i) => {
-		const c = heights.indexOf(Math.min(...heights));
-		columns[c].push(i);
-		heights[c] += gap + s.height;
+function layered(
+	items: { id: string; size: Size }[],
+	links: [string, string][],
+	gap: number
+): Block {
+	const g = elkLayout({
+		id: 'root',
+		layoutOptions: {
+			'elk.algorithm': 'layered',
+			'elk.direction': 'RIGHT',
+			'elk.padding': '[top=0,left=0,bottom=0,right=0]',
+			'elk.spacing.nodeNode': String(gap),
+			'elk.spacing.componentComponent': String(gap),
+			'elk.layered.spacing.nodeNodeBetweenLayers': String(gap),
+			// Lines are drawn by the canvas, so ELK keeps no room between layers for its own.
+			'elk.edgeRouting': 'POLYLINE',
+			'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
+			'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX'
+		},
+		children: items.map(({ id, size }) => ({
+			id,
+			width: size.width + (size.right ?? 0),
+			height: size.height
+		})),
+		edges: links.map(([s, t], i) => ({ id: `e${i}`, sources: [s], targets: [t] }))
 	});
-	const slots: Slot[] = [];
-	let x = 0;
-	for (const column of columns) {
-		const width = Math.max(...column.map((i) => sizes[i].width + (sizes[i].right ?? 0)));
-		let y = 0;
-		for (const i of column) {
-			slots[i] = { x, y, ...sizes[i] };
-			y += sizes[i].height + gap;
-		}
-		x += width + gap;
-	}
-	return { width: x - gap, height: Math.max(...heights), slots };
+	return {
+		width: g.width!,
+		height: g.height!,
+		at: new Map(g.children!.map((c) => [c.id, { x: c.x!, y: c.y! }]))
+	};
 }
 
 /**
- * Lays out the whole element tree: top-level elements in one row (file order, so upstream
- * systems come first), children in a near-square masonry. Every box is fitted to its content.
+ * Lays out the whole element tree, each level by `layered` along the connections between its
+ * boxes (see `restLines`), so upstream systems come first. Every box is fitted to its content.
  * Parents precede their children in the result, as Svelte Flow requires.
  *
  * A model is a class card in its owner, inside a boundary with the models only it holds, and
@@ -563,17 +570,83 @@ export function layoutLandscape(model: Model, fold = true): LandscapeBox[] {
 		apis.length ? railOf(model, railGroups(model, el, apis), height).width : 0;
 	/** Half of the own rail, which sits inside the box, so children keep clear of it. */
 	const inner = new Map<string, number>();
-	const colsFor = (n: number) => Math.ceil(Math.sqrt(n));
-	const arrange = (items: Item[], cols: number, gap: number) =>
-		masonry(items.map(measure), cols, gap);
+
+	// The box tree, and the boxes each leaf (model, field, unit, api, api field) is drawn in.
+	const kidsBy = new Map<string, Item[]>();
+	const parentOf = new Map<string, string>();
+	const homes = new Map<string, Item[]>();
+	const leavesOf = (item: Item): string[] => {
+		const apis = apisOf(item);
+		return [
+			...(item.view
+				? [item.el, ...viewFields(model, holders, item.el, item.view).map((f) => f.id)]
+				: []),
+			...(item.logic ? model.elements.get(item.el)!.childIds.filter(isUnit) : []),
+			...apis,
+			...[...model.apiFields].filter(([, f]) => apis.includes(f.apiId)).map(([id]) => id)
+		];
+	};
+	const walk = (item: Item, parent?: string) => {
+		const kids = kidsOf(item);
+		kidsBy.set(item.id, kids);
+		if (parent) parentOf.set(item.id, parent);
+		for (const leaf of leavesOf(item)) homes.set(leaf, [...(homes.get(leaf) ?? []), item]);
+		for (const k of kids) walk(k, item.id);
+	};
+	const roots: Item[] = model.rootElementIds.map((id) => ({ id, el: id, ref: false }));
+	for (const r of roots) walk(r);
+
+	// Each connection lifted to the two siblings holding its ends, as `restLines` draws it at
+	// rest, by the box they share ('' for the top level). A leaf drawn in several boxes links
+	// to a sibling where it can, else to where it is owned (see `linkTarget`).
+	const links = new Map<string, Map<string, [string, string]>>();
+	const chain = (id: string) => {
+		const out = [id];
+		for (let p = parentOf.get(id); p; p = parentOf.get(p)) out.push(p);
+		return out;
+	};
+	const nearest = (a: Item, to: string) =>
+		(homes.get(to) ?? homes.get(modelOf(model, to)) ?? [])
+			.map((c) => ({ c, score: (parentOf.get(c.id) === parentOf.get(a.id) ? 0 : 2) + +c.ref }))
+			.sort((x, y) => x.score - y.score)[0]?.c;
+	for (const e of edgesOf(model))
+		for (const a of homes.get(e.from) ?? []) {
+			const b = nearest(a, e.to);
+			if (!b || b === a) continue;
+			const ca = chain(a.id);
+			const cb = chain(b.id);
+			const shared = ca.find((id) => cb.includes(id));
+			if (shared === a.id || shared === b.id) continue;
+			const s = shared ? ca[ca.indexOf(shared) - 1] : ca.at(-1)!;
+			const t = shared ? cb[cb.indexOf(shared) - 1] : cb.at(-1)!;
+			const level = links.get(shared ?? '') ?? new Map();
+			links.set(shared ?? '', level);
+			// What is depended on goes first, so the link runs from the end to the start.
+			level.set(`${t}>${s}`, [t, s]);
+		}
+
+	const blocks = new Map<string, Block>();
+	/** The children of box `parent` ('' for the top level), laid out once. */
+	const arrange = (parent: string, items: Item[], gap: number) => {
+		let b = blocks.get(parent);
+		if (!b) {
+			b = layered(
+				items.map((item) => ({ id: item.id, size: measure(item) })),
+				[...(links.get(parent)?.values() ?? [])],
+				gap
+			);
+			blocks.set(parent, b);
+		}
+		return b;
+	};
 
 	function measure(item: Item): Size {
 		let size = sizes.get(item.id);
 		if (size) return size;
-		const kids = kidsOf(item);
+		const kids = kidsBy.get(item.id)!;
 		const info = model.elements.get(item.el);
 		if (kids.length) {
-			const b = arrange(kids, colsFor(kids.length), GAP);
+			const b = arrange(item.id, kids, GAP);
 			size = { width: b.width + 2 * PAD, height: b.height + HEADER + PAD };
 		} else if (info && item.view) {
 			const owner = item.ref ? model.elements.get(info.parentId ?? '')?.name : undefined;
@@ -611,19 +684,18 @@ export function layoutLandscape(model: Model, fold = true): LandscapeBox[] {
 
 	function place(
 		items: Item[],
-		cols: number,
 		gap: number,
 		area: Size & { x: number; y: number },
 		parent?: LandscapeBox
 	) {
-		const block = arrange(items, cols, gap);
+		const block = arrange(parent?.id ?? '', items, gap);
 		const x0 = area.x + (area.width - block.width) / 2;
 		const y0 = area.y + (area.height - block.height) / 2;
-		items.forEach((item, i) => {
-			const slot = block.slots[i];
+		for (const item of items) {
+			const slot = { ...block.at.get(item.id)!, ...sizes.get(item.id)! };
 			const absX = x0 + slot.x;
 			const absY = y0 + slot.y;
-			const kids = kidsOf(item);
+			const kids = kidsBy.get(item.id)!;
 			const box: LandscapeBox = {
 				id: item.id,
 				elementId: item.el,
@@ -647,7 +719,6 @@ export function layoutLandscape(model: Model, fold = true): LandscapeBox[] {
 			if (kids.length)
 				place(
 					kids,
-					colsFor(kids.length),
 					GAP,
 					{
 						x: absX + PAD,
@@ -657,14 +728,10 @@ export function layoutLandscape(model: Model, fold = true): LandscapeBox[] {
 					},
 					box
 				);
-		});
+		}
 	}
 
-	const roots = model.rootElementIds.map((id) => ({ id, el: id, ref: false }));
-	if (roots.length) {
-		const b = arrange(roots, roots.length, SYSTEM_GAP);
-		place(roots, roots.length, SYSTEM_GAP, { x: 0, y: 0, ...b });
-	}
+	if (roots.length) place(roots, SYSTEM_GAP, { x: 0, y: 0, ...arrange('', roots, SYSTEM_GAP) });
 	return out;
 }
 
