@@ -53,6 +53,7 @@
 	import {
 		fieldRowY,
 		FOLD,
+		logicRowY,
 		foldable,
 		groupFont,
 		HEADER,
@@ -339,16 +340,6 @@
 				style:font-size="{TABLE.row}px"
 				style:grid-template-columns={template(cols)}
 			>
-				{#each cols as c, ci (c.key)}
-					<div
-						class="cell th"
-						class:first={ci === 0}
-						style:font-size="{TABLE.label}px"
-						title={c.title}
-					>
-						{c.label}
-					</div>
-				{/each}
 				{#each rows as u (u.id)}
 					<!-- svelte-ignore a11y_click_events_have_key_events -->
 					<div
@@ -366,19 +357,8 @@
 							d.onfield?.(u.id, 'click');
 						}}
 					>
-						{#each cols as c, ci (c.key)}
-							<div class="cell" class:first={ci === 0}>
-								{#if c.key === 'name'}<i class="fn">ƒ</i>{u.name}
-								{:else}
-									{#each u[c.key as 'handles' | 'reads' | 'writes' | 'calls'] as b, bi (bi)}<span
-											class="badge {c.key}"
-											style:font-size="{TABLE.badge}px"
-											style:color={b.method ? methodColor(b.method) : undefined}
-											title={b.title}>{b.text}</span
-										>{/each}
-								{/if}
-							</div>
-						{/each}
+						<div class="cell first"><i class="fn">ƒ</i>{u.name}</div>
+						<div class="cell sig" style:font-size="{TABLE.signature}px">{u.signature}</div>
 					</div>
 				{/each}
 			</div>
@@ -386,7 +366,7 @@
 		<Handle type="target" id="head:l" position={Position.Left} style="top:{TABLE.head / 2}px" />
 		<Handle type="target" id="head:r" position={Position.Right} style="top:{TABLE.head / 2}px" />
 		{#each rows as u, i (u.id)}
-			{@const y = fieldRowY(i, rows.length, true)}
+			{@const y = logicRowY(i)}
 			<Handle type="source" id="out:{u.id}:l" position={Position.Left} style="top:{y}px" />
 			<Handle type="source" id="out:{u.id}:r" position={Position.Right} style="top:{y}px" />
 			<Handle type="target" id="in:{u.id}:l" position={Position.Left} style="top:{y}px" />
@@ -687,7 +667,7 @@
 	:global(.svelte-flow__node:has(> .node.expanded)) {
 		z-index: 999 !important;
 	}
-	/* A module's logic card: a tinted name bar, then a unit per row with what it touches. */
+	/* A module's logic card: a tinted name bar, then a unit per row with its signature. */
 	.face.table.logic .thead {
 		background: var(--sdv-logic-head);
 	}
@@ -697,20 +677,10 @@
 		font-family: Georgia, serif;
 		color: var(--sdv-link-call);
 	}
-	.badge.handles {
-		background: var(--sdv-model-header);
-	}
-	.badge.reads {
-		background: color-mix(in srgb, var(--sdv-link-ref) 14%, transparent);
-		color: var(--sdv-link-ref);
-	}
-	.badge.writes {
-		background: color-mix(in srgb, var(--sdv-link-write) 16%, transparent);
-		color: var(--sdv-link-write);
-	}
-	.badge.calls {
-		background: color-mix(in srgb, var(--sdv-link-call) 14%, transparent);
-		color: var(--sdv-link-call);
+	/* A unit's signature: names in, outputs out; muted, so the unit's name leads. */
+	.cell.sig {
+		color: var(--sdv-text-muted);
+		white-space: nowrap;
 	}
 	.list {
 		display: grid;

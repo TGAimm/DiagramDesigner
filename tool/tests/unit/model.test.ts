@@ -130,7 +130,7 @@ describe('entity checks', () => {
 			's/s.system.yaml': 'id: s\n',
 			's/m.module.yaml': 'id: m\nparent: s\nownedBy: s\n',
 			's/a.model.yaml': 'id: a\nparent: s\n',
-			's/u.logic-unit.yaml': 'id: u\nparent: m\n',
+			's/u.logic-unit.yaml': 'id: u\nparent: m\ninputs: []\noutputs: []\n',
 			's/b.model.yaml': 'id: b\nownedBy: u\n',
 			's/c.model.yaml': 'id: c\nownedBy: [s, m]\n'
 		});
@@ -170,7 +170,7 @@ describe('entity checks', () => {
 			's/s.system.yaml': 'id: s\n',
 			's/m.module.yaml': 'id: m\nparent: s\nstoredIn: s\n',
 			's/db.module.yaml': 'id: db\nparent: s\nmodels: [a]\n',
-			's/u.logic-unit.yaml': 'id: u\nparent: m\n',
+			's/u.logic-unit.yaml': 'id: u\nparent: m\ninputs: []\noutputs: []\n',
 			's/a.model.yaml': 'id: a\nownedBy: m\nstoredIn: db\n',
 			's/b.model.yaml': 'id: b\nownedBy: db\nstoredIn: db\n',
 			's/c.model.yaml': 'id: c\nownedBy: m\nstoredIn: u\n',
@@ -381,7 +381,7 @@ describe('entity checks', () => {
 		const { model, diagnostics } = loadStrings({
 			's/s.system.yaml': 'id: s\n',
 			's/m.module.yaml': 'id: m\nparent: s\n',
-			's/x.logic-unit.yaml': 'id: x\nparent: s\n',
+			's/x.logic-unit.yaml': 'id: x\nparent: s\ninputs: []\noutputs: []\n',
 			's/g.module.yaml': 'id: g\nparent: ghost\n',
 			's/p.module.yaml': 'id: p\nparent: q\n',
 			's/q.module.yaml': 'id: q\nparent: p\n'
@@ -406,26 +406,99 @@ describe('entity checks', () => {
 });
 
 describe('logic units', () => {
-	it('checks what handles, reads, writes and calls name', () => {
-		const { model } = loadStrings({
+	const unit = (...lines: string[]) =>
+		loadStrings({
 			's/s.system.yaml': 'id: s\n',
-			's/m.module.yaml': 'id: m\nparent: s\nreads: [m]\n',
+			's/m.module.yaml': 'id: m\nparent: s\n',
 			's/c.model.yaml': 'id: c\nownedBy: m\nfields: [{ id: c-n, name: n, type: int }]\n',
-			's/u.logic-unit.yaml': [
-				'id: u',
-				'parent: m',
-				'handles: [c]',
-				'reads: [c, c-n]',
-				'writes: [nope]',
-				'calls: [m]'
-			].join('\n')
-		});
-		expect(model.diagnostics.map((d) => [d.severity, d.code, d.message])).toEqual([
-			['error', 'logic-only', 'only logic units have reads'],
-			['error', 'logic-target', 'handles names model "c"; allowed: api'],
-			['warning', 'logic-whole-model', 'reads already names the whole model "c"'],
-			['error', 'dangling-ref', 'writes names "nope", which is not an entity or field'],
-			['error', 'logic-target', 'calls names module "m"; allowed: logic-unit, api']
+			's/a.api.yaml': 'id: a\nparent: m\nmethod: GET\npath: /a\n',
+			's/v.logic-unit.yaml': 'id: v\nparent: m\ninputs: []\noutputs: []\n',
+			's/u.logic-unit.yaml': ['id: u', 'parent: m', ...lines].join('\n')
+		}).model;
+	const report = (model: ReturnType<typeof unit>) =>
+		model.diagnostics.map((d) => [d.severity, d.code, d.message]);
+
+	it('needs inputs and outputs, written like api fields', () => {
+		expect(report(unit('inputs: [{ id: i1, name: x }, { id: i2, name: x, type: int }]'))).toEqual([
+			['error', 'field-type', 'input "x" needs exactly one of type and model'],
+			['error', 'duplicate-field', 'inputs has "x" twice'],
+			['error', 'logic-signature', 'logic unit "u" needs outputs; use [] for none']
 		]);
+		expect(report(unit('inputs: []', 'outputs: [{ id: o1, name: y, model: a }]'))).toEqual([
+			['error', 'not-a-model', 'output "y" is "a", which is not a model']
+		]);
+	});
+
+	it('keeps signature keys and steps to logic units', () => {
+		const { diagnostics } = loadStrings({
+			's/s.system.yaml': 'id: s\n',
+			's/m.module.yaml': 'id: m\nparent: s\nhandles: []\nsteps: []\n'
+		});
+		expect(diagnostics.map((d) => d.message)).toEqual([
+			'only logic units have handles',
+			'only logic units have steps'
+		]);
+	});
+
+	it('checks what handles and steps name', () => {
+		const model = unit(
+			'handles: [c]',
+			'inputs: []',
+			'outputs: []',
+			'steps:',
+			'  - { read: c-n }',
+			'  - { write: nope }',
+			'  - { call: m }',
+			'  - { call: v, write: c }',
+			'  - { note: tidy, gets: x }',
+			'  - { each: line, then: [{ note: x }] }',
+			'  - {}'
+		);
+		expect(report(model)).toEqual([
+			['error', 'logic-target', 'handles names model "c"; allowed: api'],
+			['error', 'dangling-ref', 'write names "nope", which is not an entity or field'],
+			['error', 'logic-target', 'call names module "m"; allowed: logic-unit, api'],
+			['error', 'logic-step', 'a step does one thing; this one has call and write'],
+			['error', 'logic-step', 'gets goes with call or read'],
+			['error', 'logic-step', 'then goes with if'],
+			['error', 'logic-step', 'empty step; give call, read, write, if, each, return, fail or note']
+		]);
+	});
+
+	it('checks returns and fails against the signature', () => {
+		const model = unit(
+			'inputs: []',
+			'outputs: [{ id: o1, name: done, type: bool }, { id: o2, name: spare, type: int }]',
+			'fails: [{ name: broke }, { name: never }]',
+			'steps:',
+			'  - if: bad',
+			'    then: [{ fail: broke }, { fail: other }]',
+			'    else: [{ return: done }, { return: what }]'
+		);
+		expect(report(model)).toEqual([
+			['error', 'logic-fail', 'fails "other", which is not in fails'],
+			['error', 'logic-return', 'returns "what", which is not an output'],
+			['warning', 'logic-unused', 'output "spare" is never returned'],
+			['warning', 'logic-unused', 'fail "never" is never raised']
+		]);
+	});
+
+	it('derives what a unit reads, writes and calls from its steps, nested ones too', () => {
+		const model = unit(
+			'handles: [a]',
+			'inputs: []',
+			'outputs: []',
+			'steps:',
+			'  - { call: v }',
+			'  - each: x',
+			'    do: [{ read: c }, { write: c-n }, { call: a }, { call: v }]'
+		);
+		expect(model.diagnostics).toEqual([]);
+		expect(model.elements.get('u')!.logic).toEqual({
+			handles: ['a'],
+			reads: ['c'],
+			writes: ['c-n'],
+			calls: ['v', 'a']
+		});
 	});
 });

@@ -38,9 +38,10 @@ export interface Element {
 	request?: ApiBody;
 	responses?: ApiResponse[];
 	handles?: string[];
-	reads?: string[];
-	writes?: string[];
-	calls?: string[];
+	inputs?: LogicField[];
+	outputs?: LogicField[];
+	fails?: LogicFail[];
+	steps?: LogicStep[];
 }
 
 /** Kinds an entity file can have; the file name `<name>.<kind>.yaml` gives it. */
@@ -169,6 +170,69 @@ export const ApiResponse = z
 	.describe('One possible response; no model or fields: no body');
 export type ApiResponse = z.infer<typeof ApiResponse>;
 
+/** An input or output of a logic unit: the keys of an api's own-shape field, without lineage. */
+export const LogicField = z
+	.strictObject({
+		id: Id.describe('Unique across the whole design, like model field ids'),
+		name: z.string(),
+		type: z.string().optional().describe('Primitive type; give either type or model'),
+		model: Id.optional().describe('Id of a model it is'),
+		many: z.boolean().optional().describe('A list of type or model'),
+		required: z.boolean().optional(),
+		nullable: z.boolean().optional(),
+		description: Text.optional()
+	})
+	.describe('Input or output of a logic unit');
+export type LogicField = z.infer<typeof LogicField>;
+
+export const LogicFail = z
+	.strictObject({ name: z.string(), description: Text.optional() })
+	.describe('A way a logic unit can fail');
+export type LogicFail = z.infer<typeof LogicFail>;
+
+/**
+ * One step of a logic unit's sequence. Each step is one of call, read, write, if, each,
+ * return or fail; a step with only a note is work the unit does itself.
+ */
+export interface LogicStep {
+	call?: string;
+	read?: string;
+	write?: string;
+	with?: string;
+	gets?: string;
+	if?: string;
+	then?: LogicStep[];
+	else?: LogicStep[];
+	each?: string;
+	do?: LogicStep[];
+	return?: string;
+	fail?: string;
+	note?: string;
+}
+export const LogicStep: z.ZodType<LogicStep> = z
+	.strictObject({
+		call: Id.optional().describe('Id of the logic unit or api it calls'),
+		read: Id.optional().describe('Id of the model, or single model field, it reads'),
+		write: Id.optional().describe('Id of the model, or single model field, it writes'),
+		with: Text.optional().describe('With call or read: what it passes, free text'),
+		gets: Text.optional().describe('With call or read: what it gets back, free text'),
+		if: Text.optional().describe('A condition; then and else hold the steps of each branch'),
+		get then() {
+			return z.array(LogicStep).optional();
+		},
+		get else() {
+			return z.array(LogicStep).optional();
+		},
+		each: Text.optional().describe('What it loops over; do holds the steps repeated'),
+		get do() {
+			return z.array(LogicStep).optional();
+		},
+		return: Text.optional().describe('Name of the output returned'),
+		fail: Text.optional().describe('Name of the fail raised'),
+		note: Text.optional().describe('Free text; alone, work the unit does itself')
+	})
+	.describe('One step of a logic unit, in order');
+
 /**
  * One entity per file, named `<name>.<kind>.yaml`. The id is generated once and never
  * edited, so renaming or moving the file changes nothing. Systems sit in their own folder
@@ -199,18 +263,19 @@ export const EntityFile = z
 			.array(Id)
 			.optional()
 			.describe('Logic units only: ids of the apis whose requests it handles'),
-		reads: z
-			.array(Id)
+		inputs: z
+			.array(LogicField)
 			.optional()
-			.describe('Logic units only: ids of the models, or single model fields, it reads'),
-		writes: z
-			.array(Id)
+			.describe('Logic units only, required: what it takes; [] for nothing'),
+		outputs: z
+			.array(LogicField)
 			.optional()
-			.describe('Logic units only: ids of the models, or single model fields, it writes'),
-		calls: z
-			.array(Id)
+			.describe('Logic units only, required: what it returns; [] for nothing'),
+		fails: z.array(LogicFail).optional().describe('Logic units only: the ways it can fail'),
+		steps: z
+			.array(LogicStep)
 			.optional()
-			.describe('Logic units only: ids of the logic units or apis it calls'),
+			.describe('Logic units only: its sequence; what it reads, writes and calls comes from it'),
 		name: Text.optional().describe('Display name; defaults to the file name'),
 		tags: z.array(z.string()).optional(),
 		links: z.array(DocLink).optional(),

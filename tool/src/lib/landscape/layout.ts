@@ -77,6 +77,8 @@ export const TABLE = {
 	label: 11,
 	row: 13,
 	badge: 11,
+	/** A logic unit's signature, after its name. */
+	signature: 12,
 	rowHeight: 26,
 	/** Name bar above the tables. */
 	head: 48,
@@ -89,7 +91,7 @@ export const TABLE = {
 };
 
 export type FieldColumn = 'name' | 'type' | 'required' | 'nullable' | 'constraints' | 'links';
-export type LogicColumn = 'name' | 'handles' | 'reads' | 'writes' | 'calls';
+export type LogicColumn = 'name' | 'signature';
 
 /**
  * Marks in a row's link strip: a foreign key (`ref`), lineage (`from`), and how many fields
@@ -151,8 +153,8 @@ export function relationsOf(model: Model): Relations {
 		}
 	}
 	for (const [id, info] of model.elements)
-		for (const kind of info.def.kind === 'logic-unit' ? LOGIC_KEYS : [])
-			for (const to of info.def[kind] ?? [])
+		for (const kind of info.logic ? LOGIC_KEYS : [])
+			for (const to of info.logic![kind])
 				if (model.fields.has(to) || model.elements.has(to)) {
 					const l = { kind, field: id, to };
 					add(rels.out, id, l);
@@ -278,6 +280,9 @@ export const shownRows = (count: number, expanded: boolean) =>
 export const fieldRowY = (i: number, count: number, expanded: boolean) =>
 	1 + TABLE.head + (Math.min(i, shownRows(count, expanded)) + 1.5) * TABLE.rowHeight;
 
+/** Vertical centre of unit row `i` of a logic card, which has no header row. */
+export const logicRowY = (i: number) => 1 + TABLE.head + (i + 0.5) * TABLE.rowHeight;
+
 /** Badges have 6px side padding (see LandscapeNode). */
 const badgesWidth = (labels: string[]) =>
 	labels.reduce(
@@ -397,45 +402,23 @@ function tableLayout(
 	return { size: { width: Math.ceil(width) + 2, height: height + 2 }, cols };
 }
 
-/** A badge in a logic row: what it shows, and its hover text. */
-export interface LogicBadge {
-	text: string;
-	title: string;
-	/** Apis only: the HTTP method, which colours the badge. */
-	method?: string;
-}
-
-/** A logic unit's row: badges for the apis it handles, what it reads and writes, what it calls. */
+/** A logic unit's row: its name and signature, input names in, outputs out. */
 export interface LogicRow {
 	id: string;
 	name: string;
-	handles: LogicBadge[];
-	reads: LogicBadge[];
-	writes: LogicBadge[];
-	calls: LogicBadge[];
+	/** `(productId, quantity) → Cart Line`; an output that is a model goes by the model's name. */
+	signature: string;
 }
 
 export function logicRow(model: Model, id: string): LogicRow {
-	const info = model.elements.get(id)!;
-	const badge = (to: string): LogicBadge => {
-		const t = model.elements.get(to);
-		if (t?.def.kind === 'api') {
-			const route = `${t.def.method} ${t.def.path}`;
-			return { text: route, title: `${route} · ${t.name}`, method: t.def.method };
-		}
-		const text = refLabel(model, to) ?? to;
-		return { text, title: text };
-	};
-	const of = (key: (typeof LOGIC_KEYS)[number]) =>
-		(info.def[key] ?? []).filter((to) => model.ids.has(to)).map(badge);
+	const def = model.elements.get(id)!.def;
+	const outs = (def.outputs ?? []).map((o) =>
+		o.model ? (model.elements.get(o.model)?.name ?? o.name) + (o.many ? '[]' : '') : o.name
+	);
 	return {
 		id,
-		name: info.name,
-		// The handled api's method is enough on the card; the route is in the hover text.
-		handles: of('handles').map((b) => ({ ...b, text: b.method ?? b.text })),
-		reads: of('reads'),
-		writes: of('writes'),
-		calls: of('calls')
+		name: model.elements.get(id)!.name,
+		signature: `(${(def.inputs ?? []).map((f) => f.name).join(', ')})${outs.length ? ` → ${outs.join(', ')}` : ''}`
 	};
 }
 
@@ -444,34 +427,29 @@ const LOGIC_KIND = Object.fromEntries(LOGIC_KEYS.map((k) => [k, true]));
 /** Room for the ƒ before a unit's name. */
 const FN_GLYPH = 14;
 
-/** A module's logic card: a name bar, then one row per unit; columns no row fills are left out. */
+/** A module's logic card: a name bar, then one row per unit: its name and signature. */
 function logicLayout(rows: LogicRow[]): { size: Size; cols: TableColumn[] } {
-	const defs: [LogicColumn, string, string | undefined, number[]][] = [
-		['name', 'Unit', undefined, rows.map((r) => FN_GLYPH + textWidth(r.name, TABLE.row))],
-		[
-			'handles',
-			'API',
-			'Apis whose requests it handles',
-			rows.map((r) => badgesWidth(r.handles.map((b) => b.text)))
-		],
-		['reads', 'Reads', undefined, rows.map((r) => badgesWidth(r.reads.map((b) => b.text)))],
-		['writes', 'Writes', undefined, rows.map((r) => badgesWidth(r.writes.map((b) => b.text)))],
-		['calls', 'Calls', undefined, rows.map((r) => badgesWidth(r.calls.map((b) => b.text)))]
+	const col = (key: LogicColumn, ws: number[]) => ({
+		key,
+		label: '',
+		width: Math.max(0, ...ws) + 2 * TABLE.pad
+	});
+	const cols = [
+		col(
+			'name',
+			rows.map((r) => FN_GLYPH + textWidth(r.name, TABLE.row))
+		),
+		col(
+			'signature',
+			rows.map((r) => textWidth(r.signature, TABLE.signature))
+		)
 	];
-	const cols = defs
-		.filter(([key, , , ws]) => key === 'name' || ws.some((w) => w > 0))
-		.map(([key, label, title, ws]) => ({
-			key,
-			label,
-			title,
-			width: Math.max(textWidth(label, TABLE.label, true), ...ws) + 2 * TABLE.pad
-		}));
 	const width = Math.max(
 		textWidth('Logic', TABLE.title, true) + GLYPH * TABLE.title + 2 * TABLE.pad,
 		textWidth(logicNote(rows.length), TABLE.note) + 2 * TABLE.pad,
 		cols.reduce((w, c) => w + c.width, 0)
 	);
-	const height = TABLE.head + (rows.length + 1) * TABLE.rowHeight;
+	const height = TABLE.head + rows.length * TABLE.rowHeight;
 	return { size: { width: Math.ceil(width) + 2, height: height + 2 }, cols };
 }
 

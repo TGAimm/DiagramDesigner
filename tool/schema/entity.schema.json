@@ -459,31 +459,130 @@
         "description": "Kebab-case identifier"
       }
     },
-    "reads": {
-      "description": "Logic units only: ids of the models, or single model fields, it reads",
+    "inputs": {
+      "description": "Logic units only, required: what it takes; [] for nothing",
       "type": "array",
       "items": {
-        "type": "string",
-        "pattern": "^[a-z][a-z0-9-]*$",
-        "description": "Kebab-case identifier"
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "description": "Unique across the whole design, like model field ids"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "description": "Primitive type; give either type or model",
+            "type": "string"
+          },
+          "model": {
+            "description": "Id of a model it is",
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "many": {
+            "description": "A list of type or model",
+            "type": "boolean"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "nullable": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "additionalProperties": false,
+        "description": "Input or output of a logic unit"
       }
     },
-    "writes": {
-      "description": "Logic units only: ids of the models, or single model fields, it writes",
+    "outputs": {
+      "description": "Logic units only, required: what it returns; [] for nothing",
       "type": "array",
       "items": {
-        "type": "string",
-        "pattern": "^[a-z][a-z0-9-]*$",
-        "description": "Kebab-case identifier"
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "description": "Unique across the whole design, like model field ids"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "description": "Primitive type; give either type or model",
+            "type": "string"
+          },
+          "model": {
+            "description": "Id of a model it is",
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "many": {
+            "description": "A list of type or model",
+            "type": "boolean"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "nullable": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "additionalProperties": false,
+        "description": "Input or output of a logic unit"
       }
     },
-    "calls": {
-      "description": "Logic units only: ids of the logic units or apis it calls",
+    "fails": {
+      "description": "Logic units only: the ways it can fail",
       "type": "array",
       "items": {
-        "type": "string",
-        "pattern": "^[a-z][a-z0-9-]*$",
-        "description": "Kebab-case identifier"
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "description": "A way a logic unit can fail"
+      }
+    },
+    "steps": {
+      "description": "Logic units only: its sequence; what it reads, writes and calls comes from it",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/__schema0"
       }
     },
     "name": {
@@ -535,5 +634,96 @@
   ],
   "additionalProperties": false,
   "description": "System Design Viewer entity file (<name>.<kind>.yaml)",
+  "$defs": {
+    "__schema0": {
+      "type": "object",
+      "properties": {
+        "call": {
+          "description": "Id of the logic unit or api it calls",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "read": {
+          "description": "Id of the model, or single model field, it reads",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "write": {
+          "description": "Id of the model, or single model field, it writes",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "with": {
+          "description": "With call or read: what it passes, free text",
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "gets": {
+          "description": "With call or read: what it gets back, free text",
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "if": {
+          "description": "A condition; then and else hold the steps of each branch",
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "then": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema0"
+          }
+        },
+        "else": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema0"
+          }
+        },
+        "each": {
+          "description": "What it loops over; do holds the steps repeated",
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "do": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema0"
+          }
+        },
+        "return": {
+          "description": "Name of the output returned",
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "fail": {
+          "description": "Name of the fail raised",
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "note": {
+          "description": "Free text; alone, work the unit does itself",
+          "type": [
+            "string",
+            "number"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "description": "One step of a logic unit, in order"
+    }
+  },
   "title": "System Design Viewer entity file"
 }

@@ -11,6 +11,7 @@ import {
 	TABLE
 } from '../../src/lib/landscape/layout';
 import { railGroups, railOf } from '../../src/lib/landscape/apis';
+import { sequenceOf } from '../../src/lib/landscape/sequence';
 import { GLYPH, textWidth } from '../../src/lib/render/text';
 import { loadFixture, loadStrings } from './helpers';
 
@@ -362,38 +363,36 @@ describe('logic cards', () => {
 			'parent: svc',
 			'name: addToCart',
 			'handles: [post]',
-			'reads: [cart]',
-			'writes: [cart-qty]',
-			'calls: [load]'
+			'inputs: [{ id: add-p, name: productId, type: uuid }, { id: add-q, name: quantity, type: int }]',
+			'outputs: [{ id: add-o, name: line, model: cart }]',
+			'steps:',
+			'  - { call: load, gets: cart }',
+			'  - { read: cart }',
+			'  - { write: cart-qty }',
+			'  - { return: line }'
 		].join('\n'),
-		's/load.logic-unit.yaml': 'id: load\nparent: svc\nname: loadCart\nreads: [cart]\n'
+		's/load.logic-unit.yaml': [
+			'id: load',
+			'parent: svc',
+			'name: loadCart',
+			'inputs: []',
+			'outputs: []',
+			'steps: [{ read: cart }]'
+		].join('\n')
 	}).model;
 	const boxes = layoutLandscape(shop);
 	const box = (id: string) => boxes.find((b) => b.id === id)!;
 
-	it('draws a module’s units as rows of one card, first among its children', () => {
+	it('draws a module’s units as rows of one card: name and signature, no header', () => {
 		expect(shop.diagnostics).toEqual([]);
 		expect(boxes.filter((b) => b.parentId === 'svc').map((b) => b.id)).toEqual(['svc#logic']);
 		const card = box('svc#logic').logic!;
-		expect(card.cols.map((c) => c.key)).toEqual(['name', 'handles', 'reads', 'writes', 'calls']);
-		expect(card.rows.map((r) => r.id)).toEqual(['add', 'load']);
-		const add = card.rows[0];
-		expect(
-			[add.handles, add.reads, add.writes, add.calls].map((bs) => bs.map((b) => b.text))
-		).toEqual([['POST'], ['cart'], ['cart.qty'], ['loadCart']]);
-		expect(add.handles[0].title).toBe('POST /cart · post');
-		expect(box('svc#logic').height).toBe(TABLE.head + 3 * TABLE.rowHeight + 2);
-	});
-
-	it('leaves out columns no unit fills', () => {
-		const one = layoutLandscape(
-			loadStrings({
-				's/s.system.yaml': 'id: s\n',
-				's/m.module.yaml': 'id: m\nparent: s\n',
-				's/u.logic-unit.yaml': 'id: u\nparent: m\n'
-			}).model
-		);
-		expect(one.find((b) => b.id === 'm#logic')!.logic!.cols.map((c) => c.key)).toEqual(['name']);
+		expect(card.cols.map((c) => c.key)).toEqual(['name', 'signature']);
+		expect(card.rows.map((r) => [r.id, r.signature])).toEqual([
+			['add', '(productId, quantity) → cart'],
+			['load', '()']
+		]);
+		expect(box('svc#logic').height).toBe(TABLE.head + 2 * TABLE.rowHeight + 2);
 	});
 
 	it('indexes unit links both ways', () => {
@@ -420,5 +419,67 @@ describe('logic cards', () => {
 		expect(
 			focusLinks(shop, rels, boxes, 'cart', 'cart-qty').map((l) => [l.source, l.sourceField])
 		).toEqual([['svc#logic', 'add']]);
+	});
+
+	it('reads a unit’s steps as a sequence, lifelines in first-use order', () => {
+		const seq = sequenceOf(shop, 'add');
+		expect(seq.lifelines.map((l) => [l.kind, l.name, l.subs.map((s) => s.text)])).toEqual([
+			['caller', 'Caller', ['POST /cart']],
+			['self', 'addToCart', ['this unit']],
+			['unit', 'loadCart', ['svc']],
+			['model', 'cart', ['s › shop']]
+		]);
+		expect(seq.messages.map((m) => [m.from, m.to, m.tone, m.dashed, m.text])).toEqual([
+			[0, 1, 'input', false, 'productId, quantity'],
+			[1, 2, 'call', false, 'loadCart()'],
+			[2, 1, 'return', true, 'cart'],
+			[1, 3, 'read', false, 'reads'],
+			[1, 3, 'write', false, 'writes qty'],
+			[1, 0, 'return', true, 'line']
+		]);
+		// The callee's caller lifeline lists the units calling it.
+		expect(sequenceOf(shop, 'load').lifelines[0].subs).toEqual([
+			{ text: 'ƒ addToCart', target: 'add' }
+		]);
+	});
+
+	it('boxes branches and loops, with a row for each header and else', () => {
+		const { model } = loadStrings({
+			's/s.system.yaml': 'id: s\n',
+			's/m.module.yaml': 'id: m\nparent: s\n',
+			's/u.logic-unit.yaml': [
+				'id: u',
+				'parent: m',
+				'inputs: []',
+				'outputs: [{ id: o, name: ok, type: bool }]',
+				'fails: [{ name: bad }]',
+				'steps:',
+				'  - if: x',
+				'    then: [{ fail: bad }]',
+				'    else:',
+				'      - each: y',
+				'        do: [{ note: work }]',
+				'      - { return: ok }'
+			].join('\n')
+		});
+		const seq = sequenceOf(model, 'u');
+		expect(seq.frags).toEqual([
+			{
+				label: 'alt',
+				guard: '[x]',
+				top: 1,
+				bottom: 6,
+				depth: 0,
+				dividers: [{ row: 3, guard: '[else]' }]
+			},
+			{ label: 'loop', guard: '[each y]', top: 4, bottom: 5, depth: 1, dividers: [] }
+		]);
+		expect(seq.notes).toEqual([{ row: 5, text: 'work' }]);
+		expect(seq.messages.map((m) => [m.row, m.tone, m.text])).toEqual([
+			[0, 'input', '()'],
+			[2, 'fail', 'fails bad'],
+			[6, 'return', 'ok']
+		]);
+		expect(seq.rows).toBe(7);
 	});
 });

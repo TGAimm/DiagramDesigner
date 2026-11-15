@@ -1,3 +1,5 @@
 id: place
 parent: order
 name: place
+inputs: []
+outputs: []

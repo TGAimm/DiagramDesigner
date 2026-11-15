@@ -23,6 +23,7 @@
 		incomingCount,
 		layoutLandscape,
 		linkTarget,
+		logicRowY,
 		modelLinks,
 		refLabel,
 		relationsOf,
@@ -34,6 +35,9 @@
 		type ModelLink
 	} from '#lib/landscape/layout.ts';
 	import { apiHosts, openBoxes, railOpen, READABLE } from '#lib/landscape/open.ts';
+	import { sequenceOf, sequenceWidth } from '#lib/landscape/sequence.ts';
+	import SequenceDiagram from './SequenceDiagram.svelte';
+	import type { LogicField } from '#lib/model/schema.ts';
 	import {
 		apiUses,
 		bodyModels,
@@ -87,9 +91,7 @@
 	const label = (id: string) => refLabel(design.model, id) ?? id;
 	/** Where row `i` of a card sits, folded or expanded as it is now; logic cards never fold. */
 	const rowY = (b: LandscapeBox, i: number) =>
-		b.logic
-			? fieldRowY(i, b.logic.rows.length, true)
-			: fieldRowY(i, b.fields?.length ?? 0, all || !!view.expanded[b.id]);
+		b.logic ? logicRowY(i) : fieldRowY(i, b.fields?.length ?? 0, all || !!view.expanded[b.id]);
 	/** The row of a field or logic unit in a card, or -1. */
 	const rowOf = (b: LandscapeBox, id: string | undefined) =>
 		b.logic
@@ -480,8 +482,7 @@
 			const f = view.field;
 			const b = f && boxById.get(f.box);
 			const info = f && design.model.fields.get(f.field);
-			const unit = f && isUnit(f.field) ? el(f.field) : undefined;
-			if (!f || !b || (!info && !unit)) return undefined;
+			if (!f || !b || !info) return undefined;
 			const entry = (to: string): Entry => {
 				if (isApiEl(to)) return routeEntry(to);
 				const t = linkTarget(design.model, boxes, b, to);
@@ -495,20 +496,6 @@
 				(rels.out.get(f.field) ?? []).filter((l) => l.kind === kind).map((l) => entry(l.to));
 			const inOf = (kind: FieldLink['kind']) =>
 				(rels.in.get(f.field) ?? []).filter((l) => l.kind === kind).map((l) => entry(l.field));
-			if (unit)
-				return {
-					title: unit.name,
-					type: `Logic unit · ${pathOf(unit.parentId)}`,
-					// Glyphs point the way data or control goes.
-					sections: [
-						{ label: 'Handles', kind: 'ref', glyph: '←', entries: outOf('handles') },
-						{ label: 'Reads', kind: 'ref', glyph: '⇠', entries: outOf('reads') },
-						{ label: 'Writes', kind: 'writes', glyph: '⇢', entries: outOf('writes') },
-						{ label: 'Calls', kind: 'calls', glyph: '→', entries: outOf('calls') },
-						{ label: 'Called by', kind: 'calls', glyph: '←', entries: inOf('calls') }
-					].filter((s) => s.entries.length)
-				};
-			if (!info) return undefined;
 			// Units touching the field: by naming it, or its whole model.
 			const touchedBy = (kind: 'reads' | 'writes') => [
 				...inOf(kind),
@@ -551,6 +538,40 @@
 			};
 		}
 	);
+
+	/**
+	 * The clicked logic unit: its inputs, outputs and fails, and its steps as a sequence. What
+	 * it handles, reads, writes and calls is all in the sequence, so it is not listed again.
+	 */
+	const unitCard = $derived.by(() => {
+		const u = view.field && isUnit(view.field.field) ? el(view.field.field) : undefined;
+		if (!u) return undefined;
+		const typeOf = (x: LogicField) =>
+			[
+				typeText(x, (id) => refLabel(design.model, id)),
+				x.required && 'required',
+				x.nullable && 'nullable',
+				x.description
+			]
+				.filter(Boolean)
+				.join(' · ');
+		return {
+			title: u.name,
+			sub: `Logic unit · ${pathOf(u.parentId)}`,
+			inputs: (u.def.inputs ?? []).map((x) => ({ name: x.name, type: typeOf(x) })),
+			outputs: (u.def.outputs ?? []).map((x) => ({ name: x.name, type: typeOf(x) })),
+			fails: u.def.fails ?? [],
+			seq: u.def.steps?.length ? sequenceOf(design.model, u.id) : undefined
+		};
+	});
+
+	/** Goes to what a sequence names: picks an api, or flies to a unit's row or a model. */
+	function go(id: string) {
+		if (isApiEl(id)) return showApi(id);
+		const from = view.field && boxById.get(view.field.box);
+		const t = from && linkTarget(design.model, boxes, from, id);
+		if (t) flyTo({ box: t, field: rowOf(t, id) >= 0 ? id : undefined });
+	}
 
 	const statusClass = (s: number) => (s < 300 ? 'ok' : s < 400 ? '' : s < 500 ? 'warn' : 'bad');
 
@@ -656,11 +677,19 @@
 	function beside(a: { left: number; right: number; y: number } | undefined, w: number) {
 		if (!a) return undefined;
 		const right = a.right + 14;
-		const left = right + w <= cw - 8 ? right : Math.max(8, a.left - 14 - w);
+		// Room on neither side (a wide sequence): over the canvas, centred.
+		const left =
+			right + w <= cw - 8
+				? right
+				: a.left - 14 - w >= 8
+					? a.left - 14 - w
+					: Math.max(8, (cw - w) / 2);
 		return { left, top: Math.min(Math.max(8, a.y - 24), Math.max(8, ch - cardH - 8)) };
 	}
 	const cardPos = $derived(beside(apiAnchor, API_W));
 	const fieldPos = $derived(beside(fieldAnchor, FIELD_W));
+	const unitW = $derived(Math.max(420, unitCard?.seq ? sequenceWidth(unitCard.seq) + 2 : 0));
+	const unitPos = $derived(beside(fieldAnchor, unitW));
 
 	/**
 	 * Lines from the picked api's row, in screen px: solid to each model its bodies use, and
@@ -942,6 +971,65 @@
 			{:else}
 				<p class="empty">No references, sources or incoming links.</p>
 			{/each}
+		</aside>
+	{:else if unitCard && unitPos}
+		{@const u = unitCard}
+		<aside
+			class="inspector unit"
+			style:left="{unitPos.left}px"
+			style:top="{unitPos.top}px"
+			style:width="{unitW}px"
+			bind:clientHeight={cardH}
+			data-testid="unit-card"
+		>
+			<header>
+				{#if view.trail.length}
+					<button class="icon-btn" onclick={goBack} title="Back to the previous row"
+						><ChevronLeft size={16} /></button
+					>
+				{/if}
+				<div class="head">
+					<div class="title"><i class="fn">ƒ</i> {u.title}</div>
+					<div class="type">{u.sub}</div>
+				</div>
+				<button class="icon-btn" onclick={unpin} aria-label="Close" title="Close (Esc)"
+					><X size={16} /></button
+				>
+			</header>
+			<div class="io">
+				<section>
+					<h4>Inputs</h4>
+					{#each u.inputs as x (x.name)}
+						<div class="api-field">
+							<span class="name">{x.name}</span><span class="where">{x.type}</span>
+						</div>
+					{:else}
+						<p class="empty">None.</p>
+					{/each}
+				</section>
+				<section>
+					<h4>Outputs</h4>
+					{#each u.outputs as x (x.name)}
+						<div class="api-field">
+							<span class="name">{x.name}</span><span class="where">{x.type}</span>
+						</div>
+					{/each}
+					{#each u.fails as x (x.name)}
+						<div class="api-field">
+							<span class="name">{x.name}</span><span class="where fail"
+								>fails{x.description ? ` · ${x.description}` : ''}</span
+							>
+						</div>
+					{/each}
+					{#if !u.outputs.length && !u.fails.length}<p class="empty">None.</p>{/if}
+				</section>
+			</div>
+			{#if u.seq}
+				<section class="seq-section">
+					<h4>Sequence</h4>
+					<SequenceDiagram seq={u.seq} onpick={go} />
+				</section>
+			{/if}
 		</aside>
 	{:else if apiCard && cardPos}
 		{@const api = apiCard}
@@ -1306,6 +1394,29 @@
 	}
 	.inspector .calls .entry:hover:not(:disabled) {
 		border-left-color: var(--sdv-link-call);
+	}
+	.inspector.unit header {
+		background: var(--sdv-logic-head);
+	}
+	.inspector .fn {
+		font-family: Georgia, serif;
+		color: var(--sdv-link-call);
+	}
+	.inspector .io {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+	.inspector .io section {
+		border-top: none;
+	}
+	.inspector .io section + section {
+		border-left: 1px solid var(--sdv-model-stroke);
+	}
+	.inspector .where.fail {
+		color: var(--sdv-method-put);
+	}
+	.inspector .seq-section {
+		overflow-x: auto;
 	}
 	.inspector .status {
 		font-variant-numeric: tabular-nums;

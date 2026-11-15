@@ -2,5 +2,22 @@ id: lyheve53dx
 parent: lht4l7njny
 name: updateCart
 handles: [wez7atj6e5]
-writes: [dj8m2h65tb]
-calls: [tl04zzurg3, fdqktz9kjr]
+inputs:
+  - { id: sjizry0bix, name: lineId, type: uuid, required: true }
+  - { id: c3annafos3, name: quantity, type: int, required: true }
+outputs:
+  - { id: e6t98qr3uy, name: line, model: a6ub2b7rpa }
+fails:
+  - { name: notFound, description: no such line in the cart }
+  - { name: outOfStock, description: not enough stock }
+steps:
+  - { call: tl04zzurg3, with: sessionId, gets: cart }
+  - if: lineId not in cart
+    then:
+      - { fail: notFound }
+  - { call: fdqktz9kjr, with: productId, gets: available }
+  - if: available < quantity
+    then:
+      - { fail: outOfStock }
+  - { write: dj8m2h65tb }
+  - { return: line }

@@ -1,4 +1,12 @@
-import type { ApiBody, ApiField, Element, EntityFile, EntityFileKind, ModelField } from './schema';
+import type {
+	ApiBody,
+	ApiField,
+	Element,
+	EntityFile,
+	EntityFileKind,
+	LogicStep,
+	ModelField
+} from './schema';
 import { ENTITY_KINDS, PARENT_KINDS } from './schema';
 import type { DataPath, Diagnostic, Severity } from './diagnostics';
 import { entityKind, fileKind } from './parse';
@@ -23,6 +31,8 @@ export interface ElementInfo {
 	/** Models stored here (their `storedIn`), drawn inside as tables. */
 	storedIds: string[];
 	tags?: string[];
+	/** Logic units only: what it handles, and what its steps read, write and call. */
+	logic?: LogicLinks;
 	/** 0 for top-level elements. */
 	depth: number;
 	loc: Loc;
@@ -129,6 +139,134 @@ export function buildModel(files: Record<string, unknown>, locate?: Locator): Mo
 		}
 		model.ids.set(id, { kind, loc });
 		return true;
+	};
+
+	/** Whether `id` is something a logic unit's `key` may name; reports it if not. */
+	const logicTarget = (key: keyof typeof LOGIC_TARGETS, id: string, loc: Loc, atKey?: string) => {
+		const field = model.fields.get(id);
+		const kind = field ? 'field' : model.elements.get(id)?.def.kind;
+		const allowed = LOGIC_TARGETS[key];
+		if (!kind)
+			diag(
+				'error',
+				'dangling-ref',
+				`${key} names "${id}", which is not an entity or field`,
+				loc,
+				atKey
+			);
+		else if (!allowed.includes(kind))
+			diag(
+				'error',
+				'logic-target',
+				`${key} names ${kind} "${field?.def.name ?? model.elements.get(id)!.name}"; allowed: ${allowed.join(', ')}`,
+				loc,
+				atKey
+			);
+		else return true;
+		return false;
+	};
+
+	/** Checks a logic unit's references and steps, and collects what they name. */
+	const logicLinks = (info: ElementInfo): LogicLinks => {
+		const def = info.def;
+		const links: LogicLinks = { handles: [], reads: [], writes: [], calls: [] };
+		const add = (key: keyof LogicLinks, id: string) => {
+			if (!links[key].includes(id)) links[key].push(id);
+		};
+		def.handles?.forEach((id, j) => {
+			if (logicTarget('handles', id, at(info.loc, 'handles', j))) add('handles', id);
+		});
+		for (const key of ['inputs', 'outputs'] as const)
+			def[key]?.forEach((f, i) => {
+				if (f.model && model.elements.get(f.model)?.def.kind !== 'model')
+					diag(
+						'error',
+						'not-a-model',
+						`${key.slice(0, -1)} "${f.name}" is "${f.model}", which is not a model`,
+						at(info.loc, key, i),
+						'model'
+					);
+			});
+		const outputs = new Set(def.outputs?.map((o) => o.name));
+		const fails = new Set(def.fails?.map((f) => f.name));
+		const returned = new Set<string>();
+		const raised = new Set<string>();
+		const walk = (steps: LogicStep[] | undefined, loc: Loc, key: string) =>
+			steps?.forEach((s, i) => {
+				const stepLoc = at(loc, key, i);
+				const kinds = STEP_KINDS.filter((k) => s[k] !== undefined);
+				const k = kinds[0];
+				if (kinds.length > 1)
+					diag(
+						'error',
+						'logic-step',
+						`a step does one thing; this one has ${kinds.join(' and ')}`,
+						stepLoc,
+						kinds[1]
+					);
+				if (!k && s.note === undefined)
+					diag(
+						'error',
+						'logic-step',
+						`empty step; give call, read, write, if, each, return, fail or note`,
+						stepLoc
+					);
+				for (const [sub, owner] of [
+					['then', 'if'],
+					['else', 'if'],
+					['do', 'each']
+				] as const)
+					if (s[sub] && k !== owner)
+						diag('error', 'logic-step', `${sub} goes with ${owner}`, stepLoc, sub);
+				for (const sub of ['with', 'gets'] as const)
+					if (s[sub] !== undefined && k !== 'call' && k !== 'read')
+						diag('error', 'logic-step', `${sub} goes with call or read`, stepLoc, sub);
+				if (k === 'call' || k === 'read' || k === 'write')
+					if (logicTarget(k, s[k]!, stepLoc, k)) add(`${k}s` as keyof LogicLinks, s[k]!);
+				if (k === 'return') {
+					returned.add(s.return!);
+					if (!outputs.has(s.return!))
+						diag(
+							'error',
+							'logic-return',
+							`returns "${s.return}", which is not an output`,
+							stepLoc,
+							k
+						);
+				}
+				if (k === 'fail') {
+					raised.add(s.fail!);
+					if (!fails.has(s.fail!))
+						diag('error', 'logic-fail', `fails "${s.fail}", which is not in fails`, stepLoc, k);
+				}
+				walk(s.then, stepLoc, 'then');
+				walk(s.else, stepLoc, 'else');
+				walk(s.do, stepLoc, 'do');
+			});
+		walk(def.steps, info.loc, 'steps');
+		if (def.steps?.length) {
+			def.outputs?.forEach((o, i) => {
+				if (!returned.has(o.name))
+					diag(
+						'warning',
+						'logic-unused',
+						`output "${o.name}" is never returned`,
+						at(info.loc, 'outputs', i),
+						'name'
+					);
+			});
+			def.fails?.forEach((f, i) => {
+				if (!raised.has(f.name))
+					diag(
+						'warning',
+						'logic-unused',
+						`fail "${f.name}" is never raised`,
+						at(info.loc, 'fails', i),
+						'name'
+					);
+			});
+		}
+		return links;
 	};
 
 	const entityFiles: { file: string; value: EntityFile }[] = [];
@@ -342,8 +480,35 @@ export function buildModel(files: Record<string, unknown>, locate?: Locator): Mo
 			for (const key of ['method', 'path', 'auth', 'params', 'request', 'responses'] as const)
 				if (value[key]) diag('error', 'api-only', `only apis have ${key}`, loc, key);
 		}
-		if (kind !== 'logic-unit')
-			for (const key of LOGIC_KEYS)
+		if (kind === 'logic-unit')
+			for (const key of ['inputs', 'outputs'] as const) {
+				if (!value[key])
+					diag(
+						'error',
+						'logic-signature',
+						`logic unit "${info.name}" needs ${key}; use [] for none`,
+						loc,
+						'id'
+					);
+				const names = new Set<string>();
+				value[key]?.forEach((f, i) => {
+					const fieldLoc = at(loc, key, i);
+					claim(f.id, 'field', fieldLoc);
+					if (names.has(f.name))
+						diag('error', 'duplicate-field', `${key} has "${f.name}" twice`, fieldLoc, 'name');
+					names.add(f.name);
+					if (!f.type === !f.model)
+						diag(
+							'error',
+							'field-type',
+							`${key.slice(0, -1)} "${f.name}" needs exactly one of type and model`,
+							fieldLoc,
+							f.type ? 'model' : 'name'
+						);
+				});
+			}
+		else
+			for (const key of ['handles', 'inputs', 'outputs', 'fails', 'steps'] as const)
 				if (value[key]) diag('error', 'logic-only', `only logic units have ${key}`, loc, key);
 	}
 	for (const info of entities) {
@@ -479,34 +644,7 @@ export function buildModel(files: Record<string, unknown>, locate?: Locator): Mo
 					'ref'
 				);
 		});
-		for (const key of info.def.kind === 'logic-unit' ? LOGIC_KEYS : [])
-			info.def[key]?.forEach((id, j) => {
-				const refLoc = at(info.loc, key, j);
-				const field = model.fields.get(id);
-				const kind = field ? 'field' : model.elements.get(id)?.def.kind;
-				const allowed = LOGIC_TARGETS[key];
-				if (!kind)
-					diag(
-						'error',
-						'dangling-ref',
-						`${key} names "${id}", which is not an entity or field`,
-						refLoc
-					);
-				else if (!allowed.includes(kind))
-					diag(
-						'error',
-						'logic-target',
-						`${key} names ${kind} "${field?.def.name ?? model.elements.get(id)!.name}"; allowed: ${allowed.join(', ')}`,
-						refLoc
-					);
-				else if (field && info.def[key]!.includes(field.modelId))
-					diag(
-						'warning',
-						'logic-whole-model',
-						`${key} already names the whole model "${model.elements.get(field.modelId)!.name}"`,
-						refLoc
-					);
-			});
+		if (info.def.kind === 'logic-unit') info.logic = logicLinks(info);
 		info.refIds = info.refIds.filter((ref, i) => {
 			const target = model.elements.get(ref);
 			const refLoc = at(info.loc, 'models', i);
@@ -614,15 +752,19 @@ export function buildModel(files: Record<string, unknown>, locate?: Locator): Mo
 	return model;
 }
 
-/** Keys only logic units have: what invokes them, the data they touch and what they call. */
+/** A logic unit's links: what invokes it, and the data its steps touch and what they call. */
 export const LOGIC_KEYS = ['handles', 'reads', 'writes', 'calls'] as const;
+export type LogicLinks = Record<(typeof LOGIC_KEYS)[number], string[]>;
 
-/** What each logic-unit key may name: entity kinds, or `field` for a model field. */
-const LOGIC_TARGETS: Record<(typeof LOGIC_KEYS)[number], string[]> = {
+/** The keys that say what kind a step is; a step with none of them is a note. */
+export const STEP_KINDS = ['call', 'read', 'write', 'if', 'each', 'return', 'fail'] as const;
+
+/** What `handles` and each step kind may name: entity kinds, or `field` for a model field. */
+const LOGIC_TARGETS = {
 	handles: ['api'],
-	reads: ['model', 'field'],
-	writes: ['model', 'field'],
-	calls: ['logic-unit', 'api']
+	call: ['logic-unit', 'api'],
+	read: ['model', 'field'],
+	write: ['model', 'field']
 };
 
 /** Returns one cycle in a dependency graph (id -> needs), or undefined. */
