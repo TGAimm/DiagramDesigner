@@ -83,6 +83,23 @@ export interface Model {
 	/** Every design file, sorted. */
 	files: string[];
 	diagnostics: Diagnostic[];
+	/**
+	 * Set when built for one flag state: whether each flag is on. Links then follow only the
+	 * branch each flag step takes; without it they follow every branch (all the code).
+	 */
+	flagState?: Map<string, boolean>;
+}
+
+/** Whether a flag is on in the model's state, else at its default. */
+export const flagOn = (model: Model, id: string) =>
+	model.flagState?.get(id) ?? model.elements.get(id)?.def.default === 'on';
+
+/** Each flag's value in a state: `overrides` by flag id, else its default. */
+export function flagStateOf(model: Model, overrides: Record<string, boolean>) {
+	const out = new Map<string, boolean>();
+	for (const [id, el] of model.elements)
+		if (el.def.kind === 'flag') out.set(id, overrides[id] ?? el.def.default === 'on');
+	return out;
 }
 
 export type Locator = (
@@ -95,7 +112,11 @@ export type Locator = (
  * Builds the resolved model from parsed file data (keyed by design-relative path) and runs
  * schema and reference validation. Never throws on invalid input.
  */
-export function buildModel(files: Record<string, unknown>, locate?: Locator): Model {
+export function buildModel(
+	files: Record<string, unknown>,
+	locate?: Locator,
+	flags?: Record<string, boolean>
+): Model {
 	const model: Model = {
 		elements: new Map(),
 		fields: new Map(),
@@ -211,13 +232,15 @@ export function buildModel(files: Record<string, unknown>, locate?: Locator): Mo
 					diag(
 						'error',
 						'logic-step',
-						`empty step; give call, read, write, if, each, return, fail or note`,
+						`empty step; give call, read, write, if, each, flag, return, fail or note`,
 						stepLoc
 					);
 				for (const [sub, owner] of [
 					['then', 'if'],
 					['else', 'if'],
-					['do', 'each']
+					['do', 'each'],
+					['on', 'flag'],
+					['off', 'flag']
 				] as const)
 					if (s[sub] && k !== owner)
 						diag('error', 'logic-step', `${sub} goes with ${owner}`, stepLoc, sub);
@@ -242,9 +265,27 @@ export function buildModel(files: Record<string, unknown>, locate?: Locator): Mo
 					if (!fails.has(s.fail!))
 						diag('error', 'logic-fail', `fails "${s.fail}", which is not in fails`, stepLoc, k);
 				}
+				if (k === 'flag' && logicTarget('flag', s.flag!, stepLoc, k)) {
+					if (!within(s.flag!, info.id))
+						diag(
+							'error',
+							'flag-scope',
+							`flag "${model.elements.get(s.flag!)!.name}" is defined outside this unit's system or module`,
+							stepLoc,
+							k
+						);
+					usedFlags.add(s.flag!);
+				}
+				if (k === 'flag' && !s.on && !s.off)
+					diag('error', 'logic-step', `a flag step needs on, off or both`, stepLoc, k);
 				walk(s.then, stepLoc, 'then');
 				walk(s.else, stepLoc, 'else');
 				walk(s.do, stepLoc, 'do');
+				if (k === 'flag') {
+					const state = model.flagState?.get(s.flag!);
+					if (state !== false) walk(s.on, stepLoc, 'on');
+					if (state !== true) walk(s.off, stepLoc, 'off');
+				}
 			});
 		walk(def.steps, info.loc, 'steps');
 		if (def.steps?.length) {
@@ -271,6 +312,19 @@ export function buildModel(files: Record<string, unknown>, locate?: Locator): Mo
 		}
 		return links;
 	};
+
+	/** Whether flag `flagId` is defined in `id`'s system or module, or one round it. */
+	const within = (flagId: string, id: string) => {
+		const home = model.elements.get(flagId)?.parentId;
+		const seen = new Set<string>();
+		for (let cur = model.elements.get(id)?.parentId; cur && !seen.has(cur);) {
+			if (cur === home) return true;
+			seen.add(cur);
+			cur = model.elements.get(cur)?.parentId;
+		}
+		return false;
+	};
+	const usedFlags = new Set<string>();
 
 	const entityFiles: { file: string; value: EntityFile }[] = [];
 
@@ -488,6 +542,13 @@ export function buildModel(files: Record<string, unknown>, locate?: Locator): Mo
 			for (const key of ['method', 'path', 'auth', 'params', 'request', 'responses'] as const)
 				if (value[key]) diag('error', 'api-only', `only apis have ${key}`, loc, key);
 		}
+		if (kind === 'flag') {
+			if (!value.key) diag('error', 'flag-key', `flag "${info.name}" needs key`, loc, 'id');
+		} else
+			for (const key of ['key', 'default'] as const)
+				if (value[key]) diag('error', 'flag-only', `only flags have ${key}`, loc, key);
+		if (value.when && kind !== 'api' && kind !== 'logic-unit')
+			diag('error', 'flag-gate', `only apis and logic units have when`, loc, 'when');
 		if (kind === 'logic-unit')
 			for (const key of ['inputs', 'outputs'] as const) {
 				if (!value[key])
@@ -519,6 +580,7 @@ export function buildModel(files: Record<string, unknown>, locate?: Locator): Mo
 			for (const key of ['handles', 'inputs', 'outputs', 'fails', 'steps'] as const)
 				if (value[key]) diag('error', 'logic-only', `only logic units have ${key}`, loc, key);
 	}
+	if (flags) model.flagState = flagStateOf(model, flags);
 	for (const info of entities) {
 		info.def.fields?.forEach((f, i) => {
 			const fieldLoc = at(info.loc, 'fields', i);
@@ -653,6 +715,30 @@ export function buildModel(files: Record<string, unknown>, locate?: Locator): Mo
 				);
 		});
 		if (info.def.kind === 'logic-unit') info.logic = logicLinks(info);
+		const gate = info.def.when;
+		if (gate) {
+			const flag = model.elements.get(gate.flag);
+			const gateLoc = at(info.loc, 'when');
+			if (flag?.def.kind !== 'flag')
+				diag(
+					'error',
+					'flag-gate',
+					`when names "${gate.flag}", which is not a flag`,
+					gateLoc,
+					'flag'
+				);
+			else {
+				usedFlags.add(flag.id);
+				if (!within(flag.id, info.id))
+					diag(
+						'error',
+						'flag-scope',
+						`flag "${flag.name}" is defined outside this ${info.def.kind}'s system or module`,
+						gateLoc,
+						'flag'
+					);
+			}
+		}
 		info.refIds = info.refIds.filter((ref, i) => {
 			const target = model.elements.get(ref);
 			const refLoc = at(info.loc, 'models', i);
@@ -726,11 +812,40 @@ export function buildModel(files: Record<string, unknown>, locate?: Locator): Mo
 			info.parentId = undefined;
 		}
 	}
+	const defaultsByKey = new Map<string, ElementInfo[]>();
+	for (const info of entities) {
+		if (info.def.kind !== 'flag') continue;
+		if (!usedFlags.has(info.id))
+			diag(
+				'warning',
+				'flag-unused',
+				`flag "${info.name}" is never checked: no flag step or when names it`,
+				info.loc,
+				'id'
+			);
+		const key = info.def.key ?? '';
+		defaultsByKey.set(key, [...(defaultsByKey.get(key) ?? []), info]);
+	}
+	for (const [key, defs] of defaultsByKey) {
+		const on = defs.filter((d) => d.def.default === 'on');
+		if (on.length && on.length < defs.length)
+			for (const d of defs)
+				diag(
+					'warning',
+					'flag-defaults',
+					`flag key "${key}" is on by default in ${on.map((x) => x.loc.file).join(', ')} but off elsewhere: production is split`,
+					d.loc,
+					'default'
+				);
+	}
 	const folderOf = (file: string) => file.slice(0, file.lastIndexOf('/') + 1);
 	const systemFolders = new Map<string, ElementInfo>();
 	for (const info of entities) {
-		if (info.parentId) model.elements.get(info.parentId)!.childIds.push(info.id);
-		else model.rootElementIds.push(info.id);
+		// Flags are never drawn as boxes: the Flags menu lists them.
+		if (info.def.kind !== 'flag') {
+			if (info.parentId) model.elements.get(info.parentId)!.childIds.push(info.id);
+			else model.rootElementIds.push(info.id);
+		}
 		let top = info;
 		while (top.parentId) {
 			top = model.elements.get(top.parentId)!;
@@ -765,14 +880,24 @@ export const LOGIC_KEYS = ['handles', 'reads', 'writes', 'calls'] as const;
 export type LogicLinks = Record<(typeof LOGIC_KEYS)[number], string[]>;
 
 /** The keys that say what kind a step is; a step with none of them is a note. */
-export const STEP_KINDS = ['call', 'read', 'write', 'if', 'each', 'return', 'fail'] as const;
+export const STEP_KINDS = [
+	'call',
+	'read',
+	'write',
+	'if',
+	'each',
+	'return',
+	'fail',
+	'flag'
+] as const;
 
 /** What `handles` and each step kind may name: entity kinds, or `field` for a model field. */
 const LOGIC_TARGETS = {
 	handles: ['api'],
 	call: ['logic-unit', 'api'],
 	read: ['model', 'field'],
-	write: ['model', 'field']
+	write: ['model', 'field'],
+	flag: ['flag']
 };
 
 /** Returns one cycle in a dependency graph (id -> needs), or undefined. */

@@ -1,3 +1,4 @@
+import { flagSplits } from './flags';
 import { buildModel, type Locator, type Model } from './model';
 import { fileKind, locate, parseFile, type ParsedFile } from './parse';
 import type { Diagnostic } from './diagnostics';
@@ -35,10 +36,16 @@ export function loadDesign(sources: SourceFile[]): LoadedDesign {
 		parsed[src.path] = p;
 		data[src.path] = p.data;
 	}
-	const model = buildModel(data, locatorFor(parsed));
+	const locate = locatorFor(parsed);
+	const model = buildModel(data, locate);
 	const diagnostics = [
 		...Object.values(parsed).flatMap((p) => p.diagnostics),
-		...model.diagnostics
+		...model.diagnostics,
+		...placed(flagSplits(model, data), locate)
 	];
 	return { parsed, data, model, diagnostics };
 }
+
+/** Diagnostics given a file and data path, with their line and column filled in. */
+export const placed = (diags: Diagnostic[], locate: Locator) =>
+	diags.map((d) => ({ ...d, ...(d.file && d.path ? locate(d.file, d.path) : {}) }));

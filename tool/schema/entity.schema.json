@@ -595,6 +595,42 @@
         "$ref": "#/$defs/__schema0"
       }
     },
+    "key": {
+      "description": "Flags only, required: the name the code asks the flag service for",
+      "type": "string"
+    },
+    "default": {
+      "description": "Flags only: the value production runs; default off",
+      "type": "string",
+      "enum": [
+        "on",
+        "off"
+      ]
+    },
+    "when": {
+      "type": "object",
+      "properties": {
+        "flag": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "description": "Id of the flag"
+        },
+        "is": {
+          "type": "string",
+          "enum": [
+            "on",
+            "off"
+          ],
+          "description": "The value the flag must have for this to exist"
+        }
+      },
+      "required": [
+        "flag",
+        "is"
+      ],
+      "additionalProperties": false,
+      "description": "Apis and logic units only: exists only while the flag has this value"
+    },
     "external": {
       "description": "Systems, modules and apis: used by consumers the design does not show, so every rename or drop behind it breaks",
       "type": "boolean"
@@ -726,6 +762,23 @@
             "string",
             "number"
           ]
+        },
+        "flag": {
+          "description": "Id of a flag; on and off hold the steps run in each state",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "on": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema0"
+          }
+        },
+        "off": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema0"
+          }
         },
         "note": {
           "description": "Free text; alone, work the unit does itself",

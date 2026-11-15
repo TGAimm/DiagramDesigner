@@ -1,7 +1,7 @@
 # Entity files
 
 One entity per file: `<name>.<kind>.yaml`. Kinds: [system](system.md), [module](module.md),
-[model](model.md), [logic-unit](logic-unit.md), [api](api.md). Pending changes over the design
+[model](model.md), [logic-unit](logic-unit.md), [api](api.md), [flag](flag.md). Pending changes over the design
 live in [scenario](scenario.md) files. One folder per system;
 everything in the system lives under it.
 

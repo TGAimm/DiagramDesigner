@@ -19,7 +19,7 @@
 				? changes.source.title
 				: 'The design'
 	);
-	const summary = $derived(changes.comparison?.summary);
+	const summary = $derived(changes.summary);
 	const MODES: Mode[] = ['before', 'diff', 'after'];
 
 	function startForm(kind: 'new' | 'describe') {
@@ -133,7 +133,10 @@
 	{#if summary}
 		<button
 			class="sum"
-			onclick={() => (changes.panel = changes.source?.kind === 'history' ? 'history' : 'changes')}
+			onclick={() => {
+				if (changes.flagsOnly) changes.flagsOpen = true;
+				else changes.panel = changes.source?.kind === 'history' ? 'history' : 'changes';
+			}}
 			title="Show the list"
 		>
 			{#each summaryLine(summary).split(' — ') as part, i (i)}

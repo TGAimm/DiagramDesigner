@@ -31,14 +31,15 @@ steps:                           # the sequence, top to bottom
   `type` or `model`, `many`, `required`, `nullable`, `description`. Ids share the design's
   id namespace (`sdv id`).
 - Step kinds, one per step: `call` (a unit or api, in any system), `read` and `write` (a
-  model, or one field), `if` with `then`/`else`, `each` with `do`, `return` (an output's
-  name), `fail` (a fail's name). A step with only `note` is work the unit does itself; on
+  model, or one field), `if` with `then`/`else`, `each` with `do`, `flag` with `on`/`off`
+  (see [flag](flag.md)), `return` (an output's name), `fail` (a fail's name). A step with only `note` is work the unit does itself; on
   other steps `note` adds a remark. `with` and `gets` go on `call` and `read`; they, and
   conditions, are free text.
 - Errors: a missing `inputs` or `outputs`; a step naming the wrong kind or nothing; a step
   with two kinds; a `return` or `fail` naming nothing declared. Warnings, when there are
   steps: an output never returned, a fail never raised.
 - `steps` is optional: a unit without them is shown by its signature only.
+- `when: { flag, is }`: the unit exists only while the flag has that value (see [flag](flag.md)).
 - Only logic units have these keys.
 
 ## Rendering

@@ -1,0 +1,14 @@
+id: e1tqkr5p8m
+parent: d8mg4xc8ef
+name: Place order (v2)
+when: { flag: xtql9q1573, is: on }
+method: POST
+path: /orders/v2
+auth: bearer
+request:
+  fields:
+    - { id: farggb6vn0, name: customer, type: uuid, required: true, to: [xbsmlwkerd] }
+    - { id: jl3sqwkb5b, name: lines, model: qlx2qoqmci, many: true, required: true }
+responses:
+  - { status: 201, model: llns90zy3d, description: Created }
+  - { status: 400, description: Invalid order }

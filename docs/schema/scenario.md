@@ -47,7 +47,8 @@ breaks depends on how each user finds the item and which way data flows through 
 
 - Direction: a request takes data in, so asking more (required, not nullable) breaks; a
   response hands data out, so promising less (nullable, optional) breaks.
-- Callers of a broken api are **affected**, with the same severity.
+- Callers of a broken api are **affected**, with the same severity. A caller whose steps no
+  longer call it afterwards (re-pointed elsewhere) is not.
 - Mentions of an old name in nearby free text are listed with a rewrite to the new name.
 - `external: true` on a system, module or api: it has consumers the design doesn't show;
   impacts behind it say "plus unmodelled consumers".

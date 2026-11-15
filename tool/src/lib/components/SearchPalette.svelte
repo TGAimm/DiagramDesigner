@@ -20,7 +20,7 @@
 	let active = $state(0);
 	let list = $state<HTMLElement>();
 
-	const groups = $derived(searchLandscape(changes.shown, query));
+	const groups = $derived(searchLandscape(changes.shown, query, changes.hidden));
 	const hits = $derived(groups.flatMap((g) => g.hits));
 	/** Index in `hits` of each group's first hit. */
 	const starts = $derived(

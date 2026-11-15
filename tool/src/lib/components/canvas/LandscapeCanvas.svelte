@@ -115,11 +115,17 @@
 	// in a focus, cut down to the subject and what connects to it, drawn the same.
 	const focused = $derived(view.focused ? focusOn(changes.shown, view.focused) : undefined);
 	const model = $derived(focused?.model ?? changes.shown);
-	const boxes = $derived(layoutLandscape(model, !all, settings.layout, focused?.foldAt));
+	// Laid out with every flag branch and gated item in, so setting a flag moves nothing.
+	const boxes = $derived(
+		layoutLandscape(focused?.model ?? changes.layoutModel, !all, settings.layout, focused?.foldAt)
+	);
 	const rels = $derived(relationsOf(model));
 	const boxById = $derived(new Map(boxes.map((b) => [b.id, b])));
+	// Gated off in the shown flag state: drawn hidden, so neither end of a line.
+	const hiddenLeaf = (id: string) =>
+		changes.hidden.has(id) || changes.hidden.has(apiOf(model, id) ?? '');
 	// Every connection, less the kinds the key hides.
-	const allEdges = $derived(edgesOf(model));
+	const allEdges = $derived(edgesOf(model).filter((e) => !hiddenLeaf(e.from) && !hiddenLeaf(e.to)));
 	const shownEdges = $derived(allEdges.filter((e) => !view.hidden[KEY_OF[e.kind]]));
 	const leavesBy = $derived(new Map(boxes.map((b) => [b.id, new Set(leavesOf(model, b))])));
 	const label = (id: string) => refLabel(model, id) ?? id;
@@ -1201,6 +1207,7 @@
 		const kind = el(id)?.def.kind;
 		const apiField = model.apiFields.get(id);
 		if (apiField) return showApi(apiField.apiId);
+		if (kind === 'flag') return;
 		if (kind) return pick({ kind, id });
 		if (model.fields.has(id)) return pick({ kind: 'field', id });
 		const owner = [...model.elements.values()].find((e) =>
@@ -1211,7 +1218,7 @@
 				...(e.def.indexes ?? [])
 			].some((x) => x.id === id)
 		);
-		if (owner) pick({ kind: owner.def.kind, id: owner.id });
+		if (owner && owner.def.kind !== 'flag') pick({ kind: owner.def.kind, id: owner.id });
 	}
 
 	// ------------------------------------------------------------ editing a scenario

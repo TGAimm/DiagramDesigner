@@ -1,3 +1,4 @@
+import { callsIn } from '../model/flags';
 import { apiBodies, type ApiPart, type Model } from '../model/model';
 import type { DataPath } from '../model/diagnostics';
 import type { LogicStep } from '../model/schema';
@@ -152,6 +153,9 @@ const STEP_TEXT = ['with', 'gets', 'if', 'each', 'note'] as const;
 export function impactOf(before: Model, after: Model, diff: Diff): ImpactReport {
 	const b = context(before);
 	const a = context(after);
+	/** Units calling `id` before that still do after: one re-pointed elsewhere is not hit. */
+	const stillCalling = (id: string) =>
+		(b.callers.get(id) ?? []).filter((u) => callsIn(after.elements.get(u)?.def.steps).has(id));
 	const impacts = new Map<string, Impact>();
 	const mentions: Mention[] = [];
 
@@ -460,7 +464,7 @@ export function impactOf(before: Model, after: Model, diff: Diff): ImpactReport 
 		const kind = (xb ?? xa)!.def.kind;
 		const key = (k: string) => e.keys.find((x) => x.key === k);
 		const callers = (level: Level, reason: string) => {
-			for (const unit of b.callers.get(e.id) ?? [])
+			for (const unit of stillCalling(e.id))
 				add(b, { id: unit, element: unit, level, reason, cause: e.id });
 		};
 		if (e.change === 'dropped') {
@@ -728,7 +732,7 @@ export function impactOf(before: Model, after: Model, diff: Diff): ImpactReport 
 			before.elements.get(i.id)?.def.kind === 'api' ? i.id : before.apiFields.get(i.id)?.apiId;
 		if (!api) continue;
 		const def = before.elements.get(api)!.def;
-		for (const unit of b.callers.get(api) ?? [])
+		for (const unit of stillCalling(api))
 			add(b, {
 				id: unit,
 				element: unit,

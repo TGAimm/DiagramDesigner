@@ -21,6 +21,7 @@ responses:
 
 - Give each param an `id` (`sdv id`) so a [scenario](scenario.md) can change or drop it.
 - `external: true`: the api has callers the design doesn't show (see [scenario](scenario.md)).
+- `when: { flag, is }`: the api exists only while the flag has that value (see [flag](flag.md)).
 - Every `{name}` in `path` needs a `path` param, and every `path` param must be in `path`.
   Path params are always required.
 - A status is listed once. `contentType` defaults to `application/json`; `many: true` means

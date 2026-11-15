@@ -1,4 +1,4 @@
-import type { Model } from '../model/model';
+import { flagOn, type Model } from '../model/model';
 import type { LogicStep } from '../model/schema';
 
 /** A line of text under a lifeline's name; clicking one with a target goes there. */
@@ -33,23 +33,27 @@ export interface SeqMessage {
 	method?: string;
 	/** The api, unit or model it names. */
 	target?: string;
+	/** In a flag branch the shown state doesn't take. */
+	dim?: boolean;
 }
 
-/** An alt or loop box, from its header row to its last row. */
+/** An alt, loop or flag box, from its header row to its last row. */
 export interface SeqFrag {
-	label: 'alt' | 'loop';
+	label: 'alt' | 'loop' | 'flag';
 	guard: string;
 	top: number;
 	bottom: number;
 	depth: number;
-	dividers: { row: number; guard: string }[];
+	dividers: { row: number; guard: string; dim?: boolean }[];
+	/** Its first branch is one the shown flag state doesn't take. */
+	dim?: boolean;
 }
 
 export interface Sequence {
 	lifelines: Lifeline[];
 	messages: SeqMessage[];
 	/** Work the unit does itself, written beside its lifeline. */
-	notes: { row: number; text: string }[];
+	notes: { row: number; text: string; dim?: boolean }[];
 	frags: SeqFrag[];
 	rows: number;
 }
@@ -95,9 +99,11 @@ export function sequenceOf(model: Model, unitId: string): Sequence {
 	const notes: Sequence['notes'] = [];
 	const frags: SeqFrag[] = [];
 	let row = 0;
+	// Inside a flag branch the shown state doesn't take.
+	let dim = false;
 	const msg = (
 		m: Omit<SeqMessage, 'row' | 'from' | 'dashed'> & { from?: number; dashed?: boolean }
-	) => messages.push({ from: 1, dashed: false, ...m, row: row++ });
+	) => messages.push({ from: 1, dashed: false, ...m, row: row++, ...(dim ? { dim } : {}) });
 	/** What a call or read gets back, dashed from the lane it went to. */
 	const ret = (from: number, text: string | undefined) => {
 		if (text) msg({ from, to: 1, tone: 'return', dashed: true, text });
@@ -177,11 +183,32 @@ export function sequenceOf(model: Model, unitId: string): Sequence {
 					walk(s.else, depth + 1);
 				}
 				f.bottom = row - 1;
+			} else if (s.flag !== undefined) {
+				// Both branches are drawn, so setting the flag never moves a lifeline; the one the
+				// state doesn't take is dimmed.
+				const name = el(s.flag)?.name ?? s.flag;
+				const on = flagOn(model, s.flag);
+				const branches = (['on', 'off'] as const).filter((v) => s[v]);
+				const f: SeqFrag = { label: 'flag', guard: '', top: row++, bottom: 0, depth, dividers: [] };
+				frags.push(f);
+				const outer = dim;
+				branches.forEach((v, i) => {
+					const off = outer || (v === 'on') !== on;
+					if (i === 0) {
+						f.guard = `[${name} ${v}]`;
+						if (off) f.dim = true;
+					} else f.dividers.push({ row: row++, guard: `[${v}]`, ...(off ? { dim: true } : {}) });
+					dim = off;
+					walk(s[v], depth + 1);
+				});
+				dim = outer;
+				f.bottom = row - 1;
 			} else if (s.return !== undefined) {
 				msg({ to: 0, tone: 'return', dashed: true, text: withNote(s.return, s) });
 			} else if (s.fail !== undefined) {
 				msg({ to: 0, tone: 'fail', dashed: true, text: withNote(`fails ${s.fail}`, s) });
-			} else if (s.note !== undefined) notes.push({ row: row++, text: s.note });
+			} else if (s.note !== undefined)
+				notes.push({ row: row++, text: s.note, ...(dim ? { dim } : {}) });
 		}
 	};
 	walk(def.steps, 0);

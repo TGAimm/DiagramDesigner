@@ -61,24 +61,26 @@
 			{@const [x1, x2] = ends(m.from, m.to)}
 			{@const dir = Math.sign(x2 - x1)}
 			{@const yy = y(m.row)}
-			<path
-				d="M{x1} {yy} H{x2 - dir * (m.dashed ? 1 : 9)}"
-				stroke={COLOR[m.tone]}
-				stroke-dasharray={m.dashed ? '4 3' : undefined}
-				class="msg"
-			/>
-			{#if m.dashed}
+			<g class:dim={m.dim}>
 				<path
-					d="M{x2 - dir * 8} {yy - 4} L{x2} {yy} L{x2 - dir * 8} {yy + 4}"
+					d="M{x1} {yy} H{x2 - dir * (m.dashed ? 1 : 9)}"
 					stroke={COLOR[m.tone]}
+					stroke-dasharray={m.dashed ? '4 3' : undefined}
 					class="msg"
 				/>
-			{:else}
-				<path
-					d="M{x2} {yy} L{x2 - dir * 9} {yy - 4.5} L{x2 - dir * 9} {yy + 4.5} Z"
-					fill={COLOR[m.tone]}
-				/>
-			{/if}
+				{#if m.dashed}
+					<path
+						d="M{x2 - dir * 8} {yy - 4} L{x2} {yy} L{x2 - dir * 8} {yy + 4}"
+						stroke={COLOR[m.tone]}
+						class="msg"
+					/>
+				{:else}
+					<path
+						d="M{x2} {yy} L{x2 - dir * 9} {yy - 4.5} L{x2 - dir * 9} {yy + 4.5} Z"
+						fill={COLOR[m.tone]}
+					/>
+				{/if}
+			</g>
 		{/each}
 	</svg>
 	{#each seq.lifelines as l, i (l.key)}
@@ -110,9 +112,16 @@
 		{@const inset = 14 + f.depth * 8}
 		{@const top = y(f.top) - SEQ.row / 2 + 2}
 		<div class="tag" style:left="{inset}px" style:top="{top}px">{f.label}</div>
-		<div class="guard" style:left="{inset + 40}px" style:top="{top + 2}px">{f.guard}</div>
+		<div class="guard" class:dim={f.dim} style:left="{inset + 40}px" style:top="{top + 2}px">
+			{f.guard}
+		</div>
 		{#each f.dividers as d (d.row)}
-			<div class="guard" style:left="{inset + 8}px" style:top="{y(d.row) - SEQ.row / 2 + 6}px">
+			<div
+				class="guard"
+				class:dim={d.dim}
+				style:left="{inset + 8}px"
+				style:top="{y(d.row) - SEQ.row / 2 + 6}px"
+			>
 				{d.guard}
 			</div>
 		{/each}
@@ -120,6 +129,7 @@
 	{#each seq.messages as m (m.row)}
 		<button
 			class="label {m.tone}"
+			class:dim={m.dim}
 			disabled={!m.target}
 			style:left="{(x(m.from) + x(m.to)) / 2}px"
 			style:top="{y(m.row) - 17}px"
@@ -129,11 +139,17 @@
 		>
 	{/each}
 	{#each seq.notes as n (n.row)}
-		<div class="note" style:left="{x(1) + 12}px" style:top="{y(n.row) - 8}px">{n.text}</div>
+		<div class="note" class:dim={n.dim} style:left="{x(1) + 12}px" style:top="{y(n.row) - 8}px">
+			{n.text}
+		</div>
 	{/each}
 </div>
 
 <style>
+	/* A flag branch the shown state doesn't take: still code, not running. */
+	.dim {
+		opacity: 0.35;
+	}
 	.seq {
 		position: relative;
 		font-size: 12px;

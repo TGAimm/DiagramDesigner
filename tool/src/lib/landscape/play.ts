@@ -1,4 +1,4 @@
-import type { Model } from '../model/model';
+import { flagOn, type Model } from '../model/model';
 import type { LogicStep } from '../model/schema';
 
 /** A branch to pick at a choice: its button text, and the short word under its mark. */
@@ -131,6 +131,10 @@ export function runOf(
 					const picked = choose(key, { label: 'alt', guard: `[${s.if}]`, options }, frame, self);
 					if (walk(picked === 0 ? s.then : s.else, `${key}${picked === 0 ? 't' : 'e'}`))
 						return true;
+				} else if (s.flag !== undefined) {
+					// The shown flag state picks the branch: nothing to ask.
+					const on = flagOn(model, s.flag);
+					if (walk(on ? s.on : s.off, `${key}${on ? 'n' : 'f'}`)) return true;
 				} else if (s.each !== undefined) {
 					const options = [
 						{ label: 'once more', short: 'more' },

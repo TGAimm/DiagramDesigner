@@ -406,6 +406,7 @@
 						class:flash={flash === u.id}
 						class:faded={comparing && !marked(u.id)}
 						class:gone={marks.dropped.has(u.id)}
+						class:hid={changes.hidden.has(u.id)}
 						class:sev-break={lv(u.id) === 'breaking'}
 						class:sev-check={lv(u.id) === 'check'}
 						role="button"
@@ -510,6 +511,7 @@
 								class:hot={d.state.hotApis[a.id]}
 								class:faded={comparing && !marked(a.id)}
 								class:gone={marks.dropped.has(a.id)}
+								class:hid={changes.hidden.has(a.id)}
 								class:sev-break={lv(a.id) === 'breaking'}
 								class:sev-check={lv(a.id) === 'check'}
 								style:height="{RAIL.row}px"
@@ -871,6 +873,10 @@
 	.sev-check {
 		box-shadow: inset 3px 0 0 var(--sdv-sev-check);
 		background: color-mix(in srgb, var(--sdv-sev-check) 9%, transparent);
+	}
+	/* Gated off in the shown flag state: its room is kept so setting a flag moves nothing. */
+	.hid {
+		visibility: hidden;
 	}
 	.gone {
 		background: repeating-linear-gradient(

@@ -10,6 +10,7 @@
 	import DiagnosticsPanel from '#lib/components/DiagnosticsPanel.svelte';
 	import SettingsPanel from '#lib/components/SettingsPanel.svelte';
 	import ScenarioControls from '#lib/components/ScenarioControls.svelte';
+	import FlagsMenu from '#lib/components/FlagsMenu.svelte';
 	import type { ChangedEvent } from '#lib/server/vite-plugin.ts';
 
 	let { children } = $props();
@@ -45,7 +46,7 @@
 <div class="app">
 	<header class="topbar">
 		<a class="brand" href={resolve('/')}>System Design Viewer</a>
-		{#if design.loaded}<ScenarioControls />{/if}
+		{#if design.loaded}<FlagsMenu /><ScenarioControls />{/if}
 		<span class="spacer"></span>
 		<button
 			class="find"

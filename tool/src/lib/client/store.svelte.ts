@@ -1,7 +1,8 @@
 import type { ClientConfig } from '../config';
 import type { Diagnostic } from '../model/diagnostics';
-import type { SourceFile } from '../model/loader';
-import { buildModel, type Model } from '../model/model';
+import { flagSplits } from '../model/flags';
+import { placed, type SourceFile } from '../model/loader';
+import { buildModel, type Locator, type Model } from '../model/model';
 import { fileKind, locate, parseFile, type ParsedFile } from '../model/parse';
 import type { ChangedEvent } from '../server/vite-plugin';
 
@@ -26,16 +27,18 @@ export class DesignStore {
 	loaded = $state(false);
 	loadError = $state<string | null>(null);
 
-	model: Model = $derived.by(() =>
-		buildModel(this.data, (file, path, key) => {
-			const m = this.meta[file];
-			return m ? locate(m.parsed.doc, m.parsed.lines, path, key) : undefined;
-		})
-	);
+	#locate: Locator = (file, path, key) => {
+		const m = this.meta[file];
+		return m ? locate(m.parsed.doc, m.parsed.lines, path, key) : undefined;
+	};
+
+	/** The whole design: every flag branch and gated item in. */
+	model: Model = $derived.by(() => buildModel(this.data, this.#locate));
 
 	diagnostics: Diagnostic[] = $derived([
 		...Object.values(this.meta).flatMap((m) => m.parsed.diagnostics),
-		...this.model.diagnostics
+		...this.model.diagnostics,
+		...placed(flagSplits(this.model, this.data), this.#locate)
 	]);
 
 	#chain: Promise<unknown> = Promise.resolve();

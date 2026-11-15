@@ -43,18 +43,34 @@ export interface Element {
 	outputs?: LogicField[];
 	fails?: LogicFail[];
 	steps?: LogicStep[];
+	key?: string;
+	default?: FlagValue;
+	when?: FlagGate;
 }
 
 /** Kinds an entity file can have; the file name `<name>.<kind>.yaml` gives it. */
-export const ENTITY_KINDS = ['system', 'module', 'model', 'logic-unit', 'api'] as const;
+export const ENTITY_KINDS = ['system', 'module', 'model', 'logic-unit', 'api', 'flag'] as const;
 export type EntityFileKind = (typeof ENTITY_KINDS)[number];
 
 /** Kinds a parent must have, for kinds that may only sit under certain parents. */
 export const PARENT_KINDS: Partial<Record<EntityFileKind, EntityFileKind[]>> = {
 	'logic-unit': ['module'],
 	api: ['system', 'module'],
-	model: ['system', 'module']
+	model: ['system', 'module'],
+	flag: ['system', 'module']
 };
+
+export const FlagValue = z.enum(['on', 'off']);
+export type FlagValue = z.infer<typeof FlagValue>;
+
+/** An api or logic unit that exists only while a flag has one value. */
+export const FlagGate = z
+	.strictObject({
+		flag: Id.describe('Id of the flag'),
+		is: FlagValue.describe('The value the flag must have for this to exist')
+	})
+	.describe('Apis and logic units only: exists only while the flag has this value');
+export type FlagGate = z.infer<typeof FlagGate>;
 
 /**
  * `required` and `nullable` are independent: a required field must be given on create but
@@ -210,6 +226,9 @@ export interface LogicStep {
 	do?: LogicStep[];
 	return?: string;
 	fail?: string;
+	flag?: string;
+	on?: LogicStep[];
+	off?: LogicStep[];
 	note?: string;
 }
 export const LogicStep: z.ZodType<LogicStep> = z
@@ -232,6 +251,13 @@ export const LogicStep: z.ZodType<LogicStep> = z
 		},
 		return: Text.optional().describe('Name of the output returned'),
 		fail: Text.optional().describe('Name of the fail raised'),
+		flag: Id.optional().describe('Id of a flag; on and off hold the steps run in each state'),
+		get on() {
+			return z.array(LogicStep).optional();
+		},
+		get off() {
+			return z.array(LogicStep).optional();
+		},
 		note: Text.optional().describe('Free text; alone, work the unit does itself')
 	})
 	.describe('One step of a logic unit, in order');
@@ -279,6 +305,12 @@ export const EntityFile = z
 			.array(LogicStep)
 			.optional()
 			.describe('Logic units only: its sequence; what it reads, writes and calls comes from it'),
+		key: z
+			.string()
+			.optional()
+			.describe('Flags only, required: the name the code asks the flag service for'),
+		default: FlagValue.optional().describe('Flags only: the value production runs; default off'),
+		when: FlagGate.optional(),
 		external: z
 			.boolean()
 			.optional()

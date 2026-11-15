@@ -1,4 +1,5 @@
 import type { Model } from '../model/model';
+import type { FlagFinding } from '../model/flags';
 import type { Comparison } from './evaluate';
 import { worse, type Level } from './impact';
 
@@ -74,4 +75,22 @@ export function marksOf(c: Comparison): Marks {
 		}
 	}
 	return { glyph, level, dropped: c.dropped, rollup };
+}
+
+/** Marks with what a flag state breaks added: a level on each unit or api, rolled up. */
+export function withFindings(marks: Marks, findings: FlagFinding[], model: Model): Marks {
+	if (!findings.length) return marks;
+	const level = new Map(marks.level);
+	const rollup = new Map(marks.rollup);
+	for (const f of findings) {
+		level.set(f.at, worse(level.get(f.at), f.level));
+		const seen = new Set<string>();
+		for (let cur: string | undefined = f.at; cur && !seen.has(cur);) {
+			seen.add(cur);
+			const r = rollup.get(cur);
+			rollup.set(cur, { count: (r?.count ?? 0) + 1, level: worse(r?.level, f.level) });
+			cur = model.elements.get(cur)?.parentId;
+		}
+	}
+	return { ...marks, level, rollup };
 }

@@ -44,19 +44,21 @@ const dataOf = (docs: Docs) =>
 
 /**
  * Applies changes over the design's documents. `locate` positions diagnostics in files the
- * changes leave untouched.
+ * changes leave untouched. `build` makes the after state from its data, e.g. in a flag state
+ * (`before` is then in the same state).
  */
 export function evaluate(
 	docs: Record<string, Document>,
 	before: State,
 	changes: Change[],
-	locate?: Locator
+	locate?: Locator,
+	build?: (data: Record<string, unknown>) => State
 ): Evaluation {
 	const applied = applyChanges(docs, changes);
 	const at: Locator = (file, path, key) =>
 		applied.touched.has(file) ? undefined : locate?.(file, path, key);
 	const data = dataOf(applied.docs);
-	const after = { model: buildModel(data, at), data };
+	const after = build ? build(data) : { model: buildModel(data, at), data };
 	return { ...compare(before, after), results: applied.results };
 }
 

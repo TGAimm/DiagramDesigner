@@ -18,7 +18,11 @@ steps:
   - if: cart.customerId is null
     then:
       - { fail: notSignedIn }
-  - { call: a2uivekzaq, with: "cart.customerId, cart lines, note", gets: order }
+  - flag: d9vbifruws
+    on:
+      - { call: e1tqkr5p8m, with: "cart.customerId, cart lines", gets: order }
+    off:
+      - { call: a2uivekzaq, with: "cart.customerId, cart lines, note", gets: order }
   - if: the ERP answers 400
     then:
       - { fail: refused }

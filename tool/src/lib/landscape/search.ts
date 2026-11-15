@@ -45,9 +45,10 @@ const find = (text: string, q: string): Mark | undefined => {
 /**
  * Finds systems, modules, models, fields, apis and logic units whose name holds the query
  * (any case); apis also by path. Within a group, the earlier the query sits in the text, the
- * higher the hit. With no query, lists the systems to start from.
+ * higher the hit. With no query, lists the systems to start from. `hidden` apis and units
+ * (gated off in the shown flag state) are not found.
  */
-export function searchLandscape(model: Model, query: string): HitGroup[] {
+export function searchLandscape(model: Model, query: string, hidden?: Set<string>): HitGroup[] {
 	const q = query.trim().toLowerCase();
 	const where = (id: string | undefined): string[] => {
 		const out: string[] = [];
@@ -77,6 +78,8 @@ export function searchLandscape(model: Model, query: string): HitGroup[] {
 	};
 	for (const e of model.elements.values()) {
 		const kind = e.def.kind;
+		// Flags are listed in the Flags menu, not drawn; a hidden api or unit isn't there.
+		if (kind === 'flag' || hidden?.has(e.id)) continue;
 		const at = where(e.parentId);
 		if (kind === 'api') {
 			const path = e.def.path ?? '';

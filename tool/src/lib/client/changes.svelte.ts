@@ -1,10 +1,11 @@
 import type { Document } from 'yaml';
 import { generateId } from '../model/ids';
 import { loadDesign, type SourceFile } from '../model/loader';
-import type { Model } from '../model/model';
+import { flagFindings, gatedOff, stateOf, type FlagFinding } from '../model/flags';
+import { buildModel, flagStateOf, type Model } from '../model/model';
 import { fileKind, locate } from '../model/parse';
 import { compare, evaluate, newErrors, type Comparison, type State } from '../scenario/evaluate';
-import { EMPTY, marksOf, type Marks } from '../scenario/marks';
+import { EMPTY, marksOf, withFindings, type Marks } from '../scenario/marks';
 import { scenarioReport } from '../scenario/report';
 import {
 	appendChange,
@@ -46,6 +47,52 @@ class Changes {
 	historyStates = $state.raw<{ rev: string; before: State; after: State } | null>(null);
 	/** The last failed write, shown until the next one. */
 	error = $state<string | null>(null);
+	/** Flags set away from their default in the Flags menu, by flag id. */
+	flags = $state.raw<Record<string, boolean>>({});
+
+	/** Each flag's value now, and at its default (production). */
+	flagState = $derived(flagStateOf(design.model, this.flags));
+	flagDefaults = $derived(flagStateOf(design.model, {}));
+	/** Some flag is set away from its default, so the canvas compares with production. */
+	flagged = $derived([...this.flagState].some(([id, on]) => on !== this.flagDefaults.get(id)));
+
+	#locate = (file: string, path: (string | number)[], key?: string) => {
+		const m = design.meta[file];
+		return m ? locate(m.parsed.doc, m.parsed.lines, path, key) : undefined;
+	};
+	/** The design has flags; without, every state is the design itself. */
+	#hasFlags = $derived(this.flagDefaults.size > 0);
+	/** The design built at the production defaults, and at the flags set now. */
+	#atDefaults = $derived(
+		this.#hasFlags
+			? stateOf(design.data, this.flagDefaults, this.#locate)
+			: { model: design.model, data: design.data }
+	);
+	#atState = $derived(
+		this.flagged ? stateOf(design.data, this.flagState, this.#locate) : this.#atDefaults
+	);
+	/** What the flags as set now break. */
+	findings: FlagFinding[] = $derived(
+		flagFindings(design.model, this.#atDefaults.model, this.#atState.model)
+	);
+
+	/** The design drawn in a flag state: every api and unit kept, links as the state runs. */
+	#drawn = (state: Map<string, boolean>) =>
+		buildModel(design.data, this.#locate, Object.fromEntries(state));
+	#drawnDefaults = $derived(this.#hasFlags ? this.#drawn(this.flagDefaults) : design.model);
+	#drawnState = $derived(this.flagged ? this.#drawn(this.flagState) : this.#drawnDefaults);
+
+	setFlags(ids: string[], on: boolean) {
+		const next = { ...this.flags };
+		for (const id of ids)
+			if (on === this.flagDefaults.get(id)) delete next[id];
+			else next[id] = on;
+		this.flags = next;
+	}
+
+	resetFlags() {
+		this.flags = {};
+	}
 
 	scenarios: Scenario[] = $derived(
 		Object.entries(design.meta)
@@ -59,35 +106,77 @@ class Changes {
 		return s?.kind === 'scenario' ? this.scenarios.find((x) => x.path === s.path) : undefined;
 	});
 
+	/**
+	 * What is compared: a scenario over the design or a commit with its parent, both in the
+	 * flag state set now; else, with flags set away from default, that state with production.
+	 */
 	comparison: Comparison | undefined = $derived.by(() => {
+		const flags = this.flagState;
 		if (this.scenario) {
 			const docs: Record<string, Document> = {};
 			for (const [p, m] of Object.entries(design.meta))
 				if (fileKind(p) === 'entity' && m.parsed.data !== undefined) docs[p] = m.parsed.doc;
 			return evaluate(
 				docs,
-				{ model: design.model, data: design.data },
+				this.#atState,
 				this.scenario.changes,
-				(file, path, key) => {
-					const m = design.meta[file];
-					return m ? locate(m.parsed.doc, m.parsed.lines, path, key) : undefined;
-				}
+				this.#locate,
+				this.#hasFlags ? (data) => stateOf(data, flags) : undefined
 			);
 		}
 		const h = this.historyStates;
 		const s = this.source;
-		if (h && s?.kind === 'history' && h.rev === s.rev) return compare(h.before, h.after);
+		if (h && s?.kind === 'history' && h.rev === s.rev) {
+			const at = (st: State) => stateOf(st.data, flagStateOf(st.model, this.flags));
+			return compare(at(h.before), at(h.after));
+		}
+		if (this.flagged) return compare(this.#atDefaults, this.#atState);
 		return undefined;
 	});
 
-	/** The model the canvas draws: the design, or one state of the comparison. */
+	/** Flags alone are compared: the canvas keeps its layout and hides what is gated off. */
+	flagsOnly = $derived(this.flagged && !this.source);
+
+	/** The model the canvas draws: the design in its flag state, or one state compared. */
 	shown: Model = $derived.by(() => {
 		const c = this.comparison;
-		if (!c) return design.model;
+		if (!c) return this.#drawnDefaults;
+		if (this.flagsOnly) return this.mode === 'before' ? this.#drawnDefaults : this.#drawnState;
 		return this.mode === 'before' ? c.before : this.mode === 'after' ? c.after : c.union;
 	});
 
-	marks: Marks = $derived(this.comparison ? marksOf(this.comparison) : EMPTY);
+	/**
+	 * What the canvas lays out: the whole design, every branch and gated item in, so setting a
+	 * flag never moves a box. A scenario or commit lays out what it shows.
+	 */
+	layoutModel: Model = $derived(this.source && this.comparison ? this.shown : design.model);
+
+	/** Apis and units gated off in the shown flag state: drawn hidden, their room kept. */
+	hidden: Set<string> = $derived.by(() => {
+		if (this.source && this.comparison) return new Set<string>();
+		const now = gatedOff(this.shown);
+		if (!this.flagsOnly || this.mode !== 'diff') return now;
+		// Diff: what production has and this state doesn't is drawn struck, not hidden.
+		const before = gatedOff(this.#drawnDefaults);
+		return new Set([...now].filter((id) => before.has(id)));
+	});
+
+	/** The topbar's counts; with flags alone compared, what the flag state breaks is counted. */
+	summary = $derived.by(() => {
+		const s = this.comparison?.summary;
+		if (!s || !this.flagsOnly) return s;
+		const n = (level: string) => this.findings.filter((f) => f.level === level).length;
+		return { ...s, breaking: s.breaking + n('breaking'), check: s.check + n('check') };
+	});
+	/** The Flags menu is open. */
+	flagsOpen = $state(false);
+
+	marks: Marks = $derived.by(() => {
+		const c = this.comparison;
+		if (!c) return EMPTY;
+		const m = marksOf(c);
+		return this.flagsOnly ? withFindings(m, this.findings, this.shown) : m;
+	});
 
 	/** Results per change of the shown scenario: ok, stale, missing... */
 	results = $derived(

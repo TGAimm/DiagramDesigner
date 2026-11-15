@@ -461,7 +461,11 @@ describe('logic units', () => {
 			['error', 'logic-step', 'a step does one thing; this one has call and write'],
 			['error', 'logic-step', 'gets goes with call or read'],
 			['error', 'logic-step', 'then goes with if'],
-			['error', 'logic-step', 'empty step; give call, read, write, if, each, return, fail or note']
+			[
+				'error',
+				'logic-step',
+				'empty step; give call, read, write, if, each, flag, return, fail or note'
+			]
 		]);
 	});
 
