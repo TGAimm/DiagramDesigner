@@ -1,0 +1,9 @@
+id: nl789ylan8
+parent: al7b2jxi6l
+name: show
+inputs: []
+outputs:
+  - { id: o8d4tbzcld, name: cart, model: uzi5stl672 }
+steps:
+  - { call: htgs8t0bvf, gets: cart }
+  - { return: cart }

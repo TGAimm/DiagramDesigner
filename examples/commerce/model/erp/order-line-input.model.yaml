@@ -1,0 +1,6 @@
+id: qlx2qoqmci
+ownedBy: d8mg4xc8ef
+name: Order Line Input
+fields:
+  - { id: halvr5q5mv, name: productId, type: uuid, required: true, ref: j6holg5xo1 }
+  - { id: mcbqx1wg0d, name: quantity, type: decimal, required: true, constraints: [positive] }

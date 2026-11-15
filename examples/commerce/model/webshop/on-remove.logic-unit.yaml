@@ -1,0 +1,9 @@
+id: d2907kn6i9
+parent: al7b2jxi6l
+name: onRemove
+inputs:
+  - { id: q5rwrb4hny, name: lineId, type: uuid, required: true }
+outputs: []
+steps:
+  - { call: kz9zchjfh4, with: lineId }
+  - { call: nl789ylan8, note: redraw the cart }

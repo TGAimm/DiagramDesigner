@@ -1,0 +1,10 @@
+id: g78if9lp04
+parent: al7b2jxi6l
+name: onChangeQuantity
+inputs:
+  - { id: jyyx8vk4rm, name: lineId, type: uuid, required: true }
+  - { id: v9k9a5if45, name: quantity, type: int, required: true }
+outputs: []
+steps:
+  - { call: wez7atj6e5, with: "lineId, quantity" }
+  - { call: nl789ylan8, note: redraw the cart }

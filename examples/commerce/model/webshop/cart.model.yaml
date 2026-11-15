@@ -7,5 +7,6 @@ fields:
   - { id: z8tdfi6pyu, name: sessionId, type: string, pi: true, required: true }
   - { id: owts056ek0, name: customerId, type: uuid, nullable: true, ref: wpbo4l3k21 }
   - { id: mh2hhcz57z, name: createdAt, type: datetime, required: true }
+  - { id: fjdiw1zmw3, name: lines, model: a6ub2b7rpa, many: true }
 indexes:
   - { name: ix_cart_customer, fields: [owts056ek0] }

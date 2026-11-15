@@ -5,8 +5,8 @@ name: Order Line
 fields:
   - { id: n5g57gkusw, name: orderId, type: uuid, pk: true, pi: true, required: true, ref: jxhrrx2cmz }
   - { id: m51oefdwko, name: lineNo, type: int, pk: true, required: true, constraints: [positive] }
-  - { id: epto5lpyce, name: productId, type: uuid, required: true, ref: j6holg5xo1 }
-  - { id: i2i0i6v498, name: quantity, type: decimal, required: true, constraints: [positive] }
-  - { id: w4ka1w5qkb, name: unitPrice, type: decimal, required: true, constraints: [min 0] }
+  - { id: epto5lpyce, name: productId, type: uuid, required: true, ref: j6holg5xo1, from: [halvr5q5mv] }
+  - { id: i2i0i6v498, name: quantity, type: decimal, required: true, constraints: [positive], from: [mcbqx1wg0d] }
+  - { id: w4ka1w5qkb, name: unitPrice, type: decimal, required: true, constraints: [min 0], from: [qk2q634whz], derived: price valid when the order is placed }
 indexes:
   - { name: ix_order_line_product, fields: [epto5lpyce] }

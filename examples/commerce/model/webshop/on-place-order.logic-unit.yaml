@@ -1,0 +1,11 @@
+id: d0al0vmxcl
+parent: j0a3hfh8jp
+name: onPlaceOrder
+inputs:
+  - { id: k4bkfzm11o, name: note, type: string, nullable: true }
+outputs:
+  - { id: s4dzmn1u2a, name: order, model: llns90zy3d }
+steps:
+  - { call: mv0hqord4c, with: note, gets: order }
+  - { note: "show the order number, or why it failed" }
+  - { return: order }

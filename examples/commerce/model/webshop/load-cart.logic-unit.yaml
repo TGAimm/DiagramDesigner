@@ -1,11 +1,15 @@
 id: tl04zzurg3
 parent: lht4l7njny
 name: loadCart
+handles: [htgs8t0bvf]
 inputs:
   - { id: dil7kldqjz, name: sessionId, type: string, required: true }
 outputs:
   - { id: w8gr0uyfyr, name: cart, model: uzi5stl672 }
 steps:
   - { read: uzi5stl672, with: sessionId, gets: cart }
+  - if: no cart for the session
+    then:
+      - { write: uzi5stl672, note: create an empty cart for the session }
   - { read: a6ub2b7rpa, with: cart.id, gets: lines }
   - { return: cart }

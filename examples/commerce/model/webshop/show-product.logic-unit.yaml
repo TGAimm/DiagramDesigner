@@ -1,0 +1,10 @@
+id: yx5247xegg
+parent: yqhpbia7fs
+name: show
+inputs:
+  - { id: n8dfsrzud5, name: sku, type: string, required: true }
+outputs:
+  - { id: zrnypqeyfk, name: product, model: ck9foqxxus }
+steps:
+  - { call: giu9ae1x1o, with: "sku, the visitor's locale", gets: product }
+  - { return: product }

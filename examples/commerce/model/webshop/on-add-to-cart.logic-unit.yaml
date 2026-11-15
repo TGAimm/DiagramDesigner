@@ -1,0 +1,10 @@
+id: w82lnn0n57
+parent: yqhpbia7fs
+name: onAddToCart
+inputs:
+  - { id: i0vetucte1, name: productId, type: uuid, required: true }
+  - { id: szs073rgqa, name: quantity, type: int, required: true }
+outputs: []
+steps:
+  - { call: jibntgqh1p, with: "productId, quantity" }
+  - { note: "show the cart count, or the out-of-stock message" }

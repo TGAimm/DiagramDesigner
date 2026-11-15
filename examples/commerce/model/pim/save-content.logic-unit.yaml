@@ -1,0 +1,13 @@
+id: xjx82wjcs8
+parent: ooj6znxkc9
+name: saveContent
+inputs:
+  - { id: edtqu528cr, name: sku, type: string, required: true }
+  - { id: kbuexp54q1, name: locale, type: string, required: true }
+  - { id: zeexil7jlh, name: title, type: string, required: true }
+  - { id: ugmpbaika4, name: description, type: text, nullable: true }
+  - { id: qoyq1smido, name: imageUrl, type: string, nullable: true }
+outputs: []
+steps:
+  - { note: an editor submits the content form }
+  - { write: v5kp3b4k9m, note: "insert, or replace the sku and locale" }

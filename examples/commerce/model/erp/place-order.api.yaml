@@ -8,7 +8,7 @@ request:
   fields:
     - { id: eav6yzcyxr, name: customer, type: uuid, required: true, to: [xbsmlwkerd] }
     - { id: elxxos1cii, name: comment, type: string, to: [p2vo4bbov0] }
-    - { id: b98ainkq8b, name: lines, model: ahwod9ofrf, many: true, required: true }
+    - { id: b98ainkq8b, name: lines, model: qlx2qoqmci, many: true, required: true }
 responses:
   - { status: 201, model: llns90zy3d, description: Created }
   - { status: 400, description: Invalid order }

@@ -1,0 +1,8 @@
+id: htgs8t0bvf
+parent: lht4l7njny
+name: Get cart
+method: GET
+path: /cart
+auth: session
+responses:
+  - { status: 200, model: uzi5stl672 }
