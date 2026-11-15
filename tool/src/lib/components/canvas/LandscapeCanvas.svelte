@@ -14,6 +14,9 @@
 	} from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
 	import { design } from '#lib/client/store.svelte.ts';
+	import { search } from '#lib/client/search.svelte.ts';
+	import SearchPalette from '#lib/components/SearchPalette.svelte';
+	import type { Hit } from '#lib/landscape/search.ts';
 	import { settings } from '#lib/client/settings.svelte.ts';
 	import { theme } from '#lib/client/theme.svelte.ts';
 	import type { ViewState } from '#lib/client/view-state.svelte.ts';
@@ -788,6 +791,37 @@
 		}, 700);
 	}
 
+	/** Goes to a search hit: frames a system or module, flies to a model or row, picks an api. */
+	function pick(hit: Hit) {
+		search.open = false;
+		if (hit.kind === 'api') return showApi(hit.id);
+		view.api = null;
+		view.apiField = null;
+		if (hit.kind === 'system' || hit.kind === 'module') {
+			view.field = null;
+			view.trail = [];
+			const own = boxes.filter((b) => b.elementId === hit.id && !b.ref && !b.boundary);
+			const t = own.find((b) => !b.logic) ?? own[0];
+			if (!t) return;
+			// Half its api rail sits outside its right border.
+			const rail = t.apis?.length
+				? railOf(design.model, railGroups(design.model, t.elementId, t.apis), t.height).width / 2
+				: 0;
+			const w = t.width + rail;
+			const zoom = 0.9 / Math.max(w / cw, t.height / ch);
+			flow.setCenter(t.absX + w / 2, t.absY + t.height / 2, { zoom, duration: 700 });
+			return;
+		}
+		const modelId = hit.kind === 'field' ? design.model.fields.get(hit.id)?.modelId : hit.id;
+		const field = hit.kind === 'model' ? undefined : hit.id;
+		const fits = (b: LandscapeBox) =>
+			hit.kind === 'logic-unit'
+				? !!b.logic && rowOf(b, field) >= 0
+				: !!b.view && b.elementId === modelId && (!field || rowOf(b, field) >= 0);
+		const box = boxes.find((b) => fits(b) && !b.ref) ?? boxes.find(fits);
+		if (box) flyTo({ box, field });
+	}
+
 	function goBack() {
 		const prev = view.trail.at(-1);
 		const box = prev && boxById.get(prev.box);
@@ -1135,6 +1169,9 @@
 				</section>
 			{/each}
 		</aside>
+	{/if}
+	{#if search.open}
+		<SearchPalette onpick={pick} onclose={() => (search.open = false)} />
 	{/if}
 </div>
 

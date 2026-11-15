@@ -2,8 +2,9 @@
 	import '../app.css';
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
-	import { CircleX, Moon, Settings, Sun, TriangleAlert } from '@lucide/svelte';
+	import { CircleX, Moon, Search, Settings, Sun, TriangleAlert } from '@lucide/svelte';
 	import { design } from '#lib/client/store.svelte.ts';
+	import { search } from '#lib/client/search.svelte.ts';
 	import { theme } from '#lib/client/theme.svelte.ts';
 	import { themeCss } from '#lib/theme/tokens.ts';
 	import DiagnosticsPanel from '#lib/components/DiagnosticsPanel.svelte';
@@ -16,6 +17,7 @@
 
 	const errors = $derived(design.diagnostics.filter((d) => d.severity === 'error').length);
 	const warnings = $derived(design.diagnostics.length - errors);
+	const mac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent);
 
 	onMount(() => {
 		// Subscribe before loading; the store queues events behind the initial load.
@@ -24,6 +26,14 @@
 		if (import.meta.env.DEV) (window as unknown as { __sdv: typeof design }).__sdv = design;
 	});
 </script>
+
+<svelte:window
+	onkeydown={(e) => {
+		if (e.key.toLowerCase() !== 'k' || !(mac ? e.metaKey : e.ctrlKey)) return;
+		e.preventDefault();
+		search.open = !search.open;
+	}}
+/>
 
 <svelte:head>
 	<title>System Design Viewer</title>
@@ -35,6 +45,16 @@
 	<header class="topbar">
 		<a class="brand" href={resolve('/')}>System Design Viewer</a>
 		<span class="spacer"></span>
+		<button
+			class="find"
+			aria-expanded={search.open}
+			aria-pressed={search.open}
+			onclick={() => (search.open = !search.open)}
+			title="Search the landscape"
+			data-testid="search-toggle"
+		>
+			<Search size={14} />Search<kbd>{mac ? '⌘K' : 'Ctrl K'}</kbd>
+		</button>
 		<button
 			class="diag"
 			class:has-errors={errors > 0}
@@ -106,6 +126,24 @@
 	}
 	.spacer {
 		flex: 1;
+	}
+	.find {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		width: 240px;
+		height: 30px;
+		color: var(--ui-muted);
+	}
+	.find kbd {
+		margin-left: auto;
+		font: inherit;
+		font-size: 11px;
+		line-height: 16px;
+		padding: 0 5px;
+		border: 1px solid var(--ui-border);
+		background: var(--ui-bg);
+		white-space: nowrap;
 	}
 	.diag {
 		display: flex;
