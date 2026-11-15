@@ -7,6 +7,17 @@ Open goals only. **Remove a goal once it is achieved**; keep this list lean.
 - Select a field or model; highlight everything affected across the landscape by following
   `from`, `ref`, `model` and `models` edges in reverse.
 - Answer "what breaks if I drop/alter this field": list affected fields, models, modules, systems.
+- Scenarios: `scenarios/<name>.scenario.yaml` files of pending `set`/`add`/`drop` changes over
+  the design, made by editing on the canvas. The canvas shows the diff and its impact; Apply
+  writes the entity files and deletes the scenario file; committing stays with the user.
+  Design: the "Scenarios & change impact" boards in the design artifact.
+- History: the design root's git log, each commit compared with its parent by id, on the same
+  canvas as a scenario.
+- Impact rules: severity from the change, how each consumer finds the field (id, wire name,
+  column name, free text) and its direction (input, output, both); show where a change stops.
+  An `external` key on systems, modules and apis marks consumers the design doesn't show.
+- `sdv impact <scenario>`: the same impact as a markdown report for reviewers.
+- Ids on api params and indexes, so scenarios can address them.
 
 ## APIs
 
