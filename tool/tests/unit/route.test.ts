@@ -1,5 +1,11 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { loadRouter, routeLines, type Point, type Rect } from '../../src/lib/landscape/route';
+import {
+	loadRouter,
+	ROUTE,
+	routeLines,
+	type Point,
+	type Rect
+} from '../../src/lib/landscape/route';
 
 beforeAll(() => loadRouter());
 
@@ -45,6 +51,31 @@ describe('routeLines', () => {
 		]);
 		const across = (pts: Point[]) => pts.find((p, i) => i && p.y === pts[i - 1].y && p.y < 0)!.y;
 		expect(Math.abs(across(r.get('x')!) - across(r.get('y')!))).toBeGreaterThanOrEqual(4);
+	});
+
+	it('runs a pair joining two ends both ways side by side, not on itself', () => {
+		const r = routeLines(
+			new Map([
+				['a', boxes.get('a')!],
+				['b', boxes.get('b')!]
+			]),
+			[
+				{ id: 'x', s: end('a'), t: end('b') },
+				{ id: 'y', s: end('b'), t: end('a') }
+			]
+		);
+		const [x, y] = [r.get('x')!, r.get('y')!];
+		expect(Math.abs(x[0].y - y.at(-1)!.y)).toBeGreaterThanOrEqual(ROUTE.spread);
+		expect(Math.abs(x.at(-1)!.y - y[0].y)).toBeGreaterThanOrEqual(ROUTE.spread);
+	});
+
+	it('runs lines leaving one end as one there when asked', () => {
+		const lines = [
+			{ id: 'x', s: end('a'), t: end('b') },
+			{ id: 'y', s: end('a'), t: end('b') }
+		];
+		const gapAt = (r: Map<string, Point[]>) => Math.abs(r.get('x')![1].y - r.get('y')![1].y);
+		expect(gapAt(routeLines(boxes, lines, true))).toBe(0);
 	});
 
 	it('ends a free end on the side asked', () => {

@@ -628,7 +628,8 @@
 			const [ss, ts] = sides(a, b);
 			return [{ id: l.id, s: routeEnd(a, ss), t: routeEnd(b, ts) }];
 		});
-		return routeLines(obstacles, lines);
+		// Lines at rest leaving a box together share one exit (see the design's Routing rule).
+		return routeLines(obstacles, lines, true);
 	});
 	const litRoutes = $derived.by(() => {
 		if (!routed) return new Map();

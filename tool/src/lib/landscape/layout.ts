@@ -500,9 +500,10 @@ const spacing = (gap: number) => ({
 	'elk.spacing.componentComponent': String(gap),
 	'elk.layered.spacing.nodeNodeBetweenLayers': String(gap),
 	'elk.spacing.edgeEdge': String(ROUTE.spread),
-	'elk.spacing.edgeNode': String(ROUTE.buffer),
+	// Twice the room the canvas keeps round a box: its lines do not all run where ELK's do.
+	'elk.spacing.edgeNode': String(2 * ROUTE.buffer),
 	'elk.layered.spacing.edgeEdgeBetweenLayers': String(ROUTE.spread),
-	'elk.layered.spacing.edgeNodeBetweenLayers': String(ROUTE.buffer)
+	'elk.layered.spacing.edgeNodeBetweenLayers': String(2 * ROUTE.buffer)
 });
 
 /**

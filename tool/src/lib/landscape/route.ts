@@ -49,8 +49,15 @@ export async function loadRouter(wasmUrl?: string) {
 
 export const routerReady = () => !!avoid;
 
-/** Each line's corners, start and end included, by line id. Lines round `boxes` by id. */
-export function routeLines(boxes: Map<string, Rect>, lines: RouteLine[]): Map<string, Point[]> {
+/**
+ * Each line's corners, start and end included, by line id. Lines round `boxes` by id. With
+ * `shareEnds`, lines leaving one end run as one line from it, else they spread apart there too.
+ */
+export function routeLines(
+	boxes: Map<string, Rect>,
+	lines: RouteLine[],
+	shareEnds = false
+): Map<string, Point[]> {
 	const A = avoid;
 	const router = new A.Router(A.OrthogonalRouting);
 	router.setRoutingParameter(A.shapeBufferDistance, ROUTE.buffer);
@@ -59,6 +66,9 @@ export function routeLines(boxes: Map<string, Rect>, lines: RouteLine[]): Map<st
 	router.setRoutingParameter(A.segmentPenalty, 50);
 	router.setRoutingOption(A.nudgeOrthogonalSegmentsConnectedToShapes, true);
 	router.setRoutingOption(A.nudgeOrthogonalTouchingColinearSegments, true);
+	// A crossing costs as much as this many px of line.
+	router.setRoutingParameter(A.crossingPenalty, 200);
+	router.setRoutingOption(A.nudgeSharedPathsWithCommonEndPoint, !shareEnds);
 	const temps: unknown[] = [];
 	const temp = <T>(o: T) => (temps.push(o), o);
 	const pt = (x: number, y: number) => temp(new A.Point(x, y));
@@ -103,7 +113,17 @@ export function routeLines(boxes: Map<string, Rect>, lines: RouteLine[]): Map<st
 		}
 		return temp(new A.ConnEnd(ref, cls));
 	};
-	const conns = lines.map((l) => [l.id, new A.ConnRef(router, end(l.s), end(l.t))] as const);
+	// A pair of lines joining the same two ends both ways would lie on itself, one line with two
+	// heads: one runs a spread above those ends and the other below, room for a third between.
+	const at = (e: RouteEnd) => `${e.on ?? `${e.x0},${e.x1}`}|${e.y}`;
+	const ends = new Set(lines.map((l) => `${at(l.s)}>${at(l.t)}`));
+	const conns = lines.map((l) => {
+		const pair = ends.has(`${at(l.t)}>${at(l.s)}`);
+		const dy = pair ? (at(l.s) < at(l.t) ? -1 : 1) * ROUTE.spread : 0;
+		const s = { ...l.s, y: l.s.y + dy };
+		const t = { ...l.t, y: l.t.y + dy };
+		return [l.id, new A.ConnRef(router, end(s), end(t))] as const;
+	});
 	router.processTransaction();
 
 	const out = new Map<string, Point[]>();
