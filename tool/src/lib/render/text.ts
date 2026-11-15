@@ -80,3 +80,6 @@ export function truncate(text: string, maxWidth: number, size: number, bold = fa
 export const FONT_STACK =
 	'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif';
 export const MONO_STACK = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+
+/** Room an entity glyph and its gap take before a name, in em (see EntityGlyph). */
+export const GLYPH = 1.25;

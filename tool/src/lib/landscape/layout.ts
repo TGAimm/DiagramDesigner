@@ -1,6 +1,6 @@
 import { LOGIC_KEYS, type Model } from '../model/model';
 import type { Element, ModelField, ModelIndex } from '../model/schema';
-import { textWidth } from '../render/text';
+import { GLYPH, textWidth } from '../render/text';
 import { railGroups, railOf } from './apis';
 
 /** A model is drawn as a class where it is owned, as a table where it is stored. */
@@ -67,7 +67,7 @@ const GAP = 32;
 const SYSTEM_GAP = 120;
 const PAD = 32;
 /** Room above the children for the open box's header. */
-const HEADER = 48;
+export const HEADER = 48;
 
 /** Model tables: font sizes and spacing in px, shared with LandscapeNode. */
 export const TABLE = {
@@ -383,7 +383,7 @@ function tableLayout(
 	const cols = fieldColumns(fields, view, label, rels);
 	// The 2px is the card's border, which sits inside the box.
 	const width = Math.max(
-		textWidth(name, TABLE.title, true) + 2 * TABLE.pad,
+		textWidth(name, TABLE.title, true) + GLYPH * TABLE.title + 2 * TABLE.pad,
 		textWidth(subtitle(view, owner), TABLE.note) + 2 * TABLE.pad,
 		fields.length ? cols.reduce((w, c) => w + c.width, 0) : 0,
 		...indexes.map((ix) => indexWidth(ix, fields))
@@ -467,7 +467,7 @@ function logicLayout(rows: LogicRow[]): { size: Size; cols: TableColumn[] } {
 			width: Math.max(textWidth(label, TABLE.label, true), ...ws) + 2 * TABLE.pad
 		}));
 	const width = Math.max(
-		textWidth('Logic', TABLE.title, true) + 2 * TABLE.pad,
+		textWidth('Logic', TABLE.title, true) + GLYPH * TABLE.title + 2 * TABLE.pad,
 		textWidth(logicNote(rows.length), TABLE.note) + 2 * TABLE.pad,
 		cols.reduce((w, c) => w + c.width, 0)
 	);
@@ -479,7 +479,7 @@ function logicLayout(rows: LogicRow[]): { size: Size; cols: TableColumn[] } {
 export const logicNote = (n: number) => `${n} logic unit${n === 1 ? '' : 's'}`;
 
 const leafWidth = (name: string) =>
-	Math.max(LEAF.minWidth, textWidth(name, LEAF.font, true) + 2 * LEAF.padX);
+	Math.max(LEAF.minWidth, textWidth(name, LEAF.font, true) + GLYPH * LEAF.font + 2 * LEAF.padX);
 
 /** Where a box goes within a block of siblings, relative to the block. */
 interface Slot {

@@ -1,6 +1,6 @@
 import { apiBodies, type ApiPart, type Model } from '../model/model';
 import type { ApiBody } from '../model/schema';
-import { textWidth } from '../render/text';
+import { GLYPH, textWidth } from '../render/text';
 
 /**
  * Apis as data users: which model fields each body sends into or returns, and the rail of
@@ -125,7 +125,7 @@ export function railOf(model: Model, groups: RailGroup[], boxHeight: number): Ra
 	const apis = groups.flatMap((g) => g.apis).map((id) => model.elements.get(id)!.def);
 	const mw = methodWidth(apis.map((a) => a.method ?? ''));
 	const naturalW = Math.max(
-		textWidth('APIs', RAIL.label, true) + 2 * RAIL.pad,
+		textWidth('APIs', RAIL.label, true) + GLYPH * RAIL.label + 2 * RAIL.pad,
 		...groups.map((g) => (g.title ? textWidth(g.title, RAIL.label, true) + 2 * RAIL.pad : 0)),
 		...apis.map((a) => mw + RAIL.gap + textWidth(a.path ?? '', RAIL.font) + 2 * RAIL.pad)
 	);
