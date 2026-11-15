@@ -1,15 +1,15 @@
 # Entity files
 
-One entity per file: `<name>.<kind>.yaml`. Kinds: [system](system.md), [module](module.md),
+One entity per file: `<name>.<kind>.yaml`. Kinds: [module](module.md),
 [model](model.md), [logic-unit](logic-unit.md), [api](api.md), [flag](flag.md). Pending changes over the design
-live in [scenario](scenario.md) files. One folder per system;
-everything in the system lives under it.
+live in [scenario](scenario.md) files. A module with no parent is a
+root, drawn as a system; one folder per root, and everything in it lives under it.
 
 ## Common keys
 
 ```yaml
 id: k3x9q0abcd     # required; generated, never edited; unique across all entities and fields
-parent: <id>       # every kind except system and model (model uses ownedBy)
+parent: <id>       # every kind except model (ownedBy); optional on modules (none = root)
 name: Order        # display name; defaults to the file name
 tags: [internal]
 links: [{ label: Docs, url: https://... }]

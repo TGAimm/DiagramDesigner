@@ -1,11 +1,11 @@
 # api
 
-One endpoint a system or module exposes. Drawn as a row on its parent's api rail, not as a
+One endpoint a module exposes. Drawn as a row on its parent's api rail, not as a
 box.
 
 ```yaml
 id: a2uivekzaq
-parent: d8mg4xc8ef           # system or module
+parent: d8mg4xc8ef           # module
 name: Place order            # shown on hover and in the inspector
 method: POST                 # required: GET POST PUT PATCH DELETE HEAD OPTIONS
 path: /orders/{orderNo}      # required; starts with /

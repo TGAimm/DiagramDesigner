@@ -125,7 +125,7 @@ describe('scenario files', () => {
 	it('is not part of the design model', () => {
 		const d = loadStrings({
 			'o.model.yaml': MODEL,
-			's.system.yaml': 'id: s1\nname: S\n',
+			's.module.yaml': 'id: s1\nname: S\n',
 			'scenarios/x.scenario.yaml': 'name: X\nchanges: []\n'
 		});
 		expect(d.diagnostics).toEqual([]);
@@ -136,12 +136,12 @@ describe('scenario files', () => {
 describe('diffModels', () => {
 	it('tells renames, moves, adds and drops apart by id', () => {
 		const before = loadStrings({
-			's.system.yaml': 'id: s1\nname: S\n',
+			's.module.yaml': 'id: s1\nname: S\n',
 			'a.model.yaml': MODEL,
 			'b.model.yaml': 'id: m2\nownedBy: s1\nname: B\nfields: []\n'
 		}).model;
 		const after = loadStrings({
-			's.system.yaml': 'id: s1\nname: S\n',
+			's.module.yaml': 'id: s1\nname: S\n',
 			'a.model.yaml': MODEL.replace('name: total', 'name: amount').replace(
 				/ {2}- \{ id: f2.*\n/,
 				''

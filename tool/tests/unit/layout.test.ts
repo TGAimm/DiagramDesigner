@@ -31,11 +31,11 @@ const inside = (child: Box, parent: Box) =>
 describe('layout options', () => {
 	// System `b` depends on `a`; system `c` stands alone.
 	const linked = loadStrings({
-		'a/a.system.yaml': 'id: a\n',
+		'a/a.module.yaml': 'id: a\n',
 		'a/x.model.yaml': 'id: x\nownedBy: a\nfields: [{ id: x-id, name: id, type: uuid, pk: true }]\n',
-		'b/b.system.yaml': 'id: b\n',
+		'b/b.module.yaml': 'id: b\n',
 		'b/y.model.yaml': 'id: y\nownedBy: b\nfields: [{ id: y-x, name: x, type: uuid, ref: x-id }]\n',
-		'c/c.system.yaml': 'id: c\n'
+		'c/c.module.yaml': 'id: c\n'
 	}).model;
 	const at = (opts: Partial<typeof DEFAULT_LAYOUT>) => {
 		const boxes = layoutLandscape(linked, true, { ...DEFAULT_LAYOUT, ...opts });
@@ -54,12 +54,12 @@ describe('layout options', () => {
 	it('lays out as if every box were open and every line drawn, across borders too', () => {
 		// In each system one model refers to another, so it has two layers. b's y refers to a's q.
 		const model = loadStrings({
-			'a/a.system.yaml': 'id: a\n',
+			'a/a.module.yaml': 'id: a\n',
 			'a/m1.model.yaml': 'id: m1\nownedBy: a\nfields: [{ id: m1-id, name: id, type: uuid }]\n',
 			'a/m2.model.yaml':
 				'id: m2\nownedBy: a\nfields: [{ id: m2-m1, name: m1, type: uuid, ref: m1-id }]\n',
 			'a/q.model.yaml': 'id: q\nownedBy: a\nfields: [{ id: q-id, name: id, type: uuid }]\n',
-			'b/b.system.yaml': 'id: b\n',
+			'b/b.module.yaml': 'id: b\n',
 			'b/n1.model.yaml': 'id: n1\nownedBy: b\nfields: [{ id: n1-id, name: id, type: uuid }]\n',
 			'b/n2.model.yaml':
 				'id: n2\nownedBy: b\nfields: [{ id: n2-n1, name: n1, type: uuid, ref: n1-id }]\n',
@@ -75,7 +75,7 @@ describe('layout options', () => {
 
 	it('packs boxes no line ties together to the shape asked', () => {
 		const files: Record<string, string> = {};
-		for (const id of 'abcdefgh') files[`${id}/${id}.system.yaml`] = `id: ${id}\n`;
+		for (const id of 'abcdefgh') files[`${id}/${id}.module.yaml`] = `id: ${id}\n`;
 		const loose = loadStrings(files).model;
 		const extent = (aspect: number) => {
 			const boxes = layoutLandscape(loose, true, { ...DEFAULT_LAYOUT, aspect });
@@ -155,7 +155,7 @@ describe('landscape layout', () => {
 	it('puts apis on their parent box and keeps room for the rail across its right border', () => {
 		expect(box('erp').apis).toEqual(['order-api']);
 		const { model } = loadStrings({
-			's/s.system.yaml': 'id: s\n',
+			's/s.module.yaml': 'id: s\n',
 			's/m.module.yaml': 'id: m\nparent: s\nname: M\n',
 			's/n.module.yaml': 'id: n\nparent: s\nname: N\n',
 			's/a.api.yaml': 'id: a\nparent: m\nmethod: DELETE\npath: /a/very/long/route/to/something\n'
@@ -176,7 +176,7 @@ describe('landscape layout', () => {
 
 	it('counts the api fields sending into or returning each model field', () => {
 		const { model } = loadStrings({
-			's/s.system.yaml': 'id: s\n',
+			's/s.module.yaml': 'id: s\n',
 			's/m.model.yaml': 'id: m\nownedBy: s\nfields: [{ id: f, name: f, type: int }]\n',
 			's/a.api.yaml': [
 				'id: a',
@@ -201,7 +201,7 @@ describe('landscape layout', () => {
 		);
 		const boxes = layoutLandscape(
 			loadStrings({
-				's/s.system.yaml': 'id: s\n',
+				's/s.module.yaml': 'id: s\n',
 				's/m.module.yaml': 'id: m\nparent: s\n',
 				's/db.module.yaml': 'id: db\nparent: s\nmodels: [a]\n',
 				's/a.model.yaml': ['id: a', 'ownedBy: m', 'fields:', ...fields].join('\n')
@@ -217,7 +217,7 @@ describe('landscape layout', () => {
 
 	it('draws a model as a class where owned and a table where stored', () => {
 		const m = loadStrings({
-			's/s.system.yaml': 'id: s\n',
+			's/s.module.yaml': 'id: s\n',
 			's/m.module.yaml': 'id: m\nparent: s\n',
 			's/db.module.yaml': 'id: db\nparent: s\n',
 			's/o.model.yaml': [
@@ -267,7 +267,7 @@ describe('landscape layout', () => {
 
 	it('leaves a model held from several places out of any boundary', () => {
 		const m = loadStrings({
-			's/s.system.yaml': 'id: s\n',
+			's/s.module.yaml': 'id: s\n',
 			's/a.model.yaml': 'id: a\nownedBy: s\nfields: [{ id: a-x, name: x, model: x }]\n',
 			's/b.model.yaml': 'id: b\nownedBy: s\nfields: [{ id: b-x, name: x, model: x }]\n',
 			's/x.model.yaml': 'id: x\nownedBy: s\n'
@@ -280,7 +280,7 @@ describe('landscape layout', () => {
 	});
 
 	const tables = loadStrings({
-		's/s.system.yaml': 'id: s\n',
+		's/s.module.yaml': 'id: s\n',
 		's/a.model.yaml': 'id: a\nownedBy: s\nfields: [{ id: a-id, name: id, type: uuid, pk: true }]\n',
 		's/b.model.yaml': [
 			'id: b',
@@ -326,7 +326,7 @@ describe('landscape layout', () => {
 	});
 
 	const lineage = loadStrings({
-		's/s.system.yaml': 'id: s\n',
+		's/s.module.yaml': 'id: s\n',
 		's/db.module.yaml': 'id: db\nparent: s\n',
 		's/api.module.yaml': 'id: api\nparent: s\n',
 		's/src.model.yaml':
@@ -380,7 +380,7 @@ describe('folded model cards', () => {
 		const fields = Array.from({ length: n }, (_, i) => `  - { id: f${i}, name: f${i}, type: int }`);
 		return layoutLandscape(
 			loadStrings({
-				's/s.system.yaml': 'id: s\n',
+				's/s.module.yaml': 'id: s\n',
 				's/m.module.yaml': 'id: m\nparent: s\n',
 				's/a.model.yaml': ['id: a', 'ownedBy: m', 'fields:', ...fields].join('\n')
 			}).model,
@@ -414,7 +414,7 @@ describe('folded model cards', () => {
 
 describe('logic cards', () => {
 	const shop = loadStrings({
-		's/s.system.yaml': 'id: s\n',
+		's/s.module.yaml': 'id: s\n',
 		's/shop.module.yaml': 'id: shop\nparent: s\n',
 		's/svc.module.yaml': 'id: svc\nparent: shop\n',
 		's/cart.model.yaml':
@@ -506,7 +506,7 @@ describe('logic cards', () => {
 
 	it('boxes branches and loops, with a row for each header and else', () => {
 		const { model } = loadStrings({
-			's/s.system.yaml': 'id: s\n',
+			's/s.module.yaml': 'id: s\n',
 			's/m.module.yaml': 'id: m\nparent: s\n',
 			's/u.logic-unit.yaml': [
 				'id: u',

@@ -5,8 +5,8 @@ all its data, where it is owned; say where its data is stored with `storedIn`.
 
 ```yaml
 id: llns90zy3d
-ownedBy: d8mg4xc8ef    # required; system or module. Never `parent`.
-storedIn: iatbgcla3c   # optional; system or module holding its data (database, cache, files)
+ownedBy: d8mg4xc8ef    # required; a module. Never `parent`.
+storedIn: iatbgcla3c   # optional; module holding its data (database, cache, files)
 name: Order
 fields:
   - { id: jxhrrx2cmz, name: id, type: uuid, pk: true }

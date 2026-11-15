@@ -14,7 +14,7 @@ const api = (id: string, parent: string, lines: string[]) =>
 	[`id: ${id}`, `parent: ${parent}`, 'method: GET', `path: /${id}`, ...lines].join('\n');
 
 const { model } = loadStrings({
-	's/s.system.yaml': 'id: s\n',
+	's/s.module.yaml': 'id: s\n',
 	's/m.module.yaml': 'id: m\nparent: s\nname: Orders\n',
 	's/o.model.yaml': [
 		'id: o',

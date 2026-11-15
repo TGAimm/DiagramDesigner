@@ -3,7 +3,7 @@ import { runOf, stepOutOf, type Run } from '../../src/lib/landscape/play';
 import { loadStrings } from './helpers';
 
 const { model } = loadStrings({
-	's/s.system.yaml': 'id: s\n',
+	's/s.module.yaml': 'id: s\n',
 	's/m.module.yaml': 'id: m\nparent: s\n',
 	's/cart.model.yaml': 'id: cart\nownedBy: m\nfields: [{ id: cart-id, name: id, type: uuid }]\n',
 	's/post.api.yaml': 'id: post\nparent: m\nmethod: POST\npath: /orders\n',

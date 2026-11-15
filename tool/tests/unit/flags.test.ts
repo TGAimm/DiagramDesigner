@@ -8,7 +8,7 @@ import { loadStrings } from './helpers';
 
 /** Two systems, one flag key defined in both: the shop calls v2 when on, ERP has v2 when on. */
 const FILES = {
-	'shop/shop.system.yaml': 'id: shop\n',
+	'shop/shop.module.yaml': 'id: shop\n',
 	'shop/co.module.yaml': 'id: co\nparent: shop\nname: Checkout\n',
 	'shop/flag.flag.yaml': 'id: shop-flag\nparent: co\nname: newFlow\nkey: new-flow\n',
 	'shop/place.logic-unit.yaml': [
@@ -23,7 +23,7 @@ const FILES = {
 		'    off: [{ call: v1, gets: order }]',
 		'  - { note: done }'
 	].join('\n'),
-	'erp/erp.system.yaml': 'id: erp\nname: ERP\n',
+	'erp/erp.module.yaml': 'id: erp\nname: ERP\n',
 	'erp/order.module.yaml': 'id: order\nparent: erp\nname: Order\n',
 	'erp/flag.flag.yaml': 'id: erp-flag\nparent: order\nname: newFlow\nkey: new-flow\n',
 	'erp/v1.api.yaml':
@@ -64,7 +64,7 @@ describe('flag validation', () => {
 	it('reports misused flags, gates and flag steps', () => {
 		expect(
 			messages({
-				's/s.system.yaml': 'id: s\n',
+				's/s.module.yaml': 'id: s\n',
 				's/a.module.yaml': 'id: a\nparent: s\n',
 				's/b.module.yaml': 'id: b\nparent: s\n',
 				's/f.flag.yaml': 'id: f\nparent: a\nname: f\n',
@@ -86,7 +86,7 @@ describe('flag validation', () => {
 			['error', 'flag-key', 'flag "f" needs key'],
 			['error', 'flag-only', 'only flags have key'],
 			['error', 'flag-gate', 'only apis and logic units have when'],
-			['error', 'flag-scope', `flag "g" is defined outside this unit's system or module`],
+			['error', 'flag-scope', `flag "g" is defined outside this unit's module`],
 			['error', 'logic-step', 'a flag step needs on, off or both'],
 			['error', 'logic-target', 'flag names model "m"; allowed: flag'],
 			['error', 'logic-step', 'on goes with flag'],
@@ -151,7 +151,7 @@ describe('flag states', () => {
 
 	it('flags a read nothing writes in the state', () => {
 		const files = {
-			's/s.system.yaml': 'id: s\n',
+			's/s.module.yaml': 'id: s\n',
 			's/m.module.yaml': 'id: m\nparent: s\n',
 			's/f.flag.yaml': 'id: f\nparent: m\nname: f\nkey: f\n',
 			's/d.model.yaml': 'id: d\nownedBy: m\n',

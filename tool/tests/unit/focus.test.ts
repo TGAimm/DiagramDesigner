@@ -6,7 +6,7 @@ import { loadStrings } from './helpers';
 // Order holds its lines and refers to a customer; a line refers to a product and takes its
 // price from Price; an api returns Order; a unit calls the api. The customer is stored apart.
 const { model } = loadStrings({
-	'erp/erp.system.yaml': 'id: erp\nname: ERP\n',
+	'erp/erp.module.yaml': 'id: erp\nname: ERP\n',
 	'erp/order.module.yaml': 'id: om\nparent: erp\nname: Order\n',
 	'erp/customer.module.yaml': 'id: cm\nparent: erp\nname: Customer\n',
 	'erp/product.module.yaml': 'id: pm\nparent: erp\nname: Product\n',

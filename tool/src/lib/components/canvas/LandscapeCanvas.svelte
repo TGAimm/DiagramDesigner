@@ -140,6 +140,7 @@
 			? b.logic.rows.findIndex((r) => r.id === id)
 			: (b.fields?.findIndex((f) => f.id === id) ?? -1);
 	const el = (id: string) => model.elements.get(id);
+	const focusedEl = $derived(view.focused && changes.shown.elements.get(view.focused.id));
 	const isUnit = (id: string) => el(id)?.def.kind === 'logic-unit';
 	const isApiEl = (id: string) => el(id)?.def.kind === 'api';
 
@@ -567,8 +568,12 @@
 					data: {
 						name: info.name,
 						element: b.elementId,
-						// A closed boundary reads as the model it is drawn round.
-						kind: b.boundary ? 'model' : info.def.kind,
+						// A closed boundary reads as the model it is drawn round; a root module is a system.
+						kind: b.boundary
+							? 'model'
+							: info.def.kind === 'module' && !info.parentId
+								? 'system'
+								: info.def.kind,
 						group: b.group,
 						owner: b.ref ? el(info.parentId ?? '')?.name : undefined,
 						fields: b.fields,
@@ -1901,7 +1906,9 @@
 			name={refLabel(changes.shown, view.focused.id) ?? ''}
 			kind={changes.shown.fields.has(view.focused.id)
 				? 'field'
-				: (changes.shown.elements.get(view.focused.id)?.def.kind ?? 'model')}
+				: focusedEl?.def.kind === 'module' && !focusedEl.parentId
+					? 'system'
+					: (focusedEl?.def.kind ?? 'model')}
 			onchange={setFocus}
 			onleave={leaveFocus}
 		/>

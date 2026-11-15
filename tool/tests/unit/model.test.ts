@@ -27,22 +27,22 @@ describe('fixture design', () => {
 describe('schema validation', () => {
 	it('reports errors with file, line and column', () => {
 		const { diagnostics } = loadStrings({
-			'a/a.system.yaml': 'id: a\ntags: nope\n'
+			'a/a.module.yaml': 'id: a\ntags: nope\n'
 		});
 		expect(diagnostics).toHaveLength(1);
 		expect(diagnostics[0]).toMatchObject({
 			severity: 'error',
 			code: 'schema',
-			file: 'a/a.system.yaml',
+			file: 'a/a.module.yaml',
 			line: 2,
 			col: 7
 		});
-		expect(formatDiagnostic(diagnostics[0])).toMatch(/^a\/a\.system\.yaml:2:7: error tags: /);
+		expect(formatDiagnostic(diagnostics[0])).toMatch(/^a\/a\.module\.yaml:2:7: error tags: /);
 	});
 
 	it('points unknown fields at the key, including the removed description', () => {
 		const { model, diagnostics } = loadStrings({
-			'a/a.system.yaml': 'id: a\ndescription: Old text\n'
+			'a/a.module.yaml': 'id: a\ndescription: Old text\n'
 		});
 		expect(diagnostics[0]).toMatchObject({
 			line: 2,
@@ -53,23 +53,23 @@ describe('schema validation', () => {
 	});
 
 	it('rejects ids that are not kebab-case', () => {
-		const { diagnostics } = loadStrings({ 'a/a.system.yaml': 'id: Shop\n' });
+		const { diagnostics } = loadStrings({ 'a/a.module.yaml': 'id: Shop\n' });
 		expect(diagnostics[0].message).toContain('kebab-case');
 	});
 
 	it('reads numeric scalars in text fields as strings', () => {
-		const { model, diagnostics } = loadStrings({ 'a/a.system.yaml': 'id: a\nname: 42\n' });
+		const { model, diagnostics } = loadStrings({ 'a/a.module.yaml': 'id: a\nname: 42\n' });
 		expect(diagnostics).toEqual([]);
 		expect(model.elements.get('a')!.name).toBe('42');
 	});
 
 	it('reports YAML syntax errors with position and drops the data', () => {
-		const loaded = loadStrings({ 'a/a.system.yaml': 'id: a\n  name: [\n' });
-		expect(loaded.data['a/a.system.yaml']).toBeUndefined();
+		const loaded = loadStrings({ 'a/a.module.yaml': 'id: a\n  name: [\n' });
+		expect(loaded.data['a/a.module.yaml']).toBeUndefined();
 		expect(loaded.diagnostics[0]).toMatchObject({
 			code: 'syntax',
 			severity: 'error',
-			file: 'a/a.system.yaml'
+			file: 'a/a.module.yaml'
 		});
 		expect(loaded.diagnostics[0].line).toBeGreaterThan(0);
 	});
@@ -85,36 +85,38 @@ describe('entity checks', () => {
 	it('rejects unknown kinds', () => {
 		const { diagnostics } = loadStrings({ 'a/a.planet.yaml': 'id: a\n' });
 		expect(diagnostics.map((d) => d.code)).toEqual(['unknown-kind']);
-		expect(diagnostics[0].message).toContain('expected system, module');
+		expect(diagnostics[0].message).toContain('expected module, model');
 	});
 
 	it('reports duplicate ids with both locations', () => {
 		const { model, diagnostics } = loadStrings({
-			'a/a.system.yaml': 'id: a\n',
-			'b/b.system.yaml': 'name: B\nid: a\n'
+			'a/a.module.yaml': 'id: a\n',
+			'b/b.module.yaml': 'name: B\nid: a\n'
 		});
 		expect(diagnostics).toHaveLength(1);
 		expect(diagnostics[0]).toMatchObject({
 			code: 'duplicate-id',
-			file: 'b/b.system.yaml',
+			file: 'b/b.module.yaml',
 			line: 2
 		});
-		expect(diagnostics[0].message).toContain('a/a.system.yaml:1:1');
-		expect(model.elements.get('a')!.loc.file).toBe('a/a.system.yaml');
+		expect(diagnostics[0].message).toContain('a/a.module.yaml:1:1');
+		expect(model.elements.get('a')!.loc.file).toBe('a/a.module.yaml');
 	});
 
-	it('requires a parent for everything but systems', () => {
-		const { diagnostics } = loadStrings({
-			'a/a.system.yaml': 'id: a\n',
-			'a/b.system.yaml': 'id: b\nparent: a\n',
-			'a/c.module.yaml': 'id: c\n'
+	it('requires a parent for everything but modules and models', () => {
+		const { model, diagnostics } = loadStrings({
+			'a/a.module.yaml': 'id: a\n',
+			'a/b.module.yaml': 'id: b\nparent: a\n',
+			'a/u.logic-unit.yaml': 'id: u\nparent: a\ninputs: []\noutputs: []\n',
+			'a/v.logic-unit.yaml': 'id: v\ninputs: []\noutputs: []\n'
 		});
-		expect(codes(diagnostics)).toEqual(['missing-parent', 'system-parent']);
+		expect(codes(diagnostics)).toEqual(['missing-parent']);
+		expect(model.elements.get('a')!.childIds).toEqual(['b', 'u']);
 	});
 
 	it('places models under the single entity in ownedBy', () => {
 		const { model, diagnostics } = loadStrings({
-			's/s.system.yaml': 'id: s\n',
+			's/s.module.yaml': 'id: s\n',
 			's/m.module.yaml': 'id: m\nparent: s\n',
 			's/a.model.yaml': 'id: a\nownedBy: m\n',
 			's/b.model.yaml': 'id: b\nownedBy: s\n'
@@ -127,7 +129,7 @@ describe('entity checks', () => {
 
 	it('requires ownedBy instead of parent on models only', () => {
 		const { diagnostics } = loadStrings({
-			's/s.system.yaml': 'id: s\n',
+			's/s.module.yaml': 'id: s\n',
 			's/m.module.yaml': 'id: m\nparent: s\nownedBy: s\n',
 			's/a.model.yaml': 'id: a\nparent: s\n',
 			's/u.logic-unit.yaml': 'id: u\nparent: m\ninputs: []\noutputs: []\n',
@@ -142,13 +144,13 @@ describe('entity checks', () => {
 			'schema'
 		]);
 		expect(diagnostics.find((d) => d.code === 'parent-kind')!.message).toBe(
-			'model cannot have a logic-unit as ownedBy; allowed: system, module'
+			'model cannot have a logic-unit as ownedBy; allowed: module'
 		);
 	});
 
 	it('keeps valid model references and reports the rest', () => {
 		const { model, diagnostics } = loadStrings({
-			's/s.system.yaml': 'id: s\n',
+			's/s.module.yaml': 'id: s\n',
 			's/m.module.yaml': 'id: m\nparent: s\n',
 			's/a.model.yaml': 'id: a\nownedBy: m\n',
 			's/db.module.yaml': 'id: db\nparent: s\nmodels: [a, ghost, m]\n',
@@ -165,9 +167,9 @@ describe('entity checks', () => {
 		expect(model.elements.get('a')!.parentId).toBe('m');
 	});
 
-	it('stores models in a system or module and lists them there', () => {
+	it('stores models in a module and lists them there', () => {
 		const { model, diagnostics } = loadStrings({
-			's/s.system.yaml': 'id: s\n',
+			's/s.module.yaml': 'id: s\n',
 			's/m.module.yaml': 'id: m\nparent: s\nstoredIn: s\n',
 			's/db.module.yaml': 'id: db\nparent: s\nmodels: [a]\n',
 			's/u.logic-unit.yaml': 'id: u\nparent: m\ninputs: []\noutputs: []\n',
@@ -189,7 +191,7 @@ describe('entity checks', () => {
 
 	it('keeps keys and indexes on stored fields', () => {
 		const { diagnostics } = loadStrings({
-			's/s.system.yaml': 'id: s\n',
+			's/s.module.yaml': 'id: s\n',
 			's/b.model.yaml': 'id: b\nownedBy: s\n',
 			's/a.model.yaml': [
 				'id: a',
@@ -206,7 +208,7 @@ describe('entity checks', () => {
 
 	it('checks model fields and indexes', () => {
 		const { diagnostics } = loadStrings({
-			's/s.system.yaml': 'id: s\nfields: [{ id: x, name: x, type: int }]\n',
+			's/s.module.yaml': 'id: s\nfields: [{ id: x, name: x, type: int }]\n',
 			's/a.model.yaml': [
 				'id: a',
 				'ownedBy: s',
@@ -230,7 +232,7 @@ describe('entity checks', () => {
 
 	it('checks that field refs point at models or fields, by id', () => {
 		const { diagnostics } = loadStrings({
-			's/s.system.yaml': 'id: s\n',
+			's/s.module.yaml': 'id: s\n',
 			's/a.model.yaml': [
 				'id: a',
 				'ownedBy: s',
@@ -248,7 +250,7 @@ describe('entity checks', () => {
 
 	it('checks held models: exactly one of type and model, and the model must exist', () => {
 		const { diagnostics } = loadStrings({
-			's/s.system.yaml': 'id: s\n',
+			's/s.module.yaml': 'id: s\n',
 			's/b.model.yaml': 'id: b\nownedBy: s\nfields: [{ id: b1, name: x, type: int }]\n',
 			's/a.model.yaml': [
 				'id: a',
@@ -273,7 +275,7 @@ describe('entity checks', () => {
 
 	it('checks lineage: from points at fields and never loops', () => {
 		const { diagnostics } = loadStrings({
-			's/s.system.yaml': 'id: s\n',
+			's/s.module.yaml': 'id: s\n',
 			's/a.model.yaml': [
 				'id: a',
 				'ownedBy: s',
@@ -291,7 +293,7 @@ describe('entity checks', () => {
 
 	it('checks apis: route, path params, responses and body models', () => {
 		const { diagnostics } = loadStrings({
-			's/s.system.yaml': 'id: s\nmethod: GET\n',
+			's/s.module.yaml': 'id: s\nmethod: GET\n',
 			's/m.model.yaml': 'id: m\nownedBy: s\n',
 			's/ok.api.yaml': [
 				'id: ok',
@@ -325,7 +327,7 @@ describe('entity checks', () => {
 
 	it('checks api bodies: model or own fields, omit and pick, and where fields go', () => {
 		const { diagnostics, model } = loadStrings({
-			's/s.system.yaml': 'id: s\n',
+			's/s.module.yaml': 'id: s\n',
 			's/m.model.yaml': 'id: m\nownedBy: s\nfields: [{ id: f, name: f, type: int }]\n',
 			's/ok.api.yaml': [
 				'id: ok',
@@ -371,24 +373,25 @@ describe('entity checks', () => {
 
 	it('gives each system its own folder', () => {
 		const { diagnostics } = loadStrings({
-			'a/a.system.yaml': 'id: a\n',
-			'a/b.system.yaml': 'id: b\n'
+			'a/a.module.yaml': 'id: a\n',
+			'a/b.module.yaml': 'id: b\n'
 		});
 		expect(codes(diagnostics)).toEqual(['shared-system-folder']);
 	});
 
 	it('reports parents that do not exist, have the wrong kind or loop', () => {
 		const { model, diagnostics } = loadStrings({
-			's/s.system.yaml': 'id: s\n',
+			's/s.module.yaml': 'id: s\n',
 			's/m.module.yaml': 'id: m\nparent: s\n',
-			's/x.logic-unit.yaml': 'id: x\nparent: s\ninputs: []\noutputs: []\n',
+			's/o.model.yaml': 'id: o\nownedBy: s\n',
+			's/x.logic-unit.yaml': 'id: x\nparent: o\ninputs: []\noutputs: []\n',
 			's/g.module.yaml': 'id: g\nparent: ghost\n',
 			's/p.module.yaml': 'id: p\nparent: q\n',
 			's/q.module.yaml': 'id: q\nparent: p\n'
 		});
 		expect(codes(diagnostics)).toEqual(['dangling-ref', 'parent-cycle', 'parent-kind']);
 		expect(diagnostics.find((d) => d.code === 'parent-kind')!.message).toBe(
-			'logic-unit cannot have a system as parent; allowed: module'
+			'logic-unit cannot have a model as parent; allowed: module'
 		);
 		// Entities with a dangling or looping parent become roots so the canvas still shows them.
 		expect(model.rootElementIds).toEqual(['g', 'p', 's']);
@@ -396,7 +399,7 @@ describe('entity checks', () => {
 
 	it('warns about entities outside their system folder', () => {
 		const { diagnostics } = loadStrings({
-			's/s.system.yaml': 'id: s\n',
+			's/s.module.yaml': 'id: s\n',
 			'other/m.module.yaml': 'id: m\nparent: s\n'
 		});
 		expect(diagnostics).toHaveLength(1);
@@ -408,7 +411,7 @@ describe('entity checks', () => {
 describe('logic units', () => {
 	const unit = (...lines: string[]) =>
 		loadStrings({
-			's/s.system.yaml': 'id: s\n',
+			's/s.module.yaml': 'id: s\n',
 			's/m.module.yaml': 'id: m\nparent: s\n',
 			's/c.model.yaml': 'id: c\nownedBy: m\nfields: [{ id: c-n, name: n, type: int }]\n',
 			's/a.api.yaml': 'id: a\nparent: m\nmethod: GET\npath: /a\n',
@@ -431,7 +434,7 @@ describe('logic units', () => {
 
 	it('keeps signature keys and steps to logic units', () => {
 		const { diagnostics } = loadStrings({
-			's/s.system.yaml': 'id: s\n',
+			's/s.module.yaml': 'id: s\n',
 			's/m.module.yaml': 'id: m\nparent: s\nhandles: []\nsteps: []\n'
 		});
 		expect(diagnostics.map((d) => d.message)).toEqual([

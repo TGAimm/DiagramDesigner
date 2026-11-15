@@ -3,8 +3,8 @@ import { searchLandscape } from '../../src/lib/landscape/search';
 import { loadStrings } from './helpers';
 
 const { model } = loadStrings({
-	'erp/erp.system.yaml': 'id: erp\nname: ERP\n',
-	'pim/pim.system.yaml': 'id: pim\nname: PIM\n',
+	'erp/erp.module.yaml': 'id: erp\nname: ERP\n',
+	'pim/pim.module.yaml': 'id: pim\nname: PIM\n',
 	'erp/order.module.yaml': 'id: m\nparent: erp\nname: Order\n',
 	'erp/order.model.yaml': [
 		'id: o',
@@ -46,6 +46,12 @@ describe('searchLandscape', () => {
 			{ kind: 'field', id: 'o-no', text: 'orderNo', mark: [0, 5], at: ['ERP', 'Order', 'Order'] }
 		]);
 		expect(groups.find((g) => g.kind === 'logic-unit')!.hits[0].at).toEqual(['ERP', 'Order']);
+	});
+
+	it('lists a root module as a system and the rest as modules', () => {
+		const groups = searchLandscape(model, 'r');
+		expect(groups.find((g) => g.kind === 'system')!.hits.map((h) => h.id)).toEqual(['erp']);
+		expect(groups.find((g) => g.kind === 'module')!.hits.map((h) => h.id)).toEqual(['m']);
 	});
 
 	it('finds apis by path, or by name shown beside the path', () => {

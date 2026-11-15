@@ -26,7 +26,7 @@ export interface ElementInfo {
 	childIds: string[];
 	/** Models owned elsewhere that are drawn inside this entity as references. */
 	refIds: string[];
-	/** Models only: the system or module storing it. */
+	/** Models only: the module storing it. */
 	storedIn?: string;
 	/** Models stored here (their `storedIn`), drawn inside as tables. */
 	storedIds: string[];
@@ -270,7 +270,7 @@ export function buildModel(
 						diag(
 							'error',
 							'flag-scope',
-							`flag "${model.elements.get(s.flag!)!.name}" is defined outside this unit's system or module`,
+							`flag "${model.elements.get(s.flag!)!.name}" is defined outside this unit's module`,
 							stepLoc,
 							k
 						);
@@ -340,6 +340,8 @@ export function buildModel(
 	// ------------------------------------------------------------ entity files
 	// Parents are linked after every file is read, since files load in path order.
 	const entities: ElementInfo[] = [];
+	/** Modules declared without a parent: the systems. One whose parent is broken is not. */
+	const systems = new Set<string>();
 	for (const { file, value } of entityFiles) {
 		const loc = { file, path: [] };
 		const kind = entityKind(file) as EntityFileKind;
@@ -370,19 +372,18 @@ export function buildModel(
 		};
 		model.elements.set(value.id, info);
 		entities.push(info);
-		if (kind === 'system' && parent)
-			diag('error', 'system-parent', `system "${info.name}" cannot have a parent`, loc, 'parent');
+		if (kind === 'module' && !parent) systems.add(info.id);
 		if (kind === 'model' && parent)
 			diag('error', 'model-parent', `model "${info.name}" uses ownedBy, not parent`, loc, 'parent');
 		if (kind !== 'model' && ownedBy)
 			diag('error', 'owned-by', `only models have ownedBy`, loc, 'ownedBy');
-		if (value.external && kind !== 'system' && kind !== 'module' && kind !== 'api')
-			diag('error', 'external', `only systems, modules and apis are external`, loc, 'external');
+		if (value.external && kind !== 'module' && kind !== 'api')
+			diag('error', 'external', `only modules and apis are external`, loc, 'external');
 		if (kind !== 'model' && storedIn)
 			diag('error', 'model-only', `only models have storedIn`, loc, 'storedIn');
 		if (kind === 'model' && !ownedBy)
 			diag('error', 'missing-owner', `model "${info.name}" needs ownedBy`, loc, 'id');
-		if (kind !== 'system' && kind !== 'model' && !parent)
+		if (kind !== 'module' && kind !== 'model' && !parent)
 			diag('error', 'missing-parent', `${kind} "${info.name}" needs a parent`, loc, 'id');
 		if (kind === 'model') {
 			if (models) diag('error', 'model-only', `a model cannot list models`, loc, 'models');
@@ -733,7 +734,7 @@ export function buildModel(
 					diag(
 						'error',
 						'flag-scope',
-						`flag "${flag.name}" is defined outside this ${info.def.kind}'s system or module`,
+						`flag "${flag.name}" is defined outside this ${info.def.kind}'s module`,
 						gateLoc,
 						'flag'
 					);
@@ -767,11 +768,11 @@ export function buildModel(
 					info.loc,
 					'storedIn'
 				);
-			else if (store.def.kind !== 'system' && store.def.kind !== 'module')
+			else if (store.def.kind !== 'module')
 				diag(
 					'error',
 					'parent-kind',
-					`a model cannot be stored in a ${store.def.kind}; allowed: system, module`,
+					`a model cannot be stored in a ${store.def.kind}; allowed: module`,
 					info.loc,
 					'storedIn'
 				);
@@ -852,7 +853,8 @@ export function buildModel(
 			info.depth++;
 		}
 		const folder = folderOf(top.loc.file);
-		if (info === top && info.def.kind === 'system') {
+		const system = systems.has(top.id);
+		if (info === top && system) {
 			const other = systemFolders.get(folder);
 			if (other)
 				diag(
@@ -862,7 +864,7 @@ export function buildModel(
 					info.loc
 				);
 			else systemFolders.set(folder, info);
-		} else if (top.def.kind === 'system' && !info.loc.file.startsWith(folder)) {
+		} else if (system && !info.loc.file.startsWith(folder)) {
 			diag(
 				'warning',
 				'outside-system-folder',

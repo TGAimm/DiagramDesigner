@@ -63,7 +63,7 @@ export function searchLandscape(model: Model, query: string, hidden?: Set<string
 				title: HIT_GROUPS.system,
 				hits: model.rootElementIds
 					.map((id) => model.elements.get(id)!)
-					.filter((e) => e.def.kind === 'system')
+					.filter((e) => e.def.kind === 'module')
 					.map((e) => ({ kind: 'system', id: e.id, text: e.name, at: [] }))
 			}
 		];
@@ -77,7 +77,8 @@ export function searchLandscape(model: Model, query: string, hidden?: Set<string
 		'logic-unit': []
 	};
 	for (const e of model.elements.values()) {
-		const kind = e.def.kind;
+		// A root module is a system.
+		const kind = e.def.kind === 'module' && !e.parentId ? 'system' : e.def.kind;
 		// Flags are listed in the Flags menu, not drawn; a hidden api or unit isn't there.
 		if (kind === 'flag' || hidden?.has(e.id)) continue;
 		const at = where(e.parentId);

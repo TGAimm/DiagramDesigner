@@ -8,17 +8,17 @@
       "description": "Generated with `sdv new`; never edited"
     },
     "parent": {
-      "description": "Id of the parent entity; omitted for systems and models",
+      "description": "Id of the parent entity; omitted for root modules (systems) and models",
       "type": "string",
       "pattern": "^[a-z][a-z0-9-]*$"
     },
     "ownedBy": {
-      "description": "Models only: id of the one system or module owning it",
+      "description": "Models only: id of the one module owning it",
       "type": "string",
       "pattern": "^[a-z][a-z0-9-]*$"
     },
     "storedIn": {
-      "description": "Models only: id of the system or module storing its data (e.g. a database module)",
+      "description": "Models only: id of the module storing its data (e.g. a database module)",
       "type": "string",
       "pattern": "^[a-z][a-z0-9-]*$"
     },
@@ -632,7 +632,7 @@
       "description": "Apis and logic units only: exists only while the flag has this value"
     },
     "external": {
-      "description": "Systems, modules and apis: used by consumers the design does not show, so every rename or drop behind it breaks",
+      "description": "Modules and apis: used by consumers the design does not show, so every rename or drop behind it breaks",
       "type": "boolean"
     },
     "name": {

@@ -69,8 +69,7 @@ export function focusOn(model: Model, focus: Focus): Focused {
 	if (subject) {
 		start = [subject];
 		if (field) ring = touching(focus.id).filter(keeps);
-	} else if (kind(focus.id) === 'system' || kind(focus.id) === 'module')
-		start = deep(focus.id).filter(keeps);
+	} else if (kind(focus.id) === 'module') start = deep(focus.id).filter(keeps);
 	else if (keeps(focus.id)) start = [focus.id];
 	// An api or unit in a data focus: the models it touches.
 	else start = touching(focus.id).filter(keeps);

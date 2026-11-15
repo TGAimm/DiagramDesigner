@@ -49,15 +49,15 @@ export interface Element {
 }
 
 /** Kinds an entity file can have; the file name `<name>.<kind>.yaml` gives it. */
-export const ENTITY_KINDS = ['system', 'module', 'model', 'logic-unit', 'api', 'flag'] as const;
+export const ENTITY_KINDS = ['module', 'model', 'logic-unit', 'api', 'flag'] as const;
 export type EntityFileKind = (typeof ENTITY_KINDS)[number];
 
 /** Kinds a parent must have, for kinds that may only sit under certain parents. */
 export const PARENT_KINDS: Partial<Record<EntityFileKind, EntityFileKind[]>> = {
 	'logic-unit': ['module'],
-	api: ['system', 'module'],
-	model: ['system', 'module'],
-	flag: ['system', 'module']
+	api: ['module'],
+	model: ['module'],
+	flag: ['module']
 };
 
 export const FlagValue = z.enum(['on', 'off']);
@@ -264,17 +264,19 @@ export const LogicStep: z.ZodType<LogicStep> = z
 
 /**
  * One entity per file, named `<name>.<kind>.yaml`. The id is generated once and never
- * edited, so renaming or moving the file changes nothing. Systems sit in their own folder
- * and have no parent; models name their single owner with `ownedBy` instead of a parent,
+ * edited, so renaming or moving the file changes nothing. A module with no parent is a
+ * root, drawn as a system, and sits in its own folder; models name their single owner with `ownedBy` instead of a parent,
  * since they are used in many places; every other entity names its parent by id.
  */
 export const EntityFile = z
 	.strictObject({
 		id: Id.describe('Generated with `sdv new`; never edited'),
-		parent: Id.optional().describe('Id of the parent entity; omitted for systems and models'),
-		ownedBy: Id.optional().describe('Models only: id of the one system or module owning it'),
+		parent: Id.optional().describe(
+			'Id of the parent entity; omitted for root modules (systems) and models'
+		),
+		ownedBy: Id.optional().describe('Models only: id of the one module owning it'),
 		storedIn: Id.optional().describe(
-			'Models only: id of the system or module storing its data (e.g. a database module)'
+			'Models only: id of the module storing its data (e.g. a database module)'
 		),
 		models: z
 			.array(Id)
@@ -315,7 +317,7 @@ export const EntityFile = z
 			.boolean()
 			.optional()
 			.describe(
-				'Systems, modules and apis: used by consumers the design does not show, so every rename or drop behind it breaks'
+				'Modules and apis: used by consumers the design does not show, so every rename or drop behind it breaks'
 			),
 		name: Text.optional().describe('Display name; defaults to the file name'),
 		tags: z.array(z.string()).optional(),

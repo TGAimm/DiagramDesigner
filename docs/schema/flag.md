@@ -1,6 +1,6 @@
 # flag
 
-A feature flag, defined in the system or module whose code checks it. The code acts on it in
+A feature flag, defined in the module whose code checks it. The code acts on it in
 two ways: a **flag step** in a [logic unit](logic-unit.md) picks a branch of its sequence, and
 a **gate** (`when`) makes an [api](api.md) or logic unit exist only in one state. Calls between
 systems come from steps, so flipping a flag moves lines too.
@@ -8,7 +8,7 @@ systems come from steps, so flipping a flag moves lines too.
 ```yaml
 # webshop/new-order-flow.flag.yaml
 id: d9vbifruws
-parent: xmv85uqqsk        # system or module defining it
+parent: xmv85uqqsk        # module defining it
 name: newOrderFlow
 key: new-order-flow       # required: the name the code asks the flag service for
 default: off              # what production runs: on | off; default off
@@ -16,8 +16,8 @@ default: off              # what production runs: on | off; default off
 
 - On and off only. `key` pairs definitions: one flag in the flag service, checked by two
   systems, is two flag files with the same `key`, one under each.
-- A flag step or gate may only name a flag defined in its own system or module, or one round
-  it, as the code can only check flags its system defines.
+- A flag step or gate may only name a flag defined in its own module, or one round it, as
+  the code can only check flags its system defines.
 
 ```yaml
 # a logic unit's steps
@@ -49,7 +49,7 @@ What a state breaks, besides the usual [impact](scenario.md#impact):
 
 - Errors: a flag without `key`; `key` or `default` on another kind; `when` on anything but an
   api or logic unit; a flag step or `when` naming something that isn't a flag, or a flag
-  defined outside its system or module; a flag step with neither `on` nor `off`.
+  defined outside its module; a flag step with neither `on` nor `off`.
 - Warnings: a flag nothing checks; one key on by default in one place and off in another
   (production is split); each way of setting one key's definitions, away from their
   defaults, that breaks something (`flag-split`). With one definition, that is a flip a
