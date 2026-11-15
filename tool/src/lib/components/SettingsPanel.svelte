@@ -49,7 +49,7 @@
 	.settings {
 		position: absolute;
 		right: 12px;
-		top: 50px;
+		top: 51px;
 		width: 340px;
 		z-index: 20;
 		background: var(--ui-panel);

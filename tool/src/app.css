@@ -81,9 +81,20 @@ button.primary {
 button.danger {
 	color: var(--ui-danger);
 }
+/* An icon is a box, not a glyph: inline it would sit on the text baseline, off centre. Its
+   parent is a flex box that centres it. */
+svg.lucide {
+	display: block;
+	flex-shrink: 0;
+}
+/* Square, and as tall as a text button (20px line + 8px padding + 2px border). */
 button.icon {
-	padding: 4px 7px;
-	min-width: 30px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	padding: 0;
 }
 button[aria-pressed='true'],
 button[aria-selected='true'] {

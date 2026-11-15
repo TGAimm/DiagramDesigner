@@ -1060,6 +1060,7 @@
 	.inspector .title {
 		font-weight: 600;
 		font-size: 14px;
+		line-height: 20px;
 	}
 	.inspector .type,
 	.inspector .where,
@@ -1077,6 +1078,7 @@
 		color: var(--sdv-text-muted);
 		display: flex;
 		cursor: pointer;
+		/* 20px, the title's line, so the icon centres on it. */
 		padding: 2px;
 	}
 	.inspector section {
@@ -1181,6 +1183,7 @@
 		grid-template-columns: auto 1fr auto;
 		gap: 8px;
 		align-items: baseline;
+		line-height: 18px;
 		padding: 3px 12px 3px 10px;
 		border-left: 2px solid transparent;
 		cursor: default;
@@ -1195,9 +1198,13 @@
 	.api-field .traced {
 		color: var(--sdv-link-from);
 	}
+	/* One line tall and centred in it: an icon has no baseline to align by. */
 	.api-field .untraced {
+		align-self: start;
+		display: flex;
+		align-items: center;
+		height: 18px;
 		color: var(--sdv-method-put);
-		font-size: 11px;
 	}
 	.api-lines {
 		position: absolute;

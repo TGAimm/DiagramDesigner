@@ -94,10 +94,10 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		padding: 6px 12px;
+		/* 30px controls, so the bar is 45px and they land on whole pixels. */
+		padding: 7px 12px;
 		border-bottom: 1px solid var(--ui-border);
 		background: var(--ui-panel);
-		min-height: 44px;
 	}
 	.brand {
 		font-weight: 700;
@@ -109,12 +109,14 @@
 	}
 	.diag {
 		display: flex;
+		align-items: center;
 		gap: 8px;
+		height: 30px;
 	}
 	.diag span {
 		display: flex;
 		align-items: center;
-		gap: 3px;
+		gap: 4px;
 	}
 	.diag .err {
 		color: var(--ui-muted);

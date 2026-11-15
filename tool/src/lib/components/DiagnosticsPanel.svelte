@@ -72,12 +72,17 @@
 		gap: 8px;
 		padding: 3px 12px;
 		align-items: baseline;
+		line-height: 20px;
 	}
 	li:hover {
 		background: var(--ui-hover);
 	}
+	/* One line tall and centred in it: an icon has no baseline to align by. */
 	.sev {
+		align-self: start;
 		display: flex;
+		align-items: center;
+		height: 20px;
 	}
 	.error .sev {
 		color: var(--ui-danger);
