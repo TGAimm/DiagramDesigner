@@ -1,0 +1,12 @@
+id: a6ub2b7rpa
+ownedBy: xmv85uqqsk
+storedIn: jgp5k894xt
+name: Cart Line
+fields:
+  - { id: zfypt8ew3g, name: id, type: uuid, pk: true }
+  - { id: r7irnnw644, name: cartId, type: uuid, required: true, ref: tlqmqqmcv9 }
+  - { id: zaxevexhsu, name: productId, type: uuid, required: true, ref: j6holg5xo1 }
+  - { id: dj8m2h65tb, name: quantity, type: int, required: true, constraints: [min 1] }
+  - { id: fin9h04ptg, name: addedAt, type: datetime, required: true }
+indexes:
+  - { name: ux_cart_line_product, fields: [r7irnnw644, zaxevexhsu], unique: true }

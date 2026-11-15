@@ -77,10 +77,19 @@
 		focus ? focusLinks(design.model, rels, boxes, focus.box, focus.field) : []
 	);
 	const label = (id: string) => refLabel(design.model, id) ?? id;
-	/** Where row `i` of a card sits, folded or expanded as it is now. */
+	/** Where row `i` of a card sits, folded or expanded as it is now; logic cards never fold. */
 	const rowY = (b: LandscapeBox, i: number) =>
-		fieldRowY(i, b.fields?.length ?? 0, !!view.expanded[b.id]);
+		b.logic
+			? fieldRowY(i, b.logic.rows.length, true)
+			: fieldRowY(i, b.fields?.length ?? 0, !!view.expanded[b.id]);
+	/** The row of a field or logic unit in a card, or -1. */
+	const rowOf = (b: LandscapeBox, id: string | undefined) =>
+		b.logic
+			? b.logic.rows.findIndex((r) => r.id === id)
+			: (b.fields?.findIndex((f) => f.id === id) ?? -1);
 	const el = (id: string) => design.model.elements.get(id);
+	const isUnit = (id: string) => el(id)?.def.kind === 'logic-unit';
+	const isApiEl = (id: string) => el(id)?.def.kind === 'api';
 
 	// State, not derived, so a pan that changes nothing stops here instead of rebuilding nodes
 	// every frame, and the boxes that just closed are known.
@@ -253,6 +262,11 @@
 		};
 		if (focus) lit(focus.box, focus.field, 'self');
 		for (const t of apiFieldTargets(view.apiField)) lit(t.box.id, t.field, 'peer');
+		// The units handling or calling the picked api.
+		for (const l of view.api ? (rels.in.get(view.api) ?? []) : []) {
+			const u = boxes.find((b) => b.logic?.rows.some((r) => r.id === l.field));
+			if (u) lit(u.id, l.field, 'peer');
+		}
 		for (const l of focused) {
 			lit(l.source, l.sourceField, 'peer');
 			lit(l.target, l.targetField, 'peer');
@@ -266,6 +280,15 @@
 			while (shown?.parentId && !open.has(shown.parentId)) shown = boxById.get(shown.parentId);
 			if (shown && shown.id !== id) peers[shown.id] = true;
 		}
+		// Apis a focused unit handles or calls light their rail rows, or a closed rail's box.
+		const apis: Record<string, true> = {};
+		for (const l of focus && isUnit(focus.field) ? (rels.out.get(focus.field) ?? []) : [])
+			if (isApiEl(l.to)) {
+				apis[l.to] = true;
+				const host = hostOf(l.to);
+				if (host && !openRails.has(host.id)) peers[host.id] = true;
+			}
+		view.hotApis = apis;
 		view.peerBoxes = peers;
 	});
 
@@ -306,6 +329,7 @@
 						fields: b.fields,
 						indexes: b.view === 'table' ? info.def.indexes : undefined,
 						table: b.table,
+						logic: b.logic,
 						view: b.view,
 						labels: Object.fromEntries(
 							(b.fields ?? [])
@@ -348,14 +372,21 @@
 		];
 	});
 
+	/** The colour token of each kind of line. */
+	const LINK_TOKEN: Record<FieldLink['kind'], string> = {
+		ref: 'ref',
+		model: 'ref',
+		from: 'from',
+		handles: 'ref',
+		reads: 'ref',
+		writes: 'write',
+		calls: 'call'
+	};
+
 	function edge(l: ModelLink, state: string) {
 		const parent = l.parentId ? boxById.get(l.parentId) : undefined;
 		const hotLine = state.includes('hot');
-		const color = hotLine
-			? l.kind === 'from'
-				? 'var(--sdv-link-from)'
-				: 'var(--sdv-link-ref)'
-			: 'var(--sdv-edge)';
+		const color = hotLine ? `var(--sdv-link-${LINK_TOKEN[l.kind]})` : 'var(--sdv-edge)';
 		const arrow = { type: MarkerType.ArrowClosed, width: 14, height: 14, color };
 		return {
 			...l,
@@ -366,10 +397,11 @@
 			pathOptions: { borderRadius: 0 },
 			class: `model-link ${l.kind} ${state} ${parent && !open.has(parent.id) ? 'off' : ''}`,
 			// A foreign key points at the key; a held model has a UML composition diamond at the
-			// holder (defined below); lineage points at the derived field, the way data flows.
-			...(l.kind === 'ref'
+			// holder (defined below); lineage points at the derived field, the way data flows, and
+			// so do a unit's reads (at the unit) and writes (at the model). A call points at the callee.
+			...(l.kind === 'ref' || l.kind === 'writes' || l.kind === 'calls'
 				? { markerEnd: arrow }
-				: l.kind === 'from'
+				: l.kind === 'from' || l.kind === 'reads'
 					? { markerStart: arrow }
 					: { markerStart: hotLine ? 'sdv-composition-hot' : 'sdv-composition' })
 		};
@@ -414,55 +446,101 @@
 		};
 	};
 
-	const inspector = $derived.by(() => {
-		const f = view.field;
-		const b = f && boxById.get(f.box);
-		const info = f && design.model.fields.get(f.field);
-		if (!f || !b || !info) return undefined;
-		const entry = (to: string): Entry => {
-			const t = linkTarget(design.model, boxes, b, to);
-			return {
-				text: label(to),
-				where: t ? whereOf(t) : 'not drawn',
-				target: t && { box: t, field: design.model.fields.has(to) ? to : undefined }
-			};
-		};
-		const outOf = (kind: FieldLink['kind']) =>
-			(rels.out.get(f.field) ?? []).filter((l) => l.kind === kind).map((l) => entry(l.to));
-		const inOf = (kind: FieldLink['kind']) =>
-			(rels.in.get(f.field) ?? []).filter((l) => l.kind === kind).map((l) => entry(l.field));
-		const def = info.def;
+	/** An api a unit handles or calls; clicking it picks the api. */
+	const routeEntry = (id: string): Entry => {
+		const a = el(id)!;
 		return {
-			title: `${el(info.modelId)?.name}.${def.name}`,
-			type: typeText(def, (id) => refLabel(design.model, id)),
-			// Glyphs point the way the link goes: → this field to the entry, ← the entry to it.
-			sections: [
-				{ label: 'References', kind: 'ref', glyph: '→', entries: outOf('ref') },
-				{ label: 'Holds', kind: 'model', glyph: '◆', entries: outOf('model') },
-				{
-					label: 'Source',
-					kind: 'from',
-					glyph: '⇠',
-					entries: outOf('from'),
-					note: def.derived
-				},
-				{ label: 'Referenced by', kind: 'ref', glyph: '←', entries: inOf('ref') },
-				{ label: 'Feeds', kind: 'from', glyph: '⇢', entries: inOf('from') },
-				{
-					label: 'Fed by apis',
-					kind: 'from',
-					glyph: '⇠',
-					entries: (uses.fedBy.get(f.field) ?? []).map(apiEntry)
-				},
-				{
-					label: 'Returned by apis',
-					kind: 'from',
-					glyph: '⇢',
-					entries: (uses.returnedBy.get(f.field) ?? []).map(apiEntry)
-				}
-			].filter((s) => s.entries.length)
+			text: `${a.def.method} ${a.def.path}`,
+			where: `${a.name} · ${pathOf(a.parentId)}`,
+			api: id
 		};
-	});
+	};
+
+	interface Section {
+		label: string;
+		/** Colours the glyphs and hover: ref, from, writes or calls. */
+		kind: string;
+		glyph: string;
+		entries: Entry[];
+		note?: string;
+	}
+
+	const inspector = $derived.by(
+		(): { title: string; type: string; sections: Section[] } | undefined => {
+			const f = view.field;
+			const b = f && boxById.get(f.box);
+			const info = f && design.model.fields.get(f.field);
+			const unit = f && isUnit(f.field) ? el(f.field) : undefined;
+			if (!f || !b || (!info && !unit)) return undefined;
+			const entry = (to: string): Entry => {
+				if (isApiEl(to)) return routeEntry(to);
+				const t = linkTarget(design.model, boxes, b, to);
+				return {
+					text: isUnit(to) ? el(to)!.name : label(to),
+					where: t ? whereOf(t) : 'not drawn',
+					target: t && { box: t, field: rowOf(t, to) >= 0 ? to : undefined }
+				};
+			};
+			const outOf = (kind: FieldLink['kind']) =>
+				(rels.out.get(f.field) ?? []).filter((l) => l.kind === kind).map((l) => entry(l.to));
+			const inOf = (kind: FieldLink['kind']) =>
+				(rels.in.get(f.field) ?? []).filter((l) => l.kind === kind).map((l) => entry(l.field));
+			if (unit)
+				return {
+					title: unit.name,
+					type: `Logic unit · ${pathOf(unit.parentId)}`,
+					// Glyphs point the way data or control goes.
+					sections: [
+						{ label: 'Handles', kind: 'ref', glyph: '←', entries: outOf('handles') },
+						{ label: 'Reads', kind: 'ref', glyph: '⇠', entries: outOf('reads') },
+						{ label: 'Writes', kind: 'writes', glyph: '⇢', entries: outOf('writes') },
+						{ label: 'Calls', kind: 'calls', glyph: '→', entries: outOf('calls') },
+						{ label: 'Called by', kind: 'calls', glyph: '←', entries: inOf('calls') }
+					].filter((s) => s.entries.length)
+				};
+			if (!info) return undefined;
+			// Units touching the field: by naming it, or its whole model.
+			const touchedBy = (kind: 'reads' | 'writes') => [
+				...inOf(kind),
+				...(rels.in.get(info.modelId) ?? [])
+					.filter((l) => l.kind === kind)
+					.map((l) => ({ ...entry(l.field), where: `${entry(l.field).where} · whole model` }))
+			];
+			const def = info.def;
+			return {
+				title: `${el(info.modelId)?.name}.${def.name}`,
+				type: typeText(def, (id) => refLabel(design.model, id)),
+				// Glyphs point the way the link goes: → this field to the entry, ← the entry to it.
+				sections: [
+					{ label: 'References', kind: 'ref', glyph: '→', entries: outOf('ref') },
+					{ label: 'Holds', kind: 'model', glyph: '◆', entries: outOf('model') },
+					{
+						label: 'Source',
+						kind: 'from',
+						glyph: '⇠',
+						entries: outOf('from'),
+						note: def.derived
+					},
+					{ label: 'Referenced by', kind: 'ref', glyph: '←', entries: inOf('ref') },
+					{ label: 'Feeds', kind: 'from', glyph: '⇢', entries: inOf('from') },
+					{
+						label: 'Fed by apis',
+						kind: 'from',
+						glyph: '⇠',
+						entries: (uses.fedBy.get(f.field) ?? []).map(apiEntry)
+					},
+					{
+						label: 'Returned by apis',
+						kind: 'from',
+						glyph: '⇢',
+						entries: (uses.returnedBy.get(f.field) ?? []).map(apiEntry)
+					},
+					{ label: 'Read by logic', kind: 'ref', glyph: '⇢', entries: touchedBy('reads') },
+					{ label: 'Written by logic', kind: 'writes', glyph: '⇠', entries: touchedBy('writes') }
+				].filter((s) => s.entries.length)
+			};
+		}
+	);
 
 	const statusClass = (s: number) => (s < 300 ? 'ok' : s < 400 ? '' : s < 500 ? 'warn' : 'bad');
 
@@ -510,9 +588,25 @@
 				})
 			};
 		});
+		const units = (kind: 'handles' | 'calls') =>
+			(rels.in.get(a.id) ?? [])
+				.filter((l) => l.kind === kind)
+				.map((l) => {
+					const t = linkTarget(design.model, boxes, host, l.field);
+					return {
+						id: l.field,
+						text: el(l.field)!.name,
+						where: pathOf(el(l.field)!.parentId),
+						target: t && { box: t, field: l.field }
+					};
+				});
 		return {
 			method: d.method ?? '',
 			path: d.path ?? '',
+			logic: [
+				{ label: 'Handled by', entries: units('handles') },
+				{ label: 'Called by', entries: units('calls') }
+			].filter((s) => s.entries.length),
 			sub: [a.name, pathOf(a.parentId), d.auth && `auth: ${d.auth}`].filter(Boolean).join(' · '),
 			params: d.params ?? [],
 			request: bodies.find((b) => b.part === 'request'),
@@ -610,9 +704,9 @@
 		const area = (t.parentId && boxById.get(t.parentId)) || t;
 		const fill = (b: LandscapeBox) => Math.max(b.width / cw, b.height / ch);
 		const zoom = Math.min(Math.max(viewport.current.zoom, 0.8 / fill(area)), 0.92 / fill(t));
-		const row = t.fields?.findIndex((f) => f.id === target.field) ?? -1;
+		const row = rowOf(t, target.field);
 		// A row hidden in a folded card is shown by expanding the card.
-		if (row >= shownRows(t.fields?.length ?? 0, !!view.expanded[t.id]))
+		if (t.fields && row >= shownRows(t.fields.length, !!view.expanded[t.id]))
 			view.expanded = { ...view.expanded, [t.id]: true };
 		// Keep [start, start + size] on a canvas side of `side` pixels, if it fits.
 		const keep = (c: number, start: number, size: number, side: number) => {
@@ -840,6 +934,26 @@
 					{#if !b.model && !b.fields.length && !b.description}<p class="empty">No body.</p>{/if}
 				</section>
 			{/each}
+			{#each api.logic as s (s.label)}
+				<section class="calls">
+					<h4>{s.label}</h4>
+					{#each s.entries as e (e.id)}
+						<button
+							class="entry"
+							disabled={!e.target}
+							onclick={() => {
+								if (!e.target) return;
+								view.api = null;
+								flyTo(e.target);
+							}}
+							title={e.target ? 'Go to' : undefined}
+						>
+							<span class="text" data-glyph="ƒ">{e.text}</span>
+							<span class="where">{e.where}</span>
+						</button>
+					{/each}
+				</section>
+			{/each}
 		</aside>
 	{/if}
 </div>
@@ -893,6 +1007,15 @@
 	}
 	.canvas :global(.model-link.hot.from .svelte-flow__edge-path) {
 		stroke: var(--sdv-link-from);
+	}
+	.canvas :global(.model-link.hot.writes .svelte-flow__edge-path) {
+		stroke: var(--sdv-link-write);
+	}
+	.canvas :global(.model-link.calls .svelte-flow__edge-path) {
+		stroke-dasharray: 2 3;
+	}
+	.canvas :global(.model-link.hot.calls .svelte-flow__edge-path) {
+		stroke: var(--sdv-link-call);
 	}
 	/* A line to another box is drawn whatever the zoom, so it shows where the other end is. */
 	.canvas :global(.svelte-flow__edge.model-link.cross) {
@@ -992,6 +1115,18 @@
 	}
 	.inspector .from .entry .text::before {
 		color: var(--sdv-link-from);
+	}
+	.inspector .writes .entry .text::before {
+		color: var(--sdv-link-write);
+	}
+	.inspector .writes .entry:hover:not(:disabled) {
+		border-left-color: var(--sdv-link-write);
+	}
+	.inspector .calls .entry .text::before {
+		color: var(--sdv-link-call);
+	}
+	.inspector .calls .entry:hover:not(:disabled) {
+		border-left-color: var(--sdv-link-call);
 	}
 	.inspector .status {
 		font-variant-numeric: tabular-nums;

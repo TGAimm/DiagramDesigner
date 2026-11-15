@@ -342,6 +342,9 @@ export function buildModel(files: Record<string, unknown>, locate?: Locator): Mo
 			for (const key of ['method', 'path', 'auth', 'params', 'request', 'responses'] as const)
 				if (value[key]) diag('error', 'api-only', `only apis have ${key}`, loc, key);
 		}
+		if (kind !== 'logic-unit')
+			for (const key of LOGIC_KEYS)
+				if (value[key]) diag('error', 'logic-only', `only logic units have ${key}`, loc, key);
 	}
 	for (const info of entities) {
 		info.def.fields?.forEach((f, i) => {
@@ -476,6 +479,34 @@ export function buildModel(files: Record<string, unknown>, locate?: Locator): Mo
 					'ref'
 				);
 		});
+		for (const key of info.def.kind === 'logic-unit' ? LOGIC_KEYS : [])
+			info.def[key]?.forEach((id, j) => {
+				const refLoc = at(info.loc, key, j);
+				const field = model.fields.get(id);
+				const kind = field ? 'field' : model.elements.get(id)?.def.kind;
+				const allowed = LOGIC_TARGETS[key];
+				if (!kind)
+					diag(
+						'error',
+						'dangling-ref',
+						`${key} names "${id}", which is not an entity or field`,
+						refLoc
+					);
+				else if (!allowed.includes(kind))
+					diag(
+						'error',
+						'logic-target',
+						`${key} names ${kind} "${field?.def.name ?? model.elements.get(id)!.name}"; allowed: ${allowed.join(', ')}`,
+						refLoc
+					);
+				else if (field && info.def[key]!.includes(field.modelId))
+					diag(
+						'warning',
+						'logic-whole-model',
+						`${key} already names the whole model "${model.elements.get(field.modelId)!.name}"`,
+						refLoc
+					);
+			});
 		info.refIds = info.refIds.filter((ref, i) => {
 			const target = model.elements.get(ref);
 			const refLoc = at(info.loc, 'models', i);
@@ -582,6 +613,17 @@ export function buildModel(files: Record<string, unknown>, locate?: Locator): Mo
 
 	return model;
 }
+
+/** Keys only logic units have: what invokes them, the data they touch and what they call. */
+export const LOGIC_KEYS = ['handles', 'reads', 'writes', 'calls'] as const;
+
+/** What each logic-unit key may name: entity kinds, or `field` for a model field. */
+const LOGIC_TARGETS: Record<(typeof LOGIC_KEYS)[number], string[]> = {
+	handles: ['api'],
+	reads: ['model', 'field'],
+	writes: ['model', 'field'],
+	calls: ['logic-unit', 'api']
+};
 
 /** Returns one cycle in a dependency graph (id -> needs), or undefined. */
 export function findCycle(graph: Map<string, string[]>): string[] | undefined {

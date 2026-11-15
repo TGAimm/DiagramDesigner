@@ -1,4 +1,4 @@
-import type { Model } from '../model/model';
+import { LOGIC_KEYS, type Model } from '../model/model';
 import type { Element, ModelField, ModelIndex } from '../model/schema';
 import { textWidth } from '../render/text';
 import { railGroups, railOf } from './apis';
@@ -36,6 +36,8 @@ export interface LandscapeBox {
 	fields?: ModelField[];
 	/** Apis of the element, drawn on a rail across its right border (see `apiHosts`). */
 	apis?: string[];
+	/** A module's logic units, one row each; set when the box is its logic card. */
+	logic?: { cols: TableColumn[]; rows: LogicRow[] };
 }
 
 interface Size {
@@ -53,6 +55,8 @@ interface Item {
 	ref: boolean;
 	boundary?: boolean;
 	view?: ModelView;
+	/** The logic card of module `el`. */
+	logic?: boolean;
 }
 
 /** A box without children: its name at a fixed size, the box fitted round it. */
@@ -85,6 +89,7 @@ export const TABLE = {
 };
 
 export type FieldColumn = 'name' | 'type' | 'required' | 'nullable' | 'constraints' | 'links';
+export type LogicColumn = 'name' | 'handles' | 'reads' | 'writes' | 'calls';
 
 /**
  * Marks in a row's link strip: a foreign key (`ref`), lineage (`from`), and how many fields
@@ -98,7 +103,7 @@ export type LinkSlot = 'ref' | 'from' | 'inRef' | 'inFrom' | 'inApi';
 export const LINK = { icon: 14, slot: 20, count: 10 };
 
 export interface TableColumn {
-	key: FieldColumn;
+	key: FieldColumn | LogicColumn;
 	label: string;
 	/** Hover text for a short label. */
 	title?: string;
@@ -107,12 +112,15 @@ export interface TableColumn {
 	slots?: LinkSlot[];
 }
 
-/** One edge of the field graph: field `field` refers to, derives from, or holds `to`. */
+/**
+ * One edge of the field graph: field `field` refers to, derives from, or holds `to`; or logic
+ * unit `field` handles an api, reads or writes a model or field, or calls a unit or api.
+ */
 export interface FieldLink {
-	kind: 'ref' | 'from' | 'model';
-	/** The field the link is written on. */
+	kind: 'ref' | 'from' | 'model' | (typeof LOGIC_KEYS)[number];
+	/** The field or logic unit the link is written on. */
 	field: string;
-	/** A field id, or a model id for `ref` to a model and `model`. */
+	/** A field id, or a model id for `ref` to a model and `model`; any target for a unit. */
 	to: string;
 }
 
@@ -142,6 +150,14 @@ export function relationsOf(model: Model): Relations {
 			add(rels.in, l.to, l);
 		}
 	}
+	for (const [id, info] of model.elements)
+		for (const kind of info.def.kind === 'logic-unit' ? LOGIC_KEYS : [])
+			for (const to of info.def[kind] ?? [])
+				if (model.fields.has(to) || model.elements.has(to)) {
+					const l = { kind, field: id, to };
+					add(rels.out, id, l);
+					add(rels.in, to, l);
+				}
 	for (const f of model.apiFields.values())
 		for (const id of [...(f.def.to ?? []), ...(f.def.from ?? [])])
 			if (model.fields.has(id)) rels.api.set(id, (rels.api.get(id) ?? 0) + 1);
@@ -378,6 +394,87 @@ function tableLayout(
 	return { size: { width: Math.ceil(width) + 2, height: height + 2 }, cols };
 }
 
+/** A badge in a logic row: what it shows, and its hover text. */
+export interface LogicBadge {
+	text: string;
+	title: string;
+	/** Apis only: the HTTP method, which colours the badge. */
+	method?: string;
+}
+
+/** A logic unit's row: badges for the apis it handles, what it reads and writes, what it calls. */
+export interface LogicRow {
+	id: string;
+	name: string;
+	handles: LogicBadge[];
+	reads: LogicBadge[];
+	writes: LogicBadge[];
+	calls: LogicBadge[];
+}
+
+export function logicRow(model: Model, id: string): LogicRow {
+	const info = model.elements.get(id)!;
+	const badge = (to: string): LogicBadge => {
+		const t = model.elements.get(to);
+		if (t?.def.kind === 'api') {
+			const route = `${t.def.method} ${t.def.path}`;
+			return { text: route, title: `${route} · ${t.name}`, method: t.def.method };
+		}
+		const text = refLabel(model, to) ?? to;
+		return { text, title: text };
+	};
+	const of = (key: (typeof LOGIC_KEYS)[number]) =>
+		(info.def[key] ?? []).filter((to) => model.ids.has(to)).map(badge);
+	return {
+		id,
+		name: info.name,
+		// The handled api's method is enough on the card; the route is in the hover text.
+		handles: of('handles').map((b) => ({ ...b, text: b.method ?? b.text })),
+		reads: of('reads'),
+		writes: of('writes'),
+		calls: of('calls')
+	};
+}
+
+const LOGIC_KIND = Object.fromEntries(LOGIC_KEYS.map((k) => [k, true]));
+
+/** Room for the ƒ before a unit's name. */
+const FN_GLYPH = 14;
+
+/** A module's logic card: a name bar, then one row per unit; columns no row fills are left out. */
+function logicLayout(rows: LogicRow[]): { size: Size; cols: TableColumn[] } {
+	const defs: [LogicColumn, string, string | undefined, number[]][] = [
+		['name', 'Unit', undefined, rows.map((r) => FN_GLYPH + textWidth(r.name, TABLE.row))],
+		[
+			'handles',
+			'API',
+			'Apis whose requests it handles',
+			rows.map((r) => badgesWidth(r.handles.map((b) => b.text)))
+		],
+		['reads', 'Reads', undefined, rows.map((r) => badgesWidth(r.reads.map((b) => b.text)))],
+		['writes', 'Writes', undefined, rows.map((r) => badgesWidth(r.writes.map((b) => b.text)))],
+		['calls', 'Calls', undefined, rows.map((r) => badgesWidth(r.calls.map((b) => b.text)))]
+	];
+	const cols = defs
+		.filter(([key, , , ws]) => key === 'name' || ws.some((w) => w > 0))
+		.map(([key, label, title, ws]) => ({
+			key,
+			label,
+			title,
+			width: Math.max(textWidth(label, TABLE.label, true), ...ws) + 2 * TABLE.pad
+		}));
+	const width = Math.max(
+		textWidth('Logic', TABLE.title, true) + 2 * TABLE.pad,
+		textWidth(logicNote(rows.length), TABLE.note) + 2 * TABLE.pad,
+		cols.reduce((w, c) => w + c.width, 0)
+	);
+	const height = TABLE.head + (rows.length + 1) * TABLE.rowHeight;
+	return { size: { width: Math.ceil(width) + 2, height: height + 2 }, cols };
+}
+
+/** Line under a logic card's name. */
+export const logicNote = (n: number) => `${n} logic unit${n === 1 ? '' : 's'}`;
+
 const leafWidth = (name: string) =>
 	Math.max(LEAF.minWidth, textWidth(name, LEAF.font, true) + 2 * LEAF.padX);
 
@@ -431,6 +528,7 @@ export function layoutLandscape(model: Model): LandscapeBox[] {
 	const out: LandscapeBox[] = [];
 	const sizes = new Map<string, Size>();
 	const cards = new Map<string, { cols: TableColumn[]; fields: ModelField[] }>();
+	const logicCards = new Map<string, { cols: TableColumn[]; rows: LogicRow[] }>();
 	const holders = holdersOf(model);
 	const rels = relationsOf(model);
 	const parts = partOf(model, holders);
@@ -447,14 +545,17 @@ export function layoutLandscape(model: Model): LandscapeBox[] {
 	// A model owned elsewhere is drawn as a closed card, so it never has boxes inside.
 	const kidsOf = (item: Item): Item[] => {
 		const info = model.elements.get(item.el);
-		if (item.ref || item.view || !info) return [];
+		if (item.ref || item.view || item.logic || !info) return [];
 		if (item.boundary)
 			return model.elements
 				.get(info.parentId!)!
 				.childIds.filter((id) => id === item.el || (parts.has(id) && rootOf(id) === item.el))
 				.map(card);
+		// A module's logic units share one card, drawn first.
+		const units = info.childIds.filter(isUnit);
 		return [
-			...info.childIds.filter((id) => !parts.has(id) && !isApi(id)).map(owned),
+			...(units.length ? [{ id: `${item.id}#logic`, el: item.el, ref: false, logic: true }] : []),
+			...info.childIds.filter((id) => !parts.has(id) && !isApi(id) && !isUnit(id)).map(owned),
 			...info.refIds.map((id) => ({
 				id: `${item.id}>${id}`,
 				el: id,
@@ -470,8 +571,9 @@ export function layoutLandscape(model: Model): LandscapeBox[] {
 		];
 	};
 	const isApi = (id: string) => model.elements.get(id)!.def.kind === 'api';
+	const isUnit = (id: string) => model.elements.get(id)!.def.kind === 'logic-unit';
 	const apisOf = (item: Item) =>
-		item.ref || item.view || item.boundary
+		item.ref || item.view || item.boundary || item.logic
 			? []
 			: (model.elements.get(item.el)?.childIds.filter(isApi) ?? []);
 	// Every api inside an element, which all move to its rail while it is closed.
@@ -507,6 +609,11 @@ export function layoutLandscape(model: Model): LandscapeBox[] {
 			);
 			cards.set(item.id, { cols: t.cols, fields });
 			size = t.size;
+		} else if (info && item.logic) {
+			const rows = info.childIds.filter(isUnit).map((id) => logicRow(model, id));
+			const l = logicLayout(rows);
+			logicCards.set(item.id, { cols: l.cols, rows });
+			size = l.size;
 		} else size = { width: leafWidth(info?.name ?? item.el), height: LEAF.height };
 		const own = railWidth(item.el, apisOf(item), size.height) / 2;
 		if (own) {
@@ -514,7 +621,7 @@ export function layoutLandscape(model: Model): LandscapeBox[] {
 			size.width += own;
 		}
 		// Closed, the box carries the apis of everything inside it too.
-		const deep = item.ref || item.view || item.boundary ? [] : deepApis(item.el);
+		const deep = item.ref || item.view || item.boundary || item.logic ? [] : deepApis(item.el);
 		const right = Math.max(own, railWidth(item.el, deep, size.height) / 2);
 		if (right) size.right = right;
 		sizes.set(item.id, size);
@@ -552,7 +659,8 @@ export function layoutLandscape(model: Model): LandscapeBox[] {
 				table: cards.get(item.id)?.cols,
 				view: item.view,
 				fields: cards.get(item.id)?.fields,
-				apis: apisOf(item)
+				apis: apisOf(item),
+				logic: logicCards.get(item.id)
 			};
 			out.push(box);
 			if (kids.length)
@@ -591,21 +699,27 @@ export interface ModelLink {
 	target: string;
 	/** `out:<field id>:l` or `:r`. */
 	sourceHandle: string;
-	/** `head:l` or `head:r` for a model, or a field its card does not show; else `in:<field id>:l` or `:r`. */
+	/**
+	 * `head:l` or `head:r` for a model, or a field its card does not show; else
+	 * `in:<field or unit id>:l` or `:r`.
+	 */
 	targetHandle: string;
-	/** The field the link is written on. */
+	/** The field or logic unit the link is written on. */
 	sourceField: string;
-	/** The field pointed at, when its card shows it. */
+	/** The field or unit pointed at, when its card shows it. */
 	targetField?: string;
 	parentId?: string;
 }
 
 const modelOf = (model: Model, id: string) => model.fields.get(id)?.modelId ?? id;
-const shows = (b: LandscapeBox, fieldId: string) => b.fields?.some((f) => f.id === fieldId);
+/** Whether a card has a row for a field or logic unit. */
+const shows = (b: LandscapeBox, id: string) =>
+	!!(b.fields?.some((f) => f.id === id) || b.logic?.rows.some((r) => r.id === id));
 
 /**
  * The card a link from box `from` ends on, for the model or field `to`: a sibling if there
- * is one; else, of the cards showing the field, the nearest.
+ * is one; else, of the cards showing the field, the nearest. A logic unit has one card, its
+ * module's logic card; an api has none.
  */
 export function linkTarget(
 	model: Model,
@@ -613,6 +727,7 @@ export function linkTarget(
 	from: LandscapeBox,
 	to: string
 ): LandscapeBox | undefined {
+	if (model.elements.get(to)?.def.kind === 'logic-unit') return boxes.find((o) => shows(o, to));
 	const el = modelOf(model, to);
 	const cards = boxes.filter((o) => o.view && o.elementId === el);
 	const dist = (o: LandscapeBox) =>
@@ -627,12 +742,19 @@ export function linkTarget(
 	return cards.sort((a, b) => score(a) - score(b))[0];
 }
 
-/** A line from field `link.field` in card `b` to card `t`, the ends facing each other. */
-function line(model: Model, b: LandscapeBox, t: LandscapeBox, link: FieldLink): ModelLink {
+/** A line from row `link.field` in card `b` to card `t`, the ends facing each other. */
+function line(b: LandscapeBox, t: LandscapeBox, link: FieldLink): ModelLink {
 	const [from, side] = t.absX >= b.absX + b.width ? 'rl' : t.absX + t.width <= b.absX ? 'lr' : 'rr';
-	const shown = model.fields.has(link.to) && shows(t, link.to);
+	const shown = shows(t, link.to);
+	// A field has one ref or model link but many of the rest, so those are named by their end.
+	const end =
+		link.kind === 'from'
+			? `.${link.to}`
+			: link.kind in LOGIC_KIND
+				? `.${link.kind}.${link.to}`
+				: '';
 	return {
-		id: `${b.id}.${link.field}` + (link.kind === 'from' ? `.${link.to}` : ''),
+		id: `${b.id}.${link.field}${end}`,
 		kind: link.kind,
 		source: b.id,
 		target: t.id,
@@ -671,15 +793,15 @@ export function modelLinks(model: Model, boxes: LandscapeBox[]): ModelLink[] {
 				const el = modelOf(model, link.to);
 				const t = boxes.find((o) => o.view && o.parentId === b.parentId && o.elementId === el);
 				if (!t || (link.kind === 'from' && t === b)) continue;
-				out.push(line(model, b, t, link));
+				out.push(line(b, t, link));
 			}
 	return out;
 }
 
 /**
- * Every line for one field in one card, wherever the other end is: its own links, and the
- * fields linking to it. The other end is the nearest card showing it (see `linkTarget`).
- * Lineage inside one card is left out.
+ * Every line for one field or logic unit in one card, wherever the other end is: its own
+ * links, and the fields and units linking to it. The other end is the nearest card showing it
+ * (see `linkTarget`). Lineage inside one card is left out, and so are apis, which are on rails.
  */
 export function focusLinks(
 	model: Model,
@@ -693,12 +815,11 @@ export function focusLinks(
 	const out: ModelLink[] = [];
 	for (const link of rels.out.get(fieldId) ?? []) {
 		const t = linkTarget(model, boxes, b, link.to);
-		if (t && !(link.kind === 'from' && t === b)) out.push(line(model, b, t, link));
+		if (t && !(link.kind === 'from' && t === b)) out.push(line(b, t, link));
 	}
 	for (const link of rels.in.get(fieldId) ?? []) {
 		const s = linkTarget(model, boxes, b, link.field);
-		if (s && shows(s, link.field) && !(link.kind === 'from' && s === b))
-			out.push(line(model, s, b, link));
+		if (s && shows(s, link.field) && !(link.kind === 'from' && s === b)) out.push(line(s, b, link));
 	}
 	return out;
 }

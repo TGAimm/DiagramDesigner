@@ -20,7 +20,7 @@ export interface Camera {
 
 /** Font size of the text a box shows, in canvas px (on screen it is scaled by the zoom). */
 export const faceFont = (b: LandscapeBox) =>
-	b.table ? TABLE.row : b.group ? groupFont(b.width, b.height) : LEAF.font;
+	b.table || b.logic ? TABLE.row : b.group ? groupFont(b.width, b.height) : LEAF.font;
 
 export function inView(b: LandscapeBox, cam: Camera) {
 	const left = b.absX * cam.zoom + cam.x;

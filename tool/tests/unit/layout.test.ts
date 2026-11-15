@@ -33,8 +33,14 @@ describe('landscape layout', () => {
 
 	const notApi = (id: string) => model.elements.get(id)!.def.kind !== 'api';
 
-	it('lays out every entity but apis, parents before their children', () => {
-		expect(boxes.map((b) => b.id).sort()).toEqual([...model.elements.keys()].filter(notApi).sort());
+	it('lays out every entity but apis, a module’s logic units on one card, parents first', () => {
+		const kind = (id: string) => model.elements.get(id)!.def.kind;
+		expect(boxes.map((b) => b.id).sort()).toEqual(
+			[
+				...[...model.elements.keys()].filter((id) => notApi(id) && kind(id) !== 'logic-unit'),
+				'order#logic'
+			].sort()
+		);
 		const index = new Map(boxes.map((b, i) => [b.id, i]));
 		for (const b of boxes)
 			if (b.parentId) expect(index.get(b.parentId)!).toBeLessThan(index.get(b.id)!);
@@ -54,7 +60,7 @@ describe('landscape layout', () => {
 	});
 
 	it('fits each box to its content instead of sharing a size with its siblings', () => {
-		const leaves = boxes.filter((b) => !b.group && !b.table);
+		const leaves = boxes.filter((b) => !b.group && !b.table && !b.logic);
 		for (const b of leaves)
 			expect(b.width).toBe(
 				Math.max(LEAF.minWidth, textWidth(model.elements.get(b.id)!.name, LEAF.font, true) + 36)
@@ -330,5 +336,80 @@ describe('folded model cards', () => {
 			80,
 			FOLD
 		]);
+	});
+});
+
+describe('logic cards', () => {
+	const shop = loadStrings({
+		's/s.system.yaml': 'id: s\n',
+		's/shop.module.yaml': 'id: shop\nparent: s\n',
+		's/svc.module.yaml': 'id: svc\nparent: shop\n',
+		's/cart.model.yaml':
+			'id: cart\nownedBy: shop\nfields: [{ id: cart-id, name: id, type: uuid, pk: true }, { id: cart-qty, name: qty, type: int }]\n',
+		's/post.api.yaml':
+			'id: post\nparent: svc\nmethod: POST\npath: /cart\nrequest: { model: cart }\n',
+		's/add.logic-unit.yaml': [
+			'id: add',
+			'parent: svc',
+			'name: addToCart',
+			'handles: [post]',
+			'reads: [cart]',
+			'writes: [cart-qty]',
+			'calls: [load]'
+		].join('\n'),
+		's/load.logic-unit.yaml': 'id: load\nparent: svc\nname: loadCart\nreads: [cart]\n'
+	}).model;
+	const boxes = layoutLandscape(shop);
+	const box = (id: string) => boxes.find((b) => b.id === id)!;
+
+	it('draws a module’s units as rows of one card, first among its children', () => {
+		expect(shop.diagnostics).toEqual([]);
+		expect(boxes.filter((b) => b.parentId === 'svc').map((b) => b.id)).toEqual(['svc#logic']);
+		const card = box('svc#logic').logic!;
+		expect(card.cols.map((c) => c.key)).toEqual(['name', 'handles', 'reads', 'writes', 'calls']);
+		expect(card.rows.map((r) => r.id)).toEqual(['add', 'load']);
+		const add = card.rows[0];
+		expect(
+			[add.handles, add.reads, add.writes, add.calls].map((bs) => bs.map((b) => b.text))
+		).toEqual([['POST'], ['cart'], ['cart.qty'], ['loadCart']]);
+		expect(add.handles[0].title).toBe('POST /cart · post');
+		expect(box('svc#logic').height).toBe(TABLE.head + 3 * TABLE.rowHeight + 2);
+	});
+
+	it('leaves out columns no unit fills', () => {
+		const one = layoutLandscape(
+			loadStrings({
+				's/s.system.yaml': 'id: s\n',
+				's/m.module.yaml': 'id: m\nparent: s\n',
+				's/u.logic-unit.yaml': 'id: u\nparent: m\n'
+			}).model
+		);
+		expect(one.find((b) => b.id === 'm#logic')!.logic!.cols.map((c) => c.key)).toEqual(['name']);
+	});
+
+	it('indexes unit links both ways', () => {
+		const rels = relationsOf(shop);
+		expect(rels.out.get('add')!.map((l) => [l.kind, l.to])).toEqual([
+			['handles', 'post'],
+			['reads', 'cart'],
+			['writes', 'cart-qty'],
+			['calls', 'load']
+		]);
+		expect(rels.in.get('cart')!.map((l) => l.field)).toEqual(['add', 'load']);
+		expect(rels.in.get('post')!.map((l) => [l.kind, l.field])).toEqual([['handles', 'add']]);
+	});
+
+	it('draws a focused unit’s reads, writes and calls, but not its apis', () => {
+		const rels = relationsOf(shop);
+		const links = focusLinks(shop, rels, boxes, 'svc#logic', 'add');
+		expect(links.map((l) => [l.id, l.target, l.targetHandle.replace(/:[lr]$/, '')])).toEqual([
+			['svc#logic.add.reads.cart', 'cart', 'head'],
+			['svc#logic.add.writes.cart-qty', 'cart', 'in:cart-qty'],
+			['svc#logic.add.calls.load', 'svc#logic', 'in:load']
+		]);
+		// From the field's side, the unit naming it writes into it.
+		expect(
+			focusLinks(shop, rels, boxes, 'cart', 'cart-qty').map((l) => [l.source, l.sourceField])
+		).toEqual([['svc#logic', 'add']]);
 	});
 });

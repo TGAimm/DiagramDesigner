@@ -32,6 +32,9 @@ const light = {
 	'row-flash': 'rgba(84, 104, 212, 0.45)',
 	'link-ref': '#5468d4',
 	'link-from': '#2f8a6b',
+	'link-write': '#b5533c',
+	'link-call': '#7a5bb5',
+	'logic-head': '#efeaf6',
 
 	'api-fill': '#ffffff',
 	'api-stroke': '#8d8a83',
@@ -74,6 +77,9 @@ const dark: Record<Token, string> = {
 	'row-flash': 'rgba(123, 140, 240, 0.5)',
 	'link-ref': '#8e9cf3',
 	'link-from': '#5cc29d',
+	'link-write': '#ec8a6f',
+	'link-call': '#b49be8',
+	'logic-head': '#262230',
 
 	'api-fill': '#1b1c20',
 	'api-stroke': '#76746f',

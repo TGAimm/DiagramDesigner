@@ -450,6 +450,42 @@
         "description": "One possible response; no model or fields: no body"
       }
     },
+    "handles": {
+      "description": "Logic units only: ids of the apis whose requests it handles",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*$",
+        "description": "Kebab-case identifier"
+      }
+    },
+    "reads": {
+      "description": "Logic units only: ids of the models, or single model fields, it reads",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*$",
+        "description": "Kebab-case identifier"
+      }
+    },
+    "writes": {
+      "description": "Logic units only: ids of the models, or single model fields, it writes",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*$",
+        "description": "Kebab-case identifier"
+      }
+    },
+    "calls": {
+      "description": "Logic units only: ids of the logic units or apis it calls",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*$",
+        "description": "Kebab-case identifier"
+      }
+    },
     "name": {
       "description": "Display name; defaults to the file name",
       "type": [

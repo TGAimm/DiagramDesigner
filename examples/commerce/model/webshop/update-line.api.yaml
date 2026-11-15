@@ -1,0 +1,15 @@
+id: wez7atj6e5
+parent: lht4l7njny
+name: Change quantity
+method: PATCH
+path: /cart/lines/{lineId}
+auth: session
+params:
+  - { name: lineId, in: path, type: uuid }
+request:
+  fields:
+    - { id: t896sab7xy, name: quantity, type: int, required: true, to: [dj8m2h65tb] }
+responses:
+  - { status: 200, model: a6ub2b7rpa }
+  - { status: 404, description: No such line }
+  - { status: 409, description: Not enough stock }

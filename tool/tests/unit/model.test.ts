@@ -404,3 +404,28 @@ describe('entity checks', () => {
 		expect(hasErrors(diagnostics)).toBe(false);
 	});
 });
+
+describe('logic units', () => {
+	it('checks what handles, reads, writes and calls name', () => {
+		const { model } = loadStrings({
+			's/s.system.yaml': 'id: s\n',
+			's/m.module.yaml': 'id: m\nparent: s\nreads: [m]\n',
+			's/c.model.yaml': 'id: c\nownedBy: m\nfields: [{ id: c-n, name: n, type: int }]\n',
+			's/u.logic-unit.yaml': [
+				'id: u',
+				'parent: m',
+				'handles: [c]',
+				'reads: [c, c-n]',
+				'writes: [nope]',
+				'calls: [m]'
+			].join('\n')
+		});
+		expect(model.diagnostics.map((d) => [d.severity, d.code, d.message])).toEqual([
+			['error', 'logic-only', 'only logic units have reads'],
+			['error', 'logic-target', 'handles names model "c"; allowed: api'],
+			['warning', 'logic-whole-model', 'reads already names the whole model "c"'],
+			['error', 'dangling-ref', 'writes names "nope", which is not an entity or field'],
+			['error', 'logic-target', 'calls names module "m"; allowed: logic-unit, api']
+		]);
+	});
+});

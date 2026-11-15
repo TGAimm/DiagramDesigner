@@ -37,6 +37,10 @@ export interface Element {
 	params?: ApiParam[];
 	request?: ApiBody;
 	responses?: ApiResponse[];
+	handles?: string[];
+	reads?: string[];
+	writes?: string[];
+	calls?: string[];
 }
 
 /** Kinds an entity file can have; the file name `<name>.<kind>.yaml` gives it. */
@@ -191,6 +195,22 @@ export const EntityFile = z
 		params: z.array(ApiParam).optional().describe('Apis only: path, query and header params'),
 		request: ApiBody.optional().describe('Apis only: what it takes in the body'),
 		responses: z.array(ApiResponse).optional().describe('Apis only: what it returns, by status'),
+		handles: z
+			.array(Id)
+			.optional()
+			.describe('Logic units only: ids of the apis whose requests it handles'),
+		reads: z
+			.array(Id)
+			.optional()
+			.describe('Logic units only: ids of the models, or single model fields, it reads'),
+		writes: z
+			.array(Id)
+			.optional()
+			.describe('Logic units only: ids of the models, or single model fields, it writes'),
+		calls: z
+			.array(Id)
+			.optional()
+			.describe('Logic units only: ids of the logic units or apis it calls'),
 		name: Text.optional().describe('Display name; defaults to the file name'),
 		tags: z.array(z.string()).optional(),
 		links: z.array(DocLink).optional(),

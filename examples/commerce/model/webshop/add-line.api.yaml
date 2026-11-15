@@ -1,0 +1,13 @@
+id: jibntgqh1p
+parent: lht4l7njny
+name: Add to cart
+method: POST
+path: /cart/lines
+auth: session
+request:
+  fields:
+    - { id: y9fpg54r6d, name: productId, type: uuid, required: true, to: [zaxevexhsu] }
+    - { id: vedi1myt8k, name: quantity, type: int, required: true, to: [dj8m2h65tb] }
+responses:
+  - { status: 201, model: a6ub2b7rpa, description: Added }
+  - { status: 409, description: Not enough stock }

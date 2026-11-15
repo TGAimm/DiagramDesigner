@@ -1,0 +1,11 @@
+id: kz9zchjfh4
+parent: lht4l7njny
+name: Remove from cart
+method: DELETE
+path: /cart/lines/{lineId}
+auth: session
+params:
+  - { name: lineId, in: path, type: uuid }
+responses:
+  - { status: 204, description: Removed }
+  - { status: 404, description: No such line }

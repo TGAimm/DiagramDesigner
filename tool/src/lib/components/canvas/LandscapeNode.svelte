@@ -1,6 +1,6 @@
 <script lang="ts" module>
 	import type { ModelField, ModelIndex } from '#lib/model/schema.ts';
-	import type { ModelView, TableColumn } from '#lib/landscape/layout.ts';
+	import type { LogicRow, ModelView, TableColumn } from '#lib/landscape/layout.ts';
 	import type { ViewState } from '#lib/client/view-state.svelte.ts';
 
 	export interface LandscapeNodeData extends Record<string, unknown> {
@@ -14,6 +14,8 @@
 		indexes?: ModelIndex[];
 		/** Field columns; set when the box is a model card. */
 		table?: TableColumn[];
+		/** Set when the box is a module's logic card: its columns and one row per unit. */
+		logic?: { cols: TableColumn[]; rows: LogicRow[] };
 		view?: ModelView;
 		/** Names of the models and fields the fields point at (ref, model, from), by id. */
 		labels?: Record<string, string>;
@@ -21,6 +23,7 @@
 		incoming?: Record<string, { ref: number; from: number; api: number }>;
 		/** Selection, focus and flash; read here so they never rebuild the nodes. */
 		state: ViewState;
+		/** A field row, or a logic card's unit row, was hovered, left or clicked. */
 		onfield?: (field: string, ev: 'enter' | 'leave' | 'click') => void;
 		/** Rail on this box's right border: its own apis, and those of hidden boxes inside it. */
 		rail?: RailView;
@@ -57,6 +60,7 @@
 		keysOf,
 		LEAF,
 		LINK,
+		logicNote,
 		slotCount,
 		shownRows,
 		subtitle,
@@ -303,6 +307,72 @@
 				style="top:{fieldRowY(i, count, expanded)}px"
 			/>
 		{/each}
+	{:else if d.logic}
+		{@const cols = d.logic.cols}
+		{@const rows = d.logic.rows}
+		<div class="face table logic" style:--pad="{TABLE.pad}px" style:--row="{TABLE.rowHeight}px">
+			<div class="thead" style:height="{TABLE.head}px">
+				<div class="name" style:font-size="{TABLE.title}px">Logic</div>
+				<div class="note" style:font-size="{TABLE.note}px">{logicNote(rows.length)}</div>
+			</div>
+			<div
+				class="grid"
+				style:font-size="{TABLE.row}px"
+				style:grid-template-columns={template(cols)}
+			>
+				{#each cols as c, ci (c.key)}
+					<div
+						class="cell th"
+						class:first={ci === 0}
+						style:font-size="{TABLE.label}px"
+						title={c.title}
+					>
+						{c.label}
+					</div>
+				{/each}
+				{#each rows as u (u.id)}
+					<!-- svelte-ignore a11y_click_events_have_key_events -->
+					<div
+						class="row"
+						class:hot={hot?.[u.id] === 'peer'}
+						class:self={hot?.[u.id] === 'self'}
+						class:picked={picked === u.id}
+						class:flash={flash === u.id}
+						role="button"
+						tabindex="-1"
+						onmouseenter={() => d.onfield?.(u.id, 'enter')}
+						onmouseleave={() => d.onfield?.(u.id, 'leave')}
+						onclick={(e) => {
+							e.stopPropagation();
+							d.onfield?.(u.id, 'click');
+						}}
+					>
+						{#each cols as c, ci (c.key)}
+							<div class="cell" class:first={ci === 0}>
+								{#if c.key === 'name'}<i class="fn">ƒ</i>{u.name}
+								{:else}
+									{#each u[c.key as 'handles' | 'reads' | 'writes' | 'calls'] as b, bi (bi)}<span
+											class="badge {c.key}"
+											style:font-size="{TABLE.badge}px"
+											style:color={b.method ? methodColor(b.method) : undefined}
+											title={b.title}>{b.text}</span
+										>{/each}
+								{/if}
+							</div>
+						{/each}
+					</div>
+				{/each}
+			</div>
+		</div>
+		<Handle type="target" id="head:l" position={Position.Left} style="top:{TABLE.head / 2}px" />
+		<Handle type="target" id="head:r" position={Position.Right} style="top:{TABLE.head / 2}px" />
+		{#each rows as u, i (u.id)}
+			{@const y = fieldRowY(i, rows.length, true)}
+			<Handle type="source" id="out:{u.id}:l" position={Position.Left} style="top:{y}px" />
+			<Handle type="source" id="out:{u.id}:r" position={Position.Right} style="top:{y}px" />
+			<Handle type="target" id="in:{u.id}:l" position={Position.Left} style="top:{y}px" />
+			<Handle type="target" id="in:{u.id}:r" position={Position.Right} style="top:{y}px" />
+		{/each}
 	{:else}
 		<div
 			class="face"
@@ -346,6 +416,7 @@
 							<button
 								class="rail-row"
 								class:picked={d.state.api === a.id}
+								class:hot={d.state.hotApis[a.id]}
 								style:height="{RAIL.row}px"
 								style:font-size="{RAIL.font}px"
 								style:padding="0 {RAIL.pad}px"
@@ -583,6 +654,31 @@
 	:global(.svelte-flow__node:has(> .node.expanded)) {
 		z-index: 999 !important;
 	}
+	/* A module's logic card: a tinted name bar, then a unit per row with what it touches. */
+	.face.table.logic .thead {
+		background: var(--sdv-logic-head);
+	}
+	.fn {
+		width: 10px;
+		margin-right: 0;
+		font-family: Georgia, serif;
+		color: var(--sdv-link-call);
+	}
+	.badge.handles {
+		background: var(--sdv-model-header);
+	}
+	.badge.reads {
+		background: color-mix(in srgb, var(--sdv-link-ref) 14%, transparent);
+		color: var(--sdv-link-ref);
+	}
+	.badge.writes {
+		background: color-mix(in srgb, var(--sdv-link-write) 16%, transparent);
+		color: var(--sdv-link-write);
+	}
+	.badge.calls {
+		background: color-mix(in srgb, var(--sdv-link-call) 14%, transparent);
+		color: var(--sdv-link-call);
+	}
 	.list {
 		display: grid;
 		grid-auto-rows: var(--row);
@@ -687,6 +783,9 @@
 	}
 	.rail-row:hover {
 		background: var(--sdv-row-hover);
+	}
+	.rail-row.hot {
+		background: var(--sdv-row-peer);
 	}
 	.rail-row.picked {
 		background: var(--sdv-row-self);

@@ -1,6 +1,7 @@
-/** A field row in one card (box). */
+/** A row in one card (box): a model field, or a logic unit on a logic card. */
 export interface FieldRef {
 	box: string;
+	/** Field or logic unit id. */
 	field: string;
 }
 
@@ -30,6 +31,8 @@ export class ViewState {
 	hot = $state.raw<Record<string, Record<string, 'self' | 'peer'>>>({});
 	/** Folded cards (over `FOLD` fields) shown in full, by box; they stay so until collapsed. */
 	expanded = $state.raw<Record<string, true>>({});
+	/** Rail rows lit because the focused logic unit handles or calls their api. */
+	hotApis = $state.raw<Record<string, true>>({});
 	/** Boxes holding the other end of a focused link, outlined so a closed box shows where. */
 	peerBoxes = $state.raw<Record<string, true>>({});
 }
