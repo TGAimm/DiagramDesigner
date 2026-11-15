@@ -8,7 +8,7 @@
 
 	const GLYPH: Record<string, GlyphKind | undefined> = {
 		self: 'logic',
-		unit: 'logic',
+		unit: 'module',
 		owner: 'module',
 		model: 'class'
 	};

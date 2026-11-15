@@ -426,7 +426,7 @@ describe('logic cards', () => {
 		expect(seq.lifelines.map((l) => [l.kind, l.name, l.subs.map((s) => s.text)])).toEqual([
 			['caller', 'Caller', ['POST /cart']],
 			['self', 'addToCart', ['this unit']],
-			['unit', 'loadCart', ['svc']],
+			['unit', 'svc', ['loadCart']],
 			['model', 'cart', ['s › shop']]
 		]);
 		expect(seq.messages.map((m) => [m.from, m.to, m.tone, m.dashed, m.text])).toEqual([

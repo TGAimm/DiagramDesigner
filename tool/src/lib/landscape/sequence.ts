@@ -134,9 +134,8 @@ export function sequenceOf(model: Model, unitId: string): Sequence {
 				} else {
 					const to = lane(t.id, () => ({
 						kind: 'unit',
-						name: t.name,
-						target: t.id,
-						subs: [{ text: el(t.parentId ?? '')?.name ?? '' }]
+						name: el(t.parentId ?? '')?.name ?? '',
+						subs: [{ text: t.name, target: t.id }]
 					}));
 					msg({ to, tone: 'call', text: withNote(`${t.name}(${s.with ?? ''})`, s), target: t.id });
 					ret(to, s.gets);
