@@ -5,7 +5,7 @@ method: PATCH
 path: /cart/lines/{lineId}
 auth: session
 params:
-  - { name: lineId, in: path, type: uuid }
+  - { id: s4913hoi7l, name: lineId, in: path, type: uuid }
 request:
   fields:
     - { id: t896sab7xy, name: quantity, type: int, required: true, to: [dj8m2h65tb] }

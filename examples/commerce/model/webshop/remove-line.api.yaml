@@ -5,7 +5,7 @@ method: DELETE
 path: /cart/lines/{lineId}
 auth: session
 params:
-  - { name: lineId, in: path, type: uuid }
+  - { id: pwngxm6j4q, name: lineId, in: path, type: uuid }
 responses:
   - { status: 204, description: Removed }
   - { status: 404, description: No such line }

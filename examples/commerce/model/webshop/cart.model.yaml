@@ -9,4 +9,4 @@ fields:
   - { id: mh2hhcz57z, name: createdAt, type: datetime, required: true }
   - { id: fjdiw1zmw3, name: lines, model: a6ub2b7rpa, many: true }
 indexes:
-  - { name: ix_cart_customer, fields: [owts056ek0] }
+  - { id: ln23p2vbg7, name: ix_cart_customer, fields: [owts056ek0] }

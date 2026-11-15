@@ -30,7 +30,7 @@ export function loadDesign(sources: SourceFile[]): LoadedDesign {
 	const parsed: Record<string, ParsedFile> = {};
 	const data: Record<string, unknown> = {};
 	for (const src of sources) {
-		if (!fileKind(src.path)) continue;
+		if (fileKind(src.path) !== 'entity') continue;
 		const p = parseFile(src.path, src.text);
 		parsed[src.path] = p;
 		data[src.path] = p.data;

@@ -29,6 +29,7 @@ export interface Element {
 	tags?: string[];
 	links?: { label: string; url: string }[];
 	meta?: Record<string, string>;
+	external?: boolean;
 	fields?: ModelField[];
 	indexes?: ModelIndex[];
 	method?: HttpMethod;
@@ -99,6 +100,7 @@ export type ModelField = z.infer<typeof ModelField>;
 
 export const ModelIndex = z
 	.strictObject({
+		id: Id.optional().describe('Lets a scenario change or drop the index; generate with `sdv id`'),
 		name: z.string(),
 		fields: z.array(Id).min(1).describe('Field ids, in index order'),
 		unique: z.boolean().optional()
@@ -111,6 +113,7 @@ export type HttpMethod = (typeof HTTP_METHODS)[number];
 
 export const ApiParam = z
 	.strictObject({
+		id: Id.optional().describe('Lets a scenario change or drop the param; generate with `sdv id`'),
 		name: z.string(),
 		in: z.enum(['path', 'query', 'header']),
 		type: z.string(),
@@ -276,6 +279,12 @@ export const EntityFile = z
 			.array(LogicStep)
 			.optional()
 			.describe('Logic units only: its sequence; what it reads, writes and calls comes from it'),
+		external: z
+			.boolean()
+			.optional()
+			.describe(
+				'Systems, modules and apis: used by consumers the design does not show, so every rename or drop behind it breaks'
+			),
 		name: Text.optional().describe('Display name; defaults to the file name'),
 		tags: z.array(z.string()).optional(),
 		links: z.array(DocLink).optional(),

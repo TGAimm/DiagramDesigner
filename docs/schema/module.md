@@ -6,6 +6,7 @@ Part of a system (service, component, database). Modules nest.
 id: iatbgcla3c
 parent: fghfo41tiv     # system or module
 name: Database
+external: true         # optional: read by tools the design doesn't show
 models: [li65oa3wga]   # optional: models owned elsewhere, drawn inside as dashed references
 ```
 

@@ -90,11 +90,14 @@ describe('sdv schema', () => {
 			'outputs',
 			'fails',
 			'steps',
+			'external',
 			'name',
 			'tags',
 			'links',
 			'meta'
 		]);
+		const scenario = JSON.parse(readFileSync(path.join(dir, 'scenario.schema.json'), 'utf8'));
+		expect(Object.keys(scenario.properties)).toEqual(['name', 'description', 'changes']);
 	});
 
 	it('prints help and rejects unknown commands', async () => {

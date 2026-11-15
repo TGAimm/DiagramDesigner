@@ -124,6 +124,11 @@
       "items": {
         "type": "object",
         "properties": {
+          "id": {
+            "description": "Lets a scenario change or drop the index; generate with `sdv id`",
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
           "name": {
             "type": "string"
           },
@@ -176,6 +181,11 @@
       "items": {
         "type": "object",
         "properties": {
+          "id": {
+            "description": "Lets a scenario change or drop the param; generate with `sdv id`",
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
           "name": {
             "type": "string"
           },
@@ -584,6 +594,10 @@
       "items": {
         "$ref": "#/$defs/__schema0"
       }
+    },
+    "external": {
+      "description": "Systems, modules and apis: used by consumers the design does not show, so every rename or drop behind it breaks",
+      "type": "boolean"
     },
     "name": {
       "description": "Display name; defaults to the file name",

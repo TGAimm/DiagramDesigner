@@ -13,5 +13,5 @@ fields:
   - { id: eqibk7xt0j, name: lines, model: ahwod9ofrf, many: true, required: true }
   - { id: jzhfxrngck, name: lineCount, type: int, stored: false, from: [eqibk7xt0j], derived: count of lines }
 indexes:
-  - { name: ux_order_no, fields: [wuv2sdo0fq], unique: true }
-  - { name: ix_order_customer, fields: [xbsmlwkerd, kcidzu5v59] }
+  - { id: blvljihoot, name: ux_order_no, fields: [wuv2sdo0fq], unique: true }
+  - { id: tahjdnwv3u, name: ix_order_customer, fields: [xbsmlwkerd, kcidzu5v59] }

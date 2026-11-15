@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import { EntityFile, Text } from '../src/lib/model/schema';
+import { ScenarioFile } from '../src/lib/scenario/scenario';
 import type { CliIO } from './sdv';
 
 export function jsonSchemas(): Record<string, unknown> {
@@ -18,7 +19,8 @@ export function jsonSchemas(): Record<string, unknown> {
 		title
 	});
 	return {
-		'entity.schema.json': gen(EntityFile, 'System Design Viewer entity file')
+		'entity.schema.json': gen(EntityFile, 'System Design Viewer entity file'),
+		'scenario.schema.json': gen(ScenarioFile, 'System Design Viewer scenario file')
 	};
 }
 

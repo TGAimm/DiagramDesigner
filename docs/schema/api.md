@@ -11,14 +11,16 @@ method: POST                 # required: GET POST PUT PATCH DELETE HEAD OPTIONS
 path: /orders/{orderNo}      # required; starts with /
 auth: bearer                 # free text, optional
 params:                      # path, query and header params (not the body)
-  - { name: orderNo, in: path, type: string }
-  - { name: dryRun, in: query, type: bool, required: false, description: validate only }
+  - { id: e4w0ttn1za, name: orderNo, in: path, type: string }
+  - { id: hd2rj7c0qe, name: dryRun, in: query, type: bool, required: false, description: validate only }
 request: { model: llns90zy3d, many: false, contentType: application/json }   # the body
 responses:
   - { status: 201, model: llns90zy3d, description: Created }
   - { status: 400, description: Invalid order }             # no model: no body
 ```
 
+- Give each param an `id` (`sdv id`) so a [scenario](scenario.md) can change or drop it.
+- `external: true`: the api has callers the design doesn't show (see [scenario](scenario.md)).
 - Every `{name}` in `path` needs a `path` param, and every `path` param must be in `path`.
   Path params are always required.
 - A status is listed once. `contentType` defaults to `application/json`; `many: true` means

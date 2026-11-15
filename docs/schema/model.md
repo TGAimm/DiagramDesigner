@@ -15,7 +15,7 @@ fields:
   - { id: eqibk7xt0j, name: lines, model: ahwod9ofrf, many: true }        # OrderLine[]
   - { id: jzhfxrngck, name: lineCount, type: int, stored: false, from: [eqibk7xt0j], derived: count of lines }
 indexes:
-  - { name: ix_order_customer, fields: [xbsmlwkerd], unique: false }
+  - { id: pf3bzy2y2v, name: ix_order_customer, fields: [xbsmlwkerd], unique: false }
 ```
 
 Other entities show a model owned elsewhere by listing it in their `models`.
@@ -56,7 +56,8 @@ Each view shows only the fields that exist there:
 | `derived` | free text: how the value is computed/changed from `from` |
 | `stored` | `false`: exists in the class only, never stored. Not with `pk` |
 
-`indexes[].fields` are ids of stored fields of the same model.
+`indexes[].fields` are ids of stored fields of the same model. Give each index an `id`
+(`sdv id`) so a [scenario](scenario.md) can change or drop it.
 
 ## Composition
 

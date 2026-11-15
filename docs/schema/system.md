@@ -5,6 +5,7 @@ Top-level application (ERP, Webshop). No `parent`. Own folder; children live und
 ```yaml
 id: fghfo41tiv
 name: ERP
+external: true         # optional: used by consumers the design doesn't show
 models: [<model id>]   # optional: models owned elsewhere, drawn inside as dashed references
 ```
 

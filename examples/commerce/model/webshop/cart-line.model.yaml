@@ -9,4 +9,4 @@ fields:
   - { id: dj8m2h65tb, name: quantity, type: int, required: true, constraints: [min 1] }
   - { id: fin9h04ptg, name: addedAt, type: datetime, required: true }
 indexes:
-  - { name: ux_cart_line_product, fields: [r7irnnw644, zaxevexhsu], unique: true }
+  - { id: eed8vhsfh9, name: ux_cart_line_product, fields: [r7irnnw644, zaxevexhsu], unique: true }

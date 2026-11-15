@@ -8,5 +8,5 @@ fields:
   - { id: i5ornpx31d, name: name, type: string, required: true }
   - { id: j2gckshq08, name: parentId, type: uuid, nullable: true, ref: vh88y19z0i }
 indexes:
-  - { name: ux_category_slug, fields: [hwgn52r6vg], unique: true }
-  - { name: ix_category_parent, fields: [j2gckshq08] }
+  - { id: qzjj5l6iuk, name: ux_category_slug, fields: [hwgn52r6vg], unique: true }
+  - { id: r47xu6bkq5, name: ix_category_parent, fields: [j2gckshq08] }

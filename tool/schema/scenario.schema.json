@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": [
+        "string",
+        "number"
+      ]
+    },
+    "description": {
+      "type": [
+        "string",
+        "number"
+      ]
+    },
+    "changes": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "set": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]*$",
+                "description": "Id of the entity, field, param or index changed"
+              },
+              "key": {
+                "description": "The key set on it",
+                "type": "string"
+              },
+              "path": {
+                "description": "Instead of key: a path inside it, for items without ids",
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  ]
+                }
+              },
+              "was": {
+                "description": "Its value before; absent: the key was absent"
+              },
+              "to": {
+                "description": "Its new value; absent: the key is removed"
+              }
+            },
+            "required": [
+              "set"
+            ],
+            "additionalProperties": false,
+            "description": "Set (or remove) one key"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "add": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]*$",
+                "description": "Id of the new field or entity"
+              },
+              "in": {
+                "description": "Field: id of the model it is added to",
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]*$"
+              },
+              "after": {
+                "description": "Field: id of the field it follows; default last",
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]*$"
+              },
+              "field": {
+                "description": "Field: its keys, without id",
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              },
+              "file": {
+                "description": "Entity: design-relative path of its new file",
+                "type": "string"
+              },
+              "entity": {
+                "description": "Entity: its keys, without id",
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "add"
+            ],
+            "additionalProperties": false,
+            "description": "Add a field to a model, or a new entity file"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "drop": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]*$",
+                "description": "Id of what is removed"
+              }
+            },
+            "required": [
+              "drop"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "additionalProperties": false,
+  "description": "Scenario: pending changes over the design (<name>.scenario.yaml)",
+  "title": "System Design Viewer scenario file"
+}

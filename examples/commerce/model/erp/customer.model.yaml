@@ -9,4 +9,4 @@ fields:
   - { id: mh42gsuvpe, name: email, type: string, nullable: true, constraints: [email] }
   - { id: qfvghhtsd7, name: vatNo, type: string, nullable: true }
 indexes:
-  - { name: ux_customer_email, fields: [mh42gsuvpe], unique: true }
+  - { id: zx5uwiy88p, name: ux_customer_email, fields: [mh42gsuvpe], unique: true }

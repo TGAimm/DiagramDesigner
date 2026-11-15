@@ -9,4 +9,4 @@ fields:
   - { id: i2i0i6v498, name: quantity, type: decimal, required: true, constraints: [positive], from: [mcbqx1wg0d] }
   - { id: w4ka1w5qkb, name: unitPrice, type: decimal, required: true, constraints: [min 0], from: [qk2q634whz], derived: price valid when the order is placed }
 indexes:
-  - { name: ix_order_line_product, fields: [epto5lpyce] }
+  - { id: ks5toeyw99, name: ix_order_line_product, fields: [epto5lpyce] }

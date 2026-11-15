@@ -5,8 +5,8 @@ method: GET
 path: /stock/{productId}
 auth: bearer
 params:
-  - { name: productId, in: path, type: uuid }
-  - { name: warehouse, in: query, type: string }
+  - { id: cht0a5zntb, name: productId, in: path, type: uuid }
+  - { id: d9v1hkqbx6, name: warehouse, in: query, type: string }
 responses:
   - status: 200
     many: true

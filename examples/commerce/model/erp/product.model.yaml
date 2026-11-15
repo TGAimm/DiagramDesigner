@@ -9,4 +9,4 @@ fields:
   - { id: b9papgsfq6, name: unit, type: string, required: true }
   - { id: e6wjf7p003, name: discontinuedAt, type: date, nullable: true }
 indexes:
-  - { name: ux_product_sku, fields: [qcyr8lmcb8], unique: true }
+  - { id: hoqn0nhksb, name: ux_product_sku, fields: [qcyr8lmcb8], unique: true }

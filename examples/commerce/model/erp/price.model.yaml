@@ -10,4 +10,4 @@ fields:
   - { id: uuulnhk5sz, name: validFrom, type: date, required: true }
   - { id: oszj5510xs, name: validTo, type: date, nullable: true, constraints: [after validFrom] }
 indexes:
-  - { name: ux_price_product_period, fields: [jbvv4pyvrg, wx2pppptwu, uuulnhk5sz], unique: true }
+  - { id: k6xxkyiels, name: ux_price_product_period, fields: [jbvv4pyvrg, wx2pppptwu, uuulnhk5sz], unique: true }

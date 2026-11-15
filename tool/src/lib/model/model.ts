@@ -57,7 +57,8 @@ export interface ApiFieldInfo {
 	loc: Loc;
 }
 
-export type GlobalKind = 'element' | 'field';
+/** `part`: an api param or model index that has an id. */
+export type GlobalKind = 'element' | 'field' | 'part';
 
 /** An api's bodies, request first, with where each is written. */
 export const apiBodies = (def: Element) => [
@@ -101,7 +102,9 @@ export function buildModel(files: Record<string, unknown>, locate?: Locator): Mo
 		apiFields: new Map(),
 		rootElementIds: [],
 		ids: new Map(),
-		files: Object.keys(files).sort(),
+		files: Object.keys(files)
+			.filter((f) => fileKind(f) === 'entity')
+			.sort(),
 		diagnostics: []
 	};
 	const diag = (severity: Severity, code: string, message: string, loc?: Loc, key?: string) => {
@@ -272,9 +275,8 @@ export function buildModel(files: Record<string, unknown>, locate?: Locator): Mo
 	const entityFiles: { file: string; value: EntityFile }[] = [];
 
 	for (const file of model.files) {
-		const kind = fileKind(file);
 		const data = files[file];
-		if (!kind || data === undefined) continue; // syntax errors are reported by the parser
+		if (data === undefined) continue; // syntax errors are reported by the parser
 		const fileLocate = (path: DataPath, key?: string) => locate?.(file, path, key);
 		const res = validateEntityFile(data);
 		for (const issue of res.issues) model.diagnostics.push(toDiagnostic(file, issue, fileLocate));
@@ -320,6 +322,8 @@ export function buildModel(files: Record<string, unknown>, locate?: Locator): Mo
 			diag('error', 'model-parent', `model "${info.name}" uses ownedBy, not parent`, loc, 'parent');
 		if (kind !== 'model' && ownedBy)
 			diag('error', 'owned-by', `only models have ownedBy`, loc, 'ownedBy');
+		if (value.external && kind !== 'system' && kind !== 'module' && kind !== 'api')
+			diag('error', 'external', `only systems, modules and apis are external`, loc, 'external');
 		if (kind !== 'model' && storedIn)
 			diag('error', 'model-only', `only models have storedIn`, loc, 'storedIn');
 		if (kind === 'model' && !ownedBy)
@@ -372,6 +376,9 @@ export function buildModel(files: Record<string, unknown>, locate?: Locator): Mo
 			const own = new Set(
 				value.fields?.filter((f) => !f.model && f.stored !== false).map((f) => f.id)
 			);
+			value.indexes?.forEach((ix, i) => {
+				if (ix.id) claim(ix.id, 'part', at(loc, 'indexes', i));
+			});
 			value.indexes?.forEach((ix, i) =>
 				ix.fields.forEach((f, j) => {
 					if (!own.has(f))
@@ -398,6 +405,7 @@ export function buildModel(files: Record<string, unknown>, locate?: Locator): Mo
 				if (!value.params?.some((p) => p.in === 'path' && p.name === name))
 					diag('error', 'api-param', `path has {${name}} but no path param "${name}"`, loc, 'path');
 			value.params?.forEach((p, i) => {
+				if (p.id) claim(p.id, 'part', at(loc, 'params', i));
 				if (p.in === 'path' && !inPath.includes(p.name))
 					diag(
 						'error',

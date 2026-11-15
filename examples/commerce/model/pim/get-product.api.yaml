@@ -5,8 +5,8 @@ method: GET
 path: /products/{sku}
 auth: api key
 params:
-  - { name: sku, in: path, type: string }
-  - { name: locale, in: query, type: string, required: true, description: e.g. da-DK }
+  - { id: kfi5jwwli1, name: sku, in: path, type: string }
+  - { id: wizh5n2ecv, name: locale, in: query, type: string, required: true, description: e.g. da-DK }
 responses:
   - { status: 200, model: ck9foqxxus }
   - { status: 404, description: No content for this sku and locale }
