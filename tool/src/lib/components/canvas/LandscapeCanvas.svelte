@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ChevronLeft, Play, TriangleAlert, X } from '@lucide/svelte';
+	import { ChevronDown, ChevronLeft, ChevronUp, Play, TriangleAlert, X } from '@lucide/svelte';
 	import {
 		Background,
 		BackgroundVariant,
@@ -1063,6 +1063,13 @@
 	const FIELD_W = 300;
 	// The shown card's height, so it is kept inside the canvas.
 	let cardH = $state(0);
+	// The card folded to its header, so the lines it covers show; the pick stays.
+	let cardMin = $state(false);
+	$effect(() => {
+		void view.field;
+		void view.api;
+		cardMin = false;
+	});
 	/** A card `w` wide right of the anchor, or left of it if it does not fit, level with its row. */
 	function beside(a: { left: number; right: number; y: number } | undefined, w: number) {
 		if (!a) return undefined;
@@ -1488,7 +1495,7 @@
 			const pinned = view.field || view.api || view.selectedNodes.length;
 			if (view.focused && !pinned && !keyOpen) leaveFocus();
 			unpin();
-			if (view.focused) view.selectedNodes = [];
+			view.selectedNodes = [];
 			keyOpen = false;
 		}
 	}}
@@ -1640,6 +1647,7 @@
 	{#if inspector && fieldPos}
 		<aside
 			class="inspector"
+			class:min={cardMin}
 			style:left="{fieldPos.left}px"
 			style:top="{fieldPos.top}px"
 			style:width="{FIELD_W}px"
@@ -1656,6 +1664,14 @@
 					<div class="title">{inspector.title}</div>
 					<div class="type">{inspector.type}</div>
 				</div>
+				<button
+					class="icon-btn"
+					onclick={() => (cardMin = !cardMin)}
+					aria-label={cardMin ? 'Expand' : 'Minimize'}
+					title={cardMin ? 'Expand' : 'Minimize, keeping the selection'}
+					data-testid="card-min"
+					>{#if cardMin}<ChevronDown size={16} />{:else}<ChevronUp size={16} />{/if}</button
+				>
 				<button class="icon-btn" onclick={unpin} aria-label="Close" title="Close (Esc)"
 					><X size={16} /></button
 				>
@@ -1690,9 +1706,10 @@
 		{@const u = unitCard}
 		<aside
 			class="inspector unit"
+			class:min={cardMin}
 			style:left="{unitPos.left}px"
 			style:top="{unitPos.top}px"
-			style:width="{unitW}px"
+			style:width="{cardMin ? FIELD_W : unitW}px"
 			bind:clientHeight={cardH}
 			data-testid="unit-card"
 		>
@@ -1706,6 +1723,14 @@
 					<div class="title"><i class="fn">ƒ</i> {u.title}</div>
 					<div class="type">{u.sub}</div>
 				</div>
+				<button
+					class="icon-btn"
+					onclick={() => (cardMin = !cardMin)}
+					aria-label={cardMin ? 'Expand' : 'Minimize'}
+					title={cardMin ? 'Expand' : 'Minimize, keeping the selection'}
+					data-testid="card-min"
+					>{#if cardMin}<ChevronDown size={16} />{:else}<ChevronUp size={16} />{/if}</button
+				>
 				<button class="icon-btn" onclick={unpin} aria-label="Close" title="Close (Esc)"
 					><X size={16} /></button
 				>
@@ -1758,6 +1783,7 @@
 		<!-- Beside the picked row, moving with the canvas, so the api and what it uses share a view. -->
 		<aside
 			class="inspector"
+			class:min={cardMin}
 			style:left="{cardPos.left}px"
 			style:top="{cardPos.top}px"
 			style:width="{API_W}px"
@@ -1774,6 +1800,14 @@
 					</div>
 					<div class="type">{api.sub}</div>
 				</div>
+				<button
+					class="icon-btn"
+					onclick={() => (cardMin = !cardMin)}
+					aria-label={cardMin ? 'Expand' : 'Minimize'}
+					title={cardMin ? 'Expand' : 'Minimize, keeping the selection'}
+					data-testid="card-min"
+					>{#if cardMin}<ChevronDown size={16} />{:else}<ChevronUp size={16} />{/if}</button
+				>
 				<button class="icon-btn" onclick={unpin} aria-label="Close" title="Close (Esc)"
 					><X size={16} /></button
 				>
@@ -2136,6 +2170,12 @@
 		color: var(--sdv-model-text);
 		font-size: 13px;
 		overflow: auto;
+	}
+	.inspector.min > :not(header) {
+		display: none;
+	}
+	.inspector.min header {
+		border-bottom: none;
 	}
 	.inspector header {
 		display: flex;
