@@ -632,13 +632,31 @@
 		return { left: left * zoom + vx, right: (left + r.width) * zoom + vx, y: y * zoom + vy };
 	});
 
-	const CARD_W = 320;
-	const cardPos = $derived.by(() => {
-		if (!apiAnchor) return undefined;
-		const right = apiAnchor.right + 14;
-		const left = right + CARD_W <= cw - 8 ? right : Math.max(8, apiAnchor.left - 14 - CARD_W);
-		return { left, top: Math.min(Math.max(8, apiAnchor.y - 24), Math.max(8, ch - 160)) };
+	/** Where the clicked row is on screen, or the shown box round it while it is hidden. */
+	const fieldAnchor = $derived.by(() => {
+		const f = view.field;
+		const b = f && boxById.get(f.box);
+		if (!f || !b) return undefined;
+		const s = shownBox(b);
+		const row = s === b ? rowOf(b, f.field) : -1;
+		const { x: vx, y: vy, zoom } = viewport.current;
+		const y = row >= 0 ? b.absY + rowY(b, row) : s.absY + s.height / 2;
+		return { left: s.absX * zoom + vx, right: (s.absX + s.width) * zoom + vx, y: y * zoom + vy };
 	});
+
+	const API_W = 320;
+	const FIELD_W = 300;
+	// The shown card's height, so it is kept inside the canvas.
+	let cardH = $state(0);
+	/** A card `w` wide right of the anchor, or left of it if it does not fit, level with its row. */
+	function beside(a: { left: number; right: number; y: number } | undefined, w: number) {
+		if (!a) return undefined;
+		const right = a.right + 14;
+		const left = right + w <= cw - 8 ? right : Math.max(8, a.left - 14 - w);
+		return { left, top: Math.min(Math.max(8, a.y - 24), Math.max(8, ch - cardH - 8)) };
+	}
+	const cardPos = $derived(beside(apiAnchor, API_W));
+	const fieldPos = $derived(beside(fieldAnchor, FIELD_W));
 
 	/**
 	 * Lines from the picked api's row, in screen px: solid to each model its bodies use, and
@@ -822,9 +840,16 @@
 			</marker>
 		</defs>
 	</svg>
-	<!-- Docked, so it never covers the lines and cards it describes. -->
-	{#if inspector}
-		<aside class="inspector" data-testid="field-inspector">
+	<!-- Beside the clicked row, moving with the canvas, so it reads next to what it describes. -->
+	{#if inspector && fieldPos}
+		<aside
+			class="inspector"
+			style:left="{fieldPos.left}px"
+			style:top="{fieldPos.top}px"
+			style:width="{FIELD_W}px"
+			bind:clientHeight={cardH}
+			data-testid="field-inspector"
+		>
 			<header>
 				{#if view.trail.length}
 					<button class="icon-btn" onclick={goBack} title="Back to the previous field"
@@ -874,10 +899,11 @@
 		</svg>
 		<!-- Beside the picked row, moving with the canvas, so the api and what it uses share a view. -->
 		<aside
-			class="inspector api-card"
+			class="inspector"
 			style:left="{cardPos.left}px"
 			style:top="{cardPos.top}px"
-			style:width="{CARD_W}px"
+			style:width="{API_W}px"
+			bind:clientHeight={cardH}
 			data-testid="api-inspector"
 		>
 			<header>
@@ -1036,10 +1062,7 @@
 	}
 	.inspector {
 		position: absolute;
-		top: 12px;
-		right: 12px;
-		width: 300px;
-		max-height: calc(100% - 24px);
+		max-height: calc(100% - 16px);
 		z-index: 10;
 		box-sizing: border-box;
 		background: var(--sdv-model-fill);
@@ -1151,10 +1174,6 @@
 	.inspector .note,
 	.inspector .empty {
 		margin: 4px 12px;
-	}
-	.api-card {
-		right: auto;
-		max-height: none;
 	}
 	.inspector .mono {
 		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
