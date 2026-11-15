@@ -51,6 +51,28 @@ describe('layout options', () => {
 		expect(left('b').absX + left('b').width).toBeLessThanOrEqual(left('a').absX);
 	});
 
+	it('lays out each level as if every line were drawn, out of its box too', () => {
+		// In each system one model refers to another, so it has two layers. b's y refers to a's q.
+		const model = loadStrings({
+			'a/a.system.yaml': 'id: a\n',
+			'a/m1.model.yaml': 'id: m1\nownedBy: a\nfields: [{ id: m1-id, name: id, type: uuid }]\n',
+			'a/m2.model.yaml':
+				'id: m2\nownedBy: a\nfields: [{ id: m2-m1, name: m1, type: uuid, ref: m1-id }]\n',
+			'a/q.model.yaml': 'id: q\nownedBy: a\nfields: [{ id: q-id, name: id, type: uuid }]\n',
+			'b/b.system.yaml': 'id: b\n',
+			'b/n1.model.yaml': 'id: n1\nownedBy: b\nfields: [{ id: n1-id, name: id, type: uuid }]\n',
+			'b/n2.model.yaml':
+				'id: n2\nownedBy: b\nfields: [{ id: n2-n1, name: n1, type: uuid, ref: n1-id }]\n',
+			'b/y.model.yaml': 'id: y\nownedBy: b\nfields: [{ id: y-q, name: q, type: uuid, ref: q-id }]\n'
+		}).model;
+		const boxes = layoutLandscape(model);
+		const box = (id: string) => boxes.find((b) => b.id === id)!;
+		// q sits on the side of a its line leaves by, y on the side of b it enters by.
+		expect(box('q').absX).toBeGreaterThan(box('m1').absX + box('m1').width);
+		expect(box('y').absX + box('y').width).toBeLessThan(box('n2').absX);
+		for (const id of ['m1', 'm2', 'q']) expect(inside(box(id), box('a'))).toBe(true);
+	});
+
 	it('scales the room between systems and between boxes inside', () => {
 		const apart = (box: ReturnType<typeof at>) => box('b').absX - box('a').absX - box('a').width;
 		expect(apart(at({ spacing: 2 })) - apart(at({}))).toBeCloseTo(120);

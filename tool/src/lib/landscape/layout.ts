@@ -490,9 +490,17 @@ interface Block extends Size {
 }
 
 /**
+ * Stand-ins for everything outside the siblings' parent, upstream (first) and downstream
+ * (last), so a box connected out of its parent is drawn toward the side its lines leave by.
+ */
+const IN = '^in';
+const OUT = '^out';
+
+/**
  * Siblings laid out by ELK's layered algorithm along their connections: what is depended on
  * before what depends on it (in `opts.direction`), crossings few, unconnected groups packed
  * to `opts.aspect`. File order breaks ties if `opts.fileOrder`. Each box keeps its own size, plus the room right of it for its rail.
+ * A link may run from `IN` or to `OUT`.
  */
 function layered(
 	items: { id: string; size: Size }[],
@@ -500,6 +508,7 @@ function layered(
 	gap: number,
 	opts: LayoutOptions
 ): Block {
+	const ends = [IN, OUT].filter((id) => links.some((l) => l.includes(id)));
 	const g = elkLayout({
 		id: 'root',
 		layoutOptions: {
@@ -513,19 +522,35 @@ function layered(
 			// Lines are drawn by the canvas, so ELK keeps no room between layers for its own.
 			'elk.edgeRouting': 'POLYLINE',
 			'elk.layered.considerModelOrder.strategy': opts.fileOrder ? 'NODES_AND_EDGES' : 'NONE',
-			'elk.layered.nodePlacement.strategy': opts.placement
+			'elk.layered.nodePlacement.strategy': opts.placement,
+			// Packed apart, a box linked only to the outside would sit anywhere, not on its side.
+			...(ends.length ? { 'elk.separateConnectedComponents': 'false' } : {})
 		},
-		children: items.map(({ id, size }) => ({
-			id,
-			width: size.width + (size.right ?? 0),
-			height: size.height
-		})),
+		children: [
+			...items.map(({ id, size }) => ({
+				id,
+				width: size.width + (size.right ?? 0),
+				height: size.height
+			})),
+			...ends.map((id) => ({
+				id,
+				width: 0,
+				height: 0,
+				layoutOptions: {
+					'elk.layered.layering.layerConstraint': id === IN ? 'FIRST_SEPARATE' : 'LAST_SEPARATE'
+				}
+			}))
+		],
 		edges: links.map(([s, t], i) => ({ id: `e${i}`, sources: [s], targets: [t] }))
 	});
+	// The block is what the boxes cover, without the layers ELK gave the outside.
+	const kids = g.children!.filter((c) => !ends.includes(c.id));
+	const x0 = Math.min(...kids.map((c) => c.x!));
+	const y0 = Math.min(...kids.map((c) => c.y!));
 	return {
-		width: g.width!,
-		height: g.height!,
-		at: new Map(g.children!.map((c) => [c.id, { x: c.x!, y: c.y! }]))
+		width: Math.max(...kids.map((c) => c.x! + c.width!)) - x0,
+		height: Math.max(...kids.map((c) => c.y! + c.height!)) - y0,
+		at: new Map(kids.map((c) => [c.id, { x: c.x! - x0, y: c.y! - y0 }]))
 	};
 }
 
@@ -633,7 +658,9 @@ export function layoutLandscape(
 
 	// Each connection lifted to the two siblings holding its ends, as `restLines` draws it at
 	// rest, by the box they share ('' for the top level). A leaf drawn in several boxes links
-	// to a sibling where it can, else to where it is owned (see `linkTarget`).
+	// to a sibling where it can, else to where it is owned (see `linkTarget`). Inside each box
+	// the connection leaves on the way, as drawn once that box is open, it links the child it
+	// leaves from to the outside: the end depended on comes in from `IN`, the other goes to `OUT`.
 	const links = new Map<string, Map<string, [string, string]>>();
 	const chain = (id: string) => {
 		const out = [id];
@@ -654,10 +681,15 @@ export function layoutLandscape(
 			if (shared === a.id || shared === b.id) continue;
 			const s = shared ? ca[ca.indexOf(shared) - 1] : ca.at(-1)!;
 			const t = shared ? cb[cb.indexOf(shared) - 1] : cb.at(-1)!;
-			const level = links.get(shared ?? '') ?? new Map();
-			links.set(shared ?? '', level);
+			const link = (parent: string, from: string, to: string) => {
+				const level = links.get(parent) ?? new Map();
+				links.set(parent, level);
+				level.set(`${from}>${to}`, [from, to]);
+			};
 			// What is depended on goes first, so the link runs from the end to the start.
-			level.set(`${t}>${s}`, [t, s]);
+			link(shared ?? '', t, s);
+			for (let i = 0; ca[i] !== s; i++) link(ca[i + 1], IN, ca[i]);
+			for (let i = 0; cb[i] !== t; i++) link(cb[i + 1], cb[i], OUT);
 		}
 
 	const blocks = new Map<string, Block>();
