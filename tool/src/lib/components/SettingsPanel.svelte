@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { X } from '@lucide/svelte';
 	import { settings, type Detail } from '#lib/client/settings.svelte.ts';
 
 	let { onclose }: { onclose: () => void } = $props();
@@ -22,7 +23,9 @@
 <section class="settings" aria-label="Settings" data-testid="settings-panel">
 	<header>
 		<strong>Settings</strong>
-		<button class="close" onclick={onclose} aria-label="Close" title="Close (Esc)">×</button>
+		<button class="close" onclick={onclose} aria-label="Close" title="Close (Esc)"
+			><X size={16} /></button
+		>
 	</header>
 	<fieldset>
 		<legend>CANVAS DETAIL</legend>
@@ -64,9 +67,8 @@
 		border: none;
 		background: none;
 		color: var(--ui-muted);
-		font-size: 18px;
-		line-height: 1;
-		padding: 0 2px;
+		display: flex;
+		padding: 2px;
 	}
 	fieldset {
 		margin: 0;

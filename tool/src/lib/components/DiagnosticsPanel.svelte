@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { CircleX, TriangleAlert, X } from '@lucide/svelte';
 	import { design } from '#lib/client/store.svelte.ts';
 	import { formatLocation, sortDiagnostics } from '#lib/model/diagnostics.ts';
 
@@ -19,13 +20,17 @@
 			<option value="warning">Warnings</option>
 		</select>
 		<span class="spacer"></span>
-		<button class="icon" onclick={onclose} aria-label="Close diagnostics">×</button>
+		<button class="icon" onclick={onclose} aria-label="Close diagnostics"><X size={16} /></button>
 	</header>
 	{#if items.length}
 		<ul>
 			{#each items as d, i (i)}
 				<li class={d.severity}>
-					<span class="sev">{d.severity === 'error' ? '●' : '▲'}</span>
+					<span class="sev"
+						>{#if d.severity === 'error'}<CircleX size={14} />{:else}<TriangleAlert
+								size={14}
+							/>{/if}</span
+					>
 					<code class="loc">{formatLocation(d) || '—'}</code>
 					<span class="msg">{d.message}</span>
 					<span class="code muted">{d.code}</span>
@@ -70,6 +75,9 @@
 	}
 	li:hover {
 		background: var(--ui-hover);
+	}
+	.sev {
+		display: flex;
 	}
 	.error .sev {
 		color: var(--ui-danger);

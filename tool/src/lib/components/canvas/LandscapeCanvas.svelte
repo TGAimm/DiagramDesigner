@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ChevronLeft, TriangleAlert, X } from '@lucide/svelte';
 	import {
 		Background,
 		BackgroundVariant,
@@ -826,13 +827,17 @@
 		<aside class="inspector" data-testid="field-inspector">
 			<header>
 				{#if view.trail.length}
-					<button class="icon-btn" onclick={goBack} title="Back to the previous field">‹</button>
+					<button class="icon-btn" onclick={goBack} title="Back to the previous field"
+						><ChevronLeft size={16} /></button
+					>
 				{/if}
 				<div class="head">
 					<div class="title">{inspector.title}</div>
 					<div class="type">{inspector.type}</div>
 				</div>
-				<button class="icon-btn" onclick={unpin} aria-label="Close" title="Close (Esc)">×</button>
+				<button class="icon-btn" onclick={unpin} aria-label="Close" title="Close (Esc)"
+					><X size={16} /></button
+				>
 			</header>
 			{#each inspector.sections as s (s.label)}
 				<section class={s.kind}>
@@ -885,7 +890,9 @@
 					</div>
 					<div class="type">{api.sub}</div>
 				</div>
-				<button class="icon-btn" onclick={unpin} aria-label="Close" title="Close (Esc)">×</button>
+				<button class="icon-btn" onclick={unpin} aria-label="Close" title="Close (Esc)"
+					><X size={16} /></button
+				>
 			</header>
 			{#if api.params.length}
 				<section>
@@ -931,8 +938,8 @@
 						>
 							<span class="name">{f.name}</span>
 							<span class="where">{f.type}</span>
-							{#if !f.traced}<span class="untraced">▲</span>{:else if f.title}<span class="traced"
-									>{b.part === 'request' ? '→' : '←'}</span
+							{#if !f.traced}<span class="untraced"><TriangleAlert size={12} /></span
+								>{:else if f.title}<span class="traced">{b.part === 'request' ? '→' : '←'}</span
 								>{/if}
 						</div>
 					{/each}
@@ -1068,10 +1075,9 @@
 		border: none;
 		background: none;
 		color: var(--sdv-text-muted);
-		font-size: 18px;
-		line-height: 1;
+		display: flex;
 		cursor: pointer;
-		padding: 0 2px;
+		padding: 2px;
 	}
 	.inspector section {
 		padding: 6px 0;

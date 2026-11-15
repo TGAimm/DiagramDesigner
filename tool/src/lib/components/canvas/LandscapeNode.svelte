@@ -48,6 +48,7 @@
 </script>
 
 <script lang="ts">
+	import { ChevronDown, ChevronUp } from '@lucide/svelte';
 	import { Handle, Position, useUpdateNodeInternals, type NodeProps } from '@xyflow/svelte';
 	import {
 		fieldRowY,
@@ -261,7 +262,9 @@
 							title={expanded ? 'Show the first fields only' : 'Show every field'}
 							onclick={toggle}
 						>
-							{expanded ? '▴ Collapse' : `▾ Show all ${count} fields (${count - FOLD} more)`}
+							{#if expanded}<ChevronUp size={TABLE.label} />Collapse{:else}<ChevronDown
+									size={TABLE.label}
+								/>Show all {count} fields ({count - FOLD} more){/if}
 						</button>
 					{/if}
 				</div>
@@ -626,6 +629,7 @@
 	/* The toggle row of a folded card. */
 	.cell.fold {
 		grid-column: 1 / -1;
+		gap: 3px;
 		justify-content: center;
 		border-left: none;
 		border-right: none;
