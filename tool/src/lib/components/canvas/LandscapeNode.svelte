@@ -11,6 +11,8 @@
 		owner?: string;
 		/** The fields that exist in this view. */
 		fields?: ModelField[];
+		/** Rows shown folded, when not `FOLD`: a focus's neighbour shows its connecting ones. */
+		foldAt?: number;
 		indexes?: ModelIndex[];
 		/** Field columns; set when the box is a model card. */
 		table?: TableColumn[];
@@ -87,16 +89,17 @@
 	const flash = $derived(d.state.flash?.box === id ? d.state.flash.field : undefined);
 	const apiParts = $derived(d.state.apiBoxes[id]);
 	const dim = $derived(d.state.apiDim[id]);
-	// A card of over FOLD fields shows the first ones and a row to show all. Expanded, it keeps
+	// A card of over FOLD fields (or `foldAt`) shows the first ones and a row to show all. Expanded, it keeps
 	// its laid-out size and draws over whatever is below it (see `.node.expanded`).
 	const count = $derived(d.fields?.length ?? 0);
 	// Render everything never folds a card.
 	const all = $derived(settings.detail === 'all');
 	const expanded = $derived(all || !!d.state.expanded[id]);
-	const shown = $derived(d.fields?.slice(0, shownRows(count, expanded)) ?? []);
+	const at = $derived(d.foldAt ?? FOLD);
+	const shown = $derived(d.fields?.slice(0, shownRows(count, expanded, at)) ?? []);
 	// A lit row hidden in the fold lights the toggle row instead.
 	const hiddenHot = $derived(
-		!expanded && (d.fields ?? []).slice(FOLD).some((f) => hot?.[f.id] || picked === f.id)
+		!expanded && (d.fields ?? []).slice(at).some((f) => hot?.[f.id] || picked === f.id)
 	);
 	const updateNodeInternals = useUpdateNodeInternals();
 	// Handles move with their rows and as rails open; Svelte Flow measures them only when told.
@@ -294,7 +297,7 @@
 							{/each}
 						</div>
 					{/each}
-					{#if foldable(count) && !all}
+					{#if foldable(count, at) && !all}
 						<button
 							class="cell fold"
 							class:hot={hiddenHot}
@@ -304,7 +307,7 @@
 						>
 							{#if expanded}<ChevronUp size={TABLE.label} />Collapse{:else}<ChevronDown
 									size={TABLE.label}
-								/>Show all {count} fields ({count - FOLD} more){/if}
+								/>Show all {count} fields ({count - at} more){/if}
 						</button>
 					{/if}
 				</div>
@@ -326,7 +329,7 @@
 		<Handle type="source" id="head:l" position={Position.Left} style="top:{TABLE.head / 2}px" />
 		<Handle type="source" id="head:r" position={Position.Right} style="top:{TABLE.head / 2}px" />
 		{#each d.fields ?? [] as f, i (f.id)}
-			{@const y = fieldRowY(i, count, expanded)}
+			{@const y = fieldRowY(i, count, expanded, at)}
 			<Handle type="source" id="row:{f.id}:l" position={Position.Left} style="top:{y}px" />
 			<Handle type="source" id="row:{f.id}:r" position={Position.Right} style="top:{y}px" />
 		{/each}

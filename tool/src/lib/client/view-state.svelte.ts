@@ -1,3 +1,5 @@
+import type { Focus } from '#lib/landscape/focus.ts';
+
 /** A row in one box: a model field, a logic unit on a logic card, or an api on a rail. */
 export interface FieldRef {
 	box: string;
@@ -31,7 +33,7 @@ export class ViewState {
 	flash = $state.raw<FieldRef | null>(null);
 	/** Rows lit by the focused field, by box: the field itself, or the other end of a link. */
 	hot = $state.raw<Record<string, Record<string, 'self' | 'peer'>>>({});
-	/** Folded cards (over `FOLD` fields) shown in full, by box; they stay so until collapsed. */
+	/** Folded cards (over `FOLD` fields, or a focus's neighbours) shown in full, by box; they stay so until collapsed. */
 	expanded = $state.raw<Record<string, true>>({});
 	/** Rail rows lit because the focused logic unit handles or calls their api. */
 	hotApis = $state.raw<Record<string, true>>({});
@@ -39,6 +41,8 @@ export class ViewState {
 	peerBoxes = $state.raw<Record<string, true>>({});
 	/** Kinds of connection hidden from the key, by key entry. */
 	hidden = $state.raw<Record<string, true>>({});
+	/** The canvas shows only this subject and what connects to it (see `focusOn`). */
+	focused = $state.raw<Focus | null>(null);
 	/** A unit being played: the choices made, the calls stepped into, and the step shown. */
 	play = $state.raw<{
 		unit: string;

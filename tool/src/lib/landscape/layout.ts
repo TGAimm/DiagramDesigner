@@ -36,6 +36,8 @@ export interface LandscapeBox {
 	view?: ModelView;
 	/** The model's fields that exist in this view. */
 	fields?: ModelField[];
+	/** How many field rows the card shows folded, when not `FOLD`. */
+	foldAt?: number;
 	/** Apis of the element, drawn on a rail across its right border (see `apiHosts`). */
 	apis?: string[];
 	/** A module's logic units, one row each; set when the box is its logic card. */
@@ -287,19 +289,22 @@ export function viewFields(
 /** A card with more fields than this shows only the first ones, and a row to show all. */
 export const FOLD = 20;
 
-/** Whether a card of `count` fields is folded: its later rows hide behind a toggle row. */
-export const foldable = (count: number) => count > FOLD;
+/**
+ * Whether a card of `count` fields is folded: its rows past `at` hide behind a toggle row.
+ * `at` is `FOLD` but for a card that shows only some rows on purpose, as in a focus.
+ */
+export const foldable = (count: number, at = FOLD) => count > at;
 
 /** How many field rows a card of `count` fields shows. */
-export const shownRows = (count: number, expanded: boolean) =>
-	foldable(count) && !expanded ? FOLD : count;
+export const shownRows = (count: number, expanded: boolean, at = FOLD) =>
+	foldable(count, at) && !expanded ? at : count;
 
 /**
  * Vertical centre of field row `i` of `count`: below the border, the name bar and the header
  * row. A row hidden in a folded card sits on the toggle row, so its lines end there.
  */
-export const fieldRowY = (i: number, count: number, expanded: boolean) =>
-	1 + TABLE.head + (Math.min(i, shownRows(count, expanded)) + 1.5) * TABLE.rowHeight;
+export const fieldRowY = (i: number, count: number, expanded: boolean, at = FOLD) =>
+	1 + TABLE.head + (Math.min(i, shownRows(count, expanded, at)) + 1.5) * TABLE.rowHeight;
 
 /** Vertical centre of unit row `i` of a logic card, which has no header row. */
 export const logicRowY = (i: number) => 1 + TABLE.head + (i + 0.5) * TABLE.rowHeight;
@@ -403,7 +408,8 @@ function tableLayout(
 	owner: string | undefined,
 	label: (id: string) => string | undefined,
 	rels: Relations,
-	fold: boolean
+	fold: boolean,
+	at: number
 ): { size: Size; cols: TableColumn[] } {
 	const indexes = view === 'table' ? (def.indexes ?? []) : [];
 	const cols = fieldColumns(fields, view, label, rels);
@@ -417,7 +423,7 @@ function tableLayout(
 	const rows = (n: number) => (n ? n + 1 : 0);
 	// Laid out folded: an expanded card draws over what is below it rather than moving it.
 	const fieldRows = fold
-		? rows(shownRows(fields.length, false)) + (foldable(fields.length) ? 1 : 0)
+		? rows(shownRows(fields.length, false, at)) + (foldable(fields.length, at) ? 1 : 0)
 		: rows(fields.length);
 	const height = TABLE.head + (fieldRows + rows(indexes.length)) * TABLE.rowHeight;
 	return { size: { width: Math.ceil(width) + 2, height: height + 2 }, cols };
@@ -530,12 +536,14 @@ function layered(
  *
  * A model is a class card in its owner, inside a boundary with the models only it holds, and
  * a table card in the entity storing it. A model stored where it is owned is one table card.
- * With `fold` off every card is sized to show all its fields.
+ * With `fold` off every card is sized to show all its fields. `foldAt` folds a model's cards
+ * after that many rows instead of `FOLD`, by model id.
  */
 export function layoutLandscape(
 	model: Model,
 	fold = true,
-	opts: LayoutOptions = DEFAULT_LAYOUT
+	opts: LayoutOptions = DEFAULT_LAYOUT,
+	foldAt = new Map<string, number>()
 ): LandscapeBox[] {
 	const gap = 32 * opts.spacing;
 	const systemGap = 120 * opts.spacing;
@@ -687,7 +695,8 @@ export function layoutLandscape(
 				owner,
 				(id) => refLabel(model, id),
 				rels,
-				fold
+				fold,
+				foldAt.get(info.id) ?? FOLD
 			);
 			cards.set(item.id, { cols: t.cols, fields });
 			size = t.size;
@@ -740,6 +749,7 @@ export function layoutLandscape(
 				table: cards.get(item.id)?.cols,
 				view: item.view,
 				fields: cards.get(item.id)?.fields,
+				foldAt: item.view ? foldAt.get(item.el) : undefined,
 				apis: apisOf(item),
 				logic: logicCards.get(item.id)
 			};

@@ -17,6 +17,8 @@
 	import { search } from '#lib/client/search.svelte.ts';
 	import SearchPalette from '#lib/components/SearchPalette.svelte';
 	import type { Hit } from '#lib/landscape/search.ts';
+	import { focusOn, type Focus, type FocusMode } from '#lib/landscape/focus.ts';
+	import FocusBar from './FocusBar.svelte';
 	import { settings } from '#lib/client/settings.svelte.ts';
 	import { theme } from '#lib/client/theme.svelte.ts';
 	import type { ViewState } from '#lib/client/view-state.svelte.ts';
@@ -87,6 +89,9 @@
 	let edges = $state.raw<Edge[]>([]);
 	/** The layout the view was last fitted to: a new one is fitted again. */
 	let fittedTo: unknown;
+	let fittedFocus: Focus | null = null;
+	/** Where the view was before the focus, to go back to on leaving it. */
+	let beforeFocus: { x: number; y: number; zoom: number } | undefined;
 	// Set once the first fit has landed; before it the camera is a placeholder.
 	let ready = $state(false);
 	/** The key explaining the canvas's marks is shown. */
@@ -94,17 +99,22 @@
 
 	// Render everything: every box and rail open, every card unfolded, at any zoom.
 	const all = $derived(settings.detail === 'all');
-	const boxes = $derived(layoutLandscape(design.model, !all, settings.layout));
-	const rels = $derived(relationsOf(design.model));
+	// In a focus, the design cut down to the subject and what connects to it, drawn the same.
+	const focused = $derived(view.focused ? focusOn(design.model, view.focused) : undefined);
+	const model = $derived(focused?.model ?? design.model);
+	const boxes = $derived(layoutLandscape(model, !all, settings.layout, focused?.foldAt));
+	const rels = $derived(relationsOf(model));
 	const boxById = $derived(new Map(boxes.map((b) => [b.id, b])));
 	// Every connection, less the kinds the key hides.
-	const allEdges = $derived(edgesOf(design.model));
+	const allEdges = $derived(edgesOf(model));
 	const shownEdges = $derived(allEdges.filter((e) => !view.hidden[KEY_OF[e.kind]]));
-	const leavesBy = $derived(new Map(boxes.map((b) => [b.id, new Set(leavesOf(design.model, b))])));
+	const leavesBy = $derived(new Map(boxes.map((b) => [b.id, new Set(leavesOf(model, b))])));
 	const label = (id: string) => refLabel(design.model, id) ?? id;
 	/** Where row `i` of a card sits, folded or expanded as it is now; logic cards never fold. */
 	const rowY = (b: LandscapeBox, i: number) =>
-		b.logic ? logicRowY(i) : fieldRowY(i, b.fields?.length ?? 0, all || !!view.expanded[b.id]);
+		b.logic
+			? logicRowY(i)
+			: fieldRowY(i, b.fields?.length ?? 0, all || !!view.expanded[b.id], b.foldAt);
 	/** The row of a field or logic unit in a card, or -1. */
 	const rowOf = (b: LandscapeBox, id: string | undefined) =>
 		b.logic
@@ -127,11 +137,15 @@
 		const { x, y, zoom } = viewport.current;
 		if (!ready) return;
 		const was = untrack(() => open);
-		const next = all
-			? new Set(boxes.filter((b) => b.group).map((b) => b.id))
-			: openBoxes(boxes, { x, y, zoom, width: cw, height: ch });
+		// A focus is small, so every box in it is open, as when rendering everything.
+		const next =
+			all || view.focused
+				? new Set(boxes.filter((b) => b.group).map((b) => b.id))
+				: openBoxes(boxes, { x, y, zoom, width: cw, height: ch });
 		const listed = new Set(
-			[...railsFor(next)].filter(([, r]) => all || railOpen(r, zoom)).map(([id]) => id)
+			[...railsFor(next)]
+				.filter(([, r]) => all || view.focused || railOpen(r, zoom))
+				.map(([id]) => id)
 		);
 		if (
 			!sameSet(
@@ -166,12 +180,12 @@
 		const out = new Map<string, Rail>();
 		for (const [id, apis] of apiHosts(boxes, openSet)) {
 			const b = boxById.get(id)!;
-			out.set(id, railOf(design.model, railGroups(design.model, b.elementId, apis), b.height));
+			out.set(id, railOf(model, railGroups(model, b.elementId, apis), b.height));
 		}
 		return out;
 	}
 	const rails = $derived(railsFor(open));
-	const uses = $derived(apiUses(design.model));
+	const uses = $derived(apiUses(model));
 	const hostOf = (api: string) => {
 		for (const [id, r] of rails)
 			if (r.groups.some((g) => g.apis.includes(api))) return boxById.get(id);
@@ -240,7 +254,7 @@
 
 	/** Where a leaf drawn in box `home` ends a line: its row, its rail row, or a shown box. */
 	function endOf(leaf: string, home: LandscapeBox): End | undefined {
-		const api = apiOf(design.model, leaf);
+		const api = apiOf(model, leaf);
 		if (api) {
 			const host = hostOf(api);
 			const r = host && rails.get(host.id);
@@ -304,8 +318,8 @@
 			: new Set(within(boxes, f.id).flatMap((b) => [...(leavesBy.get(b.id) ?? [])]));
 		const inside = within(boxes, f.id);
 		const homeIn = (leaf: string) =>
-			apiOf(design.model, leaf)
-				? homeOf(design.model, boxes, f, leaf)
+			apiOf(model, leaf)
+				? homeOf(model, boxes, f, leaf)
 				: inside.find((b) => leavesBy.get(b.id)?.has(leaf));
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built and returned whole
 		const out = new Map<string, LitLine>();
@@ -315,7 +329,7 @@
 			if ((!fromIn && !toIn) || (!focus.leaf && f.group && fromIn && toIn)) continue;
 			const [mine, theirs] = fromIn ? [e.from, e.to] : [e.to, e.from];
 			const mineHome = homeIn(mine);
-			const theirHome = mineHome && homeOf(design.model, boxes, mineHome, theirs);
+			const theirHome = mineHome && homeOf(model, boxes, mineHome, theirs);
 			const a = mineHome && endOf(mine, mineHome);
 			const b = theirHome && endOf(theirs, theirHome);
 			if (!a || !b) continue;
@@ -388,8 +402,8 @@
 		const parts: Record<string, string[]> = {};
 		const kept: Record<string, Set<string> | 'all'> = {};
 		if (view.api && host)
-			for (const u of bodyModels(design.model, view.api)) {
-				const t = linkTarget(design.model, boxes, host, u.model);
+			for (const u of bodyModels(model, view.api)) {
+				const t = linkTarget(model, boxes, host, u.model);
 				if (!t) continue;
 				const s = shownBox(t);
 				const label = partLabel(u.part);
@@ -459,7 +473,7 @@
 
 	$effect(() => {
 		const counts = Object.fromEntries(
-			[...design.model.fields.keys()].map((id) => [
+			[...model.fields.keys()].map((id) => [
 				id,
 				{
 					ref: incomingCount(rels, id, 'ref'),
@@ -492,6 +506,7 @@
 						group: b.group,
 						owner: b.ref ? el(info.parentId ?? '')?.name : undefined,
 						fields: b.fields,
+						foldAt: b.foldAt,
 						indexes: b.view === 'table' ? info.def.indexes : undefined,
 						table: b.table,
 						logic: b.logic,
@@ -518,15 +533,19 @@
 					} satisfies LandscapeNodeData
 				};
 			});
-		if (fittedTo !== settings.layout && boxes.length) {
+		// A new layout or focus is fitted; leaving a focus goes back to where the view was.
+		if ((fittedTo !== settings.layout || fittedFocus !== view.focused) && boxes.length) {
+			const left = fittedFocus && !view.focused;
 			fittedTo = settings.layout;
-			requestAnimationFrame(() =>
-				requestAnimationFrame(() => flow.fitView({ padding: 0.08 }).then(() => (ready = true)))
-			);
+			fittedFocus = view.focused;
+			if (!left)
+				requestAnimationFrame(() =>
+					requestAnimationFrame(() => flow.fitView({ padding: 0.08 }).then(() => (ready = true)))
+				);
 		}
 	});
 
-	const rest = $derived(restLines(design.model, boxes, shownEdges));
+	const rest = $derived(restLines(model, boxes, shownEdges));
 
 	/** A line at rest: grey, on the two boxes' name bars, wider the more it merges. */
 	function restEdge(l: RestLine, dim: boolean) {
@@ -712,7 +731,7 @@
 
 	const apiEntry = (u: ApiUse): Entry => {
 		const a = el(u.api)!;
-		const via = u.via ? design.model.apiFields.get(u.via)?.def.name : undefined;
+		const via = u.via ? model.apiFields.get(u.via)?.def.name : undefined;
 		return {
 			text: `${a.def.method} ${a.def.path} · ${partLabel(u.part)}${via ? `.${via}` : ''}`,
 			where: `${a.name} · ${via ? 'own shape, keeps its own name' : 'the model itself, so a rename changes it'}`,
@@ -743,11 +762,11 @@
 		(): { title: string; type: string; sections: Section[] } | undefined => {
 			const f = view.field;
 			const b = f && boxById.get(f.box);
-			const info = f && design.model.fields.get(f.field);
+			const info = f && model.fields.get(f.field);
 			if (!f || !b || !info) return undefined;
 			const entry = (to: string): Entry => {
 				if (isApiEl(to)) return routeEntry(to);
-				const t = linkTarget(design.model, boxes, b, to);
+				const t = linkTarget(model, boxes, b, to);
 				return {
 					text: isUnit(to) ? el(to)!.name : label(to),
 					where: t ? whereOf(t) : 'not drawn',
@@ -824,7 +843,7 @@
 			inputs: (u.def.inputs ?? []).map((x) => ({ name: x.name, type: typeOf(x) })),
 			outputs: (u.def.outputs ?? []).map((x) => ({ name: x.name, type: typeOf(x) })),
 			fails: u.def.fails ?? [],
-			seq: u.def.steps?.length ? sequenceOf(design.model, u.id) : undefined
+			seq: u.def.steps?.length ? sequenceOf(model, u.id) : undefined
 		};
 	});
 
@@ -832,7 +851,7 @@
 	function go(id: string) {
 		if (isApiEl(id)) return showApi(id);
 		const from = view.field && boxById.get(view.field.box);
-		const t = from && linkTarget(design.model, boxes, from, id);
+		const t = from && linkTarget(model, boxes, from, id);
 		if (t) flyTo({ box: t, field: rowOf(t, id) >= 0 ? id : undefined });
 	}
 
@@ -844,10 +863,10 @@
 		const host = view.api ? hostOf(view.api) : undefined;
 		if (!a || !host) return undefined;
 		const names = (ids: string[]) =>
-			ids.map((id) => design.model.fields.get(id)?.def.name ?? id).join(', ');
+			ids.map((id) => model.fields.get(id)?.def.name ?? id).join(', ');
 		const d = a.def;
 		const bodies = apiBodies(d).map(({ part, body }) => {
-			const t = body.model ? linkTarget(design.model, boxes, host, body.model) : undefined;
+			const t = body.model ? linkTarget(model, boxes, host, body.model) : undefined;
 			return {
 				part,
 				status: typeof part === 'number' ? part : undefined,
@@ -886,7 +905,7 @@
 			(rels.in.get(a.id) ?? [])
 				.filter((l) => l.kind === kind)
 				.map((l) => {
-					const t = linkTarget(design.model, boxes, host, l.field);
+					const t = linkTarget(model, boxes, host, l.field);
 					return {
 						id: l.field,
 						text: el(l.field)!.name,
@@ -979,7 +998,7 @@
 		const zoom = Math.min(Math.max(viewport.current.zoom, 0.8 / fill(area)), 0.92 / fill(t));
 		const row = rowOf(t, target.field);
 		// A row hidden in a folded card is shown by expanding the card.
-		if (!all && t.fields && row >= shownRows(t.fields.length, !!view.expanded[t.id]))
+		if (!all && t.fields && row >= shownRows(t.fields.length, !!view.expanded[t.id], t.foldAt))
 			view.expanded = { ...view.expanded, [t.id]: true };
 		// Keep [start, start + size] on a canvas side of `side` pixels, if it fits.
 		const keep = (c: number, start: number, size: number, side: number) => {
@@ -1007,6 +1026,7 @@
 	/** Goes to a search hit: frames a system or module, flies to a model or row, picks an api. */
 	function pick(hit: Hit) {
 		search.open = false;
+		if (view.focused && !model.elements.has(hit.id) && !model.fields.has(hit.id)) leaveFocus();
 		if (hit.kind === 'api') return showApi(hit.id);
 		view.api = null;
 		view.apiField = null;
@@ -1018,14 +1038,14 @@
 			if (!t) return;
 			// Half its api rail sits outside its right border.
 			const rail = t.apis?.length
-				? railOf(design.model, railGroups(design.model, t.elementId, t.apis), t.height).width / 2
+				? railOf(model, railGroups(model, t.elementId, t.apis), t.height).width / 2
 				: 0;
 			const w = t.width + rail;
 			const zoom = 0.9 / Math.max(w / cw, t.height / ch);
 			flow.setCenter(t.absX + w / 2, t.absY + t.height / 2, { zoom, duration: 700 });
 			return;
 		}
-		const modelId = hit.kind === 'field' ? design.model.fields.get(hit.id)?.modelId : hit.id;
+		const modelId = hit.kind === 'field' ? model.fields.get(hit.id)?.modelId : hit.id;
 		const field = hit.kind === 'model' ? undefined : hit.id;
 		const fits = (b: LandscapeBox) =>
 			hit.kind === 'logic-unit'
@@ -1033,6 +1053,47 @@
 				: !!b.view && b.elementId === modelId && (!field || rowOf(b, field) >= 0);
 		const box = boxes.find((b) => fits(b) && !b.ref) ?? boxes.find(fits);
 		if (box) flyTo({ box, field });
+	}
+
+	/**
+	 * Shows only a hit and what connects to it. A new focus replaces the current one; the
+	 * subject is picked, so its connections are drawn.
+	 */
+	function focusHit(hit: Hit, mode: FocusMode) {
+		search.open = false;
+		setFocus({ id: hit.id, mode, depth: 1 });
+	}
+
+	function setFocus(next: Focus) {
+		if (!view.focused) beforeFocus = { ...viewport.current };
+		unpin();
+		view.play = null;
+		view.selectedNodes = [];
+		view.expanded = {};
+		view.focused = next;
+		const id = next.id;
+		const field = model.fields.get(id);
+		const kind = model.elements.get(id)?.def.kind;
+		if (field) {
+			const box = boxes.find((b) => b.view && b.elementId === field.modelId && rowOf(b, id) >= 0);
+			if (box) view.field = { box: box.id, field: id };
+		} else if (kind === 'logic-unit') {
+			const box = boxes.find((b) => rowOf(b, id) >= 0);
+			if (box) view.field = { box: box.id, field: id };
+		} else if (kind === 'api') view.api = id;
+		else {
+			const box = boxes.find((b) => b.elementId === id && !b.ref && !b.boundary && !b.logic);
+			if (box) view.selectedNodes = [box.id];
+		}
+	}
+
+	function leaveFocus() {
+		unpin();
+		view.selectedNodes = [];
+		view.expanded = {};
+		view.focused = null;
+		if (beforeFocus) flow.setViewport(beforeFocus);
+		beforeFocus = undefined;
 	}
 
 	function goBack() {
@@ -1078,7 +1139,7 @@
 		const fits = (b: LandscapeBox) => !!b.logic && rowOf(b, id) >= 0;
 		const b = isUnit(id)
 			? (boxes.find((o) => fits(o) && !o.ref) ?? boxes.find(fits))
-			: near && linkTarget(design.model, boxes, near, id);
+			: near && linkTarget(model, boxes, near, id);
 		if (!b) return undefined;
 		const row = rowOf(b, id);
 		return { box: b, row: row >= 0 ? row : undefined };
@@ -1090,7 +1151,7 @@
 	}
 	/** An api's rail on its owner's box, as it is drawn once the box shows. */
 	const ownRail = (b: LandscapeBox) =>
-		railOf(design.model, railGroups(design.model, b.elementId, b.apis ?? []), b.height);
+		railOf(model, railGroups(model, b.elementId, b.apis ?? []), b.height);
 
 	/** An end in canvas px, and the least zoom drawing it readably. */
 	function placeOf(e: PlayEnd) {
@@ -1123,7 +1184,7 @@
 				!all &&
 				e.box.fields &&
 				e.row !== undefined &&
-				e.row >= shownRows(e.box.fields.length, !!view.expanded[e.box.id])
+				e.row >= shownRows(e.box.fields.length, !!view.expanded[e.box.id], e.box.foldAt)
 			)
 				view.expanded = { ...view.expanded, [e.box.id]: true };
 		const pad = 56;
@@ -1275,7 +1336,11 @@
 	onkeydown={(e) => {
 		if (playKey(e)) return;
 		if (e.key === 'Escape') {
+			// In a focus, Esc unpins first, then leaves the focus.
+			const pinned = view.field || view.api || view.selectedNodes.length;
+			if (view.focused && !pinned && !keyOpen) leaveFocus();
 			unpin();
+			if (view.focused) view.selectedNodes = [];
 			keyOpen = false;
 		}
 	}}
@@ -1684,8 +1749,19 @@
 			onstop={() => (view.play = null)}
 		/>
 	{/if}
+	{#if view.focused}
+		<FocusBar
+			focus={view.focused}
+			name={refLabel(design.model, view.focused.id) ?? ''}
+			kind={design.model.fields.has(view.focused.id)
+				? 'field'
+				: (design.model.elements.get(view.focused.id)?.def.kind ?? 'model')}
+			onchange={setFocus}
+			onleave={leaveFocus}
+		/>
+	{/if}
 	{#if search.open}
-		<SearchPalette onpick={pick} onclose={() => (search.open = false)} />
+		<SearchPalette onpick={pick} onfocus={focusHit} onclose={() => (search.open = false)} />
 	{/if}
 </div>
 

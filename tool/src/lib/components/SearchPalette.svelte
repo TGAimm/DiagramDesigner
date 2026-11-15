@@ -1,10 +1,20 @@
 <script lang="ts">
-	import { Search } from '@lucide/svelte';
+	import { Crosshair, Search } from '@lucide/svelte';
 	import { design } from '#lib/client/store.svelte.ts';
 	import { searchLandscape, type Hit, type Mark } from '#lib/landscape/search.ts';
+	import type { FocusMode } from '#lib/landscape/focus.ts';
 	import EntityGlyph, { type GlyphKind } from './canvas/EntityGlyph.svelte';
 
-	let { onpick, onclose }: { onpick: (hit: Hit) => void; onclose: () => void } = $props();
+	let {
+		onpick,
+		onfocus,
+		onclose
+	}: {
+		onpick: (hit: Hit) => void;
+		/** Show only the hit and what connects to it: everything, or its data models. */
+		onfocus: (hit: Hit, mode: FocusMode) => void;
+		onclose: () => void;
+	} = $props();
 
 	let query = $state('');
 	let active = $state(0);
@@ -41,6 +51,8 @@
 	function onkeydown(e: KeyboardEvent) {
 		if (e.key === 'ArrowDown') move(1);
 		else if (e.key === 'ArrowUp') move(-1);
+		else if (e.key === 'Enter' && hits[active] && e.shiftKey) onfocus(hits[active], 'all');
+		else if (e.key === 'Enter' && hits[active] && e.altKey) onfocus(hits[active], 'data');
 		else if (e.key === 'Enter' && hits[active]) onpick(hits[active]);
 		else if (e.key === 'Escape') onclose();
 		else return;
@@ -81,25 +93,44 @@
 			{#each g.hits as h, j (h.id)}
 				{@const i = starts[gi] + j}
 				{@const glyph = GLYPH[h.kind]}
-				<button
-					class="hit"
-					class:on={i === active}
-					id="hit-{i}"
-					data-index={i}
-					role="option"
-					aria-selected={i === active}
-					tabindex="-1"
-					onpointermove={() => (active = i)}
-					onclick={() => onpick(h)}
-				>
-					<span class="name">
-						{#if glyph}<EntityGlyph kind={glyph} />{:else}<span class="slot"></span>{/if}
-						{#if h.method}<b class="method" style:color={methodColor(h.method)}>{h.method}</b>{/if}
-						<span>{@render marked(h.text, h.mark)}</span>
-						{#if h.alt}<span class="alt">{@render marked(h.alt.text, h.alt.mark)}</span>{/if}
-					</span>
-					<span class="at">{h.at.join(' › ')}</span>
-				</button>
+				<!-- The active row offers its two focuses beside it. -->
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<div class="row" class:on={i === active} onpointermove={() => (active = i)}>
+					<button
+						class="hit"
+						id="hit-{i}"
+						data-index={i}
+						role="option"
+						aria-selected={i === active}
+						tabindex="-1"
+						onclick={() => onpick(h)}
+					>
+						<span class="name">
+							{#if glyph}<EntityGlyph kind={glyph} />{:else}<span class="slot"></span>{/if}
+							{#if h.method}<b class="method" style:color={methodColor(h.method)}>{h.method}</b
+								>{/if}
+							<span>{@render marked(h.text, h.mark)}</span>
+							{#if h.alt}<span class="alt">{@render marked(h.alt.text, h.alt.mark)}</span>{/if}
+						</span>
+						<span class="at">{h.at.join(' › ')}</span>
+					</button>
+					{#if i === active}
+						<span class="acts">
+							<button
+								class="act"
+								tabindex="-1"
+								title="Focus: everything relevant (⇧↵)"
+								onclick={() => onfocus(h, 'all')}><Crosshair size={12} />Focus</button
+							>
+							<button
+								class="act"
+								tabindex="-1"
+								title="Focus: data models only (⌥↵)"
+								onclick={() => onfocus(h, 'data')}><EntityGlyph kind="class" />Data models</button
+							>
+						</span>
+					{/if}
+				</div>
 			{/each}
 		{:else}
 			<p class="none">No matches for “{query.trim()}”.</p>
@@ -108,6 +139,8 @@
 	<footer>
 		<span><kbd>↑</kbd><kbd>↓</kbd>move</span>
 		<span><kbd>↵</kbd>go to</span>
+		<span><kbd>⇧↵</kbd>focus</span>
+		<span><kbd>⌥↵</kbd>data models</span>
 		<span><kbd>Esc</kbd>close</span>
 		{#if query.trim() && hits.length}
 			<span class="count">{hits.length} {hits.length === 1 ? 'match' : 'matches'}</span>
@@ -183,11 +216,21 @@
 		letter-spacing: 0.02em;
 		color: var(--ui-muted);
 	}
+	.row {
+		display: flex;
+		align-items: center;
+		padding-right: 14px;
+	}
+	.row.on {
+		background: var(--ui-accent-bg);
+		box-shadow: inset 2px 0 0 var(--ui-accent);
+	}
 	.hit {
 		display: flex;
 		align-items: center;
 		gap: 10px;
-		width: 100%;
+		flex: 1;
+		min-width: 0;
 		height: 34px;
 		padding: 0 14px;
 		border: none;
@@ -198,10 +241,22 @@
 	.hit:hover:not(:disabled) {
 		background: none;
 	}
-	.hit.on,
-	.hit.on:hover:not(:disabled) {
-		background: var(--ui-accent-bg);
-		box-shadow: inset 2px 0 0 var(--ui-accent);
+	.acts {
+		display: flex;
+		gap: 6px;
+		flex: none;
+	}
+	.act {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		padding: 2px 8px;
+		font-size: 12px;
+		line-height: 18px;
+		border: 1px solid var(--ui-accent);
+		background: var(--ui-panel);
+		white-space: nowrap;
+		cursor: pointer;
 	}
 	.name {
 		display: flex;
