@@ -33,7 +33,7 @@ const docsOf = (design: LoadedDesign) =>
 
 /** A scenario's own errors, plus a warning for each change that no longer applies. */
 function scenarioDiagnostics(design: LoadedDesign, scenario: ReturnType<typeof readScenario>) {
-	const ev = evaluate(docsOf(design), design.model, scenario.changes);
+	const ev = evaluate(docsOf(design), design, scenario.changes);
 	return [
 		...scenario.diagnostics,
 		...ev.results.flatMap((r, i) =>
@@ -121,7 +121,7 @@ export async function main(
 			}
 			const design = loadDesign(sources);
 			const scenario = readScenario(parseFile(src.path, src.text));
-			const ev = evaluate(docsOf(design), design.model, scenario.changes);
+			const ev = evaluate(docsOf(design), design, scenario.changes);
 			const errors = newErrors(design.model, ev.after);
 			for (const d of scenario.diagnostics) io.error(formatDiagnostic(d));
 			io.log(scenarioReport(scenario, ev, errors));

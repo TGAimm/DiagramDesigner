@@ -13,7 +13,7 @@
 		type Node
 	} from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
-	import { design } from '#lib/client/store.svelte.ts';
+	import { changes } from '#lib/client/changes.svelte.ts';
 	import { search } from '#lib/client/search.svelte.ts';
 	import SearchPalette from '#lib/components/SearchPalette.svelte';
 	import type { Hit } from '#lib/landscape/search.ts';
@@ -68,6 +68,9 @@
 	import LandscapeNode, { type LandscapeNodeData } from './LandscapeNode.svelte';
 	import ConnectionEdge from './ConnectionEdge.svelte';
 	import EntityGlyph from './EntityGlyph.svelte';
+	import ChangeSection from '#lib/components/ChangeSection.svelte';
+	import ChangesPanel from '#lib/components/ChangesPanel.svelte';
+	import EditMenu from '#lib/components/EditMenu.svelte';
 
 	/**
 	 * The whole model, laid out once. Only boxes inside open boxes are mounted; which boxes are
@@ -99,9 +102,10 @@
 
 	// Render everything: every box and rail open, every card unfolded, at any zoom.
 	const all = $derived(settings.detail === 'all');
-	// In a focus, the design cut down to the subject and what connects to it, drawn the same.
-	const focused = $derived(view.focused ? focusOn(design.model, view.focused) : undefined);
-	const model = $derived(focused?.model ?? design.model);
+	// The design, or the state of a scenario or commit being compared (see changes.svelte.ts);
+	// in a focus, cut down to the subject and what connects to it, drawn the same.
+	const focused = $derived(view.focused ? focusOn(changes.shown, view.focused) : undefined);
+	const model = $derived(focused?.model ?? changes.shown);
 	const boxes = $derived(layoutLandscape(model, !all, settings.layout, focused?.foldAt));
 	const rels = $derived(relationsOf(model));
 	const boxById = $derived(new Map(boxes.map((b) => [b.id, b])));
@@ -109,7 +113,7 @@
 	const allEdges = $derived(edgesOf(model));
 	const shownEdges = $derived(allEdges.filter((e) => !view.hidden[KEY_OF[e.kind]]));
 	const leavesBy = $derived(new Map(boxes.map((b) => [b.id, new Set(leavesOf(model, b))])));
-	const label = (id: string) => refLabel(design.model, id) ?? id;
+	const label = (id: string) => refLabel(model, id) ?? id;
 	/** Where row `i` of a card sits, folded or expanded as it is now; logic cards never fold. */
 	const rowY = (b: LandscapeBox, i: number) =>
 		b.logic
@@ -120,7 +124,7 @@
 		b.logic
 			? b.logic.rows.findIndex((r) => r.id === id)
 			: (b.fields?.findIndex((f) => f.id === id) ?? -1);
-	const el = (id: string) => design.model.elements.get(id);
+	const el = (id: string) => model.elements.get(id);
 	const isUnit = (id: string) => el(id)?.def.kind === 'logic-unit';
 	const isApiEl = (id: string) => el(id)?.def.kind === 'api';
 
@@ -501,6 +505,7 @@
 							.join(' ') || undefined,
 					data: {
 						name: info.name,
+						element: b.elementId,
 						// A closed boundary reads as the model it is drawn round.
 						kind: b.boundary ? 'model' : info.def.kind,
 						group: b.group,
@@ -515,7 +520,7 @@
 							(b.fields ?? [])
 								.flatMap((f) => [f.ref, f.model, ...(f.from ?? [])])
 								.flatMap((id) => {
-									const label = id && refLabel(design.model, id);
+									const label = id && refLabel(model, id);
 									return label ? [[id, label]] : [];
 								})
 						),
@@ -529,7 +534,8 @@
 						},
 						rail: railView(b.id),
 						onapi,
-						onrail: () => openRail(b.id)
+						onrail: () => openRail(b.id),
+						onmenu: editing ? (target, x, y) => (menu = { target, x, y }) : undefined
 					} satisfies LandscapeNodeData
 				};
 			});
@@ -640,7 +646,7 @@
 	function endName(end: End) {
 		const def = el(end.leaf)?.def;
 		if (def?.kind === 'api') return `${def.method} ${def.path}`;
-		return refLabel(design.model, end.leaf) ?? el(end.leaf)?.name ?? end.leaf;
+		return refLabel(model, end.leaf) ?? el(end.leaf)?.name ?? end.leaf;
 	}
 
 	/**
@@ -787,7 +793,7 @@
 			const def = info.def;
 			return {
 				title: `${el(info.modelId)?.name}.${def.name}`,
-				type: typeText(def, (id) => refLabel(design.model, id)),
+				type: typeText(def, (id) => refLabel(model, id)),
 				// Glyphs point at what depends on what: → this field on the entry, ← the entry on
 				// this field; dashed for lineage.
 				sections: [
@@ -830,7 +836,7 @@
 		if (!u) return undefined;
 		const typeOf = (x: LogicField) =>
 			[
-				typeText(x, (id) => refLabel(design.model, id)),
+				typeText(x, (id) => refLabel(model, id)),
 				x.required && 'required',
 				x.nullable && 'nullable',
 				x.description
@@ -888,7 +894,7 @@
 					return {
 						id: f.id,
 						name: f.name + (f.required ? '' : '?'),
-						type: typeText(f, (id) => refLabel(design.model, id)),
+						type: typeText(f, (id) => refLabel(model, id)),
 						traced: links.length > 0 || !!f.model,
 						title: links.length
 							? `${part === 'request' ? 'Goes into' : 'Comes from'} ${links.map(label).join(', ')}${f.derived ? ` · ${f.derived}` : ''}`
@@ -963,9 +969,9 @@
 		const left =
 			right + w <= cw - 8
 				? right
-				: a.left - 14 - w >= 8
+				: a.left - 14 - w >= 8 + panelW
 					? a.left - 14 - w
-					: Math.max(8, (cw - w) / 2);
+					: Math.max(8 + panelW, (cw + panelW - w) / 2);
 		return { left, top: Math.min(Math.max(8, a.y - 24), Math.max(8, ch - cardH - 8)) };
 	}
 	const cardPos = $derived(beside(apiAnchor, API_W));
@@ -1006,7 +1012,7 @@
 			return size <= 2 * half ? Math.min(Math.max(c, start + size - half), start + half) : c;
 		};
 		flow.setCenter(
-			keep(t.absX + t.width / 2, area.absX, area.width, cw),
+			keep(t.absX + t.width / 2, area.absX, area.width, cw - panelW) - panelW / 2 / zoom,
 			keep(t.absY + (row >= 0 ? rowY(t, row) : t.height / 2), area.absY, area.height, ch),
 			{ zoom, duration: 700 }
 		);
@@ -1024,7 +1030,7 @@
 	}
 
 	/** Goes to a search hit: frames a system or module, flies to a model or row, picks an api. */
-	function pick(hit: Hit) {
+	function pick(hit: Pick<Hit, 'kind' | 'id'>) {
 		search.open = false;
 		if (view.focused && !model.elements.has(hit.id) && !model.fields.has(hit.id)) leaveFocus();
 		if (hit.kind === 'api') return showApi(hit.id);
@@ -1042,7 +1048,10 @@
 				: 0;
 			const w = t.width + rail;
 			const zoom = 0.9 / Math.max(w / cw, t.height / ch);
-			flow.setCenter(t.absX + w / 2, t.absY + t.height / 2, { zoom, duration: 700 });
+			flow.setCenter(t.absX + w / 2 - panelW / 2 / zoom, t.absY + t.height / 2, {
+				zoom,
+				duration: 700
+			});
 			return;
 		}
 		const modelId = hit.kind === 'field' ? model.fields.get(hit.id)?.modelId : hit.id;
@@ -1096,6 +1105,32 @@
 		beforeFocus = undefined;
 	}
 
+	/** Goes to anything with an id, as a search hit would: a scenario's change or impact. */
+	function goTo(id: string) {
+		const kind = el(id)?.def.kind;
+		const apiField = model.apiFields.get(id);
+		if (apiField) return showApi(apiField.apiId);
+		if (kind) return pick({ kind, id });
+		if (model.fields.has(id)) return pick({ kind: 'field', id });
+		const owner = [...model.elements.values()].find((e) =>
+			[
+				...(e.def.inputs ?? []),
+				...(e.def.outputs ?? []),
+				...(e.def.params ?? []),
+				...(e.def.indexes ?? [])
+			].some((x) => x.id === id)
+		);
+		if (owner) pick({ kind: owner.def.kind, id: owner.id });
+	}
+
+	// ------------------------------------------------------------ editing a scenario
+	/** Right-clicking a field or a model's name bar opens its menu while a scenario is shown. */
+	const editing = $derived(changes.editable && changes.mode !== 'before');
+	let menu = $state<{ target: string; x: number; y: number } | null>(null);
+
+	/** The Changes or History panel covers the canvas's left; flying centres right of it. */
+	const panelW = $derived(changes.panel ? 340 : 0);
+
 	function goBack() {
 		const prev = view.trail.at(-1);
 		const box = prev && boxById.get(prev.box);
@@ -1118,9 +1153,7 @@
 	/** Kept clear for the player at the bottom of the canvas, in screen px. */
 	const PLAYER = 104;
 	const run = $derived(
-		view.play
-			? runOf(design.model, view.play.unit, view.play.choices, new Set(view.play.into))
-			: undefined
+		view.play ? runOf(model, view.play.unit, view.play.choices, new Set(view.play.into)) : undefined
 	);
 	const playAt = $derived(run && view.play ? Math.min(view.play.at, run.steps.length - 1) : 0);
 	const step = $derived(run?.steps[playAt]);
@@ -1335,6 +1368,18 @@
 <svelte:window
 	onkeydown={(e) => {
 		if (playKey(e)) return;
+		const typing = (e.target as HTMLElement | null)?.closest('input, textarea, select');
+		if (
+			editing &&
+			!typing &&
+			e.key.toLowerCase() === 'z' &&
+			(e.metaKey || e.ctrlKey) &&
+			!e.shiftKey
+		) {
+			e.preventDefault();
+			void changes.remove();
+			return;
+		}
 		if (e.key === 'Escape') {
 			// In a focus, Esc unpins first, then leaves the focus.
 			const pinned = view.field || view.api || view.selectedNodes.length;
@@ -1512,6 +1557,7 @@
 					><X size={16} /></button
 				>
 			</header>
+			<ChangeSection id={view.field!.field} go={goTo} />
 			{#each inspector.sections as s (s.label)}
 				<section class={s.kind}>
 					<h4>{s.label}</h4>
@@ -1561,6 +1607,7 @@
 					><X size={16} /></button
 				>
 			</header>
+			<ChangeSection id={view.field!.field} go={goTo} />
 			<div class="io">
 				<section>
 					<h4>Inputs</h4>
@@ -1628,6 +1675,7 @@
 					><X size={16} /></button
 				>
 			</header>
+			<ChangeSection id={view.api!} go={goTo} />
 			{#if api.params.length}
 				<section>
 					<h4>Params</h4>
@@ -1752,16 +1800,20 @@
 	{#if view.focused}
 		<FocusBar
 			focus={view.focused}
-			name={refLabel(design.model, view.focused.id) ?? ''}
-			kind={design.model.fields.has(view.focused.id)
+			name={refLabel(changes.shown, view.focused.id) ?? ''}
+			kind={changes.shown.fields.has(view.focused.id)
 				? 'field'
-				: (design.model.elements.get(view.focused.id)?.def.kind ?? 'model')}
+				: (changes.shown.elements.get(view.focused.id)?.def.kind ?? 'model')}
 			onchange={setFocus}
 			onleave={leaveFocus}
 		/>
 	{/if}
 	{#if search.open}
 		<SearchPalette onpick={pick} onfocus={focusHit} onclose={() => (search.open = false)} />
+	{/if}
+	<ChangesPanel go={goTo} />
+	{#if menu && editing}
+		<EditMenu {...menu} onclose={() => (menu = null)} />
 	{/if}
 </div>
 

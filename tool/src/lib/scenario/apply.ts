@@ -20,8 +20,6 @@ export interface Applied {
 	results: ChangeResult[];
 	/** Files written, added or removed, for saving. */
 	touched: Set<string>;
-	/** With keepDropped: ids that would be dropped, left in place. */
-	dropped: Set<string>;
 }
 
 interface IdLoc {
@@ -61,16 +59,10 @@ export const show = (v: unknown) => (v === undefined || v === null ? 'absent' : 
 /**
  * Applies changes in order to copies of the documents they touch. A change whose target is
  * gone, or whose `was` no longer matches, is skipped and reported; the rest still apply.
- * With keepDropped, drops are only collected, so a diff can draw what they remove.
  */
-export function applyChanges(
-	source: Docs,
-	changes: Change[],
-	opts: { keepDropped?: boolean } = {}
-): Applied {
+export function applyChanges(source: Docs, changes: Change[]): Applied {
 	const docs: Docs = { ...source };
 	const touched = new Set<string>();
-	const dropped = new Set<string>();
 	const ids = new Map<string, IdLoc>();
 	for (const [file, doc] of Object.entries(docs)) indexFile(file, doc.toJS(), ids);
 
@@ -134,10 +126,6 @@ export function applyChanges(
 		if (isDrop(c)) {
 			const loc = ids.get(c.drop);
 			if (!loc) return { status: 'missing', message: `"${c.drop}" is not in the design` };
-			if (opts.keepDropped) {
-				dropped.add(c.drop);
-				return { status: 'ok', file: loc.file };
-			}
 			if (!loc.path.length) {
 				delete docs[loc.file];
 				touched.add(loc.file);
@@ -154,5 +142,5 @@ export function applyChanges(
 	};
 
 	const results = changes.map(apply);
-	return { docs, results, touched, dropped };
+	return { docs, results, touched };
 }

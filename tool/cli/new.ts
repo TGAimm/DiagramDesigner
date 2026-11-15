@@ -1,19 +1,9 @@
-import { randomInt } from 'node:crypto';
 import { existsSync, promises as fs } from 'node:fs';
 import path from 'node:path';
 import { entityKind } from '../src/lib/model/parse';
+import { generateId } from '../src/lib/model/ids';
 import { ENTITY_KINDS } from '../src/lib/model/schema';
 import type { CliIO } from './sdv';
-
-const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
-const CHARS = LETTERS + '0123456789';
-
-/** 10 characters, starting with a letter so it is also a valid kebab-case id. */
-export function generateId(): string {
-	let id = LETTERS[randomInt(LETTERS.length)];
-	while (id.length < 10) id += CHARS[randomInt(CHARS.length)];
-	return id;
-}
 
 export async function runNew(
 	positionals: string[],

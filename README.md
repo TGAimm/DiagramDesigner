@@ -48,6 +48,10 @@ Technical / deployment architecture
   lineage. Connections follow one standard at every level: merged into one line between the
   visible boxes at rest, lit one hop each way on hover, pinned on click
   ([docs/schema/README.md](docs/schema/README.md#connections)). Clicking selects.
+- **Scenarios and history:** pending renames, adds and drops live in scenario files
+  ([docs/schema/scenario.md](docs/schema/scenario.md)), edited on the canvas and shown as a
+  diff with what they break; Apply writes them into the design. The design's git history is
+  compared commit by commit the same way.
 - **Open goals:** [docs/goals.md](docs/goals.md).
 
 ## How it works
@@ -57,7 +61,7 @@ one folder per system. They are the source of truth. The canvas is read-only: ed
 and the canvas updates on save.
 
 ```
-examples/commerce/ development landscape (ERP, PIM, Webshop)
+examples/commerce/ development landscape (ERP, PIM, Webshop); scenarios/ holds pending changes
 docs/schema/       format reference, one cookbook per entity kind
 docs/goals.md      open goals
 tool/              the SvelteKit app and the `sdv` CLI
@@ -74,5 +78,6 @@ Requires Node 22.12+.
 npm install          # also installs tool/
 npm run dev          # http://localhost:5173, on examples/commerce
 npm run validate     # schema and reference checks
+npm run sdv -- impact scenarios/tidy-cart.scenario.yaml   # what a scenario breaks
 npm test
 ```

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Crosshair, Search } from '@lucide/svelte';
-	import { design } from '#lib/client/store.svelte.ts';
+	import { changes } from '#lib/client/changes.svelte.ts';
 	import { searchLandscape, type Hit, type Mark } from '#lib/landscape/search.ts';
 	import type { FocusMode } from '#lib/landscape/focus.ts';
 	import EntityGlyph, { type GlyphKind } from './canvas/EntityGlyph.svelte';
@@ -20,7 +20,7 @@
 	let active = $state(0);
 	let list = $state<HTMLElement>();
 
-	const groups = $derived(searchLandscape(design.model, query));
+	const groups = $derived(searchLandscape(changes.shown, query));
 	const hits = $derived(groups.flatMap((g) => g.hits));
 	/** Index in `hits` of each group's first hit. */
 	const starts = $derived(

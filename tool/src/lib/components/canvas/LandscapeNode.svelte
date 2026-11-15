@@ -5,6 +5,8 @@
 
 	export interface LandscapeNodeData extends Record<string, unknown> {
 		name: string;
+		/** The entity drawn: for change marks and their roll-up on a closed box. */
+		element: string;
 		kind: string;
 		group: boolean;
 		/** Owner's name when the model is owned elsewhere. */
@@ -36,6 +38,8 @@
 		onapi?: (api: string) => void;
 		/** The closed rail was clicked: zoom in until it opens. */
 		onrail?: () => void;
+		/** While a scenario is edited: a field row or a model's name bar was right-clicked. */
+		onmenu?: (target: string, x: number, y: number) => void;
 	}
 
 	export interface RailView {
@@ -79,6 +83,7 @@
 	} from '#lib/landscape/layout.ts';
 	import { RAIL } from '#lib/landscape/apis.ts';
 	import { settings } from '#lib/client/settings.svelte.ts';
+	import { changes } from '#lib/client/changes.svelte.ts';
 	import { untrack } from 'svelte';
 	import EntityGlyph from './EntityGlyph.svelte';
 
@@ -139,6 +144,18 @@
 		['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(m)
 			? `var(--sdv-method-${METHOD_TOKEN[m] ?? m.toLowerCase()})`
 			: 'var(--sdv-text-muted)';
+	// Change marks while a scenario or commit is compared: a glyph on what changed, a bar in
+	// its severity on what breaks, the rest faded; a closed box carries one count for inside.
+	const marks = $derived(changes.marks);
+	const comparing = $derived(!!changes.comparison);
+	const lv = (id: string) => {
+		const l = marks.level.get(id);
+		return l === 'breaking' || l === 'check' ? l : undefined;
+	};
+	const marked = (id: string) =>
+		marks.glyph.has(id) || (marks.level.has(id) && marks.level.get(id) !== 'stopped');
+	const roll = $derived(marks.rollup.get(d.element));
+	const faded = $derived(comparing && !roll);
 	const template = (cols: TableColumn[]) =>
 		cols
 			.map((c, i) => (i < cols.length - 1 ? `${c.width}px` : `minmax(${c.width}px, 1fr)`))
@@ -155,6 +172,7 @@
 	class:api-box={apiParts}
 	class:expanded={d.table && expanded && !all}
 	class:system={d.kind === 'system'}
+	class:faded={faded && !d.group}
 	style:--tab={d.kind === 'model' ? 'var(--sdv-model-class-head)' : 'var(--fill)'}
 	style:--fill="var(--sdv-{d.kind}-fill, var(--sdv-container-fill))"
 	style:--stroke="var(--sdv-{d.kind}-stroke, var(--sdv-container-stroke))"
@@ -186,11 +204,19 @@
 				class="thead"
 				role="presentation"
 				style:height="{TABLE.head}px"
+				oncontextmenu={(e) => {
+					if (!d.onmenu || d.view !== 'class') return;
+					e.preventDefault();
+					d.onmenu(d.element, e.clientX, e.clientY);
+				}}
 				onmouseenter={() => d.onbox?.('enter')}
 				onmouseleave={() => d.onbox?.('leave')}
 			>
 				<div class="name" style:font-size="{TABLE.title}px">
-					<EntityGlyph kind={d.view === 'table' ? 'table' : 'class'} />{d.name}
+					<EntityGlyph
+						kind={d.view === 'table' ? 'table' : 'class'}
+					/>{#if marks.glyph.has(d.element)}<span class="op">{marks.glyph.get(d.element)}</span
+						>{/if}{d.name}
 				</div>
 				<div class="note" style:font-size="{TABLE.note}px">
 					{subtitle(d.view ?? 'class', d.owner)}{#if apiParts}<span class="api-parts">
@@ -224,8 +250,17 @@
 							class:picked={picked === f.id}
 							class:flash={flash === f.id}
 							class:dim={dim?.[f.id]}
+							class:faded={comparing && !marked(f.id)}
+							class:gone={marks.dropped.has(f.id)}
+							class:sev-break={lv(f.id) === 'breaking'}
+							class:sev-check={lv(f.id) === 'check'}
 							role="button"
 							tabindex="-1"
+							oncontextmenu={(e) => {
+								if (!d.onmenu) return;
+								e.preventDefault();
+								d.onmenu(f.id, e.clientX, e.clientY);
+							}}
 							onmouseenter={() => d.onfield?.(f.id, 'enter')}
 							onmouseleave={() => d.onfield?.(f.id, 'leave')}
 							onclick={(e) => {
@@ -241,7 +276,10 @@
 									class:mark={c.key === 'required' || c.key === 'nullable'}
 									class:links={c.key === 'links'}
 								>
-									{#if c.key === 'name'}{f.name}{#each d.view === 'table' ? keysOf(f) : [] as k (k)}<span
+									{#if c.key === 'name'}{#if marks.glyph.has(f.id)}<span class="op"
+												>{marks.glyph.get(f.id)}</span
+											>{/if}<span class="fname">{f.name}</span
+										>{#each d.view === 'table' ? keysOf(f) : [] as k (k)}<span
 												class="badge"
 												style:font-size="{TABLE.badge}px"
 												title={KEY_TITLES[k]}>{k}</span
@@ -316,7 +354,13 @@
 				<div class="list" style:font-size="{TABLE.row}px">
 					<div class="cell th" style:font-size="{TABLE.label}px">Indexes</div>
 					{#each d.indexes as ix (ix.name)}
-						<div class="cell">
+						<div
+							class="cell"
+							class:gone={!!ix.id && marks.dropped.has(ix.id)}
+							class:faded={comparing && !(ix.id && marked(ix.id))}
+						>
+							{#if ix.id && marks.glyph.has(ix.id)}<span class="op">{marks.glyph.get(ix.id)}</span
+								>{/if}
 							<span class="badge" class:plain={!ix.unique} style:font-size="{TABLE.badge}px"
 								>{indexKind(ix)}</span
 							>{ix.name}<span class="muted ix-fields">{indexFields(ix, d.fields ?? [])}</span>
@@ -360,6 +404,10 @@
 						class:self={hot?.[u.id] === 'self'}
 						class:picked={picked === u.id}
 						class:flash={flash === u.id}
+						class:faded={comparing && !marked(u.id)}
+						class:gone={marks.dropped.has(u.id)}
+						class:sev-break={lv(u.id) === 'breaking'}
+						class:sev-check={lv(u.id) === 'check'}
 						role="button"
 						tabindex="-1"
 						onmouseenter={() => d.onfield?.(u.id, 'enter')}
@@ -369,7 +417,11 @@
 							d.onfield?.(u.id, 'click');
 						}}
 					>
-						<div class="cell first"><i class="fn">ƒ</i>{u.name}</div>
+						<div class="cell first">
+							<i class="fn">ƒ</i>{#if marks.glyph.has(u.id)}<span class="op"
+									>{marks.glyph.get(u.id)}</span
+								>{/if}<span class="fname">{u.name}</span>
+						</div>
 						<div class="cell sig" style:font-size="{TABLE.signature}px">{u.signature}</div>
 					</div>
 				{/each}
@@ -400,8 +452,20 @@
 			style:--fs={font}
 			style:padding-right={!d.group && d.rail ? `${d.rail.width / 2}px` : undefined}
 		>
-			<div class="name"><EntityGlyph kind={glyph} />{d.name}</div>
+			<div class="name">
+				<EntityGlyph kind={glyph} />{#if marks.glyph.has(d.element)}<span class="op"
+						>{marks.glyph.get(d.element)}</span
+					>{/if}{d.name}
+			</div>
 		</div>
+		{#if roll && !d.open}
+			<span
+				class="roll"
+				class:sev-break={roll.level === 'breaking'}
+				class:sev-check={roll.level === 'check'}
+				title="{roll.count} changed or affected inside">{roll.count}</span
+			>
+		{/if}
 	{/if}
 	{#if d.rail}
 		{@const r = d.rail}
@@ -444,6 +508,10 @@
 								class="rail-row"
 								class:picked={d.state.api === a.id}
 								class:hot={d.state.hotApis[a.id]}
+								class:faded={comparing && !marked(a.id)}
+								class:gone={marks.dropped.has(a.id)}
+								class:sev-break={lv(a.id) === 'breaking'}
+								class:sev-check={lv(a.id) === 'check'}
 								style:height="{RAIL.row}px"
 								style:font-size="{RAIL.font}px"
 								style:padding="0 {RAIL.pad}px"
@@ -456,8 +524,9 @@
 									d.onapi?.(a.id);
 								}}
 							>
-								<b style:color={methodColor(a.method)} style:min-width="{r.methodWidth}px"
-									>{a.method}</b
+								{#if marks.glyph.has(a.id)}<span class="op">{marks.glyph.get(a.id)}</span>{/if}<b
+									style:color={methodColor(a.method)}
+									style:min-width="{r.methodWidth}px">{a.method}</b
 								><span>{a.path}</span>
 							</button>
 						{/each}
@@ -773,6 +842,77 @@
 	.row.dim {
 		opacity: 0.35;
 	}
+	/* Change marks. */
+	.faded {
+		opacity: 0.38;
+	}
+	.node.faded {
+		opacity: 0.45;
+	}
+	.op {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.15em;
+		height: 1.15em;
+		margin-right: 0.35em;
+		flex: none;
+		border-radius: 0.2em;
+		background: var(--sdv-op-fill);
+		color: var(--sdv-op-text);
+		font-weight: 700;
+		font-size: 0.85em;
+		line-height: 1;
+	}
+	.sev-break {
+		box-shadow: inset 3px 0 0 var(--sdv-sev-break);
+		background: color-mix(in srgb, var(--sdv-sev-break) 8%, transparent);
+	}
+	.sev-check {
+		box-shadow: inset 3px 0 0 var(--sdv-sev-check);
+		background: color-mix(in srgb, var(--sdv-sev-check) 9%, transparent);
+	}
+	.gone {
+		background: repeating-linear-gradient(
+			135deg,
+			transparent 0 6px,
+			color-mix(in srgb, var(--sdv-edge) 12%, transparent) 6px 7px
+		);
+	}
+	.gone .fname {
+		text-decoration: line-through;
+		color: var(--sdv-text-muted);
+	}
+	/* One count per closed box: what changed or is affected inside, in the worst severity. */
+	.roll {
+		position: absolute;
+		top: 0;
+		right: 0;
+		transform: translate(40%, -40%) scale(calc(1 / var(--z, 1)));
+		min-width: 22px;
+		height: 22px;
+		box-sizing: border-box;
+		padding: 0 7px;
+		border-radius: 11px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 13px;
+		font-weight: 700;
+		color: #fff;
+		background: var(--sdv-edge);
+		pointer-events: none;
+		z-index: 2;
+	}
+	.roll.sev-break {
+		background: var(--sdv-sev-break);
+		box-shadow: none;
+	}
+	.roll.sev-check {
+		background: var(--sdv-sev-check);
+		box-shadow: none;
+	}
+
 	.slot.inApi .count {
 		background: var(--sdv-api-stroke);
 	}

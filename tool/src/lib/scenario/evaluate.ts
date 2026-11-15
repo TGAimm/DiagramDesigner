@@ -16,6 +16,12 @@ export interface Summary {
 	check: number;
 }
 
+/** One state of the design: its files' data and the model built from it. */
+export interface State {
+	model: Model;
+	data: Record<string, unknown>;
+}
+
 /** A design state compared with another: what changed, and what that breaks. */
 export interface Comparison {
 	before: Model;
@@ -23,14 +29,14 @@ export interface Comparison {
 	diff: Diff;
 	report: ImpactReport;
 	summary: Summary;
+	/** The after state with what is dropped put back where it was, so Diff mode draws it. */
+	union: Model;
+	dropped: Set<string>;
 }
 
 /** A scenario applied over the design. */
 export interface Evaluation extends Comparison {
 	results: ChangeResult[];
-	/** The after state with what is dropped left in, so Diff mode can draw it struck. */
-	union: Model;
-	dropped: Set<string>;
 }
 
 const dataOf = (docs: Docs) =>
@@ -42,17 +48,16 @@ const dataOf = (docs: Docs) =>
  */
 export function evaluate(
 	docs: Record<string, Document>,
-	before: Model,
+	before: State,
 	changes: Change[],
 	locate?: Locator
 ): Evaluation {
 	const applied = applyChanges(docs, changes);
-	const kept = applyChanges(docs, changes, { keepDropped: true });
 	const at: Locator = (file, path, key) =>
 		applied.touched.has(file) ? undefined : locate?.(file, path, key);
-	const after = buildModel(dataOf(applied.docs), at);
-	const union = buildModel(dataOf(kept.docs));
-	return { ...compare(before, after), results: applied.results, union, dropped: kept.dropped };
+	const data = dataOf(applied.docs);
+	const after = { model: buildModel(data, at), data };
+	return { ...compare(before, after), results: applied.results };
 }
 
 /** Errors in the after state that the design does not already have. */
@@ -63,10 +68,57 @@ export function newErrors(before: Model, after: Model) {
 	);
 }
 
-export function compare(before: Model, after: Model): Comparison {
+export function compare(b: State, a: State): Comparison {
+	const [before, after] = [b.model, a.model];
 	const diff = diffModels(before, after);
 	const report = impactOf(before, after, diff);
-	return { before, after, diff, report, summary: summarize(before, after, diff, report) };
+	const { data, dropped } = unionData(b, a, diff);
+	return {
+		before,
+		after,
+		diff,
+		report,
+		summary: summarize(before, after, diff, report),
+		union: buildModel(data),
+		dropped
+	};
+}
+
+const clone = <T>(v: T): T => (v === undefined ? v : JSON.parse(JSON.stringify(v)));
+
+/**
+ * The after state's data with each dropped item put back where it was before: a dropped
+ * entity's file, or a dropped field at its old place in its list.
+ */
+function unionData(b: State, a: State, diff: Diff) {
+	const data: Record<string, unknown> = clone(a.data);
+	const dropped = new Set<string>();
+	const gone = topEntries(b.model, a.model, diff).filter((e) => e.change === 'dropped');
+	for (const e of gone) {
+		const loc = e.kind === 'element' ? b.model.elements.get(e.id)?.loc : b.model.ids.get(e.id)?.loc;
+		if (!loc) continue;
+		if (e.kind === 'element') {
+			if (data[loc.file] !== undefined) continue;
+			data[loc.file] = clone(b.data[loc.file]);
+			dropped.add(e.id);
+			continue;
+		}
+		const owner = ownerOf(b.model, a.model, e.id);
+		const file = owner && a.model.elements.get(owner)?.loc.file;
+		if (!file || data[file] === undefined) continue;
+		let item: unknown = b.data[loc.file];
+		for (const seg of loc.path) item = (item as Record<string | number, unknown>)?.[seg];
+		let list: unknown = data[file];
+		for (const seg of loc.path.slice(0, -2))
+			list = (list as Record<string | number, unknown>)?.[seg];
+		const key = loc.path[loc.path.length - 2];
+		const host = list as Record<string | number, unknown[]> | undefined;
+		if (!host || typeof host !== 'object' || item === undefined) continue;
+		const arr = (host[key] ??= []);
+		arr.splice(Math.min(loc.path[loc.path.length - 1] as number, arr.length), 0, clone(item));
+		dropped.add(e.id);
+	}
+	return { data, dropped };
 }
 
 /** Top-level changes only: a field of an added or dropped model is part of that change. */

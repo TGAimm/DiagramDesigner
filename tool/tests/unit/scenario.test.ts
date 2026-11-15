@@ -8,6 +8,7 @@ import { parseFile } from '../../src/lib/model/parse';
 import { applyChanges, type Docs } from '../../src/lib/scenario/apply';
 import { diffModels } from '../../src/lib/scenario/diff';
 import { evaluate } from '../../src/lib/scenario/evaluate';
+import { marksOf } from '../../src/lib/scenario/marks';
 import {
 	appendChange,
 	newScenarioText,
@@ -85,14 +86,11 @@ describe('applyChanges', () => {
 		);
 	});
 
-	it('drops a field or a whole entity file; keepDropped only collects', () => {
+	it('drops a field or a whole entity file', () => {
 		const docs = docsOf({ 'o.model.yaml': MODEL });
 		const out = applyChanges(docs, [{ drop: 'f2' }]);
 		expect(stringify(out.docs['o.model.yaml'])).not.toContain('note');
 		expect(applyChanges(docs, [{ drop: 'm1' }]).docs['o.model.yaml']).toBeUndefined();
-		const kept = applyChanges(docs, [{ drop: 'f2' }], { keepDropped: true });
-		expect([...kept.dropped]).toEqual(['f2']);
-		expect(stringify(kept.docs['o.model.yaml'])).toContain('note');
 	});
 
 	it('refuses to reuse an id', () => {
@@ -163,7 +161,7 @@ describe('impact of the example scenario', () => {
 	const { design, docs, sources } = example();
 	const src = sources.find((s) => s.path === 'scenarios/tidy-cart.scenario.yaml')!;
 	const scenario = readScenario(parseFile(src.path, src.text));
-	const ev = evaluate(docs, design.model, scenario.changes);
+	const ev = evaluate(docs, design, scenario.changes);
 	const of = (cause: string) =>
 		ev.report.impacts
 			.filter((i) => i.cause === cause)
@@ -185,6 +183,9 @@ describe('impact of the example scenario', () => {
 		expect(ev.results.map((r) => r.status)).toEqual(['ok', 'ok', 'ok', 'ok']);
 		expect(ev.after.diagnostics.filter((d) => d.severity === 'error')).toEqual([]);
 		expect([...ev.dropped].sort()).toEqual(['ln23p2vbg7', 'owts056ek0']);
+		const cart = ev.union.elements.get('uzi5stl672')!;
+		expect(cart.def.fields?.map((f) => f.name)).toContain('customerId');
+		expect(ev.union.fields.get('dj8m2h65tb')?.def.name).toBe('qty');
 	});
 
 	it('a rename breaks bodies that are the model and the table, not id-bound users', () => {
@@ -227,5 +228,17 @@ describe('impact of the example scenario', () => {
 		expect(ev.summary).toMatchObject({ changed: 1, added: 1, dropped: 2, moved: 0 });
 		expect(ev.summary.breaking).toBe(5);
 		expect(ev.summary.affected).toBe(3);
+	});
+
+	it('marks what changed and rolls it up to the boxes round it', () => {
+		const marks = marksOf(ev);
+		expect(marks.glyph.get('dj8m2h65tb')).toBe('~');
+		expect(marks.glyph.get('k2v8sd0q1e')).toBe('+');
+		expect(marks.level.get('dj8m2h65tb')).toBe('breaking');
+		expect(marks.dropped.has('owts056ek0')).toBe(true);
+		const webshop = [...design.model.elements.values()].find((e) => e.name === 'Webshop')!;
+		expect(marks.rollup.get(webshop.id)).toMatchObject({ level: 'breaking' });
+		const pim = [...design.model.elements.values()].find((e) => e.name === 'PIM')!;
+		expect(marks.rollup.get(pim.id)).toBeUndefined();
 	});
 });
