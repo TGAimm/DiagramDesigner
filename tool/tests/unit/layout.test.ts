@@ -11,7 +11,7 @@ import {
 	TABLE
 } from '../../src/lib/landscape/layout';
 import { railGroups, railOf } from '../../src/lib/landscape/apis';
-import { textWidth } from '../../src/lib/render/text';
+import { GLYPH, textWidth } from '../../src/lib/render/text';
 import { loadFixture, loadStrings } from './helpers';
 
 const { model } = loadFixture();
@@ -63,7 +63,10 @@ describe('landscape layout', () => {
 		const leaves = boxes.filter((b) => !b.group && !b.table && !b.logic);
 		for (const b of leaves)
 			expect(b.width).toBe(
-				Math.max(LEAF.minWidth, textWidth(model.elements.get(b.id)!.name, LEAF.font, true) + 36)
+				Math.max(
+					LEAF.minWidth,
+					textWidth(model.elements.get(b.id)!.name, LEAF.font, true) + GLYPH * LEAF.font + 36
+				)
 			);
 		const sizes = new Set(
 			model.elements

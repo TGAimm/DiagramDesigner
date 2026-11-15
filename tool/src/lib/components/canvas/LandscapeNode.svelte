@@ -55,6 +55,7 @@
 		FOLD,
 		foldable,
 		groupFont,
+		HEADER,
 		indexFields,
 		indexKind,
 		KEY_TITLES,
@@ -70,6 +71,7 @@
 	} from '#lib/landscape/layout.ts';
 	import { RAIL } from '#lib/landscape/apis.ts';
 	import { settings } from '#lib/client/settings.svelte.ts';
+	import EntityGlyph from './EntityGlyph.svelte';
 
 	let { id, data, width = 0, height = 0 }: NodeProps = $props();
 	const d = $derived(data as LandscapeNodeData);
@@ -107,6 +109,11 @@
 		`${n} field${n > 1 ? 's' : ''} ${n > 1 ? many : one}`;
 	// A leaf is fitted round its name, so the name keeps one size.
 	const font = $derived(d.group ? groupFont(width, height) : LEAF.font);
+	// A closed boundary reads as the model it is drawn round.
+	const glyph = $derived(d.kind === 'system' ? 'system' : d.kind === 'model' ? 'class' : 'module');
+	// Largest name tab font: the tab (about 1.8em tall) stays inside the header room above the
+	// children of every open box.
+	const hdr = HEADER / 2;
 	const label = (id: string) => d.labels?.[id];
 	const names = (ids: string[]) => ids.map((id) => label(id) ?? id).join(', ');
 	// The last column takes any width the card has to spare.
@@ -130,13 +137,17 @@
 	class:peer-box={d.state.peerBoxes[id]}
 	class:api-box={apiParts}
 	class:expanded={d.table && expanded && !all}
+	class:system={d.kind === 'system'}
+	style:--tab={d.kind === 'model' ? 'var(--sdv-model-class-head)' : 'var(--fill)'}
 	style:--fill="var(--sdv-{d.kind}-fill, var(--sdv-container-fill))"
 	style:--stroke="var(--sdv-{d.kind}-stroke, var(--sdv-container-stroke))"
 	style:--text="var(--sdv-{d.kind}-text, var(--sdv-container-text))"
-	style:--hdr="{Math.max(8, height * 0.06)}px"
+	style:--hdr="{hdr}px"
+	style:--hdrn={hdr}
 >
 	{#if d.group}
-		<div class="header">{d.name}</div>
+		<!-- Open, the box wears its closed colour as a name tab, so its type still reads. -->
+		<div class="header"><EntityGlyph kind={glyph} />{d.name}</div>
 	{/if}
 	{#if d.table}
 		{@const cols = d.table}
@@ -148,7 +159,9 @@
 			style:--row="{TABLE.rowHeight}px"
 		>
 			<div class="thead" style:height="{TABLE.head}px">
-				<div class="name" style:font-size="{TABLE.title}px">{d.name}</div>
+				<div class="name" style:font-size="{TABLE.title}px">
+					<EntityGlyph kind={d.view === 'table' ? 'table' : 'class'} />{d.name}
+				</div>
 				<div class="note" style:font-size="{TABLE.note}px">
 					{subtitle(d.view ?? 'class', d.owner)}{#if apiParts}<span class="api-parts">
 							· {apiParts.join(', ')}</span
@@ -318,7 +331,7 @@
 		{@const rows = d.logic.rows}
 		<div class="face table logic" style:--pad="{TABLE.pad}px" style:--row="{TABLE.rowHeight}px">
 			<div class="thead" style:height="{TABLE.head}px">
-				<div class="name" style:font-size="{TABLE.title}px">Logic</div>
+				<div class="name" style:font-size="{TABLE.title}px"><EntityGlyph kind="logic" />Logic</div>
 				<div class="note" style:font-size="{TABLE.note}px">{logicNote(rows.length)}</div>
 			</div>
 			<div
@@ -383,9 +396,10 @@
 		<div
 			class="face"
 			style:font-size="{font}px"
+			style:--fs={font}
 			style:padding-right={!d.group && d.rail ? `${d.rail.width / 2}px` : undefined}
 		>
-			<div class="name">{d.name}</div>
+			<div class="name"><EntityGlyph kind={glyph} />{d.name}</div>
 		</div>
 	{/if}
 	{#if d.rail}
@@ -406,7 +420,7 @@
 					style:transform="scale({r.scale})"
 				>
 					<div class="rail-head" style:height="{RAIL.head}px" style:font-size="{RAIL.label}px">
-						APIs
+						<EntityGlyph kind="api" />APIs
 					</div>
 					{#each r.groups as g, gi (gi)}
 						{#if g.title}
@@ -443,12 +457,12 @@
 			{:else}
 				<button
 					class="rail-name"
-					style:font-size="{Math.min(r.width / 2.6, r.height * 0.2)}px"
+					style:font-size="{Math.min(r.width / 4, r.height * 0.2)}px"
 					title="Zoom in to list the apis"
 					onclick={(e) => {
 						e.stopPropagation();
 						d.onrail?.();
-					}}>APIs</button
+					}}><EntityGlyph kind="api" />APIs</button
 				>
 			{/if}
 		</div>
@@ -464,8 +478,13 @@
 		cursor: pointer;
 	}
 	.node.group {
-		border: 1.5px dashed var(--sdv-boundary-stroke);
+		/* Solid: dashed is kept for "owned elsewhere". At least one screen pixel wide. */
+		--bw: max(1px, calc(1px / var(--z)));
+		border: var(--bw) solid var(--stroke);
 		background: var(--sdv-boundary-fill);
+	}
+	.node.group.system {
+		border-color: color-mix(in srgb, var(--sdv-system-fill) 55%, transparent);
 	}
 	/* Opening: the face goes at once, the header and children come in after (see the canvas).
 	   Closing: the children go at once, the face comes back after. */
@@ -507,7 +526,14 @@
 		pointer-events: none;
 	}
 	.name {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4em;
 		font-weight: 600;
+	}
+	/* Below 9px on screen a glyph can't be read; lightness and form still tell types apart. */
+	.face:not(.table) .name {
+		--glyph-opacity: clamp(0, calc((var(--fs) * var(--z) - 8) * 0.75), 0.75);
 	}
 	/* Model as a table card: a name bar, then a fields table and an indexes table. */
 	.face.table {
@@ -763,6 +789,7 @@
 	.rail-group {
 		display: flex;
 		align-items: center;
+		gap: 0.4em;
 		padding: 0 10px;
 		font-weight: 600;
 		letter-spacing: 0.02em;
@@ -799,6 +826,10 @@
 		box-shadow: inset 3px 0 0 var(--sdv-selection);
 	}
 	.rail-name {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.3em;
 		width: 100%;
 		height: 100%;
 		border: none;
@@ -811,11 +842,19 @@
 	}
 	.header {
 		position: absolute;
-		left: 0.6em;
-		top: 0.3em;
-		font-size: min(calc(14px / var(--z)), var(--hdr));
+		left: calc(-1 * var(--bw));
+		top: calc(-1 * var(--bw));
+		display: flex;
+		align-items: center;
+		gap: 0.4em;
+		padding: 0.3em 0.75em 0.3em 0.55em;
+		font-size: min(calc(13px / var(--z)), var(--hdr));
+		line-height: 1.2;
+		--glyph-opacity: clamp(0, calc((min(13, var(--hdrn) * var(--z)) - 8) * 0.75), 0.75);
 		font-weight: 600;
-		color: var(--sdv-boundary-text);
+		background: var(--tab);
+		border: var(--bw) solid var(--stroke);
+		color: var(--text);
 		white-space: nowrap;
 		pointer-events: none;
 	}

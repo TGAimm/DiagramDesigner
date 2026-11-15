@@ -3,6 +3,7 @@
 	import {
 		Background,
 		BackgroundVariant,
+		ControlButton,
 		Controls,
 		MarkerType,
 		SvelteFlow,
@@ -47,6 +48,7 @@
 	import { apiBodies } from '#lib/model/model.ts';
 	import { untrack } from 'svelte';
 	import LandscapeNode, { type LandscapeNodeData } from './LandscapeNode.svelte';
+	import EntityGlyph from './EntityGlyph.svelte';
 
 	/**
 	 * The whole model, laid out once. Only boxes inside open boxes are mounted; which boxes are
@@ -68,6 +70,8 @@
 	let fitted = false;
 	// Set once the first fit has landed; before it the camera is a placeholder.
 	let ready = $state(false);
+	/** The key explaining the canvas's marks is shown. */
+	let keyOpen = $state(false);
 
 	// Render everything: every box and rail open, every card unfolded, at any zoom.
 	const all = $derived(settings.detail === 'all');
@@ -773,7 +777,10 @@
 
 <svelte:window
 	onkeydown={(e) => {
-		if (e.key === 'Escape') unpin();
+		if (e.key === 'Escape') {
+			unpin();
+			keyOpen = false;
+		}
 	}}
 />
 
@@ -810,7 +817,20 @@
 			patternColor="var(--sdv-grid)"
 			bgColor="var(--sdv-canvas-bg)"
 		/>
-		<Controls showLock={false} />
+		<Controls showLock={false}>
+			<ControlButton
+				class={keyOpen ? 'key-on' : undefined}
+				aria-label="Key"
+				aria-pressed={keyOpen}
+				title="Key"
+				onclick={() => (keyOpen = !keyOpen)}
+			>
+				<svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4">
+					<rect x="1" y="1.5" width="3" height="3" /><rect x="1" y="8.5" width="3" height="3" />
+					<path d="M6.5 3h5.5M6.5 10h5.5" />
+				</svg>
+			</ControlButton>
+		</Controls>
 	</SvelteFlow>
 	<svg class="defs" aria-hidden="true">
 		<defs>
@@ -840,6 +860,40 @@
 			</marker>
 		</defs>
 	</svg>
+	{#if keyOpen}
+		<!-- What is drawn, beside the button that opened it. Lines and marks: the Atoms board. -->
+		<aside class="key" aria-label="Key">
+			<h4>Key</h4>
+			<div class="k"><EntityGlyph kind="system" />System<span class="sw system"></span></div>
+			<div class="k"><EntityGlyph kind="module" />Module<span class="sw module"></span></div>
+			<div class="k">
+				<EntityGlyph kind="class" />Model, where owned<span class="sw class"></span>
+			</div>
+			<div class="k"><EntityGlyph kind="table" />Stored table<span class="sw table"></span></div>
+			<div class="k"><EntityGlyph kind="logic" />Logic<span class="sw logic"></span></div>
+			<div class="k"><EntityGlyph kind="api" />APIs<span class="sw api"></span></div>
+			<hr />
+			<div class="k"><span class="ex"><span class="dashed"></span></span>Owned elsewhere</div>
+			<div class="k">
+				<svg class="ex" viewBox="0 0 30 10"
+					><path d="M1 5h22" stroke="var(--sdv-edge)" stroke-width="1.4" /><path
+						d="M29 5 22 1.5v7Z"
+						fill="var(--sdv-edge)"
+					/></svg
+				>Refers to (key)
+			</div>
+			<div class="k">
+				<svg class="ex" viewBox="0 0 30 10"
+					><path
+						d="M8 5h21"
+						stroke="var(--sdv-edge)"
+						stroke-width="1.4"
+						stroke-dasharray="4 3"
+					/><path d="M1 5 8 1.5v7Z" fill="var(--sdv-edge)" /></svg
+				>Derives from
+			</div>
+		</aside>
+	{/if}
 	<!-- Beside the clicked row, moving with the canvas, so it reads next to what it describes. -->
 	{#if inspector && fieldPos}
 		<aside
@@ -1059,6 +1113,95 @@
 	.canvas :global(.svelte-flow__edge.model-link.cross) {
 		opacity: 1;
 		transition: none;
+	}
+	.canvas :global(.svelte-flow__controls-button.key-on) {
+		color: var(--sdv-selection);
+		background: color-mix(in srgb, var(--sdv-selection) 14%, var(--sdv-model-fill));
+	}
+	.key {
+		position: absolute;
+		left: 52px;
+		bottom: 15px;
+		width: 236px;
+		z-index: 10;
+		box-sizing: border-box;
+		padding-bottom: 4px;
+		background: var(--sdv-model-fill);
+		border: 1px solid var(--sdv-model-stroke);
+		box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+		color: var(--sdv-model-text);
+		font-size: 12px;
+	}
+	.key h4 {
+		margin: 0 0 4px;
+		padding: 8px 12px;
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.02em;
+		text-transform: uppercase;
+		color: var(--sdv-text-muted);
+		border-bottom: 1px solid var(--sdv-model-stroke);
+	}
+	.key .k {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		min-height: 22px;
+		padding: 2px 12px;
+		/* Glyphs at their 12px size, centred in the 30px example column. */
+		--glyph-opacity: 0.75;
+	}
+	.key .k > :global(.glyph) {
+		width: 12px;
+		height: 12px;
+		margin: 0 9px;
+		text-align: center;
+	}
+	.key .ex {
+		width: 30px;
+		height: 10px;
+		flex: none;
+		display: flex;
+		justify-content: center;
+	}
+	.key .dashed {
+		width: 24px;
+		height: 12px;
+		box-sizing: border-box;
+		border: 1px dashed var(--sdv-text-muted);
+	}
+	.key .sw {
+		width: 22px;
+		height: 14px;
+		margin-left: auto;
+		box-sizing: border-box;
+		border: 1px solid var(--sdv-model-stroke);
+	}
+	.key .sw.system {
+		background: var(--sdv-system-fill);
+		border-color: var(--sdv-system-stroke);
+	}
+	.key .sw.module {
+		background: var(--sdv-container-fill);
+		border-color: var(--sdv-container-stroke);
+	}
+	.key .sw.class {
+		background: var(--sdv-model-class-head);
+	}
+	.key .sw.table {
+		background: var(--sdv-model-header);
+	}
+	.key .sw.logic {
+		background: var(--sdv-logic-head);
+	}
+	.key .sw.api {
+		background: var(--sdv-api-fill);
+		border-color: var(--sdv-api-stroke);
+	}
+	.key hr {
+		border: none;
+		border-top: 1px solid var(--sdv-model-stroke);
+		margin: 4px 0;
 	}
 	.inspector {
 		position: absolute;
