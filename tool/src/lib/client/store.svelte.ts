@@ -11,6 +11,8 @@ type DesignData = Record<string, unknown>;
 export interface ModelResponse {
 	files: SourceFile[];
 	config: ClientConfig;
+	/** The open landscape; null when none is. The static build gives its name only. */
+	landscape: { name: string; path?: string } | null;
 }
 
 export interface FileMeta {
@@ -24,6 +26,7 @@ export class DesignStore {
 	data = $state.raw<DesignData>({});
 	meta = $state.raw<Record<string, FileMeta>>({});
 	config = $state.raw<ClientConfig>({ theme: 'light' });
+	landscape = $state.raw<ModelResponse['landscape']>(null);
 	loaded = $state(false);
 	loadError = $state<string | null>(null);
 
@@ -54,6 +57,7 @@ export class DesignStore {
 			if (!res.ok) throw new Error(`GET /api/model failed: ${res.status}`);
 			const body: ModelResponse = await res.json();
 			this.config = body.config;
+			this.landscape = body.landscape ?? null;
 			const meta: Record<string, FileMeta> = {};
 			const data: DesignData = {};
 			for (const f of body.files) {

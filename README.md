@@ -55,6 +55,10 @@ Technical / deployment architecture
   ([docs/schema/scenario.md](docs/schema/scenario.md)), edited on the canvas and shown as a
   diff with what they break; Apply writes them into the design. The design's git history is
   compared commit by commit the same way.
+- **Landscapes:** the topbar switcher names the open landscape (a folder of entity files) and
+  lists recent ones; Open folder (Ctrl O) browses the machine the viewer runs on, and Close
+  shows a start screen with recent landscapes and the examples. Every open tab follows a
+  switch. Recent landscapes are kept in `~/.sdv/recent.json` (`SDV_HOME` moves it).
 - **Open goals:** [docs/goals.md](docs/goals.md).
 
 ## How it works
@@ -71,6 +75,9 @@ tool/              the SvelteKit app and the `sdv` CLI
 sdv.config.ts      design root (examples/commerce by default), theme
 ```
 
+The viewer opens `SDV_ROOT` if set, else the landscape opened last, else the config's root.
+A landscape can live anywhere, inside a repository or not; history needs git.
+
 `tool/src/lib/model/schema.ts` defines the format; `docs/schema/` explains it.
 
 ## Quick start
@@ -79,7 +86,7 @@ Requires Node 22.12+.
 
 ```sh
 npm install          # also installs tool/
-npm run dev          # http://localhost:5173, on examples/commerce
+npm run dev          # http://localhost:5173; open another landscape from the topbar
 npm run validate     # schema and reference checks
 npm run sdv -- impact scenarios/tidy-cart.scenario.yaml   # what a scenario breaks
 npm test
