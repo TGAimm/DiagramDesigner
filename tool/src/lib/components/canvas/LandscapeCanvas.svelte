@@ -19,6 +19,7 @@
 	import type { Hit } from '#lib/landscape/search.ts';
 	import { focusOn, type Focus, type FocusMode } from '#lib/landscape/focus.ts';
 	import FocusBar from './FocusBar.svelte';
+	import Minimap from './Minimap.svelte';
 	import { settings } from '#lib/client/settings.svelte.ts';
 	import { theme } from '#lib/client/theme.svelte.ts';
 	import type { FieldRef, Hot, ViewState } from '#lib/client/view-state.svelte.ts';
@@ -88,6 +89,8 @@
 	 */
 	let { view }: { view: ViewState } = $props();
 
+	const MIN_ZOOM = 0.05;
+	const MAX_ZOOM = 64;
 	const flow = useSvelteFlow();
 	const viewport = useViewport();
 	const nodeTypes = { landscape: LandscapeNode };
@@ -118,6 +121,15 @@
 		layoutLandscape(focused?.model ?? changes.layoutModel, settings.layout, focused?.foldAt)
 	);
 	const rels = $derived(relationsOf(model));
+	// The minimap draws the root boxes, named, and the modules directly in them.
+	const mapBoxes = $derived(
+		boxes.flatMap((b) => {
+			const box = { id: b.id, x: b.absX, y: b.absY, width: b.width, height: b.height };
+			if (!b.parentId) return [{ ...box, name: el(b.elementId)?.name ?? b.id }];
+			const top = !boxById.get(b.parentId)?.parentId;
+			return top && el(b.elementId)?.def.kind === 'module' ? [box] : [];
+		})
+	);
 	const boxById = $derived(new Map(boxes.map((b) => [b.id, b])));
 	// Gated off in the shown flag state: drawn hidden, so neither end of a line.
 	const hiddenLeaf = (id: string) =>
@@ -1641,8 +1653,8 @@
 		{edgeTypes}
 		connectionMode={ConnectionMode.Loose}
 		colorMode={theme.current}
-		minZoom={0.05}
-		maxZoom={64}
+		minZoom={MIN_ZOOM}
+		maxZoom={MAX_ZOOM}
 		nodesDraggable={false}
 		nodesConnectable={false}
 		elementsSelectable={false}
@@ -1670,7 +1682,28 @@
 		/>
 		<Controls showLock={false}>
 			<ControlButton
-				class={keyOpen ? 'key-on' : undefined}
+				class={settings.minimap ? 'on' : undefined}
+				aria-label="Map"
+				aria-pressed={settings.minimap}
+				title="Map"
+				onclick={() => settings.setMinimap(!settings.minimap)}
+			>
+				<svg
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<path
+						d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"
+					/>
+					<path d="M15 5.764v15" /><path d="M9 3.236v15" />
+				</svg>
+			</ControlButton>
+			<ControlButton
+				class={keyOpen ? 'on' : undefined}
 				aria-label="Key"
 				aria-pressed={keyOpen}
 				title="Key"
@@ -1683,6 +1716,9 @@
 			</ControlButton>
 		</Controls>
 	</SvelteFlow>
+	{#if settings.minimap}
+		<Minimap boxes={mapBoxes} {cw} {ch} minZoom={MIN_ZOOM} maxZoom={MAX_ZOOM} />
+	{/if}
 	<!-- Line ends keep one size on screen at any zoom, like the lines. -->
 	<svg class="defs" aria-hidden="true">
 		<defs>
@@ -2209,7 +2245,7 @@
 		line-height: 1.35;
 		color: var(--sdv-text-muted);
 	}
-	.canvas :global(.svelte-flow__controls-button.key-on) {
+	.canvas :global(.svelte-flow__controls-button.on) {
 		color: var(--sdv-selection);
 		background: color-mix(in srgb, var(--sdv-selection) 14%, var(--sdv-model-fill));
 	}
