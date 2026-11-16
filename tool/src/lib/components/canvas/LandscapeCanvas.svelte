@@ -711,7 +711,15 @@
 		}
 	});
 
-	const rest = $derived(restLines(model, boxes, shownEdges));
+	// At rest only who talks to whom: calls, handles, reads and writes. Keys, holds, lineage
+	// and bodies light up on hover.
+	const rest = $derived(
+		restLines(
+			model,
+			boxes,
+			shownEdges.filter((e) => ['calls', 'handles', 'reads', 'writes'].includes(e.kind))
+		)
+	);
 
 	/** A box's name bar as a line end: a card's bar, or the middle of any other box. */
 	const headEnd = (b: LandscapeBox) => ({
@@ -811,7 +819,7 @@
 	function restEdge(l: RestLine, dim: boolean) {
 		const [ss, ts] = sides(headEnd(boxById.get(l.source)!), headEnd(boxById.get(l.target)!));
 		const only = (ks: LinkKind[]) => l.kinds.every((k) => ks.includes(k));
-		const pattern = only(['from']) ? 'from' : only(['calls', 'handles']) ? 'calls' : '';
+		const pattern = only(['calls', 'handles']) ? 'calls' : '';
 		return {
 			id: `rest:${l.id}`,
 			source: l.source,
@@ -829,9 +837,7 @@
 			class: ['conn rest', pattern, l.count >= 10 ? 'w3' : l.count > 1 ? 'w2' : 'w1', dim && 'dim']
 				.filter(Boolean)
 				.join(' '),
-			// A held model has a UML composition diamond at the holder; all else an arrow at what
-			// the start depends on.
-			...(only(['model']) ? { markerStart: 'sdv-diamond-rest' } : { markerEnd: 'sdv-arrow-rest' })
+			markerEnd: 'sdv-arrow-rest'
 		};
 	}
 

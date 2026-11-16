@@ -39,9 +39,10 @@ drawn by one standard (`tool/src/lib/landscape/connections.ts`):
 - **Style:** solid for structure (ref, holds, reads, writes, bodies), dashed for lineage,
   dotted for calls and handles. Grey at rest, the kind's colour when lit; widths stay the
   same on screen at any zoom.
-- **At rest:** each end is lifted to the child of the box both ends share, and connections
-  landing on one pair, one way, merge into one line between the two boxes' name bars (1, 2–9,
-  10+: thicker; hover for the count). So a line never crosses a border. Connections inside
+- **At rest:** only who talks to whom: calls, handles, reads and writes. Keys, holds,
+  lineage and api bodies show only when lit. Each end is lifted to the child of the box both
+  ends share, and connections landing on one pair, one way, merge into one line between the
+  two boxes' name bars (1, 2–9, 10+: thicker; hover for the count). So a line never crosses a border. Connections inside
   one card, or between a box and its own contents, have none.
 - **Hover** a row, rail api, card name bar or box's name: its connections light up, one hop
   each way, to the far row. A box shows those leaving it; a card also lineage between its own
