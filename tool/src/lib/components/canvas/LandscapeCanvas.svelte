@@ -1,5 +1,13 @@
 <script lang="ts">
-	import { ChevronDown, ChevronLeft, ChevronUp, Play, TriangleAlert, X } from '@lucide/svelte';
+	import {
+		ChevronDown,
+		ChevronLeft,
+		ChevronUp,
+		LocateFixed,
+		Play,
+		TriangleAlert,
+		X
+	} from '@lucide/svelte';
 	import {
 		Background,
 		BackgroundVariant,
@@ -10,7 +18,8 @@
 		useSvelteFlow,
 		useViewport,
 		type Edge,
-		type Node
+		type Node,
+		type NodeProps
 	} from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
 	import { changes } from '#lib/client/changes.svelte.ts';
@@ -978,75 +987,76 @@
 		note?: string;
 	}
 
-	const inspector = $derived.by(
-		(): { title: string; type: string; sections: Section[] } | undefined => {
-			const f = view.field;
-			const b = f && boxById.get(f.box);
-			const info = f && model.fields.get(f.field);
-			if (!f || !b || !info) return undefined;
-			const entry = (to: string): Entry => {
-				if (isApiEl(to)) return routeEntry(to);
-				const t = linkTarget(model, boxes, b, to);
-				return {
-					text: isUnit(to) ? el(to)!.name : label(to),
-					where: t ? whereOf(t) : 'not drawn',
-					target: t && { box: t, field: rowOf(t, to) >= 0 ? to : undefined }
-				};
-			};
-			const outOf = (kind: FieldLink['kind']) =>
-				(rels.out.get(f.field) ?? []).filter((l) => l.kind === kind).map((l) => entry(l.to));
-			const inOf = (kind: FieldLink['kind']) =>
-				(rels.in.get(f.field) ?? []).filter((l) => l.kind === kind).map((l) => entry(l.field));
-			// Units touching the field: by naming it, or its whole model.
-			const touchedBy = (kind: 'reads' | 'writes') => [
-				...inOf(kind),
-				...(rels.in.get(info.modelId) ?? [])
-					.filter((l) => l.kind === kind)
-					.map((l) => ({ ...entry(l.field), where: `${entry(l.field).where} · whole model` }))
-			];
-			const def = info.def;
+	/** A field's card: what it refers to, holds, comes from, and what uses it. */
+	function fieldCardOf(
+		f: FieldRef | null
+	): { title: string; type: string; sections: Section[] } | undefined {
+		const b = f && boxById.get(f.box);
+		const info = f && model.fields.get(f.field);
+		if (!f || !b || !info) return undefined;
+		const entry = (to: string): Entry => {
+			if (isApiEl(to)) return routeEntry(to);
+			const t = linkTarget(model, boxes, b, to);
 			return {
-				title: `${el(info.modelId)?.name}.${def.name}`,
-				type: typeText(def, (id) => refLabel(model, id)),
-				// Glyphs point at what depends on what: → this field on the entry, ← the entry on
-				// this field; dashed for lineage.
-				sections: [
-					{ label: 'References', kind: 'ref', glyph: '→', entries: outOf('ref') },
-					{ label: 'Holds', kind: 'model', glyph: '◆', entries: outOf('model') },
-					{
-						label: 'Source',
-						kind: 'from',
-						glyph: '⇢',
-						entries: outOf('from'),
-						note: def.derived
-					},
-					{ label: 'Referenced by', kind: 'ref', glyph: '←', entries: inOf('ref') },
-					{ label: 'Feeds', kind: 'from', glyph: '⇠', entries: inOf('from') },
-					{
-						label: 'Fed by apis',
-						kind: 'from',
-						glyph: '⇢',
-						entries: (uses.fedBy.get(f.field) ?? []).map(apiEntry)
-					},
-					{
-						label: 'Returned by apis',
-						kind: 'from',
-						glyph: '⇠',
-						entries: (uses.returnedBy.get(f.field) ?? []).map(apiEntry)
-					},
-					{ label: 'Read by logic', kind: 'ref', glyph: '←', entries: touchedBy('reads') },
-					{ label: 'Written by logic', kind: 'writes', glyph: '←', entries: touchedBy('writes') }
-				].filter((s) => s.entries.length)
+				text: isUnit(to) ? el(to)!.name : label(to),
+				where: t ? whereOf(t) : 'not drawn',
+				target: t && { box: t, field: rowOf(t, to) >= 0 ? to : undefined }
 			};
-		}
-	);
+		};
+		const outOf = (kind: FieldLink['kind']) =>
+			(rels.out.get(f.field) ?? []).filter((l) => l.kind === kind).map((l) => entry(l.to));
+		const inOf = (kind: FieldLink['kind']) =>
+			(rels.in.get(f.field) ?? []).filter((l) => l.kind === kind).map((l) => entry(l.field));
+		// Units touching the field: by naming it, or its whole model.
+		const touchedBy = (kind: 'reads' | 'writes') => [
+			...inOf(kind),
+			...(rels.in.get(info.modelId) ?? [])
+				.filter((l) => l.kind === kind)
+				.map((l) => ({ ...entry(l.field), where: `${entry(l.field).where} · whole model` }))
+		];
+		const def = info.def;
+		return {
+			title: `${el(info.modelId)?.name}.${def.name}`,
+			type: typeText(def, (id) => refLabel(model, id)),
+			// Glyphs point at what depends on what: → this field on the entry, ← the entry on
+			// this field; dashed for lineage.
+			sections: [
+				{ label: 'References', kind: 'ref', glyph: '→', entries: outOf('ref') },
+				{ label: 'Holds', kind: 'model', glyph: '◆', entries: outOf('model') },
+				{
+					label: 'Source',
+					kind: 'from',
+					glyph: '⇢',
+					entries: outOf('from'),
+					note: def.derived
+				},
+				{ label: 'Referenced by', kind: 'ref', glyph: '←', entries: inOf('ref') },
+				{ label: 'Feeds', kind: 'from', glyph: '⇠', entries: inOf('from') },
+				{
+					label: 'Fed by apis',
+					kind: 'from',
+					glyph: '⇢',
+					entries: (uses.fedBy.get(f.field) ?? []).map(apiEntry)
+				},
+				{
+					label: 'Returned by apis',
+					kind: 'from',
+					glyph: '⇠',
+					entries: (uses.returnedBy.get(f.field) ?? []).map(apiEntry)
+				},
+				{ label: 'Read by logic', kind: 'ref', glyph: '←', entries: touchedBy('reads') },
+				{ label: 'Written by logic', kind: 'writes', glyph: '←', entries: touchedBy('writes') }
+			].filter((s) => s.entries.length)
+		};
+	}
+	const inspector = $derived(fieldCardOf(view.field));
 
 	/**
 	 * The clicked logic unit: its inputs, outputs and fails, and its steps as a sequence. What
 	 * it handles, reads, writes and calls is all in the sequence, so it is not listed again.
 	 */
-	const unitCard = $derived.by(() => {
-		const u = view.field && isUnit(view.field.field) ? el(view.field.field) : undefined;
+	function unitCardOf(id: string | undefined) {
+		const u = id && isUnit(id) ? el(id) : undefined;
 		if (!u) return undefined;
 		const typeOf = (x: LogicField) =>
 			[
@@ -1065,22 +1075,22 @@
 			fails: u.def.fails ?? [],
 			seq: u.def.steps?.length ? sequenceOf(model, u.id) : undefined
 		};
-	});
+	}
+	const unitCard = $derived(unitCardOf(view.field?.field));
 
-	/** Goes to what a sequence names: picks an api, or flies to a unit's row or a model. */
-	function go(id: string) {
-		if (isApiEl(id)) return showApi(id);
-		const from = view.field && boxById.get(view.field.box);
+	/** What a sequence drawn in a card on `from` names: an api, a unit's row or a model. */
+	function seqAt(id: string, from: LandscapeBox | undefined): PeekAt | undefined {
+		if (isApiEl(id)) return { api: id };
 		const t = from && linkTarget(model, boxes, from, id);
-		if (t) flyTo({ box: t, field: rowOf(t, id) >= 0 ? id : undefined });
+		return t && { target: { box: t, field: rowOf(t, id) >= 0 ? id : undefined } };
 	}
 
 	const statusClass = (s: number) => (s < 300 ? 'ok' : s < 400 ? '' : s < 500 ? 'warn' : 'bad');
 
 	/** The picked api, for the card beside its rail row. */
-	const apiCard = $derived.by(() => {
-		const a = view.api ? el(view.api) : undefined;
-		const host = view.api ? hostOf(view.api) : undefined;
+	function apiCardOf(id: string | null) {
+		const a = id ? el(id) : undefined;
+		const host = id ? hostOf(id) : undefined;
 		if (!a || !host) return undefined;
 		const names = (ids: string[]) =>
 			ids.map((id) => model.fields.get(id)?.def.name ?? id).join(', ');
@@ -1145,7 +1155,8 @@
 			request: bodies.find((b) => b.part === 'request'),
 			responses: bodies.filter((b) => b.part !== 'request')
 		};
-	});
+	}
+	const apiCard = $derived(apiCardOf(view.api));
 
 	/** Where the picked api's row is on screen: the rail's edges and the row's middle. */
 	const apiAnchor = $derived.by(() => {
@@ -1181,6 +1192,7 @@
 		void view.field;
 		void view.api;
 		cardMin = false;
+		peek = null;
 	});
 	/** A card `w` wide right of the anchor, or left of it if it does not fit, level with its row. */
 	function beside(a: { left: number; right: number; y: number } | undefined, w: number) {
@@ -1199,6 +1211,122 @@
 	const fieldPos = $derived(beside(fieldAnchor, FIELD_W));
 	const unitW = $derived(Math.max(420, unitCard?.seq ? sequenceWidth(unitCard.seq) + 2 : 0));
 	const unitPos = $derived(beside(fieldAnchor, unitW));
+
+	// ------------------------------------------------------------ peek
+	/** What a card's entry names: an api, a field's or unit's row, or a whole card. */
+	interface PeekAt {
+		api?: string;
+		target?: { box: LandscapeBox; field?: string };
+	}
+	/**
+	 * An entry clicked in the card, shown beside it without moving the camera. `from`: the
+	 * entry, marked while its peek is open; `dy`: the entry's height in the card, so the peek
+	 * stays level with it as the card moves; `trail`: what the peek showed before, for Back.
+	 */
+	let peek = $state<{ at: PeekAt; from: string; dy: number; trail: PeekAt[] } | null>(null);
+	let peekH = $state(0);
+	/** Where in the card the last press was. */
+	let pressDy = 0;
+	const keyOf = (at: PeekAt) => at.api ?? `${at.target?.box.id}|${at.target?.field ?? ''}`;
+
+	function press(e: PointerEvent) {
+		pressDy = e.clientY - (e.currentTarget as HTMLElement).getBoundingClientRect().top;
+	}
+	/** Shows what an entry of the card names in the peek, or closes it if it shows that. */
+	function openPeek(at: PeekAt) {
+		const from = keyOf(at);
+		peek = peek?.from === from ? null : { at, from, dy: pressDy - 18, trail: [] };
+	}
+	/** Shows what an entry in the peek names in its place. */
+	function peekTo(at: PeekAt) {
+		if (peek) peek = { ...peek, at, trail: [...peek.trail, peek.at] };
+	}
+	function peekBack() {
+		const prev = peek?.trail.at(-1);
+		if (peek && prev) peek = { ...peek, at: prev, trail: peek.trail.slice(0, -1) };
+	}
+	/** Flies to what the peek shows and picks it, as a click on the entry did before peeks. */
+	function goToPeek() {
+		const at = peek?.at;
+		peek = null;
+		if (at?.api) return showApi(at.api);
+		const t = at?.target;
+		if (!t) return;
+		if (!t.field) {
+			unpin();
+			view.selectedNodes = [t.box.id];
+		}
+		view.api = null;
+		view.apiField = null;
+		flyTo(t);
+	}
+
+	/** The card shown: its place on screen and width. */
+	const shownCard = $derived(
+		inspector && fieldPos
+			? { ...fieldPos, w: FIELD_W }
+			: unitCard && unitPos
+				? { ...unitPos, w: cardMin ? FIELD_W : unitW }
+				: apiCard && cardPos
+					? { ...cardPos, w: API_W }
+					: undefined
+	);
+
+	/** What the peek shows, drawn as that kind is drawn everywhere else. */
+	const peekCard = $derived.by(() => {
+		const at = peek?.at;
+		if (at?.api) {
+			const api = apiCardOf(at.api);
+			return api && { kind: 'api' as const, api, w: API_W };
+		}
+		const t = at?.target;
+		if (!t) return undefined;
+		if (t.field && isUnit(t.field)) {
+			const unit = unitCardOf(t.field);
+			return (
+				unit && {
+					kind: 'unit' as const,
+					unit,
+					from: t.box,
+					w: Math.max(420, unit.seq ? sequenceWidth(unit.seq) + 2 : 0)
+				}
+			);
+		}
+		if (t.field) {
+			const field = fieldCardOf({ box: t.box.id, field: t.field });
+			return field && { kind: 'field' as const, field, id: t.field, w: FIELD_W };
+		}
+		// A model or logic card: the canvas's own card, its rows peeking in turn.
+		const node = nodes.find((n) => n.id === t.box.id);
+		if (!node) return undefined;
+		const data: LandscapeNodeData = {
+			...(node.data as LandscapeNodeData),
+			peek: true,
+			onfield: (field, ev) =>
+				ev === 'click'
+					? peekTo({ target: { box: t.box, field } })
+					: hoverRow({ box: t.box.id, field }, ev === 'enter'),
+			onbox: undefined,
+			onmenu: undefined,
+			rail: undefined
+		};
+		return { kind: 'box' as const, box: t.box, data, w: t.box.width };
+	});
+
+	/** Beside the card, right of it, else left of it, else over the canvas's right. */
+	const peekPos = $derived.by(() => {
+		const c = shownCard;
+		const w = peekCard?.w;
+		if (!c || !w || !peek) return undefined;
+		const right = c.left + c.w + 8;
+		const left =
+			right + w <= cw - 8
+				? right
+				: c.left - 8 - w >= 8 + panelW
+					? c.left - 8 - w
+					: Math.max(8 + panelW, cw - w - 8);
+		return { left, top: Math.min(Math.max(8, c.top + peek.dy), Math.max(8, ch - peekH - 8)) };
+	});
 
 	/** Picks an api from the inspector and centres on the box owning it. */
 	function showApi(id: string) {
@@ -1363,6 +1491,7 @@
 	}
 
 	function unpin() {
+		peek = null;
 		view.api = null;
 		view.apiField = null;
 		view.field = null;
@@ -1634,6 +1763,10 @@
 			void changes.remove();
 			return;
 		}
+		if (e.key === 'Escape' && peek) {
+			peek = null;
+			return;
+		}
 		if (e.key === 'Escape') {
 			// In a focus, Esc unpins first, then leaves the focus.
 			const pinned = view.field || view.api || view.selectedNodes.length;
@@ -1811,6 +1944,200 @@
 			{/each}
 		</aside>
 	{/if}
+	<!-- A card's body, drawn the same in the card and in the peek; `pick` shows an entry. -->
+	{#snippet fieldBody(
+		card: NonNullable<ReturnType<typeof fieldCardOf>>,
+		pick: (at: PeekAt) => void,
+		open?: string
+	)}
+		{#each card.sections as s (s.label)}
+			<section class={s.kind}>
+				<h4>{s.label}</h4>
+				{#each s.entries as e, i (i)}
+					<button
+						class="entry"
+						class:open={!!open && open === keyOf(e)}
+						disabled={!e.target && !e.api}
+						onclick={() => pick(e)}
+						onmouseenter={() =>
+							e.target?.field && hoverRow({ box: e.target.box.id, field: e.target.field }, true)}
+						onmouseleave={() =>
+							e.target?.field && hoverRow({ box: e.target.box.id, field: e.target.field }, false)}
+						title={e.target || e.api ? 'Show here' : undefined}
+					>
+						<span class="text" data-glyph={s.glyph}>{e.text}</span>
+						<span class="where">{e.where}</span>
+					</button>
+				{/each}
+				{#if s.note}<p class="note">ƒ {s.note}</p>{/if}
+			</section>
+		{:else}
+			<p class="empty">No references, sources or incoming links.</p>
+		{/each}
+	{/snippet}
+	{#snippet unitBody(
+		u: NonNullable<ReturnType<typeof unitCardOf>>,
+		pick: (at: PeekAt) => void,
+		from: LandscapeBox | undefined,
+		id: string
+	)}
+		<div class="io">
+			<section>
+				<h4>Inputs</h4>
+				{#each u.inputs as x (x.name)}
+					<div class="api-field">
+						<span class="name">{x.name}</span><span class="where">{x.type}</span>
+					</div>
+				{:else}
+					<p class="empty">None.</p>
+				{/each}
+			</section>
+			<section>
+				<h4>Outputs</h4>
+				{#each u.outputs as x (x.name)}
+					<div class="api-field">
+						<span class="name">{x.name}</span><span class="where">{x.type}</span>
+					</div>
+				{/each}
+				{#each u.fails as x (x.name)}
+					<div class="api-field">
+						<span class="name">{x.name}</span><span class="where fail"
+							>fails{x.description ? ` · ${x.description}` : ''}</span
+						>
+					</div>
+				{/each}
+				{#if !u.outputs.length && !u.fails.length}<p class="empty">None.</p>{/if}
+			</section>
+		</div>
+		{#if u.seq}
+			<section class="seq-section">
+				<h4 class="seq-head">
+					Sequence
+					<button class="play" onclick={() => startPlay(id)} title="Walk the board step by step"
+						><Play size={12} fill="currentColor" />Play</button
+					>
+				</h4>
+				<SequenceDiagram
+					seq={u.seq}
+					onpick={(to) => {
+						const at = seqAt(to, from);
+						if (at) pick(at);
+					}}
+				/>
+			</section>
+		{/if}
+	{/snippet}
+	{#snippet apiBody(
+		api: NonNullable<ReturnType<typeof apiCardOf>>,
+		pick: (at: PeekAt) => void,
+		open?: string
+	)}
+		{#if api.params.length}
+			<section>
+				<h4>Params</h4>
+				{#each api.params as p (p.in + p.name)}
+					<div class="entry">
+						<span class="text">{p.name}{p.required || p.in === 'path' ? '' : '?'}</span>
+						<span class="where">{p.in} · {p.type}{p.description ? ` · ${p.description}` : ''}</span>
+					</div>
+				{/each}
+			</section>
+		{/if}
+		{#each [api.request, ...api.responses].filter((b) => !!b) as b (b.part)}
+			<section class="body">
+				<h4>
+					{#if b.status}<b class="status {statusClass(b.status)}">{b.status}</b>{:else}Request{/if}
+					{#if b.fields.length}<span class="shape">own shape{b.many ? ', a list' : ''}</span>{/if}
+					{#if b.description}<span class="shape">{b.description}</span>{/if}
+				</h4>
+				{#if b.model}
+					{@const m = b.model}
+					<button
+						class="entry"
+						class:open={!!open && !!m.target && open === keyOf({ target: m.target })}
+						disabled={!m.target}
+						onclick={() => m.target && pick({ target: m.target })}
+						title={m.target ? 'Show here' : undefined}
+					>
+						<span class="text">{m.text}</span>
+						<span class="where">{m.note}</span>
+					</button>
+				{/if}
+				{#each b.fields as f (f.id)}
+					<div
+						class="api-field"
+						class:hot={view.apiField === f.id}
+						role="listitem"
+						title={f.title}
+						onmouseenter={() => (view.apiField = f.id)}
+						onmouseleave={() => (view.apiField = null)}
+					>
+						<span class="name">{f.name}</span>
+						<span class="where">{f.type}</span>
+						{#if !f.traced}<span class="untraced"><TriangleAlert size={12} /></span
+							>{:else if f.title}<span class="traced">{b.part === 'request' ? '⇠' : '⇢'}</span>{/if}
+					</div>
+				{/each}
+				{#if !b.model && !b.fields.length && !b.description}<p class="empty">No body.</p>{/if}
+			</section>
+		{/each}
+		{#each api.logic as s (s.label)}
+			<section class="calls">
+				<h4>{s.label}</h4>
+				{#each s.entries as e (e.id)}
+					<button
+						class="entry"
+						class:open={!!open && !!e.target && open === keyOf({ target: e.target })}
+						disabled={!e.target}
+						onclick={() => e.target && pick({ target: e.target })}
+						title={e.target ? 'Show here' : undefined}
+					>
+						<span class="text" data-glyph="ƒ">{e.text}</span>
+						<span class="where">{e.where}</span>
+					</button>
+				{/each}
+			</section>
+		{/each}
+	{/snippet}
+	{#snippet apiTitle(api: NonNullable<ReturnType<typeof apiCardOf>>)}
+		<div class="head">
+			<div class="title">
+				<span style:color="var(--sdv-method-{api.method.toLowerCase()}, var(--sdv-text-muted))"
+					>{api.method}</span
+				>
+				<span class="mono">{api.path}</span>
+			</div>
+			<div class="type">{api.sub}</div>
+		</div>
+	{/snippet}
+	{#snippet minButton()}
+		<button
+			class="icon-btn"
+			onclick={() => (cardMin = !cardMin)}
+			aria-label={cardMin ? 'Expand' : 'Minimize'}
+			title={cardMin ? 'Expand' : 'Minimize, keeping the selection'}
+			data-testid="card-min"
+			>{#if cardMin}<ChevronDown size={16} />{:else}<ChevronUp size={16} />{/if}</button
+		>
+		<button class="icon-btn" onclick={unpin} aria-label="Close" title="Close (Esc)"
+			><X size={16} /></button
+		>
+	{/snippet}
+	{#snippet peekButtons()}
+		<button class="goto" onclick={goToPeek} title="Fly there and pick it"
+			><LocateFixed size={13} />Go to</button
+		>
+		<button class="icon-btn" onclick={() => (peek = null)} aria-label="Close" title="Close (Esc)"
+			><X size={16} /></button
+		>
+	{/snippet}
+	{#snippet peekBackButton()}
+		{#if peek?.trail.length}
+			<button class="icon-btn" onclick={peekBack} title="Back to what this showed before"
+				><ChevronLeft size={16} /></button
+			>
+		{/if}
+	{/snippet}
 	<!-- Beside the clicked row, moving with the canvas, so it reads next to what it describes. -->
 	{#if inspector && fieldPos}
 		<aside
@@ -1820,6 +2147,7 @@
 			style:top="{fieldPos.top}px"
 			style:width="{FIELD_W}px"
 			bind:clientHeight={cardH}
+			onpointerdowncapture={press}
 			data-testid="field-inspector"
 		>
 			<header>
@@ -1832,42 +2160,10 @@
 					<div class="title">{inspector.title}</div>
 					<div class="type">{inspector.type}</div>
 				</div>
-				<button
-					class="icon-btn"
-					onclick={() => (cardMin = !cardMin)}
-					aria-label={cardMin ? 'Expand' : 'Minimize'}
-					title={cardMin ? 'Expand' : 'Minimize, keeping the selection'}
-					data-testid="card-min"
-					>{#if cardMin}<ChevronDown size={16} />{:else}<ChevronUp size={16} />{/if}</button
-				>
-				<button class="icon-btn" onclick={unpin} aria-label="Close" title="Close (Esc)"
-					><X size={16} /></button
-				>
+				{@render minButton()}
 			</header>
 			<ChangeSection id={view.field!.field} go={goTo} />
-			{#each inspector.sections as s (s.label)}
-				<section class={s.kind}>
-					<h4>{s.label}</h4>
-					{#each s.entries as e, i (i)}
-						<button
-							class="entry"
-							disabled={!e.target && !e.api}
-							onclick={() => (e.api ? showApi(e.api) : e.target && flyTo(e.target))}
-							onmouseenter={() =>
-								e.target?.field && hoverRow({ box: e.target.box.id, field: e.target.field }, true)}
-							onmouseleave={() =>
-								e.target?.field && hoverRow({ box: e.target.box.id, field: e.target.field }, false)}
-							title={e.target ? 'Go to' : undefined}
-						>
-							<span class="text" data-glyph={s.glyph}>{e.text}</span>
-							<span class="where">{e.where}</span>
-						</button>
-					{/each}
-					{#if s.note}<p class="note">ƒ {s.note}</p>{/if}
-				</section>
-			{:else}
-				<p class="empty">No references, sources or incoming links.</p>
-			{/each}
+			{@render fieldBody(inspector, openPeek, peek?.from)}
 		</aside>
 	{:else if unitCard && unitPos}
 		{@const u = unitCard}
@@ -1878,6 +2174,7 @@
 			style:top="{unitPos.top}px"
 			style:width="{cardMin ? FIELD_W : unitW}px"
 			bind:clientHeight={cardH}
+			onpointerdowncapture={press}
 			data-testid="unit-card"
 		>
 			<header>
@@ -1890,63 +2187,12 @@
 					<div class="title"><i class="fn">ƒ</i> {u.title}</div>
 					<div class="type">{u.sub}</div>
 				</div>
-				<button
-					class="icon-btn"
-					onclick={() => (cardMin = !cardMin)}
-					aria-label={cardMin ? 'Expand' : 'Minimize'}
-					title={cardMin ? 'Expand' : 'Minimize, keeping the selection'}
-					data-testid="card-min"
-					>{#if cardMin}<ChevronDown size={16} />{:else}<ChevronUp size={16} />{/if}</button
-				>
-				<button class="icon-btn" onclick={unpin} aria-label="Close" title="Close (Esc)"
-					><X size={16} /></button
-				>
+				{@render minButton()}
 			</header>
 			<ChangeSection id={view.field!.field} go={goTo} />
-			<div class="io">
-				<section>
-					<h4>Inputs</h4>
-					{#each u.inputs as x (x.name)}
-						<div class="api-field">
-							<span class="name">{x.name}</span><span class="where">{x.type}</span>
-						</div>
-					{:else}
-						<p class="empty">None.</p>
-					{/each}
-				</section>
-				<section>
-					<h4>Outputs</h4>
-					{#each u.outputs as x (x.name)}
-						<div class="api-field">
-							<span class="name">{x.name}</span><span class="where">{x.type}</span>
-						</div>
-					{/each}
-					{#each u.fails as x (x.name)}
-						<div class="api-field">
-							<span class="name">{x.name}</span><span class="where fail"
-								>fails{x.description ? ` · ${x.description}` : ''}</span
-							>
-						</div>
-					{/each}
-					{#if !u.outputs.length && !u.fails.length}<p class="empty">None.</p>{/if}
-				</section>
-			</div>
-			{#if u.seq}
-				<section class="seq-section">
-					<h4 class="seq-head">
-						Sequence
-						<button
-							class="play"
-							onclick={() => startPlay(view.field!.field)}
-							title="Walk the board step by step"><Play size={12} fill="currentColor" />Play</button
-						>
-					</h4>
-					<SequenceDiagram seq={u.seq} onpick={go} />
-				</section>
-			{/if}
+			{@render unitBody(u, openPeek, boxById.get(view.field!.box), view.field!.field)}
 		</aside>
 	{:else if apiCard && cardPos}
-		{@const api = apiCard}
 		<!-- Beside the picked row, moving with the canvas, so the api and what it uses share a view. -->
 		<aside
 			class="inspector"
@@ -1955,104 +2201,77 @@
 			style:top="{cardPos.top}px"
 			style:width="{API_W}px"
 			bind:clientHeight={cardH}
+			onpointerdowncapture={press}
 			data-testid="api-inspector"
 		>
 			<header>
-				<div class="head">
-					<div class="title">
-						<span style:color="var(--sdv-method-{api.method.toLowerCase()}, var(--sdv-text-muted))"
-							>{api.method}</span
-						>
-						<span class="mono">{api.path}</span>
-					</div>
-					<div class="type">{api.sub}</div>
-				</div>
-				<button
-					class="icon-btn"
-					onclick={() => (cardMin = !cardMin)}
-					aria-label={cardMin ? 'Expand' : 'Minimize'}
-					title={cardMin ? 'Expand' : 'Minimize, keeping the selection'}
-					data-testid="card-min"
-					>{#if cardMin}<ChevronDown size={16} />{:else}<ChevronUp size={16} />{/if}</button
-				>
-				<button class="icon-btn" onclick={unpin} aria-label="Close" title="Close (Esc)"
-					><X size={16} /></button
-				>
+				{@render apiTitle(apiCard)}
+				{@render minButton()}
 			</header>
 			<ChangeSection id={view.api!} go={goTo} />
-			{#if api.params.length}
-				<section>
-					<h4>Params</h4>
-					{#each api.params as p (p.in + p.name)}
-						<div class="entry">
-							<span class="text">{p.name}{p.required || p.in === 'path' ? '' : '?'}</span>
-							<span class="where"
-								>{p.in} · {p.type}{p.description ? ` · ${p.description}` : ''}</span
-							>
-						</div>
-					{/each}
-				</section>
-			{/if}
-			{#each [api.request, ...api.responses].filter((b) => !!b) as b (b.part)}
-				<section class="body">
-					<h4>
-						{#if b.status}<b class="status {statusClass(b.status)}">{b.status}</b
-							>{:else}Request{/if}
-						{#if b.fields.length}<span class="shape">own shape{b.many ? ', a list' : ''}</span>{/if}
-						{#if b.description}<span class="shape">{b.description}</span>{/if}
-					</h4>
-					{#if b.model}
-						{@const m = b.model}
-						<button
-							class="entry"
-							disabled={!m.target}
-							onclick={() => m.target && flyTo(m.target)}
-							title={m.target ? 'Go to' : undefined}
-						>
-							<span class="text">{m.text}</span>
-							<span class="where">{m.note}</span>
-						</button>
-					{/if}
-					{#each b.fields as f (f.id)}
-						<div
-							class="api-field"
-							class:hot={view.apiField === f.id}
-							role="listitem"
-							title={f.title}
-							onmouseenter={() => (view.apiField = f.id)}
-							onmouseleave={() => (view.apiField = null)}
-						>
-							<span class="name">{f.name}</span>
-							<span class="where">{f.type}</span>
-							{#if !f.traced}<span class="untraced"><TriangleAlert size={12} /></span
-								>{:else if f.title}<span class="traced">{b.part === 'request' ? '⇠' : '⇢'}</span
-								>{/if}
-						</div>
-					{/each}
-					{#if !b.model && !b.fields.length && !b.description}<p class="empty">No body.</p>{/if}
-				</section>
-			{/each}
-			{#each api.logic as s (s.label)}
-				<section class="calls">
-					<h4>{s.label}</h4>
-					{#each s.entries as e (e.id)}
-						<button
-							class="entry"
-							disabled={!e.target}
-							onclick={() => {
-								if (!e.target) return;
-								view.api = null;
-								flyTo(e.target);
-							}}
-							title={e.target ? 'Go to' : undefined}
-						>
-							<span class="text" data-glyph="ƒ">{e.text}</span>
-							<span class="where">{e.where}</span>
-						</button>
-					{/each}
-				</section>
-			{/each}
+			{@render apiBody(apiCard, openPeek, peek?.from)}
 		</aside>
+	{/if}
+	<!-- What an entry of the card names, beside the card; the camera stays where it is. -->
+	{#if peekCard && peekPos}
+		{@const p = peekCard}
+		{#if p.kind === 'box'}
+			<aside
+				class="peek-card"
+				style:left="{peekPos.left}px"
+				style:top="{peekPos.top}px"
+				style:width="{p.w}px"
+				style:height={view.expanded[p.box.id] ? undefined : `${p.box.height}px`}
+				bind:clientHeight={peekH}
+				data-testid="peek"
+			>
+				<LandscapeNode
+					{...{} as NodeProps}
+					id={p.box.id}
+					data={p.data}
+					width={p.box.width}
+					height={p.box.height}
+				/>
+				<div class="peek-head" style:height="{TABLE.head}px">
+					{@render peekBackButton()}{@render peekButtons()}
+				</div>
+			</aside>
+		{:else}
+			<aside
+				class="inspector peek"
+				class:unit={p.kind === 'unit'}
+				style:left="{peekPos.left}px"
+				style:top="{peekPos.top}px"
+				style:width="{p.w}px"
+				bind:clientHeight={peekH}
+				data-testid="peek"
+			>
+				<header>
+					{@render peekBackButton()}
+					{#if p.kind === 'api'}
+						{@render apiTitle(p.api)}
+					{:else if p.kind === 'unit'}
+						<div class="head">
+							<div class="title"><i class="fn">ƒ</i> {p.unit.title}</div>
+							<div class="type">{p.unit.sub}</div>
+						</div>
+					{:else}
+						<div class="head">
+							<div class="title">{p.field.title}</div>
+							<div class="type">{p.field.type}</div>
+						</div>
+					{/if}
+					{@render peekButtons()}
+				</header>
+				{#if p.kind === 'api'}
+					{@render apiBody(p.api, peekTo)}
+				{:else if p.kind === 'unit'}
+					{@render unitBody(p.unit, peekTo, p.from, peek!.at.target!.field!)}
+				{:else}
+					{@render fieldBody(p.field, peekTo)}
+				{/if}
+			</aside>
+		{/if}
 	{/if}
 	{#if run && step}
 		{#if playDraw?.d}
@@ -2477,6 +2696,60 @@
 	.inspector .note,
 	.inspector .empty {
 		margin: 4px 12px;
+	}
+	/* The entry whose peek is open. */
+	.inspector .entry.open {
+		background: var(--sdv-row-self);
+		border-left-color: var(--sdv-selection);
+	}
+	.inspector.peek {
+		z-index: 11;
+		box-shadow: 0 10px 32px rgba(0, 0, 0, 0.22);
+	}
+	.goto {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		padding: 0 8px;
+		font: inherit;
+		font-size: 12px;
+		line-height: 20px;
+		white-space: nowrap;
+		color: var(--sdv-model-text);
+		background: var(--sdv-model-fill);
+		border: 1px solid var(--sdv-model-stroke);
+		cursor: pointer;
+	}
+	.goto:hover {
+		border-color: var(--sdv-selection);
+	}
+	/* A model or logic card in the peek: the canvas's card at full size, the peek's buttons
+	   in its name bar. */
+	.peek-card {
+		position: absolute;
+		z-index: 11;
+		box-shadow: 0 10px 32px rgba(0, 0, 0, 0.22);
+	}
+	/* Outlines mark a card's place on the canvas; the peek is not on it. */
+	.peek-card :global(.node) {
+		outline: none;
+	}
+	.peek-head {
+		position: absolute;
+		top: 0;
+		right: 0;
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		padding: 0 6px;
+	}
+	.peek-head .icon-btn {
+		border: none;
+		background: none;
+		color: var(--sdv-text-muted);
+		display: flex;
+		cursor: pointer;
+		padding: 2px;
 	}
 	.inspector .mono {
 		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;

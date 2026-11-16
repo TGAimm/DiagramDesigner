@@ -40,6 +40,8 @@
 		onrail?: () => void;
 		/** While a scenario is edited: a field row or a model's name bar was right-clicked. */
 		onmenu?: (target: string, x: number, y: number) => void;
+		/** Drawn in a peek, outside the flow: in full, with no line ends. */
+		peek?: boolean;
 	}
 
 	export interface RailView {
@@ -123,7 +125,7 @@
 	// In adaptive detail a card shows its rows, and a rail its endpoints, only near the screen
 	// and while they read, or while looked at or at the end of a lit line (see open.ts).
 	// Otherwise a card is its frame and name, a rail its name.
-	const full = $derived(!!d.state.near[id] || !!d.state.full[id]);
+	const full = $derived(!!d.peek || !!d.state.near[id] || !!d.state.full[id]);
 	const railListed = $derived(!!d.rail && (!!d.state.near[id] || !!d.state.full[id]));
 	const updateNodeInternals = useUpdateNodeInternals();
 	// Handles move with their rows, come with them, and move as rails open; Svelte Flow measures
@@ -132,7 +134,7 @@
 		void expanded;
 		void full;
 		void railListed;
-		measureLater(id, updateNodeInternals);
+		if (!d.peek) measureLater(id, updateNodeInternals);
 	});
 	// Opening or closing swaps the hovered part (the whole box, or its tab) without a leave.
 	const isOpen = $derived(!!d.open);
@@ -424,9 +426,11 @@
 			{/if}
 		</div>
 		<!-- Invisible line ends, each side of the name bar and of every row. -->
-		<Handle type="source" id="head:l" position={Position.Left} style="top:{TABLE.head / 2}px" />
-		<Handle type="source" id="head:r" position={Position.Right} style="top:{TABLE.head / 2}px" />
-		{#each full ? (d.fields ?? []) : [] as f, i (f.id)}
+		{#if !d.peek}
+			<Handle type="source" id="head:l" position={Position.Left} style="top:{TABLE.head / 2}px" />
+			<Handle type="source" id="head:r" position={Position.Right} style="top:{TABLE.head / 2}px" />
+		{/if}
+		{#each full && !d.peek ? (d.fields ?? []) : [] as f, i (f.id)}
 			{@const y = fieldRowY(i, count, expanded, at)}
 			<Handle type="source" id="row:{f.id}:l" position={Position.Left} style="top:{y}px" />
 			<Handle type="source" id="row:{f.id}:r" position={Position.Right} style="top:{y}px" />
@@ -494,9 +498,11 @@
 				{/each}
 			</div>
 		</div>
-		<Handle type="source" id="head:l" position={Position.Left} style="top:{TABLE.head / 2}px" />
-		<Handle type="source" id="head:r" position={Position.Right} style="top:{TABLE.head / 2}px" />
-		{#each full ? rows : [] as u, i (u.id)}
+		{#if !d.peek}
+			<Handle type="source" id="head:l" position={Position.Left} style="top:{TABLE.head / 2}px" />
+			<Handle type="source" id="head:r" position={Position.Right} style="top:{TABLE.head / 2}px" />
+		{/if}
+		{#each full && !d.peek ? rows : [] as u, i (u.id)}
 			{@const y = logicRowY(i)}
 			<Handle type="source" id="row:{u.id}:l" position={Position.Left} style="top:{y}px" />
 			<Handle type="source" id="row:{u.id}:r" position={Position.Right} style="top:{y}px" />
