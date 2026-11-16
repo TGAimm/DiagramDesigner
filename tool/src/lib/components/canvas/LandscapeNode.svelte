@@ -227,6 +227,9 @@
 			class:brief={!full}
 			style:--pad="{TABLE.pad}px"
 			style:--row="{TABLE.rowHeight}px"
+			role="presentation"
+			onmouseenter={() => d.onbox?.('enter')}
+			onmouseleave={() => d.onbox?.('leave')}
 		>
 			<div
 				class="thead"
@@ -237,8 +240,6 @@
 					e.preventDefault();
 					d.onmenu(d.element, e.clientX, e.clientY);
 				}}
-				onmouseenter={() => d.onbox?.('enter')}
-				onmouseleave={() => d.onbox?.('leave')}
 			>
 				{#if full}
 					<div class="name" style:font-size={titleFont}>
@@ -420,14 +421,11 @@
 			class:brief={!full}
 			style:--pad="{TABLE.pad}px"
 			style:--row="{TABLE.rowHeight}px"
+			role="presentation"
+			onmouseenter={() => d.onbox?.('enter')}
+			onmouseleave={() => d.onbox?.('leave')}
 		>
-			<div
-				class="thead"
-				role="presentation"
-				style:height="{TABLE.head}px"
-				onmouseenter={() => d.onbox?.('enter')}
-				onmouseleave={() => d.onbox?.('leave')}
-			>
+			<div class="thead" style:height="{TABLE.head}px">
 				{#if full}
 					<div class="name" style:font-size={titleFont}>
 						<EntityGlyph kind="logic" />Logic

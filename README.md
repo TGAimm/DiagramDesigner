@@ -43,7 +43,7 @@ Technical / deployment architecture
 - **Working:** one canvas over the whole model. Layout is computed once, each level by ELK's
   layered algorithm along the connections between its boxes; zooming only moves
   the camera. Systems and modules are always drawn open; zoomed out, model cards, logic cards
-  and api rails list their rows only on or near the screen and once they read at 6px;
+  and api rails list their rows only on or near the screen and once they read at 4px;
   otherwise a card shows its name, kept readable as you zoom out. What is hovered, picked or
   lit is always drawn in full (Settings › Canvas detail). Models render as
   classes where they are owned (grouped with the models they alone hold) and as stored

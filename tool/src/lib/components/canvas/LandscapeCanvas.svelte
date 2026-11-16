@@ -207,20 +207,28 @@
 		handles: 'call'
 	};
 
-	/**
-	 * What is looked at: a row, api or name bar under the pointer, else what is clicked. A row
-	 * or api focuses its own connections (with the hovered field of a picked api's shape); a
-	 * box those of everything in it.
-	 */
-	const focus = $derived.by((): { box: string; leaf?: string } | null => {
-		if (view.hover) return { box: view.hover.box, leaf: view.hover.field };
-		if (view.hoverBox) return { box: view.hoverBox };
+	/** A box looked at, or a row or api in it. */
+	type Look = { box: string; leaf?: string } | null;
+	/** The row or api under the pointer. */
+	const hoveredRow = $derived<Look>(
+		view.hover ? { box: view.hover.box, leaf: view.hover.field } : null
+	);
+	/** The card or name bar under the pointer, also while a row of it is. */
+	const hoveredBox = $derived<Look>(view.hoverBox ? { box: view.hoverBox } : null);
+	/** What is clicked. */
+	const picked = $derived.by((): Look => {
 		const host = view.api ? hostOf(view.api) : undefined;
 		if (view.api && host) return { box: host.id, leaf: view.api };
 		if (view.field) return { box: view.field.box, leaf: view.field.field };
 		if (view.selectedNodes[0]) return { box: view.selectedNodes[0] };
 		return null;
 	});
+	/**
+	 * What is looked at: a row or api under the pointer, else a card or name bar, else what is
+	 * clicked. A row or api focuses its own connections (with the hovered field of a picked
+	 * api's shape); a box those of everything in it.
+	 */
+	const focus = $derived(hoveredRow ?? hoveredBox ?? picked);
 
 	/** One end of a lit line: the node and handle it ends on, and where that is. */
 	interface End {
@@ -342,7 +350,7 @@
 	 * that shows, else the shown box round it. For a box, those with an end outside it; a card
 	 * keeps lineage between its own rows, drawn round its right side.
 	 */
-	const lit = $derived.by((): LitLine[] => {
+	function linesOf(focus: Look): LitLine[] {
 		const f = focus && boxById.get(focus.box);
 		if (!focus || !f) return [];
 		const leaves = focus.leaf
@@ -378,7 +386,12 @@
 				out.set(id, { id, kind: e.kind, s, t, sides: sameCard ? ['r', 'r'] : sides(s, t) });
 		}
 		return [...out.values()];
-	});
+	}
+	// Each look's lines, so moving between the rows of a card reroutes only the row's.
+	const rowLines = $derived(linesOf(hoveredRow));
+	const boxLines = $derived(linesOf(hoveredBox));
+	const pickedLines = $derived(linesOf(picked));
+	const lit = $derived(hoveredRow ? rowLines : hoveredBox ? boxLines : pickedLines);
 
 	function onfield(box: string, field: string, ev: 'enter' | 'leave' | 'click') {
 		if (ev === 'enter') view.hover = { box, field };
@@ -465,7 +478,9 @@
 	// Rows to light, by box: the focused row, and the rows at the ends of its lines; apis on
 	// rails likewise. Nodes read them from the view state, so focus changes never rebuild them.
 	// An end on a box round its leaf outlines that box. Every box looked at, picked or played,
-	// and every box its lines end on, is drawn in full at any zoom.
+	// and every box its lines end on, is drawn in full at any zoom. That holds for the hovered
+	// card and the pick while a row's lines are lit too, so hovering the rows of a card never
+	// closes the boxes the card or the pick reach.
 	$effect(() => {
 		const out: Record<string, Record<string, 'self' | 'peer'>> = {};
 		const apis: Record<string, true> = {};
@@ -477,9 +492,11 @@
 			if (rows[field] !== 'self') rows[field] = how;
 		};
 		draw(focus?.box);
+		draw(hoveredBox?.box);
 		draw(view.field?.box);
 		draw(view.api ? hostOf(view.api)?.id : undefined);
 		view.selectedNodes.forEach(draw);
+		for (const l of [...boxLines, ...pickedLines]) for (const end of [l.s, l.t]) draw(end.node.id);
 		if (focus?.leaf) mark(focus.box, focus.leaf, 'self');
 		for (const l of lit)
 			for (const end of [l.s, l.t]) {
