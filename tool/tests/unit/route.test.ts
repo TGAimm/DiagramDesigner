@@ -3,8 +3,8 @@ import {
 	boxesNear,
 	loadRouter,
 	ROUTE,
+	routeKey,
 	routeLines,
-	routeMemo,
 	type Point,
 	type Rect
 } from '../../src/lib/landscape/route';
@@ -160,32 +160,17 @@ describe('boxesNear', () => {
 	});
 });
 
-describe('routeMemo', () => {
-	const boxes = new Map([
-		['a', rect(0, 0, 100, 60)],
-		['b', rect(300, 0, 100, 60)]
-	]);
-	const lines = [
-		{
-			id: 'x',
-			s: { on: 'a', x0: 0, x1: 100, y: 30, sides: ['l', 'r'] as const },
-			t: { on: 'b', x0: 300, x1: 400, y: 30, sides: ['l', 'r'] as const }
-		}
-	];
+describe('routeKey', () => {
+	const end = (on: string, y: number) => ({ on, x0: 0, x1: 100, y, sides: ['l', 'r'] as const });
+	const lines = [{ id: 'x', s: end('a', 30), t: end('b', 30) }];
 
-	it('gives the same routes again for the same lines among the same boxes', () => {
-		const route = routeMemo(2);
-		const first = route(boxes, lines);
-		expect(route(boxes, structuredClone(lines))).toBe(first);
-		expect(first).toEqual(routeLines(boxes, lines));
+	it('is the same for the same lines, and differs as an end moves or ends are shared', () => {
+		expect(routeKey(structuredClone(lines))).toBe(routeKey(lines));
+		expect(routeKey([{ ...lines[0], t: end('b', 43) }])).not.toBe(routeKey(lines));
+		expect(routeKey(lines, true)).not.toBe(routeKey(lines));
 	});
 
-	it('routes again among other boxes, or once it has forgotten', () => {
-		const route = routeMemo(1);
-		const first = route(boxes, lines);
-		expect(route(new Map(boxes), lines)).not.toBe(first);
-		const again = route(boxes, lines);
-		route(boxes, [{ ...lines[0], id: 'y' }]);
-		expect(route(boxes, lines)).not.toBe(again);
+	it('is empty for no lines', () => {
+		expect(routeKey([])).toBe('');
 	});
 });

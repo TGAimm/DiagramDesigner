@@ -28,6 +28,20 @@
 	--ui-ok: #3fb950;
 	--ui-shadow: 0 8px 24px rgba(1, 4, 9, 0.8);
 }
+/* The canvas zoom, for what keeps a size on screen (a name, a border). The canvas sets it on
+   elements of class `screen-sized` alone and it is not passed down, so a zoom step restyles
+   those elements, not every element of the canvas (see LandscapeCanvas). */
+@property --z {
+	syntax: '<number>';
+	inherits: false;
+	initial-value: 1;
+}
+/* A border one screen pixel wide, worked out from `--z` where it is drawn. */
+@property --bw {
+	syntax: '<length>';
+	inherits: false;
+	initial-value: 1px;
+}
 * {
 	box-sizing: border-box;
 }

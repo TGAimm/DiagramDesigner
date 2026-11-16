@@ -2,7 +2,8 @@ import { AvoidLib } from 'libavoid-js';
 
 /**
  * Lines routed by libavoid: right-angled, round every box in the way, and lines running side
- * by side spread apart. libavoid is WebAssembly, so it is loaded once before any routing.
+ * by side spread apart. libavoid is WebAssembly, so it is loaded once before any routing. The
+ * app routes in workers (see route-client.ts).
  */
 
 export interface Rect {
@@ -189,24 +190,12 @@ export function routeLines(
 }
 
 /**
- * `routeLines` remembering its last `size` results among one set of boxes, so going back to
- * something looked at a moment ago lights its lines without routing them again.
+ * What a set of lines is known by when its routes are kept: the lines themselves, ends and all,
+ * so lines ending elsewhere (a card folded or expanded, a new layout) are a new set. '' for no
+ * lines, which need no routing.
  */
-export function routeMemo(size = 32) {
-	let among: Map<string, Rect> | undefined;
-	const memo = new Map<string, Map<string, Point[]>>();
-	return (boxes: Map<string, Rect>, lines: RouteLine[], shareEnds = false) => {
-		if (boxes !== among) memo.clear();
-		among = boxes;
-		const key = JSON.stringify([shareEnds, lines]);
-		let out = memo.get(key);
-		if (out) memo.delete(key);
-		else out = routeLines(boxes, lines, shareEnds);
-		memo.set(key, out);
-		if (memo.size > size) memo.delete(memo.keys().next().value!);
-		return out;
-	};
-}
+export const routeKey = (lines: RouteLine[], shareEnds = false) =>
+	lines.length ? JSON.stringify([shareEnds, lines]) : '';
 
 /** An SVG path through a route's corners. */
 export const routePath = (pts: Point[]) =>
