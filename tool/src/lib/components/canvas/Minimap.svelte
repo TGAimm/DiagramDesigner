@@ -46,6 +46,10 @@
 		return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
 	});
 	const s = $derived(Math.min(MAX_W / bounds.w, MAX_H / bounds.h));
+	const systems = $derived(boxes.filter((b) => b.name !== undefined));
+	const modules = $derived(boxes.filter((b) => b.name === undefined));
+	const mx = (b: MapBox) => (b.x - bounds.x) * s;
+	const my = (b: MapBox) => (b.y - bounds.y) * s;
 	const w = $derived(bounds.w * s);
 	const h = $derived(bounds.h * s);
 	const view = $derived.by(() => {
@@ -117,19 +121,19 @@
 			{@attach wheel}
 		>
 			<title>Click to go there; drag the frame to pan</title>
-			{#each boxes as b (b.id)}
-				{@const x = (b.x - bounds.x) * s}
-				{@const y = (b.y - bounds.y) * s}
-				{#if b.name === undefined}
-					<rect class="mod" {x} {y} width={b.width * s} height={b.height * s} />
-				{:else}
-					<rect class="sys" {x} {y} width={b.width * s} height={b.height * s} />
-					<!-- A nested svg clips the name tab to its system. -->
-					<svg {x} {y} width={b.width * s} height={Math.min(HEAD, b.height * s)}>
-						<rect class="head" width={b.name.length * 8.4 + 10.5} height={HEAD} />
-						<text x="4.5" y="12.75">{b.name}</text>
-					</svg>
-				{/if}
+			<!-- In layers, so no box covers a name: system frames, then modules, then name tabs. -->
+			{#each systems as b (b.id)}
+				<rect class="sys" x={mx(b)} y={my(b)} width={b.width * s} height={b.height * s} />
+			{/each}
+			{#each modules as b (b.id)}
+				<rect class="mod" x={mx(b)} y={my(b)} width={b.width * s} height={b.height * s} />
+			{/each}
+			{#each systems as b (b.id)}
+				<!-- A nested svg clips the name tab to its system. -->
+				<svg x={mx(b)} y={my(b)} width={b.width * s} height={Math.min(HEAD, b.height * s)}>
+					<rect class="head" width={b.name!.length * 8.4 + 10.5} height={HEAD} />
+					<text x="4.5" y="12.75">{b.name}</text>
+				</svg>
 			{/each}
 			<path
 				class="dim"
