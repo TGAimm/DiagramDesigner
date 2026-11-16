@@ -25,8 +25,8 @@
 		maxZoom
 	}: { boxes: MapBox[]; cw: number; ch: number; minZoom: number; maxZoom: number } = $props();
 
-	const MAX_W = 324;
-	const MAX_H = 240;
+	const MAX_W = 600;
+	const MAX_H = 450;
 	const HEAD = 16.5;
 
 	const flow = useSvelteFlow();
