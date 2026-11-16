@@ -64,7 +64,7 @@ export function bodyModels(
 
 /** Rail sizes in px at full size (scale 1), shared with LandscapeNode. */
 export const RAIL = {
-	/** Endpoint rows; the rail opens when they would read at READABLE px. */
+	/** Endpoint rows; the rail lists them while they would read at LEGIBLE px (see open.ts). */
 	font: 12,
 	row: 30,
 	/** The APIs header and group headings. */

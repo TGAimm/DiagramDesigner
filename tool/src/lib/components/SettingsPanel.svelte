@@ -9,7 +9,7 @@
 		{
 			value: 'adaptive',
 			title: 'Adaptive',
-			text: 'Boxes open as you zoom in and close when their contents get too small to read. Api rails list endpoints once readable. Cards over 20 fields fold.'
+			text: 'Systems and modules are always drawn open. Model cards, logic cards and api rails show only their frames while their text would be under 6px. What you hover or pick, and everything its lines reach, is always drawn in full. Cards over 20 fields fold.'
 		},
 		{
 			value: 'all',

@@ -67,10 +67,9 @@ responses:
 - A box owning apis has one **rail** across its right border, listing method (coloured) and
   path per endpoint. The layout keeps room for the half outside the box.
 - Rows are laid out at full size, then shrunk to fit the rail, however many endpoints there
-  are. The rail lists them once rows would read at 12px on screen; until then it shows just
-  "APIs", and clicking it zooms in until it opens.
-- If a box is hidden (inside a closed box), its apis move to the rail of the nearest shown
-  box round it: one rail per box, with the apis grouped under the element owning them.
+  are. In adaptive detail the rail lists them while rows would read at 6px on screen, or
+  while its box or one of its apis is looked at or lit; until then it shows just "APIs", and
+  clicking it zooms in until they read.
 - Click an endpoint: a card beside its row shows params, request and responses. Models the
   bodies use are outlined (subtitle says which parts: `request`, `201`), rows a trimmed body
   leaves out are dimmed, and a line runs from the row to each, and to the units handling or
