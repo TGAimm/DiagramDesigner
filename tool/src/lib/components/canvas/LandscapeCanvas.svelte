@@ -21,7 +21,7 @@
 	import FocusBar from './FocusBar.svelte';
 	import { settings } from '#lib/client/settings.svelte.ts';
 	import { theme } from '#lib/client/theme.svelte.ts';
-	import type { FieldRef, ViewState } from '#lib/client/view-state.svelte.ts';
+	import type { FieldRef, Hot, ViewState } from '#lib/client/view-state.svelte.ts';
 	import {
 		fieldRowY,
 		incomingCount,
@@ -50,7 +50,7 @@
 	import { sequenceOf, sequenceWidth } from '#lib/landscape/sequence.ts';
 	import SequenceDiagram from './SequenceDiagram.svelte';
 	import PlayerBar from './PlayerBar.svelte';
-	import { runOf, stepOutOf, type PlayStep } from '#lib/landscape/play.ts';
+	import { callOf, forwardGoesInto, runOf, stepOutOf, type PlayStep } from '#lib/landscape/play.ts';
 	import type { LogicField } from '#lib/model/schema.ts';
 	import {
 		apiUses,
@@ -509,14 +509,15 @@
 	// card and the pick while a row's lines are lit too, so hovering the rows of a card never
 	// closes the boxes the card or the pick reach.
 	$effect(() => {
-		const out: Record<string, Record<string, 'self' | 'peer'>> = {};
+		const out: Record<string, Record<string, Hot>> = {};
 		const apis: Record<string, true> = {};
 		const peers: Record<string, true> = {};
 		const full: Record<string, true> = {};
 		const draw = (box: string | undefined) => box && (full[box] = true);
-		const mark = (box: string, field: string, how: 'self' | 'peer') => {
+		const RANK: Record<Hot, number> = { self: 3, peer: 2, caller: 1 };
+		const mark = (box: string, field: string, how: Hot) => {
 			const rows = (out[box] ??= {});
-			if (rows[field] !== 'self') rows[field] = how;
+			if (!rows[field] || RANK[how] > RANK[rows[field]]) rows[field] = how;
 		};
 		draw(focus?.box);
 		draw(hoveredBox?.box);
@@ -549,6 +550,11 @@
 					if (shown !== e.box || e.row === undefined) peers[shown.id] = true;
 					else mark(e.box.id, id, how);
 				}
+			}
+			// The units stepped into calls from keep an edge on their rows, to show where Out goes.
+			for (const id of step.frame.slice(0, -1)) {
+				const e = playEndOf(id, undefined);
+				if (e?.row !== undefined) mark(e.box.id, id, 'caller');
 			}
 		}
 		view.hot = out;
@@ -1273,6 +1279,13 @@
 	);
 	const playAt = $derived(run && view.play ? Math.min(view.play.at, run.steps.length - 1) : 0);
 	const step = $derived(run?.steps[playAt]);
+	/** At a call with steps inside not stepped into: what Into goes into, named on the board. */
+	const inside = $derived.by(() => {
+		if (!step?.into || step.entered) return undefined;
+		const n = `${step.intoSteps} step${step.intoSteps === 1 ? '' : 's'} inside`;
+		// A called api names the unit handling it.
+		return isApiEl(step.to) ? `${el(step.into)!.name} · ${n}` : n;
+	});
 
 	/** Where an element a step names is drawn: a card and its row, or an api on a box's rail. */
 	interface PlayEnd {
@@ -1429,7 +1442,12 @@
 				: Math.abs(x1 - xm) > 60
 					? { x: (xm + x1) / 2, y: b.y, align: 'center' }
 					: { x: (x0 + xm) / 2, y: a.y, align: 'center' },
-			edge: off && { ...exit, text: nameOf(step.from) }
+			edge: off && { ...exit, text: nameOf(step.from) },
+			// Beside the receiver, on the side the line does not come in by.
+			into:
+				x1 === b.left
+					? { x: b.right + 12, y: b.y, align: 'start' }
+					: { x: b.left - 12, y: b.y, align: 'end' }
 		};
 	});
 
@@ -1438,7 +1456,7 @@
 
 	function startPlay(unit: string) {
 		unpin();
-		view.play = { unit, choices: {}, into: [], at: 0 };
+		view.play = { unit, choices: {}, into: [], over: [], at: 0 };
 	}
 	function jump(at: number) {
 		if (view.play && run)
@@ -1454,14 +1472,32 @@
 	}
 	function forward() {
 		if (step?.choice && step.choice.picked === undefined) return;
-		jump(playAt + 1);
+		if (view.play && step && forwardGoesInto(step, view.play.over, settings.followCalls))
+			stepInto();
+		else jump(playAt + 1);
 	}
-	function stepInto() {
-		if (!view.play || !step?.into) return;
-		view.play = { ...view.play, into: [...view.play.into, step.key], at: playAt + 1 };
+	/** Answers the call at step `i`: into its unit, or over it on purpose; then steps on. */
+	function answer(into: boolean, i = playAt) {
+		const call = run?.steps[i];
+		if (!view.play || !call?.into) return;
+		const key = call.key;
+		const drop = (list: string[]) => list.filter((k) => k !== key);
+		view.play = {
+			...view.play,
+			into: into ? [...drop(view.play.into), key] : drop(view.play.into),
+			over: into ? drop(view.play.over) : [...drop(view.play.over), key],
+			at: i + 1
+		};
 	}
+	const stepInto = () => answer(true);
+	const stepOver = () => answer(false);
 	function stepOut() {
-		if (run && step && step.frame.length > 1) jump(stepOutOf(run, playAt));
+		if (!run || !step || step.frame.length < 2) return;
+		const j = stepOutOf(run, playAt);
+		if (run.steps[j].frame.length < step.frame.length) jump(j);
+		// A choice inside not made yet stops the run before it comes back: leave by stepping over
+		// the call instead.
+		else answer(false, callOf(run, playAt));
 	}
 	/** Keys while playing; returns whether the key was one. */
 	function playKey(e: KeyboardEvent) {
@@ -1472,7 +1508,9 @@
 		else if (e.key === 'ArrowLeft') jump(playAt - 1);
 		else if (e.key === 'Home') jump(0);
 		else if (e.key === 'i') stepInto();
+		else if (e.key === 's') stepOver();
 		else if (e.key === 'o') stepOut();
+		else if (e.key === 'f') settings.setFollowCalls(!settings.followCalls);
 		else if (step?.choice && n >= 1 && n <= step.choice.options.length) pickBranch(n - 1);
 		else return false;
 		e.preventDefault();
@@ -1922,6 +1960,16 @@
 					{playDraw.edge.text}
 				</div>
 			{/if}
+			{#if inside}
+				<div
+					class="play-into"
+					style:left="{playDraw.into.x}px"
+					style:top="{playDraw.into.y}px"
+					style:--ax={SHIFT[playDraw.into.align]}
+				>
+					<i>ƒ</i>{inside}<kbd>{settings.followCalls ? '→' : 'I'}</kbd>
+				</div>
+			{/if}
 		{:else if playDraw?.beside}
 			<div
 				class="play-beside {step.kind}"
@@ -1937,9 +1985,13 @@
 			names={(id) => el(id)?.name ?? id}
 			onjump={jump}
 			onpick={pickBranch}
+			over={view.play?.over ?? []}
+			follow={settings.followCalls}
 			onforward={forward}
 			oninto={stepInto}
+			onover={stepOver}
 			onout={stepOut}
+			onfollow={() => settings.setFollowCalls(!settings.followCalls)}
 			onstop={() => (view.play = null)}
 		/>
 	{/if}
@@ -2471,6 +2523,33 @@
 		transform: translate(var(--ax), -50%);
 		color: var(--sdv-text-muted);
 		border-style: dashed;
+	}
+	.play-into {
+		position: absolute;
+		z-index: 9;
+		pointer-events: none;
+		white-space: nowrap;
+		font-size: 12px;
+		padding: 2px 8px;
+		background: var(--sdv-canvas-bg);
+		border: 1px dashed currentColor;
+		color: var(--sdv-link-call);
+		transform: translate(var(--ax), -50%);
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.play-into i {
+		font-family: Georgia, serif;
+	}
+	.play-into kbd {
+		font: inherit;
+		font-size: 11px;
+		line-height: 16px;
+		padding: 0 5px;
+		border: 1px solid var(--ui-border);
+		background: var(--ui-panel);
+		color: var(--ui-muted);
 	}
 	.play-beside {
 		transform: translateY(-50%);

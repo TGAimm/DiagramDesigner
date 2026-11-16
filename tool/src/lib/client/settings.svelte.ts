@@ -10,6 +10,15 @@ import { DEFAULT_LAYOUT, type LayoutOptions } from '#lib/landscape/layout.ts';
 
 const KEY = 'sdv-detail';
 const LAYOUT_KEY = 'sdv-layout';
+const FOLLOW_KEY = 'sdv-follow-calls';
+
+function storedFollow(): boolean {
+	try {
+		return localStorage.getItem(FOLLOW_KEY) === '1';
+	} catch {
+		return false;
+	}
+}
 
 function stored(): Detail {
 	try {
@@ -46,6 +55,18 @@ class SettingsState {
 
 	resetLayout() {
 		this.setLayout(DEFAULT_LAYOUT);
+	}
+
+	/** Playing a unit, Step forward at a call with steps inside goes into it (see play.ts). */
+	followCalls = $state(typeof localStorage === 'undefined' ? false : storedFollow());
+
+	setFollowCalls(on: boolean) {
+		this.followCalls = on;
+		try {
+			localStorage.setItem(FOLLOW_KEY, on ? '1' : '0');
+		} catch {
+			// As for the detail: the choice then lasts for the session.
+		}
 	}
 
 	setDetail(detail: Detail) {

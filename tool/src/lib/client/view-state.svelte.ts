@@ -8,6 +8,12 @@ export interface FieldRef {
 }
 
 /**
+ * How a row is lit: the row looked at (or the unit taking a played step), the other end of a
+ * lit line, or a unit a played run has stepped into a call from.
+ */
+export type Hot = 'self' | 'peer' | 'caller';
+
+/**
  * Per-page UI state shared by the canvas and its nodes. Nodes read it directly, so a hover
  * never rebuilds the node list (which would drop Svelte Flow's measurements mid-gesture).
  */
@@ -32,7 +38,7 @@ export class ViewState {
 	/** A row flashed after flying to it. */
 	flash = $state.raw<FieldRef | null>(null);
 	/** Rows lit by the focused field, by box: the field itself, or the other end of a link. */
-	hot = $state.raw<Record<string, Record<string, 'self' | 'peer'>>>({});
+	hot = $state.raw<Record<string, Record<string, Hot>>>({});
 	/** Folded cards (over `FOLD` fields, or a focus's neighbours) shown in full, by box; they stay so until collapsed. */
 	expanded = $state.raw<Record<string, true>>({});
 	/** Rail rows lit because the focused logic unit handles or calls their api. */
@@ -49,11 +55,13 @@ export class ViewState {
 	/** Boxes drawn in full however far out: what is looked at, picked or played, and the far
 	 *  ends of its lines. A card shows its rows, a box its rail's endpoints. */
 	full = $state.raw<Record<string, true>>({});
-	/** A unit being played: the choices made, the calls stepped into, and the step shown. */
+	/** A unit being played: the choices made, the calls stepped into and those stepped over on
+	 *  purpose, and the step shown. */
 	play = $state.raw<{
 		unit: string;
 		choices: Record<string, number>;
 		into: string[];
+		over: string[];
 		at: number;
 	} | null>(null);
 }

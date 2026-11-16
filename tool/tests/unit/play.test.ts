@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { runOf, stepOutOf, type Run } from '../../src/lib/landscape/play';
+import { callOf, forwardGoesInto, runOf, stepOutOf, type Run } from '../../src/lib/landscape/play';
 import { loadStrings } from './helpers';
 
 const { model } = loadStrings({
@@ -85,10 +85,32 @@ describe('playing a unit', () => {
 		// Step out lands on the first step back in placeOrder: the choice.
 		expect(stepOutOf(r, 2)).toBe(5);
 		expect(r.steps[5].kind).toBe('choice');
+		// The call stepped into from, for leaving by stepping over it.
+		expect(callOf(r, 3)).toBe(1);
+		expect(callOf(r, 5)).toBe(-1);
 	});
 
 	it('keeps choices made inside a unit stepped into apart from the caller’s', () => {
 		const keys = run({}, ['s.0']).steps.map((s) => s.key);
 		expect(new Set(keys).size).toBe(keys.length);
+	});
+
+	it('says at a call how many steps the unit inside has, and whether it was stepped into', () => {
+		expect(run().steps[1]).toMatchObject({ into: 'load', intoSteps: 2, entered: false });
+		expect(run({}, ['s.0']).steps[1]).toMatchObject({ into: 'load', entered: true });
+		// Steps that are not calls into a unit with steps say nothing of it.
+		expect(run().steps[2]).not.toHaveProperty('into');
+		expect(run().steps[2]).not.toHaveProperty('entered');
+	});
+
+	it('steps forward into a call only while following calls, and not one stepped over', () => {
+		const call = run().steps[1];
+		expect(forwardGoesInto(call, [], false)).toBe(false);
+		expect(forwardGoesInto(call, [], true)).toBe(true);
+		expect(forwardGoesInto(call, ['s.0'], true)).toBe(false);
+		// Once inside, forward goes on to the inner unit's first step as any step does.
+		expect(forwardGoesInto(run({}, ['s.0']).steps[1], [], true)).toBe(false);
+		// A step with nothing inside never goes into anything.
+		expect(forwardGoesInto(run().steps[2], [], true)).toBe(false);
 	});
 });
