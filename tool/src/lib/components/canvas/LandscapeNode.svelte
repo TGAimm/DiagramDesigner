@@ -92,9 +92,10 @@
 		LEAF,
 		LINK,
 		logicNote,
+		kindWord,
+		ownerNote,
 		slotCount,
 		shownRows,
-		subtitle,
 		TABLE,
 		typeText
 	} from '#lib/landscape/layout.ts';
@@ -220,15 +221,14 @@
 	class:expanded={d.table && expanded && full}
 	class:system={d.kind === 'system'}
 	class:faded={faded && !d.group}
-	style:--tab={d.kind === 'model' ? 'var(--sdv-model-class-head)' : 'var(--fill)'}
-	style:--fill="var(--sdv-{d.kind}-fill, var(--sdv-container-fill))"
-	style:--stroke="var(--sdv-{d.kind}-stroke, var(--sdv-container-stroke))"
-	style:--text="var(--sdv-{d.kind}-text, var(--sdv-container-text))"
+	style:--fill="var(--sdv-{d.kind}-fill, var(--sdv-module-fill))"
+	style:--stroke="var(--sdv-{d.kind}-stroke, var(--sdv-module-stroke))"
+	style:--text="var(--sdv-{d.kind}-text, var(--sdv-module-text))"
 	style:--hdr="{hdr}px"
 	style:--hdrn={hdr}
 >
 	{#if d.group}
-		<!-- Open, the box wears its closed colour as a name tab, so its type still reads. -->
+		<!-- Open, a module's name sits inside its top-left corner; a system's above its frame. -->
 		<div
 			class="header screen-sized"
 			role="presentation"
@@ -243,6 +243,7 @@
 		<div
 			class="face table"
 			class:class={d.view === 'class'}
+			class:stored={d.view === 'table'}
 			class:ref={d.owner && d.view === 'class'}
 			class:brief={!full}
 			style:--pad="{TABLE.pad}px"
@@ -269,9 +270,9 @@
 							>{/if}{d.name}
 					</div>
 					<div class="note" style:font-size="{TABLE.note}px">
-						{subtitle(d.view ?? 'class', d.owner)}{#if apiParts}<span class="api-parts">
-								· {apiParts.join(', ')}</span
-							>{/if}
+						<span class="kind-word">{kindWord(d.view ?? 'class')}</span>{ownerNote(
+							d.owner
+						)}{#if apiParts}<span class="api-parts"> · {apiParts.join(', ')}</span>{/if}
 					</div>
 				{/if}
 			</div>
@@ -519,7 +520,7 @@
 		{/if}
 		<Handle type="source" id="head:l" position={Position.Left} />
 		<Handle type="source" id="head:r" position={Position.Right} />
-		<!-- Open, a box is drawn by its border and name tab alone. -->
+		<!-- Open, a box is drawn by its border and name alone. -->
 		{#if !d.open}
 			<div
 				class="face screen-sized"
@@ -634,6 +635,11 @@
 		height: 100%;
 		box-sizing: border-box;
 		cursor: pointer;
+		border-radius: 10px;
+	}
+	/* Corners tell kinds apart: system 14, module 10, logic 10, class 8, table 3. */
+	.node.system {
+		border-radius: 14px;
 	}
 	/* Sized on screen by the zoom, `--z`, which only elements of class `screen-sized` get (see
 	   app.css). */
@@ -643,12 +649,13 @@
 		--bw: max(1px, calc(1px / var(--z)));
 	}
 	.node.group {
-		/* Solid: dashed is kept for "owned elsewhere". */
+		/* Solid: dashed is kept for "owned elsewhere". Translucent, so nesting darkens a step
+		   per level. */
 		border: var(--bw) solid var(--stroke);
-		background: var(--sdv-boundary-fill);
+		background: var(--fill);
 	}
 	.node.group.system {
-		border-color: color-mix(in srgb, var(--sdv-system-fill) 55%, transparent);
+		border-width: calc(1.5 * var(--bw));
 	}
 	/* Opening: the face goes at once, the header and children come in after (see the canvas).
 	   Closing: the children go at once, the face comes back after. */
@@ -664,7 +671,7 @@
 	:global(.svelte-flow__node.open) > .node.group > .header {
 		opacity: 1;
 		transition-delay: 0.1s;
-		/* Open, the tab is the box's name bar: hovering it draws the box's connections. */
+		/* Open, the name is the box's name bar: hovering it draws the box's connections. */
 		pointer-events: auto;
 	}
 	.node.peer-box {
@@ -692,8 +699,12 @@
 		text-align: center;
 		background: var(--fill);
 		border: 1px solid var(--stroke);
+		border-radius: inherit;
 		color: var(--text);
 		pointer-events: none;
+	}
+	.node.system > .face {
+		border-width: 1.5px;
 	}
 	.name {
 		display: inline-flex;
@@ -705,8 +716,13 @@
 	.face:not(.table) .name {
 		--glyph-opacity: clamp(0, calc((var(--fs) * var(--z) - 8) * 0.75), 0.75);
 	}
-	/* Model as a table card: a name bar, then a fields table and an indexes table. */
+	/* Model as a card: a name bar, then a fields table and an indexes table. Its kind shows in
+	   its line, corner, icon and name colour: line (--kl), icon (--ki), name (--kt), rules (--ks). */
 	.face.table {
+		--kl: var(--sdv-kind-class);
+		--ki: var(--sdv-kind-class-icon);
+		--kt: var(--sdv-kind-class-text);
+		--ks: var(--sdv-kind-class-soft);
 		justify-content: flex-start;
 		align-items: stretch;
 		gap: 0;
@@ -715,8 +731,43 @@
 		white-space: nowrap;
 		overflow: hidden;
 		background: var(--sdv-model-fill);
-		border-color: var(--sdv-model-stroke);
+		border: 1.5px solid var(--kl);
+		border-radius: 8px;
 		color: var(--sdv-model-text);
+	}
+	/* A stored table: near-square, with its name bar ruled off in the line colour. */
+	.face.table.stored {
+		--kl: var(--sdv-kind-table);
+		--ki: var(--sdv-kind-table-icon);
+		--kt: var(--sdv-kind-table-text);
+		--ks: var(--sdv-kind-table-soft);
+		border-radius: 3px;
+	}
+	.face.table.stored .thead {
+		border-bottom: 1.5px solid var(--kl);
+	}
+	/* Logic: a thinner line and a ring 2px outside it. */
+	.face.table.logic {
+		--kl: var(--sdv-kind-logic);
+		--ki: var(--sdv-kind-logic-icon);
+		--kt: var(--sdv-kind-logic-text);
+		--ks: var(--sdv-kind-logic-soft);
+		border-radius: 10px;
+		border-width: 1px;
+		box-shadow:
+			0 0 0 2px var(--sdv-model-fill),
+			0 0 0 3px var(--kl);
+	}
+	.face.table .name,
+	.brief-name {
+		color: var(--kt);
+	}
+	.kind-word {
+		font-variant: all-small-caps;
+		letter-spacing: 0.06em;
+		font-weight: 600;
+		color: var(--kt);
+		opacity: 0.8;
 	}
 	/* A card drawn as its frame: its name across the whole card, as large as reads. Its name
 	   bar stays for hovering, untinted, so the name does not straddle it. */
@@ -746,11 +797,8 @@
 	.face.table.ref {
 		border-style: dashed;
 	}
-	/* A class has a tinted name bar; a table a plain one. */
-	.face.table.class .thead {
-		background: var(--sdv-model-class-head);
-	}
 	.thead {
+		border-bottom: 1px solid var(--ks);
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
@@ -881,15 +929,16 @@
 	:global(.svelte-flow__node:has(> .node.expanded)) {
 		z-index: 999 !important;
 	}
-	/* A module's logic card: a tinted name bar, then a unit per row with its signature. */
-	.face.table.logic .thead {
-		background: var(--sdv-logic-head);
+	/* A module's logic card: a name bar, then a unit per row with its signature. The name bar's
+	   rule is the first row's top. */
+	.face.table.logic .grid > .row:first-child > .cell {
+		border-top: none;
 	}
 	.fn {
 		width: 10px;
 		margin-right: 0;
 		font-family: Georgia, serif;
-		color: var(--sdv-link-call);
+		color: var(--sdv-kind-logic-icon);
 	}
 	/* A unit's signature: names in, outputs out; muted, so the unit's name leads. */
 	.cell.sig {
@@ -911,8 +960,12 @@
 		align-items: center;
 		gap: 4px;
 		padding: 0 var(--pad);
-		border-top: 1px solid var(--sdv-model-stroke);
-		border-left: 1px solid var(--sdv-model-stroke);
+		border-top: 1px solid var(--ks, var(--sdv-model-stroke));
+		border-left: 1px solid var(--ks, var(--sdv-model-stroke));
+	}
+	/* The name bar's rule is the column labels' top. */
+	.grid > .th {
+		border-top: none;
 	}
 	.cell.first {
 		border-left: none;
@@ -1036,10 +1089,15 @@
 		box-sizing: border-box;
 		overflow: hidden;
 		background: var(--sdv-api-fill);
-		border: 1px solid var(--sdv-api-stroke);
+		border: 1px solid var(--sdv-system-stroke);
+		border-radius: 14px;
 		color: var(--sdv-api-text);
 		pointer-events: auto;
 		cursor: default;
+	}
+	/* Closed, a slim capsule on the border. */
+	.rail.closed {
+		border-radius: 999px;
 	}
 	.rail-inner {
 		transform-origin: 0 0;
@@ -1099,22 +1157,29 @@
 		cursor: zoom-in;
 		padding: 0;
 	}
+	/* An open module's name: inside its top-left corner, muted, no tab. */
 	.header {
 		position: absolute;
-		left: calc(-1 * var(--bw));
-		top: calc(-1 * var(--bw));
+		left: 0.6em;
+		top: 0.4em;
 		display: flex;
 		align-items: center;
 		gap: 0.4em;
-		padding: 0.3em 0.75em 0.3em 0.55em;
 		font-size: min(calc(13px / var(--z)), var(--hdr));
 		line-height: 1.2;
 		--glyph-opacity: clamp(0, calc((min(13, var(--hdrn) * var(--z)) - 8) * 0.75), 0.75);
-		font-weight: 600;
-		background: var(--tab);
-		border: var(--bw) solid var(--stroke);
-		color: var(--text);
+		font-weight: 500;
+		color: var(--sdv-text-muted);
 		white-space: nowrap;
 		pointer-events: none;
+	}
+	/* An open system's name: above its frame, in the room between systems. */
+	.node.system > .header {
+		top: auto;
+		bottom: 100%;
+		left: 0;
+		padding-bottom: 0.35em;
+		font-weight: 600;
+		color: var(--text);
 	}
 </style>

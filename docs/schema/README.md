@@ -43,7 +43,7 @@ drawn by one standard (`tool/src/lib/landscape/connections.ts`):
   landing on one pair, one way, merge into one line between the two boxes' name bars (1, 2–9,
   10+: thicker; hover for the count). So a line never crosses a border. Connections inside
   one card, or between a box and its own contents, have none.
-- **Hover** a row, rail api, card name bar or box's tab: its connections light up, one hop
+- **Hover** a row, rail api, card name bar or box's name: its connections light up, one hop
   each way, to the far row. A box shows those leaving it; a card also lineage between its own
   rows, round its right side. **Click** pins them (a row or api opens its inspector, which lists the same
   connections); Esc unpins. An end off screen gets a wedge on the canvas edge; click it to go

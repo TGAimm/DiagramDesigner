@@ -167,8 +167,8 @@
 		fill: none;
 	}
 	.bar {
-		fill: var(--sdv-logic-head);
-		stroke: var(--sdv-link-call);
+		fill: var(--sdv-kind-logic-soft);
+		stroke: var(--sdv-kind-logic);
 	}
 	.msg {
 		fill: none;
@@ -191,15 +191,16 @@
 		align-items: center;
 		padding: 3px 6px;
 		border: 1px solid var(--sdv-model-stroke);
-		background: var(--sdv-model-header);
+		border-radius: 6px;
+		background: var(--sdv-model-fill);
 		line-height: 1.3;
 	}
+	/* Participants wear their card's line: logic amber, models sky. */
 	.head.self {
-		background: var(--sdv-logic-head);
-		border-color: var(--sdv-link-call);
+		border-color: var(--sdv-kind-logic);
 	}
 	.head.model {
-		background: var(--sdv-model-class-head);
+		border-color: var(--sdv-kind-class);
 	}
 	button {
 		border: none;

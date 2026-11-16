@@ -163,17 +163,20 @@
 		user-select: none;
 	}
 	.sys {
-		fill: color-mix(in srgb, var(--sdv-system-fill) 7%, var(--sdv-canvas-bg));
-		stroke: color-mix(in srgb, var(--sdv-system-fill) 55%, transparent);
+		fill: var(--sdv-system-fill);
+		stroke: var(--sdv-system-stroke);
 		stroke-width: 1;
+		rx: 3px;
 	}
 	.mod {
-		fill: var(--sdv-container-fill);
-		stroke: var(--sdv-container-stroke);
+		fill: var(--sdv-module-fill);
+		stroke: var(--sdv-module-stroke);
 		stroke-width: 0.75;
+		rx: 2px;
 	}
+	/* A system's name stands on its own, as on the canvas. */
 	.head {
-		fill: var(--sdv-system-fill);
+		fill: none;
 	}
 	text {
 		fill: var(--sdv-system-text);

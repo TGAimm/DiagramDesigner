@@ -225,9 +225,12 @@ export const typeText = (f: ModelField, label: (id: string) => string | undefine
 export const indexFields = (ix: ModelIndex, fields: ModelField[]) =>
 	ix.fields.map((id) => fields.find((f) => f.id === id)?.name ?? id).join(', ');
 
-/** Line under a model's name: its view, plus the owner when it is owned elsewhere. */
-export const subtitle = (view: ModelView, owner?: string) =>
-	(view === 'table' ? 'Stored' : 'Model') + (owner ? ` · owned by ${owner}` : '');
+/** A model card's type word: Class or Table. */
+export const kindWord = (view: ModelView) => (view === 'table' ? 'Table' : 'Class');
+/** What follows the type word under a model's name: the owner, when it is owned elsewhere. */
+export const ownerNote = (owner?: string) => (owner ? ` · owned by ${owner}` : '');
+/** Line under a model's name: its type word, plus the owner when it is owned elsewhere. */
+export const subtitle = (view: ModelView, owner?: string) => kindWord(view) + ownerNote(owner);
 
 /** Every model holding each model through a `model` field, itself excluded. */
 export function holdersOf(model: Model): Map<string, Set<string>> {

@@ -12,7 +12,7 @@ models: [li65oa3wga]   # optional: models owned elsewhere, drawn inside as dashe
 ```
 
 - A module with no `parent` is a **root**: the app calls it a system and draws it as one
-  (dark fill, name tab, system glyph); search lists roots as Systems and offers them to start
+  (a neutral frame with its name above it, system icon); search lists roots as Systems and offers them to start
   from. Everything below a root is drawn as a module. Grouping systems under a new root makes
   that root the system.
 - Each root has its own folder, and everything in it lives under that folder. Two roots in

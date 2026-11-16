@@ -89,8 +89,10 @@ impact can be traced.
 
 ## Rendering
 
-- Class cards have a tinted name bar and the subtitle *Model*; stored cards say *Stored*. A
-  card drawn away from its owner adds *owned by …*; a referenced class (`models`) is dashed.
+- A card's kind shows in its line, corner, icon and name colour: a class is sky with 8px
+  corners and says *Class*; a stored table is emerald, near-square (3px) with a ruled name bar,
+  and says *Table*; logic is amber with 10px corners and a ring. A card drawn away from its
+  owner adds *owned by …*; a referenced class (`models`) is dashed.
 - Type column shows `Customer` / `OrderLine[]`. A link strip at the row end marks `ref` (→),
   `from` (dashed →, `ƒ` when `derived`), how many fields point at the field (count pill) and
   how many api fields send into or return it (`API n`, see [api](api.md)).

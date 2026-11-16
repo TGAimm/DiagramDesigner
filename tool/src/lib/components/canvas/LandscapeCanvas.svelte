@@ -2678,7 +2678,8 @@
 		width: 24px;
 		height: 12px;
 		box-sizing: border-box;
-		border: 1px dashed var(--sdv-text-muted);
+		border: 1.5px dashed var(--sdv-kind-class);
+		border-radius: 3px;
 	}
 	.key .sw {
 		width: 22px;
@@ -2687,26 +2688,43 @@
 		box-sizing: border-box;
 		border: 1px solid var(--sdv-model-stroke);
 	}
+	/* Each kind's line and corner, as drawn on the canvas. */
 	.key .sw.system {
-		background: var(--sdv-system-fill);
-		border-color: var(--sdv-system-stroke);
+		border: 1.5px solid var(--sdv-system-stroke);
+		border-radius: 5px;
 	}
 	.key .sw.module {
-		background: var(--sdv-container-fill);
-		border-color: var(--sdv-container-stroke);
+		background: var(--sdv-module-fill);
+		border-color: var(--sdv-module-stroke);
+		border-radius: 4px;
 	}
 	.key .sw.class {
-		background: var(--sdv-model-class-head);
+		border: 1.5px solid var(--sdv-kind-class);
+		border-radius: 3px;
 	}
 	.key .sw.table {
-		background: var(--sdv-model-header);
+		border: 1.5px solid var(--sdv-kind-table);
+		border-radius: 1px;
+		background: linear-gradient(
+			to bottom,
+			transparent 3px,
+			var(--sdv-kind-table) 3px 4.5px,
+			transparent 4.5px
+		);
 	}
 	.key .sw.logic {
-		background: var(--sdv-logic-head);
+		width: 18px;
+		height: 10px;
+		margin-right: 2px;
+		border-color: var(--sdv-kind-logic);
+		border-radius: 4px;
+		box-shadow:
+			0 0 0 1.5px var(--sdv-model-fill),
+			0 0 0 2.5px var(--sdv-kind-logic);
 	}
 	.key .sw.api {
-		background: var(--sdv-api-fill);
-		border-color: var(--sdv-api-stroke);
+		border-color: var(--sdv-system-stroke);
+		border-radius: 999px;
 	}
 	.key hr {
 		border: none;
@@ -2737,7 +2755,7 @@
 		gap: 6px;
 		padding: 10px 12px 8px;
 		border-bottom: 1px solid var(--sdv-model-stroke);
-		background: var(--sdv-model-class-head);
+		background: var(--sdv-model-fill);
 	}
 	.inspector .title {
 		font-weight: 600;
@@ -2823,12 +2841,9 @@
 	.inspector .calls .entry:hover:not(:disabled) {
 		border-left-color: var(--sdv-link-call);
 	}
-	.inspector.unit header {
-		background: var(--sdv-logic-head);
-	}
 	.inspector .fn {
 		font-family: Georgia, serif;
-		color: var(--sdv-link-call);
+		color: var(--sdv-kind-logic-icon);
 	}
 	.inspector .io {
 		display: grid;

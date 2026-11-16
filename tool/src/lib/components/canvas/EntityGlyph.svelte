@@ -4,30 +4,39 @@
 </script>
 
 <script lang="ts">
-	// One small mark per entity type, beside its name (never alone). Sized in em, so it
-	// follows the name's font; drawn in its colour at reduced opacity.
+	// One small mark per entity type, beside its name (never alone): Lucide's app-window, box,
+	// braces, table, square-function and plug. Sized in em, so it follows the name's font. A
+	// card kind's mark wears that kind's colour; the rest the name's, at reduced opacity.
 	let { kind }: { kind: GlyphKind } = $props();
 </script>
 
-{#if kind === 'logic'}
-	<i class="glyph fn" aria-hidden="true">ƒ</i>
-{:else}
-	<svg class="glyph" viewBox="0 0 12 12" aria-hidden="true">
-		{#if kind === 'system'}
-			<rect x="1.5" y="2" width="9" height="8" rx="1" /><path d="M1.5 4.6h9" />
-		{:else if kind === 'module'}
-			<path d="M6 1.2 10.5 3.6v4.8L6 10.8 1.5 8.4V3.6Z" /><path d="M1.5 3.6 6 6l4.5-2.4M6 6v4.8" />
-		{:else if kind === 'class'}
-			<path d="M4.6 1.5H4a1.2 1.2 0 0 0-1.2 1.2v2L1.6 6l1.2 1.3v2A1.2 1.2 0 0 0 4 10.5h.6" />
-			<path d="M7.4 1.5H8a1.2 1.2 0 0 1 1.2 1.2v2L10.4 6 9.2 7.3v2A1.2 1.2 0 0 1 8 10.5h-.6" />
-		{:else if kind === 'table'}
-			<ellipse cx="6" cy="3" rx="4.5" ry="1.6" />
-			<path d="M1.5 3v6c0 .9 2 1.6 4.5 1.6s4.5-.7 4.5-1.6V3" />
-		{:else}
-			<circle cx="7.9" cy="6" r="2.6" /><path d="M1.2 6h4.1" />
-		{/if}
-	</svg>
-{/if}
+<svg class="glyph {kind}" viewBox="0 0 24 24" aria-hidden="true">
+	{#if kind === 'system'}
+		<rect x="2" y="4" width="20" height="16" rx="2" /><path d="M10 4v4" /><path d="M2 8h20" /><path
+			d="M6 4v4"
+		/>
+	{:else if kind === 'module'}
+		<path
+			d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"
+		/><path d="m3.3 7 8.7 5 8.7-5" /><path d="M12 22V12" />
+	{:else if kind === 'class'}
+		<path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1" /><path
+			d="M16 21h1a2 2 0 0 0 2-2v-5c0-1.1.9-2 2-2a2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1"
+		/>
+	{:else if kind === 'table'}
+		<path
+			d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"
+		/>
+	{:else if kind === 'logic'}
+		<rect width="18" height="18" x="3" y="3" rx="2" /><path
+			d="M9 17c2 0 2.8-1 2.8-2.8V10c0-2 1-3.3 3.2-3"
+		/><path d="M9 11.2h5.7" />
+	{:else}
+		<path d="M12 22v-5" /><path d="M9 8V2" /><path d="M15 8V2" /><path
+			d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"
+		/>
+	{/if}
+</svg>
 
 <style>
 	.glyph {
@@ -37,16 +46,23 @@
 		fill: none;
 		stroke: currentColor;
 		/* In viewBox units, so the stroke scales with the name like a font's weight. */
-		stroke-width: 1.3;
+		stroke-width: 2.2;
 		stroke-linejoin: round;
 		stroke-linecap: round;
 		opacity: var(--glyph-opacity, 0.75);
 	}
-	.fn {
-		width: auto;
-		height: auto;
-		font-family: Georgia, serif;
-		font-weight: 400;
-		line-height: 1;
+	.class {
+		color: var(--sdv-kind-class-icon);
+	}
+	.table {
+		color: var(--sdv-kind-table-icon);
+	}
+	.logic {
+		color: var(--sdv-kind-logic-icon);
+	}
+	.class,
+	.table,
+	.logic {
+		opacity: calc(var(--glyph-opacity, 0.75) / 0.75);
 	}
 </style>
