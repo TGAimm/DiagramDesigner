@@ -44,6 +44,24 @@ describe('routeLines', () => {
 		}
 	});
 
+	it('ends a line on its rows when they sit at different heights', () => {
+		// Facing cards with a narrow gap: the line must step between the rows, not be slid
+		// along the cards' sides into one straight run that ends on neither row.
+		const cards = new Map([
+			['t', rect(300, 150, 93, 130)],
+			['s', rect(441, 200, 259, 600)]
+		]);
+		const pts = routeLines(cards, [
+			{
+				id: 'x',
+				s: { on: 's', x0: 441, x1: 700, y: 443, sides: ['l', 'r'] },
+				t: { on: 't', x0: 300, x1: 393, y: 244, sides: ['l', 'r'] }
+			}
+		]).get('x')!;
+		expect(pts[0]).toEqual({ x: 441, y: 443 });
+		expect(pts.at(-1)).toEqual({ x: 393, y: 244 });
+	});
+
 	it('spreads lines running side by side', () => {
 		const r = routeLines(boxes, [
 			{ id: 'x', s: end('a'), t: end('b') },
