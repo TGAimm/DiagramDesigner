@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { focusOn, type Focus } from '../../src/lib/landscape/focus';
-import { layoutLandscape, TABLE } from '../../src/lib/landscape/layout';
+import { FOLD, layoutLandscape, TABLE } from '../../src/lib/landscape/layout';
 import { loadStrings } from './helpers';
 
 // Order holds its lines and refers to a customer; a line refers to a product and takes its
@@ -94,15 +94,40 @@ describe('focusOn', () => {
 		expect(m.elements.get('c')!.storedIn).toBeUndefined();
 	});
 
-	it("puts a neighbour's connecting rows first and folds the rest; the subject shows all", () => {
+	it("puts a neighbour's connecting rows first and folds the rest", () => {
 		const f = focusOn(model, { id: 'o', mode: 'all', depth: 1 });
 		expect(f.model.elements.get('c')!.def.fields!.map((x) => x.id)).toEqual(['c-id', 'c-name']);
 		expect(f.foldAt.get('c')).toBe(1);
 		expect(f.foldAt.has('o')).toBe(false);
-		const boxes = layoutLandscape(f.model, true, undefined, f.foldAt);
+		const boxes = layoutLandscape(f.model, undefined, f.foldAt);
 		const card = boxes.find((b) => b.id === 'c')!;
 		expect(card.foldAt).toBe(1);
 		// The name bar, the header row, one field row and the fold row.
 		expect(card.height).toBe(TABLE.head + 3 * TABLE.rowHeight + 2);
+	});
+
+	it(`folds a neighbour no later than ${FOLD} rows, however many rows connect`, () => {
+		const n = FOLD + 10;
+		const f = focusOn(
+			loadStrings({
+				's/s.module.yaml': 'id: s\n',
+				's/a.model.yaml': 'id: a\nownedBy: s\nfields:\n  - { id: a-id, name: id, type: uuid }\n',
+				's/b.model.yaml': [
+					'id: b',
+					'ownedBy: s',
+					'fields:',
+					...Array.from(
+						{ length: n },
+						(_, i) => `  - { id: b${i}, name: b${i}, type: uuid, from: [a-id] }`
+					),
+					'  - { id: b-x, name: other, type: int }'
+				].join('\n')
+			}).model,
+			{ id: 'a', mode: 'all', depth: 1 }
+		);
+		expect(f.foldAt.get('b')).toBe(FOLD);
+		const card = layoutLandscape(f.model, undefined, f.foldAt).find((b) => b.id === 'b')!;
+		// The name bar, the header row, FOLD field rows and the fold row.
+		expect(card.height).toBe(TABLE.head + (FOLD + 2) * TABLE.rowHeight + 2);
 	});
 });

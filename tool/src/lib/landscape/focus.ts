@@ -1,7 +1,7 @@
 import type { ElementInfo, Model } from '../model/model';
 import type { ModelField } from '../model/schema';
 import { edgesOf, type Edge } from './connections';
-import { holdersOf, viewFields } from './layout';
+import { FOLD, holdersOf, viewFields } from './layout';
 
 /** Everything relevant to the subject, or only the data models related to it. */
 export type FocusMode = 'all' | 'data';
@@ -18,7 +18,7 @@ export interface Focus {
 export interface Focused {
 	/** The design cut down to the focus, laid out and drawn like the whole one. */
 	model: Model;
-	/** Rows each neighbour card shows folded: those connecting to the focus, by model id. */
+	/** Rows each neighbour card shows folded: those connecting to the focus, up to `FOLD`, by model id. */
 	foldAt: Map<string, number>;
 }
 
@@ -30,7 +30,7 @@ const DATA = new Set<Edge['kind']>(['ref', 'model', 'from']);
  * hop joins two models, apis or logic units (a field's hop counts for its model); `data` keeps
  * models only, and apis and units never bridge two of them. The boxes round what is kept stay;
  * a model shows once, where it is owned. A neighbour's connecting fields come first, the rest
- * behind its fold row; the subject's card shows every row.
+ * behind its fold row, which comes no later than `FOLD` rows in, as on any card.
  */
 export function focusOn(model: Model, focus: Focus): Focused {
 	const kind = (id: string) => model.elements.get(id)?.def.kind;
@@ -114,7 +114,7 @@ export function focusOn(model: Model, focus: Focus): Focused {
 		const drawn = new Set(viewFields(model, holders, id, view).map((f) => f.id));
 		const first = fields.filter((f) => linked.has(f.id) && drawn.has(f.id));
 		fieldsOf.set(id, [...first, ...fields.filter((f) => !linked.has(f.id))]);
-		if (first.length < drawn.size) foldAt.set(id, Math.max(1, first.length));
+		if (first.length < drawn.size) foldAt.set(id, Math.min(FOLD, Math.max(1, first.length)));
 	}
 
 	// Every box round what is kept.

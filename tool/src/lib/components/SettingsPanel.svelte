@@ -14,7 +14,7 @@
 		{
 			value: 'all',
 			title: 'Render everything',
-			text: 'Every system, module, card, field and api rail is drawn at every zoom, open and unfolded. Large designs may pan and zoom slowly.'
+			text: 'Every system, module, card, field and api rail is drawn at every zoom, open. Cards over 20 fields still fold. Large designs may pan and zoom slowly.'
 		}
 	];
 
