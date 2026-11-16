@@ -9,7 +9,7 @@
 		{
 			value: 'adaptive',
 			title: 'Adaptive',
-			text: 'Systems and modules are always drawn open. Model cards, logic cards and api rails show only their frames while their text would be under 6px. What you hover or pick, and everything its lines reach, is always drawn in full. Cards over 20 fields fold.'
+			text: 'Systems and modules are always drawn open. Model cards, logic cards and api rails list their rows only on or near the screen, and only while the rows would read at 6px; otherwise a card shows its name, kept readable as you zoom out. What you hover or pick, and everything its lines reach, is always drawn in full. Cards over 20 fields fold.'
 		},
 		{
 			value: 'all',

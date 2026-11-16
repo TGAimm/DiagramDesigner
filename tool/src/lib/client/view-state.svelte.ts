@@ -43,8 +43,9 @@ export class ViewState {
 	hidden = $state.raw<Record<string, true>>({});
 	/** The canvas shows only this subject and what connects to it (see `focusOn`). */
 	focused = $state.raw<Focus | null>(null);
-	/** Adaptive detail, zoomed out: cards draw only their frames and rails their name (see open.ts). */
-	brief = $state.raw(false);
+	/** Boxes whose contents are drawn at this camera: a card its rows, a box its rail's
+	 *  endpoints, where they read on or near the screen (see open.ts). */
+	near = $state.raw<Record<string, true>>({});
 	/** Boxes drawn in full however far out: what is looked at, picked or played, and the far
 	 *  ends of its lines. A card shows its rows, a box its rail's endpoints. */
 	full = $state.raw<Record<string, true>>({});

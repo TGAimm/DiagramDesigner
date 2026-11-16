@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { LandscapeBox } from '../../src/lib/landscape/layout';
-import { apiHosts, cardsBrief, railOpen } from '../../src/lib/landscape/open';
+import {
+	apiHosts,
+	cardsLegible,
+	drawnInFull,
+	railOpen,
+	type Camera
+} from '../../src/lib/landscape/open';
 import type { Rail } from '../../src/lib/landscape/apis';
 
 const box = (id: string, parentId?: string) => ({ id, parentId, group: true }) as LandscapeBox;
@@ -8,10 +14,35 @@ const box = (id: string, parentId?: string) => ({ id, parentId, group: true }) a
 const boxes = [box('a'), box('m', 'a'), { ...box('t', 'm'), group: false }];
 
 describe('cards', () => {
-	it('draw only their frames while their rows would be under 6px', () => {
+	it('show their rows while those would read at 6px', () => {
 		// Rows 13 × 0.47 = 6.1px; 13 × 0.46 = 5.98px.
-		expect(cardsBrief(0.47)).toBe(false);
-		expect(cardsBrief(0.46)).toBe(true);
+		expect(cardsLegible(0.47)).toBe(true);
+		expect(cardsLegible(0.46)).toBe(false);
+	});
+});
+
+describe('drawn in full', () => {
+	const card = (id: string, absX: number) =>
+		({ id, absX, absY: 0, width: 100, height: 100, table: [] }) as unknown as LandscapeBox;
+	// One card on screen, one just past the screen's right edge, one far off it.
+	const cards = [card('here', 100), card('beside', 1200), card('far', 5000)];
+	const cam = (zoom: number): Camera => ({ x: 0, y: 0, zoom, width: 1000, height: 1000 });
+
+	it('draws only the cards on or near the screen, so layout stays as it is', () => {
+		expect([...drawnInFull(cards, new Map(), cam(1))]).toEqual(['here', 'beside']);
+	});
+
+	it('draws no card whose rows would not read', () => {
+		expect([...drawnInFull(cards, new Map(), cam(0.4))]).toEqual([]);
+	});
+
+	it('lists a rail near the screen once its rows read, keyed by its host', () => {
+		const rail = { scale: 1, top: 0, width: 100, height: 50 } as Rail;
+		const rails = new Map([
+			['here', rail],
+			['far', rail]
+		]);
+		expect([...drawnInFull(cards, rails, cam(0.6))]).toEqual(['here', 'beside']);
 	});
 });
 
