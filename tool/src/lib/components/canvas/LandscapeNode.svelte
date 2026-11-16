@@ -263,16 +263,21 @@
 				}}
 			>
 				{#if full}
-					<div class="name screen-sized" style:font-size={titleFont}>
-						<EntityGlyph
-							kind={d.view === 'table' ? 'table' : 'class'}
-						/>{#if marks.glyph.has(d.element)}<span class="op">{marks.glyph.get(d.element)}</span
-							>{/if}{d.name}
+					<div class="title-row">
+						<div class="name screen-sized" style:font-size={titleFont}>
+							<EntityGlyph
+								kind={d.view === 'table' ? 'table' : 'class'}
+							/>{#if marks.glyph.has(d.element)}<span class="op">{marks.glyph.get(d.element)}</span
+								>{/if}{d.name}
+						</div>
+						<span class="kind-word" style:font-size="{TABLE.label}px"
+							>{kindWord(d.view ?? 'class')}</span
+						>
 					</div>
 					<div class="note" style:font-size="{TABLE.note}px">
-						<span class="kind-word">{kindWord(d.view ?? 'class')}</span>{ownerNote(
-							d.owner
-						)}{#if apiParts}<span class="api-parts"> · {apiParts.join(', ')}</span>{/if}
+						{ownerNote(d.owner)}{#if apiParts}<span class="api-parts"
+								>{d.owner ? ' · ' : ''}{apiParts.join(', ')}</span
+							>{/if}
 					</div>
 				{/if}
 			</div>
@@ -762,12 +767,19 @@
 	.brief-name {
 		color: var(--kt);
 	}
+	/* The name, and the card's type word at the right. */
+	.title-row {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
 	.kind-word {
-		font-variant: all-small-caps;
-		letter-spacing: 0.06em;
+		margin-left: auto;
+		flex: none;
+		letter-spacing: 0.07em;
 		font-weight: 600;
 		color: var(--kt);
-		opacity: 0.8;
+		opacity: 0.75;
 	}
 	/* A card drawn as its frame: its name across the whole card, as large as reads. Its name
 	   bar stays for hovering, untinted, so the name does not straddle it. */

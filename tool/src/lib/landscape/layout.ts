@@ -109,6 +109,8 @@ export const TABLE = {
 	head: 48,
 	/** Side padding in every cell. */
 	pad: 10,
+	/** Least space between a card's name and its type word. */
+	kindGap: 12,
 	/** Space between two badges, or a name and its badges, in a cell. */
 	badgeGap: 4,
 	/** Mark in the required and nullable columns. */
@@ -225,12 +227,10 @@ export const typeText = (f: ModelField, label: (id: string) => string | undefine
 export const indexFields = (ix: ModelIndex, fields: ModelField[]) =>
 	ix.fields.map((id) => fields.find((f) => f.id === id)?.name ?? id).join(', ');
 
-/** A model card's type word: Class or Table. */
-export const kindWord = (view: ModelView) => (view === 'table' ? 'Table' : 'Class');
-/** What follows the type word under a model's name: the owner, when it is owned elsewhere. */
-export const ownerNote = (owner?: string) => (owner ? ` · owned by ${owner}` : '');
-/** Line under a model's name: its type word, plus the owner when it is owned elsewhere. */
-export const subtitle = (view: ModelView, owner?: string) => kindWord(view) + ownerNote(owner);
+/** A model card's type word, at the right of its name: CLASS or TABLE. */
+export const kindWord = (view: ModelView) => (view === 'table' ? 'TABLE' : 'CLASS');
+/** Line under a model's name: its owner, when it is owned elsewhere. */
+export const ownerNote = (owner?: string) => (owner ? `Owned by ${owner}` : '');
 
 /** Every model holding each model through a `model` field, itself excluded. */
 export function holdersOf(model: Model): Map<string, Set<string>> {
@@ -419,8 +419,12 @@ function tableLayout(
 	const cols = fieldColumns(fields, view, label, rels);
 	// The 2px is the card's border, which sits inside the box.
 	const width = Math.max(
-		textWidth(name, TABLE.title, true) + GLYPH * TABLE.title + 2 * TABLE.pad,
-		textWidth(subtitle(view, owner), TABLE.note) + 2 * TABLE.pad,
+		textWidth(name, TABLE.title, true) +
+			GLYPH * TABLE.title +
+			TABLE.kindGap +
+			textWidth(kindWord(view), TABLE.label, true) * 1.1 +
+			2 * TABLE.pad,
+		textWidth(ownerNote(owner), TABLE.note) + 2 * TABLE.pad,
 		fields.length ? cols.reduce((w, c) => w + c.width, 0) : 0,
 		...indexes.map((ix) => indexWidth(ix, fields))
 	);
