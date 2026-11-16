@@ -64,7 +64,9 @@ export function routeLines(
 	router.setRoutingParameter(A.idealNudgingDistance, ROUTE.spread);
 	// A bend costs as much as this many px of line, so lines take few.
 	router.setRoutingParameter(A.segmentPenalty, 50);
-	router.setRoutingOption(A.nudgeOrthogonalSegmentsConnectedToShapes, true);
+	// A line's end stays on its row: nudging the segments at a box slides ends along its side,
+	// and can straighten a step between two rows into one run that ends on neither.
+	router.setRoutingOption(A.nudgeOrthogonalSegmentsConnectedToShapes, false);
 	router.setRoutingOption(A.nudgeOrthogonalTouchingColinearSegments, true);
 	// A crossing costs as much as this many px of line.
 	router.setRoutingParameter(A.crossingPenalty, 200);
