@@ -466,6 +466,7 @@
 						class="row"
 						class:hot={hot?.[u.id] === 'peer'}
 						class:self={hot?.[u.id] === 'self'}
+						class:caller={hot?.[u.id] === 'caller'}
 						class:picked={picked === u.id}
 						class:flash={flash === u.id}
 						class:faded={comparing && !marked(u.id)}
@@ -764,6 +765,9 @@
 	}
 	.row.hot {
 		background: var(--sdv-row-peer);
+	}
+	.row.caller {
+		box-shadow: inset 3px 0 0 var(--sdv-link-call);
 	}
 	.row.self,
 	.row.picked {

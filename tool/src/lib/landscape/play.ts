@@ -25,8 +25,11 @@ export interface PlayStep {
 	frame: string[];
 	/** At a choice: the guard and the branches, and the one picked if any. */
 	choice?: { label: 'alt' | 'loop'; guard: string; options: PlayOption[]; picked?: number };
-	/** At a call: the unit with steps that Step into goes into. */
+	/** At a call: the unit with steps that Step into goes into, and how many steps it has. */
 	into?: string;
+	intoSteps?: number;
+	/** At such a call: stepped into, so the steps after it are the inner unit's. */
+	entered?: boolean;
 }
 
 export interface Run {
@@ -90,7 +93,11 @@ export function runOf(
 							method: isApi ? t.def.method : undefined,
 							from: self,
 							to: t.id,
-							into: target
+							...(target && {
+								into: target,
+								intoSteps: el(target)!.def.steps!.length,
+								entered: into.has(key)
+							})
 						},
 						frame
 					);
@@ -195,6 +202,19 @@ export function runOf(
 		if (e !== STOP) throw e;
 	}
 	return { steps, pending };
+}
+
+/**
+ * Whether Step forward goes into the call at `step`: at a call with steps inside not answered
+ * yet, while following calls. A call stepped over on purpose (`over`) stays stepped over.
+ */
+export const forwardGoesInto = (step: PlayStep, over: readonly string[], follow: boolean) =>
+	follow && !!step.into && !step.entered && !over.includes(step.key);
+
+/** The call step `i`'s unit was stepped into from, or -1 in the unit started in. */
+export function callOf(run: Run, i: number): number {
+	const depth = run.steps[i].frame.length;
+	return run.steps.findLastIndex((s, k) => k < i && s.frame.length < depth);
 }
 
 /** Where Step out lands from step `i`: the first step back in the unit that called this one. */

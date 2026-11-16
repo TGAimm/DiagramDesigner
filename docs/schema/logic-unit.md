@@ -60,9 +60,14 @@ steps:                           # the sequence, top to bottom
   closes, a player docks under the canvas, and each step moves the camera to both its ends
   (no further in than 100%, no further out than where their rows are drawn; else to the
   receiver) and draws it there as one labelled line. Nothing advances on its own: step
-  forward or back, pick a branch at an `if` or `each` (the guard is written beside the row),
-  step into a called unit with steps (or the unit handling a called api) and out again. The
-  track has a mark per step on the chosen path; hover one for its message, click or drag to
-  jump. Keys: ← →, 1 2 for branches, I / O, Home, Esc.
+  forward or back, pick a branch at an `if` or `each` (the guard is written beside the row).
+  At a call to a unit with steps (or to an api such a unit handles) the player asks **Into**
+  or **Over**, and the board says how many steps are inside, beside the callee. Inside, the
+  breadcrumb grows, the calling unit's row keeps an edge, and **Out to** goes back to the step
+  after the call. The answer is remembered like a branch. → steps over a call not yet
+  answered; with **Follow calls** on (remembered per browser) it steps into it. The track has
+  a mark per step on the chosen path (a call with steps inside has a chevron under it); hover
+  one for its message, click or drag to jump. Keys: ← →, 1 2 for branches, I into, S over,
+  O out, F follow calls, Home, Esc.
 - A field's inspector lists **Read by logic** and **Written by logic**, including units that
   name its whole model. An api's card lists **Handled by** and **Called by**.

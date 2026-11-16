@@ -10,9 +10,13 @@
 		names,
 		onjump,
 		onpick,
+		over,
+		follow,
 		onforward,
 		oninto,
+		onover,
 		onout,
+		onfollow,
 		onstop
 	}: {
 		run: Run;
@@ -21,9 +25,15 @@
 		names: (id: string) => string;
 		onjump: (i: number) => void;
 		onpick: (option: number) => void;
+		/** Keys of the calls stepped over on purpose. */
+		over: readonly string[];
+		/** Step forward at a call with steps inside goes into it. */
+		follow: boolean;
 		onforward: () => void;
 		oninto: () => void;
+		onover: () => void;
 		onout: () => void;
+		onfollow: () => void;
 		onstop: () => void;
 	} = $props();
 
@@ -72,6 +82,13 @@
 		>
 		<span class="count">· step {at + 1}</span>
 		<span class="fill"></span>
+		<button
+			class="follow"
+			aria-pressed={follow}
+			onclick={onfollow}
+			title="Step forward goes into every call with steps inside (F)"
+			><CornerDownRight size={14} />Follow calls<kbd>F</kbd></button
+		>
 		<button class="x" onclick={onstop} aria-label="Stop playing" title="Stop (Esc)"
 			><X size={16} /></button
 		>
@@ -93,6 +110,24 @@
 					onclick={() => onpick(i)}><span>{o.label}</span><kbd>{i + 1}</kbd></button
 				>
 			{/each}
+		{:else if step.into}
+			<!-- A call with steps inside: Into and Over stand in for Forward; → takes the default. -->
+			<button
+				class="chip into"
+				class:picked={step.entered}
+				title="Step into {names(step.into)} ({follow ? '→ or I' : 'I'})"
+				onclick={oninto}
+				><CornerDownRight size={16} /><span>Into {names(step.into)}</span><kbd
+					>{follow ? '→' : 'I'}</kbd
+				></button
+			>
+			<button
+				class="chip plain"
+				class:picked={over.includes(step.key)}
+				title="Step over ({follow ? 'S' : '→ or S'})"
+				onclick={onover}
+				><ChevronRight size={16} /><span>Over</span><kbd>{follow ? 'S' : '→'}</kbd></button
+			>
 		{:else}
 			<button
 				class="tb main"
@@ -102,21 +137,13 @@
 				title="Step forward (→)"><ChevronRight size={16} /></button
 			>
 		{/if}
-		<span class="tsep"></span>
-		<button
-			class="tb"
-			disabled={!step.into}
-			onclick={oninto}
-			aria-label="Step into"
-			title="Step into (I)"><CornerDownRight size={16} /></button
-		>
-		<button
-			class="tb"
-			disabled={step.frame.length < 2}
-			onclick={onout}
-			aria-label="Step out"
-			title="Step out (O)"><CornerLeftUp size={16} /></button
-		>
+		{#if step.frame.length > 1}
+			<span class="tsep"></span>
+			<button class="chip plain" title="Step out (O)" onclick={onout}
+				><CornerLeftUp size={16} /><span>Out to {names(step.frame.at(-2)!)}</span><kbd>O</kbd
+				></button
+			>
+		{/if}
 		<div class="track">
 			<svg
 				width={W}
@@ -189,6 +216,10 @@
 							/>
 						{:else}
 							<circle {cx} cy={BASE} r={s.kind === 'note' ? 2.5 : 4} fill={COLOR[s.kind]} />
+							{#if s.into}<path
+									class="tick"
+									d="M{cx - 4} {BASE + 15} L{cx} {BASE + 19} L{cx + 4} {BASE + 15}"
+								/>{/if}
 						{/if}
 					</g>
 				{/each}
@@ -304,6 +335,41 @@
 	}
 	.chip.picked {
 		background: var(--ui-accent-bg);
+	}
+	.chip.into {
+		border-color: var(--sdv-link-call);
+		color: var(--sdv-link-call);
+	}
+	.chip.plain {
+		border-color: var(--ui-border);
+		color: var(--ui-text);
+		font-weight: 500;
+	}
+	.follow {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		height: 24px;
+		padding: 0 8px;
+		border: 1px solid var(--ui-border);
+		background: var(--ui-panel);
+		color: var(--ui-muted);
+		font-size: 12px;
+	}
+	.follow[aria-pressed='true'] {
+		border-color: var(--sdv-link-call);
+		background: var(--ui-accent-bg);
+		color: var(--sdv-link-call);
+	}
+	.follow kbd {
+		font: inherit;
+		font-size: 11px;
+		opacity: 0.7;
+	}
+	.tick {
+		fill: none;
+		stroke: var(--sdv-link-call);
+		stroke-width: 1.5;
 	}
 	.chip kbd {
 		font: inherit;
