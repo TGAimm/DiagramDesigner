@@ -38,3 +38,19 @@ Open goals only. **Remove a goal once it is achieved**; keep this list lean.
 - Cardinality at line ends from `required`/`nullable` (1 vs 0..1, crow's foot for `many`).
 - Trace the whole `from` chain of a field, upstream and downstream, not just one hop.
 - Keyboard navigation in the inspector: step between linked rows, Enter to follow.
+
+## Modelling gaps
+
+Things real landscapes have that the schema cannot express yet. Found by checking the schema
+against TrainTicket, eShop, the OpenTelemetry demo and typical ERP/PIM/shop landscapes.
+
+- Async messaging: events, topics and queues, with who publishes and who subscribes (`method`
+  is HTTP only).
+- Other interfaces: gRPC, GraphQL, SOAP, EDI and file drops, batch exports.
+- Triggers beyond apis: a unit started by a schedule (cron) or by an event, not only `handles`.
+- Third-party SaaS consumed but not owned (payment provider, carrier), distinct from
+  `external: true` (callers the design doesn't show).
+- Enums and value sets for fields; lifecycles/state machines (order status).
+- Copies of data at landscape scale: caches, search indexes, data warehouse, checked against
+  `from`.
+- Ownership, teams and environments as first-class, not free `meta`.
