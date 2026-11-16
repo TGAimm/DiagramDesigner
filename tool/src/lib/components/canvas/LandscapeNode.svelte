@@ -54,6 +54,23 @@
 			apis: { id: string; name: string; method: string; path: string; y: number }[];
 		}[];
 	}
+
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- not state: nodes to measure
+	const toMeasure = new Set<string>();
+	/**
+	 * Has Svelte Flow measure node `id` with the rest asking in the same update: one measuring
+	 * pass and one pass over every node's position for all of them, not one each, which is what
+	 * zooming past the point where rows draw would cost for every card on screen.
+	 */
+	function measureLater(id: string, update: (ids: string[]) => void) {
+		if (!toMeasure.size)
+			queueMicrotask(() => {
+				const ids = [...toMeasure];
+				toMeasure.clear();
+				update(ids);
+			});
+		toMeasure.add(id);
+	}
 </script>
 
 <script lang="ts">
@@ -110,12 +127,12 @@
 	const railListed = $derived(!!d.rail && (!!d.state.near[id] || !!d.state.full[id]));
 	const updateNodeInternals = useUpdateNodeInternals();
 	// Handles move with their rows, come with them, and move as rails open; Svelte Flow measures
-	// them only when told.
+	// them only when told. Nodes changing together are measured together (see `measureLater`).
 	$effect(() => {
 		void expanded;
 		void full;
 		void railListed;
-		updateNodeInternals(id);
+		measureLater(id, updateNodeInternals);
 	});
 	// Opening or closing swaps the hovered part (the whole box, or its tab) without a leave.
 	const isOpen = $derived(!!d.open);

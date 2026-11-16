@@ -1,8 +1,10 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
+	boxesNear,
 	loadRouter,
 	ROUTE,
 	routeLines,
+	routeMemo,
 	type Point,
 	type Rect
 } from '../../src/lib/landscape/route';
@@ -101,5 +103,89 @@ describe('routeLines', () => {
 			{ id: 'x', s: end('a'), t: { x0: 500, x1: 600, y: 30, sides: ['l'] } }
 		]).get('x')!;
 		expect(pts.at(-1)).toEqual({ x: 500, y: 30 });
+	});
+});
+
+describe('boxesNear', () => {
+	const at = (x0: number, x1: number, y: number, on?: string) => ({
+		on,
+		x0,
+		x1,
+		y,
+		sides: ['l', 'r'] as const
+	});
+	const line = (s: ReturnType<typeof at>, t: ReturnType<typeof at>) => ({ id: 'x', s, t });
+
+	it('keeps the boxes round the ends and those meeting them, and drops the far ones', () => {
+		const boxes = new Map([
+			['a', rect(0, 0, 100, 60)],
+			['b', rect(300, 0, 100, 60)],
+			// Meets the rectangle round the ends.
+			['tall', rect(150, 60 + ROUTE.room - 1, 100, 400)],
+			// Meets it only once it has grown round `tall`.
+			['below', rect(150, 60 + 2 * ROUTE.room + 400 - 2, 100, 60)],
+			['far', rect(5000, 5000, 100, 60)]
+		]);
+		const near = boxesNear(boxes, [line(at(0, 100, 30, 'a'), at(300, 400, 30, 'b'))]);
+		expect([...near.keys()].sort()).toEqual(['a', 'b', 'below', 'tall']);
+	});
+
+	it('keeps the boxes round a free end', () => {
+		const boxes = new Map([
+			['a', rect(0, 0, 100, 60)],
+			['x', rect(1000, 0, 100, 60)],
+			['far', rect(1000, 1000, 100, 60)]
+		]);
+		const near = boxesNear(boxes, [line(at(0, 100, 30, 'a'), at(1000, 1100, 30))]);
+		expect([...near.keys()].sort()).toEqual(['a', 'x']);
+	});
+
+	it('is empty without lines', () => {
+		expect(boxesNear(new Map([['a', rect(0, 0, 10, 10)]]), []).size).toBe(0);
+	});
+
+	it('leaves routes round the boxes near them as they are', () => {
+		const near = new Map([
+			['a', rect(0, 0, 100, 60)],
+			['mid', rect(150, -20, 100, 120)],
+			['b', rect(300, 0, 100, 60)]
+		]);
+		const far = Array.from({ length: 40 }, (_, i) => ['f' + i, rect(2000 + i * 150, 0, 100, 60)]);
+		const lines = [line(at(0, 100, 30, 'a'), at(300, 400, 40, 'b'))];
+		const all = new Map([...near, ...(far as [string, Rect][])]);
+		expect(boxesNear(all, lines)).toEqual(near);
+		const pts = routeLines(all, lines).get('x')!;
+		expect(pts.length).toBeGreaterThan(2);
+		expect(routeLines(near, lines)).toEqual(routeLines(all, lines));
+	});
+});
+
+describe('routeMemo', () => {
+	const boxes = new Map([
+		['a', rect(0, 0, 100, 60)],
+		['b', rect(300, 0, 100, 60)]
+	]);
+	const lines = [
+		{
+			id: 'x',
+			s: { on: 'a', x0: 0, x1: 100, y: 30, sides: ['l', 'r'] as const },
+			t: { on: 'b', x0: 300, x1: 400, y: 30, sides: ['l', 'r'] as const }
+		}
+	];
+
+	it('gives the same routes again for the same lines among the same boxes', () => {
+		const route = routeMemo(2);
+		const first = route(boxes, lines);
+		expect(route(boxes, structuredClone(lines))).toBe(first);
+		expect(first).toEqual(routeLines(boxes, lines));
+	});
+
+	it('routes again among other boxes, or once it has forgotten', () => {
+		const route = routeMemo(1);
+		const first = route(boxes, lines);
+		expect(route(new Map(boxes), lines)).not.toBe(first);
+		const again = route(boxes, lines);
+		route(boxes, [{ ...lines[0], id: 'y' }]);
+		expect(route(boxes, lines)).not.toBe(again);
 	});
 });
