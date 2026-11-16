@@ -21,7 +21,7 @@
 	import FocusBar from './FocusBar.svelte';
 	import { settings } from '#lib/client/settings.svelte.ts';
 	import { theme } from '#lib/client/theme.svelte.ts';
-	import type { ViewState } from '#lib/client/view-state.svelte.ts';
+	import type { FieldRef, ViewState } from '#lib/client/view-state.svelte.ts';
 	import {
 		fieldRowY,
 		incomingCount,
@@ -67,6 +67,7 @@
 	import {
 		loadRouter,
 		routeLines,
+		routeMemo,
 		routerReady,
 		type Rect,
 		type RouteEnd,
@@ -393,9 +394,35 @@
 	const pickedLines = $derived(linesOf(picked));
 	const lit = $derived(hoveredRow ? rowLines : hoveredBox ? boxLines : pickedLines);
 
+	// ------------------------------------------------------------ hover
+	// What the pointer is over, as enter and leave events tell: a row or api, and a card or name
+	// bar. The view state gets it once a frame, so leaving one row for the next is one change,
+	// never a moment on the card between them that lights (and routes) all of the card's lines.
+	// Nor while the view pans or zooms, when everything slides under the pointer: then it gets
+	// what the pointer is over once the view rests.
+	let overRow: FieldRef | null = null;
+	let overBox: string | null = null;
+	let moving = false;
+	let hoverFrame = 0;
+	function hoverLater() {
+		hoverFrame ||= requestAnimationFrame(hoverNow);
+	}
+	function hoverNow() {
+		hoverFrame = 0;
+		if (moving) return;
+		if (overRow?.box !== view.hover?.box || overRow?.field !== view.hover?.field)
+			view.hover = overRow;
+		if (overBox !== view.hoverBox) view.hoverBox = overBox;
+	}
+	/** The pointer went onto row `ref` (a row, an api, or an inspector entry), or off it. */
+	function hoverRow(ref: FieldRef, on: boolean) {
+		if (on) overRow = ref;
+		else if (overRow?.box === ref.box && overRow.field === ref.field) overRow = null;
+		hoverLater();
+	}
+
 	function onfield(box: string, field: string, ev: 'enter' | 'leave' | 'click') {
-		if (ev === 'enter') view.hover = { box, field };
-		else if (ev === 'leave') view.hover = null;
+		if (ev !== 'click') hoverRow({ box, field }, ev === 'enter');
 		else {
 			const same = view.field?.box === box && view.field.field === field;
 			view.field = same ? null : { box, field };
@@ -583,8 +610,9 @@
 					onfield: (field, ev) => onfield(b.id, field, ev),
 					open: open.has(b.id),
 					onbox: (ev) => {
-						if (ev === 'enter') view.hoverBox = b.id;
-						else if (view.hoverBox === b.id) view.hoverBox = null;
+						if (ev === 'enter') overBox = b.id;
+						else if (overBox === b.id) overBox = null;
+						hoverLater();
 					},
 					rail: railView(b.id),
 					onapi,
@@ -628,6 +656,8 @@
 		// Lines at rest leaving a box together share one exit (see the design's Routing rule).
 		return routeLines(obstacles, lines, true);
 	});
+	// Lit lines change with every hover; those of what was looked at lately are kept.
+	const routeLit = routeMemo();
 	const litRoutes = $derived.by(() => {
 		if (!routed) return new Map();
 		const lines = lit.map((l) => {
@@ -638,7 +668,7 @@
 				t: routeEnd(l.t, l.sides[1], sameCard ? 'r' : undefined)
 			};
 		});
-		return routeLines(obstacles, lines);
+		return routeLit(obstacles, lines);
 	});
 
 	/** A line at rest: grey, on the two boxes' name bars, wider the more it merges. */
@@ -1100,6 +1130,7 @@
 			keep(t.absY + (row >= 0 ? rowY(t, row) : t.height / 2), area.absY, area.height, ch),
 			{ zoom, duration: 700 }
 		);
+		overRow = null;
 		view.hover = null;
 		if (!target.field) return;
 		const ref = { box: t.id, field: target.field };
@@ -1495,6 +1526,11 @@
 		nodesConnectable={false}
 		elementsSelectable={false}
 		zoomOnDoubleClick={false}
+		onmovestart={() => (moving = true)}
+		onmoveend={() => {
+			moving = false;
+			hoverLater();
+		}}
 		onnodeclick={({ node }) => {
 			view.selectedNodes = [node.id];
 			unpin();
@@ -1660,10 +1696,9 @@
 							disabled={!e.target && !e.api}
 							onclick={() => (e.api ? showApi(e.api) : e.target && flyTo(e.target))}
 							onmouseenter={() =>
-								(view.hover = e.target?.field
-									? { box: e.target.box.id, field: e.target.field }
-									: null)}
-							onmouseleave={() => (view.hover = null)}
+								e.target?.field && hoverRow({ box: e.target.box.id, field: e.target.field }, true)}
+							onmouseleave={() =>
+								e.target?.field && hoverRow({ box: e.target.box.id, field: e.target.field }, false)}
 							title={e.target ? 'Go to' : undefined}
 						>
 							<span class="text" data-glyph={s.glyph}>{e.text}</span>

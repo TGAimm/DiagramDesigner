@@ -34,8 +34,11 @@ export interface RouteLine {
 
 export type Point = { x: number; y: number };
 
-/** Room kept between a line and a box, and between lines side by side, in canvas px. */
-export const ROUTE = { buffer: 8, spread: 8 };
+/**
+ * Room kept between a line and a box, and between lines side by side, in canvas px; `room` is
+ * kept clear round the boxes a set of lines is routed among (see `boxesNear`).
+ */
+export const ROUTE = { buffer: 8, spread: 8, room: 64 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- an Emscripten binding
 let avoid: any;
@@ -50,8 +53,49 @@ export async function loadRouter(wasmUrl?: string) {
 export const routerReady = () => !!avoid;
 
 /**
- * Each line's corners, start and end included, by line id. Lines round `boxes` by id. With
- * `shareEnds`, lines leaving one end run as one line from it, else they spread apart there too.
+ * The boxes lines are routed round: those meeting the rectangle round the lines' ends and the
+ * boxes they end on, grown to hold each with `room` to spare, until no other box meets it.
+ * Every box left out lies wholly outside it, and a line never needs to leave it (it can run
+ * round its edge, clear of every box inside), so the lines route the same without them. What
+ * libavoid costs grows with every box it is given, and most of a large landscape's boxes are
+ * far from the few lines lit at a time.
+ */
+export function boxesNear(
+	boxes: Map<string, Rect>,
+	lines: RouteLine[],
+	room: number = ROUTE.room
+): Map<string, Rect> {
+	const out = new Map<string, Rect>();
+	if (!lines.length) return out;
+	const r = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
+	const grow = (a: Rect) => {
+		r.x0 = Math.min(r.x0, a.x0 - room);
+		r.y0 = Math.min(r.y0, a.y0 - room);
+		r.x1 = Math.max(r.x1, a.x1 + room);
+		r.y1 = Math.max(r.y1, a.y1 + room);
+	};
+	for (const l of lines)
+		for (const e of [l.s, l.t]) {
+			grow({ x0: e.x0, y0: e.y, x1: e.x1, y1: e.y });
+			const on = e.on === undefined ? undefined : boxes.get(e.on);
+			if (on) grow(on);
+		}
+	for (let added = true; added;) {
+		added = false;
+		for (const [id, b] of boxes)
+			if (!out.has(id) && b.x0 < r.x1 && b.x1 > r.x0 && b.y0 < r.y1 && b.y1 > r.y0) {
+				out.set(id, b);
+				grow(b);
+				added = true;
+			}
+	}
+	return out;
+}
+
+/**
+ * Each line's corners, start and end included, by line id. Lines round `boxes` by id (those
+ * near them: see `boxesNear`). With `shareEnds`, lines leaving one end run as one line from
+ * it, else they spread apart there too.
  */
 export function routeLines(
 	boxes: Map<string, Rect>,
@@ -81,7 +125,7 @@ export function routeLines(
 		shapes
 			.set(id, new A.ShapeRef(router, temp(new A.Rectangle(pt(r.x0, r.y0), pt(r.x1, r.y1)))))
 			.get(id);
-	for (const [id, r] of boxes) shape(id, r);
+	for (const [id, r] of boxesNear(boxes, lines)) shape(id, r);
 	// Pins on a box at one height and sides, shared by every line ending there.
 	const pins = new Map<string, number>();
 	const end = (e: RouteEnd) => {
@@ -142,6 +186,26 @@ export function routeLines(
 	A.destroy(router);
 	for (const o of temps) A.destroy(o);
 	return out;
+}
+
+/**
+ * `routeLines` remembering its last `size` results among one set of boxes, so going back to
+ * something looked at a moment ago lights its lines without routing them again.
+ */
+export function routeMemo(size = 32) {
+	let among: Map<string, Rect> | undefined;
+	const memo = new Map<string, Map<string, Point[]>>();
+	return (boxes: Map<string, Rect>, lines: RouteLine[], shareEnds = false) => {
+		if (boxes !== among) memo.clear();
+		among = boxes;
+		const key = JSON.stringify([shareEnds, lines]);
+		let out = memo.get(key);
+		if (out) memo.delete(key);
+		else out = routeLines(boxes, lines, shareEnds);
+		memo.set(key, out);
+		if (memo.size > size) memo.delete(memo.keys().next().value!);
+		return out;
+	};
 }
 
 /** An SVG path through a route's corners. */
