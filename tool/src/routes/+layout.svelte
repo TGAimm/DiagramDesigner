@@ -11,6 +11,10 @@
 	import SettingsPanel from '#lib/components/SettingsPanel.svelte';
 	import ScenarioControls from '#lib/components/ScenarioControls.svelte';
 	import FlagsMenu from '#lib/components/FlagsMenu.svelte';
+	import LandscapeMenu from '#lib/components/LandscapeMenu.svelte';
+	import OpenFolderDialog from '#lib/components/OpenFolderDialog.svelte';
+	import StartScreen from '#lib/components/StartScreen.svelte';
+	import { landscapes } from '#lib/client/landscapes.svelte.ts';
 	import type { ChangedEvent } from '#lib/server/vite-plugin.ts';
 
 	let { children } = $props();
@@ -20,20 +24,34 @@
 	const errors = $derived(design.diagnostics.filter((d) => d.severity === 'error').length);
 	const warnings = $derived(design.diagnostics.length - errors);
 	const mac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent);
+	/** A landscape is open. Without the landscape routes (the static build) the snapshot is it. */
+	const open = $derived(design.landscape !== null || !landscapes.available);
 
 	onMount(() => {
 		// Subscribe before loading; the store queues events behind the initial load.
 		import.meta.hot?.on('sdv:changed', (ev: ChangedEvent) => design.onExternalChange(ev));
-		design.load().then(() => theme.init(design.config.theme));
+		import.meta.hot?.on('sdv:landscape', () => landscapes.onServerSwitch());
+		// Landscapes first, so a closed landscape shows the start screen, not an empty canvas.
+		void landscapes
+			.refresh()
+			.then(() => design.load())
+			.then(() => theme.init(design.config.theme));
 		if (import.meta.env.DEV) (window as unknown as { __sdv: typeof design }).__sdv = design;
 	});
 </script>
 
 <svelte:window
 	onkeydown={(e) => {
-		if (e.key.toLowerCase() !== 'k' || !(mac ? e.metaKey : e.ctrlKey)) return;
-		e.preventDefault();
-		search.open = !search.open;
+		if (!(mac ? e.metaKey : e.ctrlKey)) return;
+		const key = e.key.toLowerCase();
+		if (key === 'k' && open) {
+			e.preventDefault();
+			search.open = !search.open;
+		} else if (key === 'o' && landscapes.available) {
+			e.preventDefault();
+			landscapes.menuOpen = false;
+			landscapes.dialogOpen = true;
+		}
 	}}
 />
 
@@ -46,10 +64,12 @@
 <div class="app">
 	<header class="topbar">
 		<a class="brand" href={resolve('/')}>System Design Viewer</a>
-		{#if design.loaded}<FlagsMenu /><ScenarioControls />{/if}
+		{#if landscapes.available}<LandscapeMenu {mac} />{/if}
+		{#if design.loaded && open}<FlagsMenu /><ScenarioControls />{/if}
 		<span class="spacer"></span>
 		<button
 			class="find"
+			disabled={!open}
 			aria-expanded={search.open}
 			aria-pressed={search.open}
 			onclick={() => (search.open = !search.open)}
@@ -95,6 +115,8 @@
 	<main>
 		{#if design.loadError}
 			<p class="load-error">Could not load the design: {design.loadError}</p>
+		{:else if design.loaded && !open}
+			<StartScreen {mac} />
 		{:else if design.loaded}
 			{@render children()}
 		{:else}
@@ -103,6 +125,9 @@
 	</main>
 	{#if showDiagnostics}
 		<DiagnosticsPanel onclose={() => (showDiagnostics = false)} />
+	{/if}
+	{#if landscapes.dialogOpen}
+		<OpenFolderDialog />
 	{/if}
 </div>
 
