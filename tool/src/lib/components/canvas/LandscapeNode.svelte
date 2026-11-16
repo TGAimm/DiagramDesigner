@@ -211,6 +211,7 @@
 <div
 	class="node"
 	class:group={d.group}
+	class:screen-sized={d.group}
 	class:selected={d.state.selectedNodes.includes(id)}
 	class:peer-box={d.state.peerBoxes[id]}
 	class:api-box={apiParts}
@@ -227,7 +228,7 @@
 	{#if d.group}
 		<!-- Open, the box wears its closed colour as a name tab, so its type still reads. -->
 		<div
-			class="header"
+			class="header screen-sized"
 			role="presentation"
 			onmouseenter={() => d.onbox?.('enter')}
 			onmouseleave={() => d.onbox?.('leave')}
@@ -259,7 +260,7 @@
 				}}
 			>
 				{#if full}
-					<div class="name" style:font-size={titleFont}>
+					<div class="name screen-sized" style:font-size={titleFont}>
 						<EntityGlyph
 							kind={d.view === 'table' ? 'table' : 'class'}
 						/>{#if marks.glyph.has(d.element)}<span class="op">{marks.glyph.get(d.element)}</span
@@ -273,7 +274,7 @@
 				{/if}
 			</div>
 			{#if !full}
-				<div class="brief-name" style:font-size={bodyFont}>
+				<div class="brief-name screen-sized" style:font-size={bodyFont}>
 					<EntityGlyph kind={d.view === 'table' ? 'table' : 'class'} /><span>{d.name}</span>
 				</div>
 			{/if}
@@ -444,14 +445,14 @@
 		>
 			<div class="thead" style:height="{TABLE.head}px">
 				{#if full}
-					<div class="name" style:font-size={titleFont}>
+					<div class="name screen-sized" style:font-size={titleFont}>
 						<EntityGlyph kind="logic" />Logic
 					</div>
 					<div class="note" style:font-size="{TABLE.note}px">{logicNote(rows.length)}</div>
 				{/if}
 			</div>
 			{#if !full}
-				<div class="brief-name" style:font-size={bodyFont}>
+				<div class="brief-name screen-sized" style:font-size={bodyFont}>
 					<EntityGlyph kind="logic" /><span>Logic</span>
 				</div>
 			{/if}
@@ -515,12 +516,12 @@
 		<!-- Open, a box is drawn by its border and name tab alone. -->
 		{#if !d.open}
 			<div
-				class="face"
+				class="face screen-sized"
 				style:font-size={leafFont}
 				style:--fs={font}
 				style:padding-right={!d.group && d.rail ? `${d.rail.width / 2}px` : undefined}
 			>
-				<div class="name">
+				<div class="name screen-sized">
 					<EntityGlyph kind={glyph} />{#if marks.glyph.has(d.element)}<span class="op"
 							>{marks.glyph.get(d.element)}</span
 						>{/if}{d.name}
@@ -529,7 +530,7 @@
 		{/if}
 		{#if roll && !d.open}
 			<span
-				class="roll"
+				class="roll screen-sized"
 				class:sev-break={roll.level === 'breaking'}
 				class:sev-check={roll.level === 'check'}
 				title="{roll.count} changed or affected inside">{roll.count}</span
@@ -604,7 +605,7 @@
 				</div>
 			{:else}
 				<button
-					class="rail-name"
+					class="rail-name screen-sized"
 					style:font-size={nameFont(
 						Math.min(RAIL.font, fit('APIs', r.width - 8, r.height * 0.6)),
 						fit('APIs', r.width - 8, r.height * 0.6)
@@ -628,9 +629,15 @@
 		box-sizing: border-box;
 		cursor: pointer;
 	}
-	.node.group {
-		/* Solid: dashed is kept for "owned elsewhere". At least one screen pixel wide. */
+	/* Sized on screen by the zoom, `--z`, which only elements of class `screen-sized` get (see
+	   app.css). */
+	.node.group,
+	.header {
+		/* At least one screen pixel wide. */
 		--bw: max(1px, calc(1px / var(--z)));
+	}
+	.node.group {
+		/* Solid: dashed is kept for "owned elsewhere". */
 		border: var(--bw) solid var(--stroke);
 		background: var(--sdv-boundary-fill);
 	}

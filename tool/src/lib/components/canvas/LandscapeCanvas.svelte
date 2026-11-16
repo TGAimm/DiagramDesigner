@@ -65,14 +65,14 @@
 	} from '#lib/landscape/apis.ts';
 	import { apiBodies } from '#lib/model/model.ts';
 	import {
-		loadRouter,
-		routeLines,
-		routeMemo,
-		routerReady,
+		routeKey,
 		type Rect,
 		type RouteEnd,
+		type RouteLine,
 		type Side
 	} from '#lib/landscape/route.ts';
+	import { RouteClient, type RouteAhead, type RoutePort } from '#lib/landscape/route-client.ts';
+	import RouteWorker from '#lib/landscape/route-worker.ts?worker';
 	import wasmUrl from 'libavoid-js/dist/libavoid.wasm?url';
 	import { untrack } from 'svelte';
 	import LandscapeNode, { type LandscapeNodeData } from './LandscapeNode.svelte';
@@ -157,6 +157,19 @@
 		if (next.length === Object.keys(was).length && next.every((id) => was[id])) return;
 		view.near = Object.fromEntries(next.map((id) => [id, true as const]));
 	});
+	// The zoom, `--z`, for what keeps a size on screen, set by one rule on the elements that use
+	// it (class `screen-sized`, see app.css). Set on the canvas, every element in it would be
+	// styled anew at each step of a zoom.
+	const zoomSheet = new CSSStyleSheet();
+	zoomSheet.insertRule('.canvas .screen-sized { --z: 1 }');
+	const zoomRule = zoomSheet.cssRules[0] as CSSStyleRule;
+	$effect(() => {
+		document.adoptedStyleSheets = [...document.adoptedStyleSheets, zoomSheet];
+		return () => {
+			document.adoptedStyleSheets = document.adoptedStyleSheets.filter((s) => s !== zoomSheet);
+		};
+	});
+	$effect(() => zoomRule.style.setProperty('--z', String(viewport.current.zoom)));
 	/** The rail on box `id` lists its endpoints: they read near the screen, or are looked at. */
 	const listed = (id: string) => !!view.near[id] || !!view.full[id];
 
@@ -292,8 +305,23 @@
 				: (['r', 'r'] as const);
 
 	// ------------------------------------------------------------ routing
-	let routed = $state(routerReady());
-	loadRouter(wasmUrl).then(() => (routed = true));
+	// In workers, one for what is wanted now and one routing ahead, so routing never holds up
+	// input or frames (see route-client.ts).
+	const router = new RouteClient(
+		new RouteWorker() as unknown as RoutePort,
+		new RouteWorker() as unknown as RoutePort,
+		wasmUrl
+	);
+	/** Routing failed: lines run straight between their ends instead. */
+	let unrouted = $state(false);
+	router.onfail = (error) => {
+		console.error('Routing failed:', error);
+		unrouted = true;
+	};
+	$effect(() => () => router.destroy());
+	/** Counts routes wanted now coming in, for what reads them to look again. */
+	let routedIn = $state(0);
+	const routeCame = () => routedIn++;
 
 	/** Boxes lines go round: every shown box but an open one, with its rail; open boxes' rails. */
 	const obstacles = $derived.by(() => {
@@ -651,8 +679,8 @@
 	});
 
 	// Lines at rest and lit lines are routed apart, so a hover never moves the lines at rest.
-	const restRoutes = $derived.by(() => {
-		if (!routed) return new Map();
+	// Each is drawn once routed, never first along a makeshift path.
+	const restWant = $derived.by(() => {
 		const lines = rest.map((l) => {
 			const a = headEnd(boxById.get(l.source)!);
 			const b = headEnd(boxById.get(l.target)!);
@@ -660,13 +688,20 @@
 			return { id: l.id, s: routeEnd(a, ss), t: routeEnd(b, ts) };
 		});
 		// Lines at rest leaving a box together share one exit (see the design's Routing rule).
-		return routeLines(obstacles, lines, true);
+		return { lines, key: routeKey(lines, true) };
 	});
-	// Lit lines change with every hover; those of what was looked at lately are kept.
-	const routeLit = routeMemo();
-	const litRoutes = $derived.by(() => {
-		if (!routed) return new Map();
-		const lines = lit.map((l) => {
+	const restRoutes = $derived.by(() => {
+		void routedIn;
+		return router.get(obstacles, restWant.key);
+	});
+	$effect(() => {
+		const { key, lines } = restWant;
+		router.want(obstacles, key, lines, true, 'rest', routeCame);
+	});
+
+	/** Lit lines as the router takes them. */
+	const routeLinesOf = (lines: LitLine[]): RouteLine[] =>
+		lines.map((l) => {
 			const sameCard = l.s.node === l.t.node;
 			return {
 				id: l.id,
@@ -674,7 +709,58 @@
 				t: routeEnd(l.t, l.sides[1], sameCard ? 'r' : undefined)
 			};
 		});
-		return routeLit(obstacles, lines);
+	// Lit lines are mostly routed ahead (below). Those that are not are routed before anything
+	// else and drawn when they come, a moment after the rows they join light up.
+	const litWant = $derived.by(() => {
+		const lines = routeLinesOf(lit);
+		return { lines, key: routeKey(lines) };
+	});
+	const litRoutes = $derived.by(() => {
+		void routedIn;
+		return router.get(obstacles, litWant.key);
+	});
+	$effect(() => {
+		const { key, lines } = litWant;
+		router.want(obstacles, key, lines, false, 'lit', routeCame);
+	});
+
+	/** The view's centre on the canvas. */
+	function viewCentre() {
+		const { x, y, zoom } = viewport.current;
+		return { x: (cw / 2 - x) / zoom, y: (ch / 2 - y) / zoom };
+	}
+	/** Everything that can be looked at, with its lit lines: every box, row and api. */
+	function looksAhead(): RouteAhead[] {
+		const out: RouteAhead[] = [];
+		const add = (look: Look, x: number, y: number) =>
+			out.push({ x, y, lines: () => routeLinesOf(linesOf(look)) });
+		for (const b of boxes) {
+			const x = b.absX + b.width / 2;
+			add({ box: b.id }, x, b.absY + b.height / 2);
+			const n = b.fields?.length ?? 0;
+			const rows =
+				b.logic?.rows ?? b.fields?.slice(0, shownRows(n, !!view.expanded[b.id], b.foldAt));
+			rows?.forEach((r, i) => add({ box: b.id, leaf: r.id }, x, b.absY + rowY(b, i)));
+		}
+		for (const [id, r] of rails) {
+			const b = boxById.get(id)!;
+			const x = b.absX + b.width;
+			for (const a of r.groups.flatMap((g) => g.apis))
+				add({ box: id, leaf: a }, x, b.absY + r.top + (railRowY(r, a) ?? 0) * r.scale);
+		}
+		return out;
+	}
+	// After each layout, and whenever the lines lit by looking at something may end elsewhere
+	// (a card folded or expanded, a kind of line hidden, an api picked), the lit lines of
+	// everything that can be looked at are routed ahead, those nearest the view first. What is
+	// routed already is not routed again.
+	$effect(() => {
+		void shownEdges;
+		void view.expanded;
+		void view.api;
+		void view.apiField;
+		const among = obstacles;
+		untrack(() => router.ahead(among, looksAhead(), viewCentre()));
 	});
 
 	/** A line at rest: grey, on the two boxes' name bars, wider the more it merges. */
@@ -693,7 +779,7 @@
 			// them, over the box they share.
 			zIndex: -1,
 			data: {
-				points: restRoutes.get(l.id),
+				points: restRoutes?.get(l.id),
 				title: `${l.count} connection${l.count > 1 ? 's' : ''}: ${l.kinds.map((k) => KIND_NAME[k]).join(', ')}`
 			},
 			class: ['conn rest', pattern, l.count >= 10 ? 'w3' : l.count > 1 ? 'w2' : 'w1', dim && 'dim']
@@ -716,7 +802,7 @@
 			targetHandle: `${l.t.anchor}:${l.sides[1]}`,
 			type: 'connection',
 			zIndex: 1000,
-			data: { points: litRoutes.get(l.id) },
+			data: { points: litRoutes?.get(l.id) },
 			class: `conn lit ${l.kind}`,
 			...(l.kind === 'model'
 				? { markerStart: `sdv-diamond-${token}` }
@@ -725,7 +811,10 @@
 	}
 
 	$effect(() => {
-		edges = [...rest.map((l) => restEdge(l, !!focus)), ...lit.map(litEdge)];
+		edges = [
+			...(restRoutes || unrouted ? rest.map((l) => restEdge(l, !!focus)) : []),
+			...(litRoutes || unrouted ? lit.map(litEdge) : [])
+		];
 	});
 
 	/** Arrowheads and diamonds, grey for lines at rest and in each kind's colour when lit. */
@@ -774,7 +863,7 @@
 			{ key: string; x: number; y: number; angle: number; kind: LinkKind; end: End; name: string }
 		>();
 		for (const l of lit) {
-			const route = litRoutes.get(l.id);
+			const route = litRoutes?.get(l.id);
 			for (const [end, side, at] of [
 				[l.s, l.sides[0], route?.[0]],
 				[l.t, l.sides[1], route?.at(-1)]
@@ -1544,13 +1633,7 @@
 	}}
 />
 
-<div
-	class="canvas"
-	bind:clientWidth={cw}
-	bind:clientHeight={ch}
-	style:--z={viewport.current.zoom}
-	data-testid="canvas"
->
+<div class="canvas" bind:clientWidth={cw} bind:clientHeight={ch} data-testid="canvas">
 	<SvelteFlow
 		bind:nodes
 		{edges}
@@ -1568,6 +1651,7 @@
 		onmoveend={() => {
 			moving = false;
 			hoverLater();
+			router.aheadFrom(viewCentre());
 		}}
 		onnodeclick={({ node }) => {
 			view.selectedNodes = [node.id];
