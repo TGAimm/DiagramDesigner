@@ -48,7 +48,7 @@
 		height: number;
 		scale: number;
 		methodWidth: number;
-		/** Rows read at 12px or more, so they are listed; else the rail shows its name. */
+		/** Listed: rows read at LEGIBLE px, or everything is drawn; else the rail shows its name. */
 		open: boolean;
 		groups: {
 			title?: string;
@@ -103,11 +103,17 @@
 	const hiddenHot = $derived(
 		!expanded && (d.fields ?? []).slice(at).some((f) => hot?.[f.id] || picked === f.id)
 	);
+	// Zoomed out in adaptive detail, a card is only its frame and a rail only its name, unless
+	// it is looked at or at the end of a lit line (see open.ts).
+	const full = $derived(!d.state.brief || !!d.state.full[id]);
+	const railListed = $derived(!!d.rail && (d.rail.open || !!d.state.full[id]));
 	const updateNodeInternals = useUpdateNodeInternals();
-	// Handles move with their rows and as rails open; Svelte Flow measures them only when told.
+	// Handles move with their rows, come with them, and move as rails open; Svelte Flow measures
+	// them only when told.
 	$effect(() => {
 		void expanded;
-		void d.rail?.open;
+		void full;
+		void railListed;
 		updateNodeInternals(id);
 	});
 	// Opening or closing swaps the hovered part (the whole box, or its tab) without a leave.
@@ -167,7 +173,7 @@
 	class:selected={d.state.selectedNodes.includes(id)}
 	class:peer-box={d.state.peerBoxes[id]}
 	class:api-box={apiParts}
-	class:expanded={d.table && expanded}
+	class:expanded={d.table && expanded && full}
 	class:system={d.kind === 'system'}
 	class:faded={faded && !d.group}
 	style:--tab={d.kind === 'model' ? 'var(--sdv-model-class-head)' : 'var(--fill)'}
@@ -209,19 +215,21 @@
 				onmouseenter={() => d.onbox?.('enter')}
 				onmouseleave={() => d.onbox?.('leave')}
 			>
-				<div class="name" style:font-size="{TABLE.title}px">
-					<EntityGlyph
-						kind={d.view === 'table' ? 'table' : 'class'}
-					/>{#if marks.glyph.has(d.element)}<span class="op">{marks.glyph.get(d.element)}</span
-						>{/if}{d.name}
-				</div>
-				<div class="note" style:font-size="{TABLE.note}px">
-					{subtitle(d.view ?? 'class', d.owner)}{#if apiParts}<span class="api-parts">
-							· {apiParts.join(', ')}</span
-						>{/if}
-				</div>
+				{#if full}
+					<div class="name" style:font-size="{TABLE.title}px">
+						<EntityGlyph
+							kind={d.view === 'table' ? 'table' : 'class'}
+						/>{#if marks.glyph.has(d.element)}<span class="op">{marks.glyph.get(d.element)}</span
+							>{/if}{d.name}
+					</div>
+					<div class="note" style:font-size="{TABLE.note}px">
+						{subtitle(d.view ?? 'class', d.owner)}{#if apiParts}<span class="api-parts">
+								· {apiParts.join(', ')}</span
+							>{/if}
+					</div>
+				{/if}
 			</div>
-			{#if d.fields?.length}
+			{#if full && d.fields?.length}
 				<div
 					class="grid"
 					style:font-size="{TABLE.row}px"
@@ -347,7 +355,7 @@
 					{/if}
 				</div>
 			{/if}
-			{#if d.indexes?.length}
+			{#if full && d.indexes?.length}
 				<div class="list" style:font-size="{TABLE.row}px">
 					<div class="cell th" style:font-size="{TABLE.label}px">Indexes</div>
 					{#each d.indexes as ix (ix.name)}
@@ -369,7 +377,7 @@
 		<!-- Invisible line ends, each side of the name bar and of every row. -->
 		<Handle type="source" id="head:l" position={Position.Left} style="top:{TABLE.head / 2}px" />
 		<Handle type="source" id="head:r" position={Position.Right} style="top:{TABLE.head / 2}px" />
-		{#each d.fields ?? [] as f, i (f.id)}
+		{#each full ? (d.fields ?? []) : [] as f, i (f.id)}
 			{@const y = fieldRowY(i, count, expanded, at)}
 			<Handle type="source" id="row:{f.id}:l" position={Position.Left} style="top:{y}px" />
 			<Handle type="source" id="row:{f.id}:r" position={Position.Right} style="top:{y}px" />
@@ -385,15 +393,19 @@
 				onmouseenter={() => d.onbox?.('enter')}
 				onmouseleave={() => d.onbox?.('leave')}
 			>
-				<div class="name" style:font-size="{TABLE.title}px"><EntityGlyph kind="logic" />Logic</div>
-				<div class="note" style:font-size="{TABLE.note}px">{logicNote(rows.length)}</div>
+				{#if full}
+					<div class="name" style:font-size="{TABLE.title}px">
+						<EntityGlyph kind="logic" />Logic
+					</div>
+					<div class="note" style:font-size="{TABLE.note}px">{logicNote(rows.length)}</div>
+				{/if}
 			</div>
 			<div
 				class="grid"
 				style:font-size="{TABLE.row}px"
 				style:grid-template-columns={template(cols)}
 			>
-				{#each rows as u (u.id)}
+				{#each full ? rows : [] as u (u.id)}
 					<!-- svelte-ignore a11y_click_events_have_key_events -->
 					<div
 						class="row"
@@ -427,7 +439,7 @@
 		</div>
 		<Handle type="source" id="head:l" position={Position.Left} style="top:{TABLE.head / 2}px" />
 		<Handle type="source" id="head:r" position={Position.Right} style="top:{TABLE.head / 2}px" />
-		{#each rows as u, i (u.id)}
+		{#each full ? rows : [] as u, i (u.id)}
 			{@const y = logicRowY(i)}
 			<Handle type="source" id="row:{u.id}:l" position={Position.Left} style="top:{y}px" />
 			<Handle type="source" id="row:{u.id}:r" position={Position.Right} style="top:{y}px" />
@@ -444,18 +456,21 @@
 		{/if}
 		<Handle type="source" id="head:l" position={Position.Left} />
 		<Handle type="source" id="head:r" position={Position.Right} />
-		<div
-			class="face"
-			style:font-size="{font}px"
-			style:--fs={font}
-			style:padding-right={!d.group && d.rail ? `${d.rail.width / 2}px` : undefined}
-		>
-			<div class="name">
-				<EntityGlyph kind={glyph} />{#if marks.glyph.has(d.element)}<span class="op"
-						>{marks.glyph.get(d.element)}</span
-					>{/if}{d.name}
+		<!-- Open, a box is drawn by its border and name tab alone. -->
+		{#if !d.open}
+			<div
+				class="face"
+				style:font-size="{font}px"
+				style:--fs={font}
+				style:padding-right={!d.group && d.rail ? `${d.rail.width / 2}px` : undefined}
+			>
+				<div class="name">
+					<EntityGlyph kind={glyph} />{#if marks.glyph.has(d.element)}<span class="op"
+							>{marks.glyph.get(d.element)}</span
+						>{/if}{d.name}
+				</div>
 			</div>
-		</div>
+		{/if}
 		{#if roll && !d.open}
 			<span
 				class="roll"
@@ -470,7 +485,7 @@
 		<!-- Straddles the right border; its rows are laid out at full size, then scaled to fit. -->
 		<div
 			class="rail"
-			class:closed={!r.open}
+			class:closed={!railListed}
 			style:left="{width - r.width / 2}px"
 			style:top="{r.top}px"
 			style:width="{r.width}px"
@@ -478,11 +493,11 @@
 		>
 			<!-- An api's line ends on its row, or the rail's middle while the rail is closed. -->
 			{#each r.groups.flatMap((g) => g.apis) as a (a.id)}
-				{@const y = r.open ? a.y * r.scale : r.height / 2}
+				{@const y = railListed ? a.y * r.scale : r.height / 2}
 				<Handle type="source" id="api:{a.id}:l" position={Position.Left} style="top:{y}px" />
 				<Handle type="source" id="api:{a.id}:r" position={Position.Right} style="top:{y}px" />
 			{/each}
-			{#if r.open}
+			{#if railListed}
 				<div
 					class="rail-inner"
 					style:width="{r.width / r.scale}px"

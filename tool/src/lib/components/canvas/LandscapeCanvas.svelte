@@ -46,7 +46,7 @@
 		type LinkKind,
 		type RestLine
 	} from '#lib/landscape/connections.ts';
-	import { apiHosts, openBoxes, railOpen, READABLE, zoomToShow } from '#lib/landscape/open.ts';
+	import { apiHosts, cardsBrief, railOpen, READABLE } from '#lib/landscape/open.ts';
 	import { sequenceOf, sequenceWidth } from '#lib/landscape/sequence.ts';
 	import SequenceDiagram from './SequenceDiagram.svelte';
 	import PlayerBar from './PlayerBar.svelte';
@@ -82,9 +82,8 @@
 	import EditMenu from '#lib/components/EditMenu.svelte';
 
 	/**
-	 * The whole model, laid out once. Only boxes inside open boxes are mounted; which boxes are
-	 * open follows whether their contents would be readable on screen (see open.ts), and opening
-	 * fades over a fixed time.
+	 * The whole model, laid out once, every box mounted and open. Zoomed out, cards and rails draw
+	 * only their frames unless they are looked at (see open.ts).
 	 */
 	let { view }: { view: ViewState } = $props();
 
@@ -92,8 +91,6 @@
 	const viewport = useViewport();
 	const nodeTypes = { landscape: LandscapeNode };
 	const edgeTypes = { connection: ConnectionEdge };
-	// How long a closed box's children stay mounted while they fade out (the CSS transitions).
-	const FADE_MS = 300;
 
 	let cw = $state(1);
 	let ch = $state(1);
@@ -142,54 +139,37 @@
 	const isUnit = (id: string) => el(id)?.def.kind === 'logic-unit';
 	const isApiEl = (id: string) => el(id)?.def.kind === 'api';
 
-	// State, not derived, so a pan that changes nothing stops here instead of rebuilding nodes
-	// every frame, and the boxes that just closed are known.
-	let open = $state.raw(new Set<string>());
-	// Boxes that just closed; their children stay mounted until they have faded out.
-	let closing = $state.raw(new Set<string>());
-	// Hosts whose rail rows read at READABLE px, so the rail lists them.
+	// Every system and module is drawn open at any zoom. Zoomed out, what thins out is the rows of
+	// cards and rails (see open.ts), which are most of what a large landscape draws.
+	const open = $derived(new Set(boxes.filter((b) => b.group).map((b) => b.id)));
+	// Render everything, or a focus, which is small: every card and rail in full at any zoom.
+	const everything = $derived(all || !!view.focused);
+	// Hosts whose rail rows read at LEGIBLE px, so the rail lists them. State, not derived, so a
+	// zoom that changes nothing stops here instead of rebuilding nodes every frame.
 	let openRails = $state.raw(new Set<string>());
 	const sameSet = (a: Set<string>, b: Set<string>) =>
 		a.size === b.size && [...a].every((id) => b.has(id));
 	$effect(() => {
-		const { x, y, zoom } = viewport.current;
-		if (!ready) return;
-		const was = untrack(() => open);
-		// A focus is small, so every box in it is open, as when rendering everything.
-		const next =
-			all || view.focused
-				? new Set(boxes.filter((b) => b.group).map((b) => b.id))
-				: openBoxes(boxes, { x, y, zoom, width: cw, height: ch });
-		const listed = new Set(
-			[...railsFor(next)]
-				.filter(([, r]) => all || view.focused || railOpen(r, zoom))
-				.map(([id]) => id)
+		const zoom = viewport.current.zoom;
+		const next = new Set(
+			[...rails].filter(([, r]) => everything || railOpen(r, zoom)).map(([id]) => id)
 		);
 		if (
 			!sameSet(
-				listed,
+				next,
 				untrack(() => openRails)
 			)
 		)
-			openRails = listed;
-		if (sameSet(next, was)) return;
-		const shut = [...was].filter((id) => !next.has(id));
-		open = next;
-		if (!shut.length) return;
-		closing = new Set([...untrack(() => closing), ...shut]);
-		setTimeout(() => {
-			closing = new Set([...closing].filter((id) => !shut.includes(id) || open.has(id)));
-		}, FADE_MS);
+			openRails = next;
 	});
-
-	// Mounted: roots, and children of open or closing boxes.
-	const mounted = $derived(
-		new Set(
-			boxes
-				.filter((b) => !b.parentId || open.has(b.parentId) || closing.has(b.parentId))
-				.map((b) => b.id)
-		)
-	);
+	// Cards draw only their frames while their rows would be under LEGIBLE px. Nodes read it from
+	// the view state, so crossing it never rebuilds them.
+	const brief = $derived(!everything && cardsBrief(viewport.current.zoom));
+	$effect(() => {
+		view.brief = brief;
+	});
+	/** The rail on box `id` lists its endpoints: they read, or what they connect to is looked at. */
+	const listed = (id: string) => openRails.has(id) || !!view.full[id];
 
 	// Apis sit on a rail across the right border of their parent's box, or of the nearest shown
 	// box round it, one rail per box.
@@ -266,7 +246,7 @@
 		x0: number;
 		x1: number;
 		y: number;
-		/** Ends on the box round the leaf, or a closed rail, so that is outlined. */
+		/** Ends on the box round the leaf, so that is outlined. */
 		peer: boolean;
 	}
 
@@ -277,8 +257,8 @@
 			const host = hostOf(api);
 			const r = host && rails.get(host.id);
 			if (!host || !r) return undefined;
-			const listed = openRails.has(host.id);
 			const left = host.absX + host.width - r.width / 2;
+			// A lit api's rail is listed at any zoom (see `view.full`), so the line ends on its row.
 			return {
 				leaf: api,
 				home,
@@ -286,8 +266,8 @@
 				anchor: `api:${api}`,
 				x0: left,
 				x1: left + r.width,
-				y: host.absY + r.top + (listed ? (railRowY(r, api) ?? 0) * r.scale : r.height / 2),
-				peer: !listed
+				y: host.absY + r.top + (railRowY(r, api) ?? 0) * r.scale,
+				peer: false
 			};
 		}
 		const node = shownBox(home);
@@ -497,18 +477,26 @@
 
 	// Rows to light, by box: the focused row, and the rows at the ends of its lines; apis on
 	// rails likewise. Nodes read them from the view state, so focus changes never rebuild them.
-	// An end on a box round its leaf, or on a closed rail, outlines that box.
+	// An end on a box round its leaf outlines that box. Every box looked at, picked or played,
+	// and every box its lines end on, is drawn in full at any zoom.
 	$effect(() => {
 		const out: Record<string, Record<string, 'self' | 'peer'>> = {};
 		const apis: Record<string, true> = {};
 		const peers: Record<string, true> = {};
+		const full: Record<string, true> = {};
+		const draw = (box: string | undefined) => box && (full[box] = true);
 		const mark = (box: string, field: string, how: 'self' | 'peer') => {
 			const rows = (out[box] ??= {});
 			if (rows[field] !== 'self') rows[field] = how;
 		};
+		draw(focus?.box);
+		draw(view.field?.box);
+		draw(view.api ? hostOf(view.api)?.id : undefined);
+		view.selectedNodes.forEach(draw);
 		if (focus?.leaf) mark(focus.box, focus.leaf, 'self');
 		for (const l of lit)
 			for (const end of [l.s, l.t]) {
+				draw(end.node.id);
 				if (end.peer) peers[end.node.id] = true;
 				if (end.anchor.startsWith('api:')) apis[end.leaf] = true;
 				else if (end.anchor.startsWith('row:')) mark(end.node.id, end.leaf, 'peer');
@@ -524,15 +512,18 @@
 				const shown = shownBox(e.box);
 				if (e.api) {
 					apis[e.api] = true;
-					const host = hostOf(e.api);
-					if (host && !openRails.has(host.id)) peers[host.id] = true;
-				} else if (shown !== e.box || e.row === undefined) peers[shown.id] = true;
-				else mark(e.box.id, id, how);
+					draw(hostOf(e.api)?.id);
+				} else {
+					draw(shown.id);
+					if (shown !== e.box || e.row === undefined) peers[shown.id] = true;
+					else mark(e.box.id, id, how);
+				}
 			}
 		}
 		view.hot = out;
 		view.hotApis = apis;
 		view.peerBoxes = peers;
+		view.full = full;
 	});
 
 	$effect(() => {
@@ -546,63 +537,58 @@
 				}
 			])
 		);
-		nodes = boxes
-			.filter((b) => mounted.has(b.id))
-			.map((b) => {
-				const info = el(b.elementId)!;
-				return {
-					id: b.id,
-					type: 'landscape',
-					position: { x: b.x, y: b.y },
-					parentId: b.parentId,
-					width: b.width,
-					height: b.height,
-					draggable: false,
-					connectable: false,
-					class:
-						[b.parentId && !open.has(b.parentId) && 'ghost', open.has(b.id) && 'open']
-							.filter(Boolean)
-							.join(' ') || undefined,
-					data: {
-						name: info.name,
-						element: b.elementId,
-						// A closed boundary reads as the model it is drawn round; a root module is a system.
-						kind: b.boundary
-							? 'model'
-							: info.def.kind === 'module' && !info.parentId
-								? 'system'
-								: info.def.kind,
-						group: b.group,
-						owner: b.ref ? el(info.parentId ?? '')?.name : undefined,
-						fields: b.fields,
-						foldAt: b.foldAt,
-						indexes: b.view === 'table' ? info.def.indexes : undefined,
-						table: b.table,
-						logic: b.logic,
-						view: b.view,
-						labels: Object.fromEntries(
-							(b.fields ?? [])
-								.flatMap((f) => [f.ref, f.model, ...(f.from ?? [])])
-								.flatMap((id) => {
-									const label = id && refLabel(model, id);
-									return label ? [[id, label]] : [];
-								})
-						),
-						incoming: counts,
-						state: view,
-						onfield: (field, ev) => onfield(b.id, field, ev),
-						open: open.has(b.id),
-						onbox: (ev) => {
-							if (ev === 'enter') view.hoverBox = b.id;
-							else if (view.hoverBox === b.id) view.hoverBox = null;
-						},
-						rail: railView(b.id),
-						onapi,
-						onrail: () => openRail(b.id),
-						onmenu: editing ? (target, x, y) => (menu = { target, x, y }) : undefined
-					} satisfies LandscapeNodeData
-				};
-			});
+		nodes = boxes.map((b) => {
+			const info = el(b.elementId)!;
+			return {
+				id: b.id,
+				type: 'landscape',
+				position: { x: b.x, y: b.y },
+				parentId: b.parentId,
+				width: b.width,
+				height: b.height,
+				draggable: false,
+				connectable: false,
+				class: open.has(b.id) ? 'open' : undefined,
+				data: {
+					name: info.name,
+					element: b.elementId,
+					// A closed boundary reads as the model it is drawn round; a root module is a system.
+					kind: b.boundary
+						? 'model'
+						: info.def.kind === 'module' && !info.parentId
+							? 'system'
+							: info.def.kind,
+					group: b.group,
+					owner: b.ref ? el(info.parentId ?? '')?.name : undefined,
+					fields: b.fields,
+					foldAt: b.foldAt,
+					indexes: b.view === 'table' ? info.def.indexes : undefined,
+					table: b.table,
+					logic: b.logic,
+					view: b.view,
+					labels: Object.fromEntries(
+						(b.fields ?? [])
+							.flatMap((f) => [f.ref, f.model, ...(f.from ?? [])])
+							.flatMap((id) => {
+								const label = id && refLabel(model, id);
+								return label ? [[id, label]] : [];
+							})
+					),
+					incoming: counts,
+					state: view,
+					onfield: (field, ev) => onfield(b.id, field, ev),
+					open: open.has(b.id),
+					onbox: (ev) => {
+						if (ev === 'enter') view.hoverBox = b.id;
+						else if (view.hoverBox === b.id) view.hoverBox = null;
+					},
+					rail: railView(b.id),
+					onapi,
+					onrail: () => openRail(b.id),
+					onmenu: editing ? (target, x, y) => (menu = { target, x, y }) : undefined
+				} satisfies LandscapeNodeData
+			};
+		});
 		// A new layout or focus is fitted; leaving a focus goes back to where the view was.
 		if ((fittedTo !== settings.layout || fittedFocus !== view.focused) && boxes.length) {
 			const left = fittedFocus && !view.focused;
@@ -629,13 +615,11 @@
 	// Lines at rest and lit lines are routed apart, so a hover never moves the lines at rest.
 	const restRoutes = $derived.by(() => {
 		if (!routed) return new Map();
-		const lines = rest.flatMap((l) => {
-			if (!mounted.has(l.source) || !mounted.has(l.target)) return [];
-			if (l.parentId && !open.has(l.parentId)) return [];
+		const lines = rest.map((l) => {
 			const a = headEnd(boxById.get(l.source)!);
 			const b = headEnd(boxById.get(l.target)!);
 			const [ss, ts] = sides(a, b);
-			return [{ id: l.id, s: routeEnd(a, ss), t: routeEnd(b, ts) }];
+			return { id: l.id, s: routeEnd(a, ss), t: routeEnd(b, ts) };
 		});
 		// Lines at rest leaving a box together share one exit (see the design's Routing rule).
 		return routeLines(obstacles, lines, true);
@@ -672,13 +656,7 @@
 				points: restRoutes.get(l.id),
 				title: `${l.count} connection${l.count > 1 ? 's' : ''}: ${l.kinds.map((k) => KIND_NAME[k]).join(', ')}`
 			},
-			class: [
-				'conn rest',
-				pattern,
-				l.count >= 10 ? 'w3' : l.count > 1 ? 'w2' : 'w1',
-				dim && 'dim',
-				l.parentId && !open.has(l.parentId) && 'off'
-			]
+			class: ['conn rest', pattern, l.count >= 10 ? 'w3' : l.count > 1 ? 'w2' : 'w1', dim && 'dim']
 				.filter(Boolean)
 				.join(' '),
 			// A held model has a UML composition diamond at the holder; all else an arrow at what
@@ -707,12 +685,7 @@
 	}
 
 	$effect(() => {
-		edges = [
-			...rest
-				.filter((l) => mounted.has(l.source) && mounted.has(l.target))
-				.map((l) => restEdge(l, !!focus)),
-			...lit.map(litEdge)
-		];
+		edges = [...rest.map((l) => restEdge(l, !!focus)), ...lit.map(litEdge)];
 	});
 
 	/** Arrowheads and diamonds, grey for lines at rest and in each kind's colour when lit. */
@@ -1040,7 +1013,7 @@
 		if (!view.api || !host || !r) return undefined;
 		const { x: vx, y: vy, zoom } = viewport.current;
 		const left = host.absX + host.width - r.width / 2;
-		const row = openRails.has(host.id) ? railRowY(r, view.api) : undefined;
+		const row = listed(host.id) ? railRowY(r, view.api) : undefined;
 		const y = host.absY + r.top + (row !== undefined ? row * r.scale : r.height / 2);
 		return { left: left * zoom + vx, right: (left + r.width) * zoom + vx, y: y * zoom + vy };
 	});
@@ -1101,8 +1074,8 @@
 
 	/**
 	 * Centres the camera on the target row and picks it. The zoom stays where it is unless the
-	 * target's box would be too closed to show it, or the card too big for the canvas. The
-	 * centre is nudged so the box round the target stays in view, which is what opens it.
+	 * area round the target would be too small to read, or the card too big for the canvas. The
+	 * centre is nudged so the box round the target stays in view.
 	 */
 	function flyTo(target: { box: LandscapeBox; field?: string }, back = false) {
 		const t = target.box;
@@ -1304,11 +1277,11 @@
 				x: b.absX + b.width - r.width / 2,
 				w: r.width,
 				y,
-				zoom: Math.max(zoomToShow(boxes, b), READABLE / (RAIL.font * r.scale))
+				zoom: READABLE / (RAIL.font * r.scale)
 			};
 		}
 		const y = e.row !== undefined ? b.absY + rowY(b, e.row) : b.absY + TABLE.head / 2;
-		return { x: b.absX, w: b.width, y, zoom: zoomToShow(boxes, b) };
+		return { x: b.absX, w: b.width, y, zoom: READABLE / TABLE.row };
 	}
 
 	/**
@@ -1361,7 +1334,7 @@
 		const r = host && rails.get(host.id);
 		if (e.api && host && r) {
 			const left = host.absX + host.width - r.width / 2;
-			const row = openRails.has(host.id) ? railRowY(r, e.api) : undefined;
+			const row = listed(host.id) ? railRowY(r, e.api) : undefined;
 			const y = host.absY + r.top + (row !== undefined ? row * r.scale : r.height / 2);
 			return { left: left * zoom + vx, right: (left + r.width) * zoom + vx, y: y * zoom + vy };
 		}
@@ -1967,19 +1940,13 @@
 		border-radius: 0;
 		box-shadow: none;
 	}
-	/* Boxes and lines fade in when mounted and out before they are unmounted (FADE_MS). Children
-	   come in after their box's face has gone, and go before it returns, so labels never overlap. */
+	/* Boxes and lines fade in when mounted. */
 	.canvas :global(.svelte-flow__node),
 	.canvas :global(.svelte-flow__edge.conn.rest) {
 		transition: opacity 0.18s ease-out 0.1s;
 		@starting-style {
 			opacity: 0;
 		}
-	}
-	.canvas :global(.svelte-flow__node.ghost),
-	.canvas :global(.svelte-flow__edge.conn.off) {
-		opacity: 0;
-		transition-delay: 0s;
 	}
 	/* Every line keeps its width on screen at any zoom: at rest 1, 1.75 or 2.5px by how many
 	   connections it merges (hover one for the count), lit 2px. Solid is structure, dashed
@@ -2489,8 +2456,5 @@
 		position: absolute;
 		width: 0;
 		height: 0;
-	}
-	.canvas :global(.svelte-flow__node.ghost) {
-		pointer-events: none;
 	}
 </style>

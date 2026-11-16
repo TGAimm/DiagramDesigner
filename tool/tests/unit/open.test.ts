@@ -1,76 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import type { LandscapeBox } from '../../src/lib/landscape/layout';
-import {
-	apiHosts,
-	openBoxes,
-	railOpen,
-	zoomToShow,
-	type Camera
-} from '../../src/lib/landscape/open';
+import { apiHosts, cardsBrief, railOpen } from '../../src/lib/landscape/open';
 import type { Rail } from '../../src/lib/landscape/apis';
 
-const box = (
-	id: string,
-	absX: number,
-	absY: number,
-	size: number,
-	parentId?: string,
-	kind: 'group' | 'leaf' | 'table' = 'group'
-) =>
-	({
-		id,
-		absX,
-		absY,
-		width: size,
-		height: size,
-		group: kind === 'group',
-		table: kind === 'table' ? [] : undefined,
-		parentId
-	}) as LandscapeBox;
-// Two systems side by side: a holds module m (its name 34px at zoom 1), which holds a model
-// card (rows 13px); b holds a leaf (name 15px).
-const boxes = [
-	box('a', 0, 0, 1000),
-	box('m', 50, 50, 400, 'a'),
-	box('t', 100, 150, 100, 'm', 'table'),
-	box('b', 2000, 0, 1000),
-	box('l', 2100, 100, 100, 'b', 'leaf')
-];
-const cam = (x: number, y: number, zoom: number): Camera => ({
-	x,
-	y,
-	zoom,
-	width: 1000,
-	height: 1000
-});
-const open = (c: Camera) => [...openBoxes(boxes, c)].sort();
+const box = (id: string, parentId?: string) => ({ id, parentId, group: true }) as LandscapeBox;
+// A system a holding module m, which holds a model card t.
+const boxes = [box('a'), box('m', 'a'), { ...box('t', 'm'), group: false }];
 
-describe('open boxes', () => {
-	it('keeps a box closed while its children would be drawn under 12px', () => {
-		// m's name 34 × 0.3 = 10.2px.
-		expect(open(cam(0, 0, 0.3))).toEqual([]);
-	});
-
-	it('opens a box once its children read at 12px, each box by its own children', () => {
-		// m's name 12.2px opens a; b's leaf 5.4px keeps b closed though it is in view.
-		expect(open(cam(0, 0, 0.36))).toEqual(['a']);
-	});
-
-	it('opens and closes at the same size: model rows at 12px', () => {
-		// Rows 13 × 0.93 = 12.1px opens m; 13 × 0.92 = 11.96px closes it.
-		expect(open(cam(0, 0, 0.93))).toEqual(['a', 'm']);
-		expect(open(cam(0, 0, 0.92))).toEqual(['a']);
-	});
-
-	it('keeps a box closed while none of it is on screen', () => {
-		// At zoom 1 b's leaf reads, but b starts at 2000px; then panned to b, a is off screen.
-		expect(open(cam(0, 0, 1))).toEqual(['a', 'm']);
-		expect(open(cam(-1500, 0, 1))).toEqual(['b']);
-	});
-
-	it('keeps a box open while any of it is on screen, its children not', () => {
-		// a spans 50000px; the canvas shows a corner of it past m.
-		expect(open(cam(-45000, -45000, 50))).toEqual(['a']);
+describe('cards', () => {
+	it('draw only their frames while their rows would be under 6px', () => {
+		// Rows 13 × 0.47 = 6.1px; 13 × 0.46 = 5.98px.
+		expect(cardsBrief(0.47)).toBe(false);
+		expect(cardsBrief(0.46)).toBe(true);
 	});
 });
 
@@ -91,20 +32,10 @@ describe('api hosts', () => {
 });
 
 describe('api rail', () => {
-	it('lists its endpoints once their rows read at 12px, else shows its name', () => {
+	it('lists its endpoints while their rows read at 6px, else shows its name', () => {
 		const rail = { scale: 0.25 } as Rail;
-		// Rows 12 × 0.25 × 4 = 12px.
-		expect(railOpen(rail, 4)).toBe(true);
-		expect(railOpen(rail, 3.9)).toBe(false);
-	});
-});
-
-describe('zoomToShow', () => {
-	it('is the zoom opening every box round a box', () => {
-		// a opens when m's name reads (34px at zoom 1); m opens when its card's rows read (13px).
-		const t = boxes.find((b) => b.id === 't')!;
-		const z = zoomToShow(boxes, t);
-		expect(open(cam(0, 0, z))).toContain('m');
-		expect(open(cam(0, 0, z * 0.99))).not.toContain('m');
+		// Rows 12 × 0.25 × 2 = 6px.
+		expect(railOpen(rail, 2)).toBe(true);
+		expect(railOpen(rail, 1.9)).toBe(false);
 	});
 });
