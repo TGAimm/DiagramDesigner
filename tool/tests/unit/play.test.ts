@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { callOf, forwardGoesInto, runOf, stepOutOf, type Run } from '../../src/lib/landscape/play';
+import { focusOnRun } from '../../src/lib/landscape/focus';
 import { loadStrings } from './helpers';
 
 const { model } = loadStrings({
@@ -32,6 +33,14 @@ const { model } = loadStrings({
 		'inputs: []',
 		'outputs: [{ id: load-o, name: cart, type: string }]',
 		'steps: [{ read: cart, gets: row }, { return: cart }]'
+	].join('\n'),
+	's/other.logic-unit.yaml': [
+		'id: other',
+		'parent: m',
+		'name: clearCart',
+		'inputs: []',
+		'outputs: []',
+		'steps: [{ write: cart }]'
 	].join('\n')
 });
 const run = (choices: Record<string, number> = {}, into: string[] = []) =>
@@ -112,5 +121,17 @@ describe('playing a unit', () => {
 		expect(forwardGoesInto(run({}, ['s.0']).steps[1], [], true)).toBe(false);
 		// A step with nothing inside never goes into anything.
 		expect(forwardGoesInto(run().steps[2], [], true)).toBe(false);
+	});
+});
+
+describe("a run's focus", () => {
+	it('keeps what the run can touch, through the unit handling a called api', () => {
+		const { model: m } = focusOnRun(model, 'place');
+		const kept = [...m.elements.values()]
+			.filter((e) => ['model', 'api', 'logic-unit'].includes(e.def.kind))
+			.map((e) => e.id)
+			.sort();
+		expect(kept).toEqual(['cart', 'get', 'load', 'place', 'post']);
+		expect(m.elements.get('m')!.childIds).not.toContain('other');
 	});
 });

@@ -92,8 +92,52 @@ export function focusOn(model: Model, focus: Focus): Focused {
 		frontier = next;
 	}
 
-	// A neighbour's rows: those it draws (see `viewFields`) with a connection whose other end
-	// is kept, first.
+	return cut(model, keep, followed, subject);
+}
+
+/**
+ * The design cut down to what a played unit's run can touch, on every branch: the unit, what
+ * starts it (the apis it handles, the units calling it), and what its steps read, write or
+ * call. A called unit with steps, or one with steps handling a called api, adds what its own
+ * steps touch, however deep. A model's fields read or written come first.
+ */
+export function focusOnRun(model: Model, unitId: string): Focused {
+	const el = (id: string) => model.elements.get(id);
+	const keep = new Set([unitId, ...(el(unitId)?.logic?.handles ?? [])]);
+	for (const e of model.elements.values()) if (e.logic?.calls.includes(unitId)) keep.add(e.id);
+	const played = new Set<string>();
+	const play = (id: string) => {
+		if (played.has(id)) return;
+		played.add(id);
+		keep.add(id);
+		const links = el(id)?.logic;
+		if (!links) return;
+		for (const t of [...links.reads, ...links.writes]) keep.add(model.fields.get(t)?.modelId ?? t);
+		for (const t of links.calls) {
+			keep.add(t);
+			if (el(t)?.def.kind !== 'api') {
+				if (el(t)?.def.steps?.length) play(t);
+			} else
+				for (const h of model.elements.values())
+					if (h.logic?.handles.includes(t) && h.def.steps?.length) play(h.id);
+		}
+	};
+	play(unitId);
+	const followed = edgesOf(model).filter(
+		(e) => (e.kind === 'reads' || e.kind === 'writes') && played.has(e.from)
+	);
+	return cut(model, keep, followed);
+}
+
+/**
+ * The design cut down to `keep` and the boxes round it. A kept model other than the subject
+ * lists the rows it draws (see `viewFields`) with a `followed` connection to something kept
+ * first, the rest behind its fold row.
+ */
+function cut(model: Model, keep: Set<string>, followed: Edge[], subject?: string): Focused {
+	const kind = (id: string) => model.elements.get(id)?.def.kind;
+	const unitOf = (leaf: string) =>
+		model.fields.get(leaf)?.modelId ?? model.apiFields.get(leaf)?.apiId ?? leaf;
 	const holders = new Map(
 		[...holdersOf(model)].map(([id, hs]) => [id, new Set([...hs].filter((h) => keep.has(h)))])
 	);

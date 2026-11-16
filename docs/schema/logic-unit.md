@@ -57,9 +57,14 @@ steps:                           # the sequence, top to bottom
   their `gets` returned dashed; reads and writes go to the model; returns and fails go back to
   the caller; `if` and `each` draw alt and loop boxes. Click a name or message to go there.
 - **Play** beside the card's Sequence heading walks the board one step at a time: the card
-  closes, a player docks under the canvas, and each step moves the camera to both its ends
-  (no further in than 100%, no further out than where their rows are drawn; else to the
-  receiver) and draws it there as one labelled line. Nothing advances on its own: step
+  closes, a player docks under the canvas, and the canvas focuses on the run: only the unit,
+  what starts it, and what its steps (and those of every unit with steps it calls, however
+  deep, on every branch) read, write or call, laid out afresh and fitted above the player. A
+  step moves the camera only when an end is off screen, by the least pan, zooming out only
+  when both ends do not fit. The step is drawn as one labelled line with its number; the
+  steps before it stay as a faint trail of numbered lines (click a number to go back there),
+  a call whose unit was stepped out of numbered as a range. Stop returns the canvas to where
+  it was, an earlier focus included. Nothing advances on its own: step
   forward or back, pick a branch at an `if` or `each` (the guard is written beside the row).
   At a call to a unit with steps (or to an api such a unit handles) the player asks **Into**
   or **Over**, and the board says how many steps are inside, beside the callee. Inside, the

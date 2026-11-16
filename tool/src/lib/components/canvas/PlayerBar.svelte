@@ -1,5 +1,12 @@
 <script lang="ts">
-	import { ChevronLeft, ChevronRight, CornerDownRight, CornerLeftUp, X } from '@lucide/svelte';
+	import {
+		ChevronLeft,
+		ChevronRight,
+		CornerDownRight,
+		CornerLeftUp,
+		Crosshair,
+		X
+	} from '@lucide/svelte';
 	import type { Run } from '#lib/landscape/play.ts';
 
 	// The controls for playing a unit, docked under the canvas. It holds no facts about a
@@ -74,6 +81,9 @@
 
 <div class="player" data-testid="player">
 	<div class="head">
+		<span class="infocus" title="Only what this run can touch is drawn"
+			><Crosshair size={14} />Focus</span
+		>
 		<span class="crumb"
 			><i class="fn">ƒ</i>
 			{#each step.frame as id, i (i)}{#if i}<span class="sep">›</span>{/if}<b
@@ -253,6 +263,14 @@
 		gap: 8px;
 		padding: 4px 6px 4px 12px;
 		border-bottom: 1px solid var(--ui-border);
+	}
+	.infocus {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		font-size: 12px;
+		font-weight: 600;
+		color: var(--sdv-selection);
 	}
 	.crumb {
 		display: flex;

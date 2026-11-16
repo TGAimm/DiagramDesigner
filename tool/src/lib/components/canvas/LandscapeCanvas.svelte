@@ -26,7 +26,7 @@
 	import { search } from '#lib/client/search.svelte.ts';
 	import SearchPalette from '#lib/components/SearchPalette.svelte';
 	import type { Hit } from '#lib/landscape/search.ts';
-	import { focusOn, type Focus, type FocusMode } from '#lib/landscape/focus.ts';
+	import { focusOn, focusOnRun, type Focus, type FocusMode } from '#lib/landscape/focus.ts';
 	import FocusBar from './FocusBar.svelte';
 	import Minimap from './Minimap.svelte';
 	import { settings } from '#lib/client/settings.svelte.ts';
@@ -111,9 +111,15 @@
 	let edges = $state.raw<Edge[]>([]);
 	/** The layout the view was last fitted to: a new one is fitted again. */
 	let fittedTo: unknown;
-	let fittedFocus: Focus | null = null;
+	let fittedFocus: unknown;
 	/** Where the view was before the focus, to go back to on leaving it. */
 	let beforeFocus: { x: number; y: number; zoom: number } | undefined;
+	/** Where the view was before playing, to go back to on stopping. */
+	let beforePlay: { x: number; y: number; zoom: number } | undefined;
+	/** The next new focus keeps the camera where it was put, instead of fitting. */
+	let keepCamera = false;
+	/** A new focus is being fitted; the camera is left to it. */
+	let fitting = false;
 	// Set once the first fit has landed; before it the camera is a placeholder.
 	let ready = $state(false);
 	/** The key explaining the canvas's marks is shown. */
@@ -122,8 +128,17 @@
 	// Render everything: every box and rail open at any zoom; long cards still fold.
 	const all = $derived(settings.detail === 'all');
 	// The design, or the state of a scenario or commit being compared (see changes.svelte.ts);
-	// in a focus, cut down to the subject and what connects to it, drawn the same.
-	const focused = $derived(view.focused ? focusOn(changes.shown, view.focused) : undefined);
+	// in a focus, cut down to the subject and what connects to it, drawn the same. Playing, to
+	// what the run can touch, whatever focus it started in.
+	const playing = $derived(view.play?.unit);
+	const focused = $derived(
+		playing
+			? focusOnRun(changes.shown, playing)
+			: view.focused
+				? focusOn(changes.shown, view.focused)
+				: undefined
+	);
+	const focusKey = $derived(playing ? `run:${playing}` : view.focused);
 	const model = $derived(focused?.model ?? changes.shown);
 	// Laid out with every flag branch and gated item in, so setting a flag moves nothing.
 	const boxes = $derived(
@@ -165,7 +180,7 @@
 	// cards and rails (see open.ts), which are most of what a large landscape draws.
 	const open = $derived(new Set(boxes.filter((b) => b.group).map((b) => b.id)));
 	// Render everything, or a focus, which is small: every card and rail in full at any zoom.
-	const everything = $derived(all || !!view.focused);
+	const everything = $derived(all || !!focused);
 	// Cards and rails drawing their rows: where they read and are on or near the screen (see
 	// open.ts). Nodes read it from the view state, and it is only replaced when it changes, so a
 	// pan rebuilds nothing and redraws only the boxes coming into or leaving view.
@@ -676,15 +691,23 @@
 				} satisfies LandscapeNodeData
 			};
 		});
-		// A new layout or focus is fitted; leaving a focus goes back to where the view was.
-		if ((fittedTo !== settings.layout || fittedFocus !== view.focused) && boxes.length) {
-			const left = fittedFocus && !view.focused;
+		// A new layout or focus is fitted; leaving a focus or stopping goes back to where the view
+		// was.
+		if ((fittedTo !== settings.layout || fittedFocus !== focusKey) && boxes.length) {
+			const keep = keepCamera;
+			keepCamera = false;
 			fittedTo = settings.layout;
-			fittedFocus = view.focused;
-			if (!left)
+			fittedFocus = focusKey;
+			if (!keep) {
+				fitting = true;
 				requestAnimationFrame(() =>
-					requestAnimationFrame(() => flow.fitView({ padding: 0.08 }).then(() => (ready = true)))
+					requestAnimationFrame(() => {
+						if (playing) fitRun();
+						else void flow.fitView({ padding: 0.08 }).then(() => (ready = true));
+						fitting = false;
+					})
 				);
+			}
 		}
 	});
 
@@ -1382,7 +1405,9 @@
 	/** Goes to a search hit: frames a system or module, flies to a model or row, picks an api. */
 	function pick(hit: Pick<Hit, 'kind' | 'id'>) {
 		search.open = false;
-		if (view.focused && !model.elements.has(hit.id) && !model.fields.has(hit.id)) leaveFocus();
+		const outside = () => !model.elements.has(hit.id) && !model.fields.has(hit.id);
+		if (view.play && outside()) stopPlay();
+		if (view.focused && outside()) leaveFocus();
 		if (hit.kind === 'api') return showApi(hit.id);
 		view.api = null;
 		view.apiField = null;
@@ -1424,9 +1449,10 @@
 	}
 
 	function setFocus(next: Focus) {
-		if (!view.focused) beforeFocus = { ...viewport.current };
+		if (!view.focused) beforeFocus = view.play ? beforePlay : { ...viewport.current };
 		unpin();
 		view.play = null;
+		beforePlay = undefined;
 		view.selectedNodes = [];
 		view.expanded = {};
 		view.focused = next;
@@ -1451,6 +1477,7 @@
 		view.selectedNodes = [];
 		view.expanded = {};
 		view.focused = null;
+		keepCamera = true;
 		if (beforeFocus) flow.setViewport(beforeFocus);
 		beforeFocus = undefined;
 	}
@@ -1562,11 +1589,40 @@
 		return { x: b.absX, w: b.width, y, zoom: READABLE / TABLE.row };
 	}
 
+	/** Kept clear round what the camera brings into view, in screen px. */
+	const MARGIN = 56;
+
+	/** Fits the whole run's focus above the player, no further in than 100%. */
+	function fitRun() {
+		const left = Math.min(...boxes.map((b) => b.absX));
+		const top = Math.min(...boxes.map((b) => b.absY));
+		// Half an api rail sits outside its box's right border.
+		const right = Math.max(
+			...boxes.map((b) => b.absX + b.width + (rails.get(b.id)?.width ?? 0) / 2)
+		);
+		const bottom = Math.max(...boxes.map((b) => b.absY + b.height));
+		const zoom = Math.max(
+			MIN_ZOOM,
+			Math.min(1, (cw - 2 * MARGIN) / (right - left), (ch - PLAYER - 2 * MARGIN) / (bottom - top))
+		);
+		void flow
+			.setViewport({
+				x: cw / 2 - ((left + right) / 2) * zoom,
+				y: (ch - PLAYER) / 2 - ((top + bottom) / 2) * zoom,
+				zoom
+			})
+			.then(() => {
+				ready = true;
+				if (step) keepInView(step);
+			});
+	}
+
 	/**
-	 * Frames a step above the player: both ends, zoomed in no further than 100% and out no
-	 * further than where their rows are drawn. When both do not fit at that, the receiver.
+	 * Brings both ends of a step into view above the player, if they are not: the least pan,
+	 * and a zoom out only when they do not fit at this zoom. It never zooms in. When both do not
+	 * fit where their rows are drawn, the receiver.
 	 */
-	function frameStep(s: PlayStep) {
+	function keepInView(s: PlayStep) {
 		const { from, to } = endsOf(s);
 		const ends = [from, to].filter((e) => !!e);
 		if (!ends.length) return;
@@ -1578,30 +1634,49 @@
 				e.row >= shownRows(e.box.fields.length, !!view.expanded[e.box.id], e.box.foldAt)
 			)
 				view.expanded = { ...view.expanded, [e.box.id]: true };
-		const pad = 56;
-		const fit = (list: ReturnType<typeof placeOf>[]) => {
-			const left = Math.min(...list.map((p) => p.x));
-			const right = Math.max(...list.map((p) => p.x + p.w));
-			const top = Math.min(...list.map((p) => p.y)) - TABLE.rowHeight;
-			const bottom = Math.max(...list.map((p) => p.y)) + TABLE.rowHeight;
+		const v = flow.getViewport();
+		const h = ch - PLAYER;
+		const span = (list: ReturnType<typeof placeOf>[]) => {
+			const f = {
+				left: Math.min(...list.map((p) => p.x)),
+				right: Math.max(...list.map((p) => p.x + p.w)),
+				top: Math.min(...list.map((p) => p.y)) - TABLE.rowHeight,
+				bottom: Math.max(...list.map((p) => p.y)) + TABLE.rowHeight,
+				least: Math.max(...list.map((p) => p.zoom))
+			};
 			const most = Math.min(
-				(cw - 2 * pad) / (right - left),
-				(ch - PLAYER - 2 * pad) / (bottom - top)
+				(cw - 2 * MARGIN) / (f.right - f.left),
+				(h - 2 * MARGIN) / (f.bottom - f.top)
 			);
-			const least = Math.max(...list.map((p) => p.zoom)) * 1.05;
-			return { cx: (left + right) / 2, cy: (top + bottom) / 2, most: Math.min(1, most), least };
+			return { ...f, zoom: Math.max(MIN_ZOOM, Math.min(v.zoom, most)) };
 		};
-		let f = fit(ends.map(placeOf));
-		if (f.most < f.least && to) f = fit([placeOf(to)]);
-		const zoom = Math.max(f.least, f.most);
-		flow.setCenter(f.cx, f.cy + PLAYER / 2 / zoom, { zoom, duration: 400 });
+		let f = span(ends.map(placeOf));
+		if (f.zoom < f.least && to) f = span([placeOf(to)]);
+		const z = f.zoom;
+		// The least move along one axis that brings [lo, hi] into [MARGIN, size - MARGIN].
+		const shift = (lo: number, hi: number, at: number, size: number) =>
+			lo * z + at < MARGIN
+				? MARGIN - lo * z
+				: hi * z + at > size - MARGIN
+					? size - MARGIN - hi * z
+					: at;
+		const next =
+			z < v.zoom
+				? {
+						x: cw / 2 - ((f.left + f.right) / 2) * z,
+						y: h / 2 - ((f.top + f.bottom) / 2) * z,
+						zoom: z
+					}
+				: { x: shift(f.left, f.right, v.x, cw), y: shift(f.top, f.bottom, v.y, h), zoom: z };
+		if (next.x !== v.x || next.y !== v.y || next.zoom !== v.zoom)
+			void flow.setViewport(next, { duration: 400 });
 	}
-	// Each new step moves the camera; panning between steps is free.
+	// Each new step brings its ends into view; panning between steps is free.
 	$effect(() => {
 		const s = step;
 		const at = playAt;
-		if (!s || !ready) return;
-		untrack(() => frameStep(s));
+		if (!s || !ready || fitting) return;
+		untrack(() => keepInView(s));
 		void at;
 	});
 
@@ -1632,23 +1707,41 @@
 				? el(id)!.name
 				: label(id);
 
-	/** The current step as drawn on the board, in screen px. */
-	const playDraw = $derived.by(() => {
-		if (!step) return undefined;
-		const ends = endsOf(step);
+	/** A step's line between its ends, in screen px, with its arrow and where its number goes. */
+	function lineOf(s: PlayStep) {
+		const ends = endsOf(s);
 		if (!ends.from || !ends.to) return undefined;
 		const a = screenOf(ends.from);
 		const b = screenOf(ends.to);
-		// A step the unit takes alone is written beside its row.
-		if (step.from === step.to) return { beside: { x: a.right + 12, y: a.y } };
 		let x0, x1, xm;
 		if (b.left >= a.right) [x0, x1, xm] = [a.right, b.left, (a.right + b.left) / 2];
 		else if (b.right <= a.left) [x0, x1, xm] = [a.left, b.right, (a.left + b.right) / 2];
 		else [x0, x1, xm] = [a.right, b.right, Math.max(a.right, b.right) + 28];
-		const head = (x: number, y: number, dir: number) =>
-			`M${x} ${y} L${x - dir * 9} ${y - 4.5} L${x - dir * 9} ${y + 4.5} Z`;
-		// At the receiver: what the sender depends on, as with every connection.
-		const arrow = head(x1, b.y, Math.sign(x1 - xm) || 1);
+		const dir = Math.sign(x1 - xm) || 1;
+		const out = Math.sign(xm - x0) || 1;
+		return {
+			a,
+			b,
+			x0,
+			x1,
+			xm,
+			d: `M${x0} ${a.y} H${xm} V${b.y} H${x1}`,
+			// At the receiver: what the sender depends on, as with every connection.
+			arrow: `M${x1} ${b.y} L${x1 - dir * 9} ${b.y - 4.5} L${x1 - dir * 9} ${b.y + 4.5} Z`,
+			// Where a past step's number goes, and the current one's, where its line starts.
+			num: { x: xm, y: (a.y + b.y) / 2 },
+			start: { x: x0 + out * 16, y: a.y }
+		};
+	}
+
+	/** The current step as drawn on the board, in screen px. */
+	const playDraw = $derived.by(() => {
+		if (!step) return undefined;
+		const line = lineOf(step);
+		if (!line) return undefined;
+		const { a, b, x0, x1, xm, d, arrow, start } = line;
+		// A step the unit takes alone is written beside its row.
+		if (step.from === step.to) return { beside: { x: a.right + 12, y: a.y } };
 		// When the camera framed only the receiver, the label goes beside the receiver, and the
 		// sender is named where its line leaves the screen.
 		const h = ch - PLAYER;
@@ -1665,8 +1758,9 @@
 				? { x: xm, y: clampY(a.y), align: 'center' }
 				: { x: clampX(x0), y: a.y, align: x0 > cw ? 'end' : 'start' };
 		return {
-			d: `M${x0} ${a.y} H${xm} V${b.y} H${x1}`,
+			d,
 			arrow,
+			start,
 			label: off
 				? { x: x1 + away * 14, y: b.y, align: away > 0 ? 'start' : 'end' }
 				: Math.abs(x1 - xm) > 60
@@ -1684,9 +1778,52 @@
 	/** How far a label is moved left to sit at its anchor: by its start, middle or end. */
 	const SHIFT: Record<string, string> = { start: '0%', center: '-50%', end: '-100%' };
 
+	/**
+	 * The steps before the current one, as a faint trail of numbered lines. Steps inside a unit
+	 * come back out of fold into the line of the call into it, numbered as a range; a line taken
+	 * more than once, or back the other way (what a call gets), carries every number. Steps the
+	 * unit takes alone are not drawn.
+	 */
+	const trail = $derived.by(() => {
+		if (!run || !step) return [];
+		const cur = step.frame;
+		const onPath = (f: string[]) => f.length <= cur.length && f.every((u, k) => cur[k] === u);
+		// The steps folded into each step drawn: the last of them, by the step drawn.
+		const last: Record<number, number> = {};
+		for (let i = 0; i < playAt; i++) {
+			let j = i;
+			while (!onPath(run.steps[j].frame)) j = callOf(run, j);
+			last[j] = i;
+		}
+		const lines: Record<string, { at: number; s: PlayStep; nums: string[]; texts: string[] }> = {};
+		for (const [k0, end] of Object.entries(last)) {
+			const at = Number(k0);
+			const s = run.steps[at];
+			if (s.from === s.to) continue;
+			const num = end > at ? `${at + 1}–${end + 1}` : `${at + 1}`;
+			const l = (lines[[s.from, s.to].sort().join(' ')] ??= { at, s, nums: [], texts: [] });
+			l.nums.push(num);
+			l.texts.push(`${num} · ${s.text}`);
+		}
+		return Object.values(lines).flatMap((l) => {
+			const line = lineOf(l.s);
+			return line ? [{ ...l, line }] : [];
+		});
+	});
+
 	function startPlay(unit: string) {
+		if (!view.play) beforePlay = flow.getViewport();
 		unpin();
+		view.expanded = {};
 		view.play = { unit, choices: {}, into: [], over: [], at: 0 };
+	}
+	/** Stops playing: the run's focus closes and the view goes back to where it was. */
+	function stopPlay() {
+		view.play = null;
+		view.expanded = {};
+		keepCamera = true;
+		if (beforePlay) void flow.setViewport(beforePlay);
+		beforePlay = undefined;
 	}
 	function jump(at: number) {
 		if (view.play && run)
@@ -1733,7 +1870,7 @@
 	function playKey(e: KeyboardEvent) {
 		if (!view.play || search.open || e.metaKey || e.ctrlKey || e.altKey) return false;
 		const n = Number(e.key);
-		if (e.key === 'Escape') view.play = null;
+		if (e.key === 'Escape') stopPlay();
 		else if (e.key === 'ArrowRight') forward();
 		else if (e.key === 'ArrowLeft') jump(playAt - 1);
 		else if (e.key === 'Home') jump(0);
@@ -2274,11 +2411,34 @@
 		{/if}
 	{/if}
 	{#if run && step}
+		<svg class="play-lines trail" aria-hidden="true">
+			{#each trail as t (t.at)}
+				<path class="line {t.s.kind}" d={t.line.d} />
+				<path class="head {t.s.kind}" d={t.line.arrow} />
+			{/each}
+		</svg>
+		{#each trail as t (t.at)}
+			<button
+				class="play-num {t.s.kind}"
+				style:left="{t.line.num.x}px"
+				style:top="{t.line.num.y}px"
+				title={t.texts.join('\n')}
+				aria-label="Step {t.nums.join(', ')}: {t.s.text}. Jump there"
+				onclick={() => jump(t.at)}>{t.nums.join(', ')}</button
+			>
+		{/each}
 		{#if playDraw?.d}
 			<svg class="play-lines" aria-hidden="true">
 				<path class="line {step.kind}" d={playDraw.d} />
 				<path class="head {step.kind}" d={playDraw.arrow} />
 			</svg>
+			<div
+				class="play-num now {step.kind}"
+				style:left="{playDraw.start.x}px"
+				style:top="{playDraw.start.y}px"
+			>
+				{playAt + 1}
+			</div>
 			<div
 				class="play-label {step.kind}"
 				style:left="{playDraw.label.x}px"
@@ -2331,10 +2491,10 @@
 			onover={stepOver}
 			onout={stepOut}
 			onfollow={() => settings.setFollowCalls(!settings.followCalls)}
-			onstop={() => (view.play = null)}
+			onstop={stopPlay}
 		/>
 	{/if}
-	{#if view.focused}
+	{#if view.focused && !view.play}
 		<FocusBar
 			focus={view.focused}
 			name={refLabel(changes.shown, view.focused.id) ?? ''}
@@ -2877,6 +3037,61 @@
 	}
 	.play-lines .head.fail {
 		fill: var(--sdv-method-put);
+	}
+	.play-lines.trail {
+		opacity: 0.4;
+	}
+	.play-lines.trail .line {
+		stroke-width: 1.5;
+	}
+	.play-num {
+		position: absolute;
+		z-index: 9;
+		transform: translate(-50%, -50%);
+		min-width: 20px;
+		height: 20px;
+		box-sizing: border-box;
+		padding: 0 5px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font: inherit;
+		font-size: 11px;
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+		background: var(--sdv-canvas-bg);
+		border: 1.5px solid var(--c);
+		border-radius: 10px;
+		color: var(--c);
+		--c: var(--sdv-model-text);
+		cursor: pointer;
+	}
+	button.play-num {
+		opacity: 0.6;
+	}
+	button.play-num:hover {
+		opacity: 1;
+	}
+	.play-num.now {
+		pointer-events: none;
+		background: var(--c);
+		color: var(--sdv-canvas-bg);
+	}
+	.play-num.call {
+		--c: var(--sdv-link-call);
+	}
+	.play-num.read {
+		--c: var(--sdv-link-ref);
+	}
+	.play-num.write {
+		--c: var(--sdv-link-write);
+	}
+	.play-num.gets {
+		--c: var(--sdv-text-muted);
+	}
+	.play-num.fail {
+		--c: var(--sdv-method-put);
 	}
 	.play-label,
 	.play-edge,
