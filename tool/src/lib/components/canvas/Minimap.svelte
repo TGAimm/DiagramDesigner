@@ -25,9 +25,9 @@
 		maxZoom
 	}: { boxes: MapBox[]; cw: number; ch: number; minZoom: number; maxZoom: number } = $props();
 
-	const MAX_W = 216;
-	const MAX_H = 160;
-	const HEAD = 11;
+	const MAX_W = 270;
+	const MAX_H = 200;
+	const HEAD = 14;
 
 	const flow = useSvelteFlow();
 	const viewport = useViewport();
@@ -126,8 +126,8 @@
 					<rect class="sys" {x} {y} width={b.width * s} height={b.height * s} />
 					<!-- A nested svg clips the name tab to its system. -->
 					<svg {x} {y} width={b.width * s} height={Math.min(HEAD, b.height * s)}>
-						<rect class="head" width={b.name.length * 5.6 + 7} height={HEAD} />
-						<text x="3" y="8.5">{b.name}</text>
+						<rect class="head" width={b.name.length * 7 + 9} height={HEAD} />
+						<text x="4" y="10.5">{b.name}</text>
 					</svg>
 				{/if}
 			{/each}
@@ -173,7 +173,7 @@
 	}
 	text {
 		fill: var(--sdv-system-text);
-		font-size: 9px;
+		font-size: 11px;
 		font-weight: 600;
 	}
 	.dim {
