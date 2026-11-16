@@ -38,7 +38,7 @@ describe('layout options', () => {
 		'c/c.module.yaml': 'id: c\n'
 	}).model;
 	const at = (opts: Partial<typeof DEFAULT_LAYOUT>) => {
-		const boxes = layoutLandscape(linked, true, { ...DEFAULT_LAYOUT, ...opts });
+		const boxes = layoutLandscape(linked, { ...DEFAULT_LAYOUT, ...opts });
 		return (id: string) => boxes.find((b) => b.id === id)!;
 	};
 
@@ -78,7 +78,7 @@ describe('layout options', () => {
 		for (const id of 'abcdefgh') files[`${id}/${id}.module.yaml`] = `id: ${id}\n`;
 		const loose = loadStrings(files).model;
 		const extent = (aspect: number) => {
-			const boxes = layoutLandscape(loose, true, { ...DEFAULT_LAYOUT, aspect });
+			const boxes = layoutLandscape(loose, { ...DEFAULT_LAYOUT, aspect });
 			return {
 				w: Math.max(...boxes.map((b) => b.absX + b.width)),
 				h: Math.max(...boxes.map((b) => b.absY + b.height))
@@ -96,7 +96,7 @@ describe('layout options', () => {
 		// The fixture's two erp modules share no connection, so ELK packs them, a gap apart.
 		const { model } = loadFixture();
 		for (const spacing of [1, 2]) {
-			const boxes = layoutLandscape(model, true, { ...DEFAULT_LAYOUT, spacing });
+			const boxes = layoutLandscape(model, { ...DEFAULT_LAYOUT, spacing });
 			const [i, o] = ['inventory', 'orders'].map((id) => boxes.find((b) => b.id === id)!);
 			const [first, second] = i.absX < o.absX || i.absY < o.absY ? [i, o] : [o, i];
 			expect(
@@ -376,15 +376,14 @@ describe('landscape layout', () => {
 });
 
 describe('folded model cards', () => {
-	const card = (n: number, fold = true) => {
+	const card = (n: number) => {
 		const fields = Array.from({ length: n }, (_, i) => `  - { id: f${i}, name: f${i}, type: int }`);
 		return layoutLandscape(
 			loadStrings({
 				's/s.module.yaml': 'id: s\n',
 				's/m.module.yaml': 'id: m\nparent: s\n',
 				's/a.model.yaml': ['id: a', 'ownedBy: m', 'fields:', ...fields].join('\n')
-			}).model,
-			fold
+			}).model
 		).find((b) => b.id === 'a')!;
 	};
 
@@ -393,11 +392,6 @@ describe('folded model cards', () => {
 		expect(card(FOLD + 1).height).toBe(card(FOLD).height + TABLE.rowHeight);
 		expect(card(80).height).toBe(card(FOLD + 1).height);
 		expect(card(80).fields).toHaveLength(80);
-	});
-
-	it('lays out every row, with no toggle row, when folding is off', () => {
-		expect(card(80, false).height).toBe(card(FOLD, false).height + (80 - FOLD) * TABLE.rowHeight);
-		expect(card(FOLD, false).height).toBe(card(FOLD).height);
 	});
 
 	it('ends the lines of hidden rows on the toggle row until the card is expanded', () => {

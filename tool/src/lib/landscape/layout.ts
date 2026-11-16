@@ -410,7 +410,6 @@ function tableLayout(
 	owner: string | undefined,
 	label: (id: string) => string | undefined,
 	rels: Relations,
-	fold: boolean,
 	at: number
 ): { size: Size; cols: TableColumn[] } {
 	const indexes = view === 'table' ? (def.indexes ?? []) : [];
@@ -423,10 +422,10 @@ function tableLayout(
 		...indexes.map((ix) => indexWidth(ix, fields))
 	);
 	const rows = (n: number) => (n ? n + 1 : 0);
-	// Laid out folded: an expanded card draws over what is below it rather than moving it.
-	const fieldRows = fold
-		? rows(shownRows(fields.length, false, at)) + (foldable(fields.length, at) ? 1 : 0)
-		: rows(fields.length);
+	// Laid out folded in every mode: an expanded card draws over what is below it rather than
+	// moving it.
+	const fieldRows =
+		rows(shownRows(fields.length, false, at)) + (foldable(fields.length, at) ? 1 : 0);
 	const height = TABLE.head + (fieldRows + rows(indexes.length)) * TABLE.rowHeight;
 	return { size: { width: Math.ceil(width) + 2, height: height + 2 }, cols };
 }
@@ -517,12 +516,11 @@ const spacing = (gap: number) => ({
  *
  * A model is a class card in its owner, inside a boundary with the models only it holds, and
  * a table card in the entity storing it. A model stored where it is owned is one table card.
- * With `fold` off every card is sized to show all its fields. `foldAt` folds a model's cards
- * after that many rows instead of `FOLD`, by model id.
+ * Cards over `FOLD` fields are laid out folded; `foldAt` folds a model's cards after that
+ * many rows instead, by model id.
  */
 export function layoutLandscape(
 	model: Model,
-	fold = true,
 	opts: LayoutOptions = DEFAULT_LAYOUT,
 	foldAt = new Map<string, number>()
 ): LandscapeBox[] {
@@ -639,7 +637,6 @@ export function layoutLandscape(
 				owner,
 				(id) => refLabel(model, id),
 				rels,
-				fold,
 				foldAt.get(info.id) ?? FOLD
 			);
 			cards.set(item.id, { cols: t.cols, fields });
@@ -717,7 +714,7 @@ export function layoutLandscape(
 	const rowHeight = (home: Item, leaf: string) => {
 		const card = cards.get(home.id);
 		const i = card ? card.fields.findIndex((f) => f.id === leaf) : -1;
-		if (card && i >= 0) return fieldRowY(i, card.fields.length, !fold, foldAt.get(home.el) ?? FOLD);
+		if (card && i >= 0) return fieldRowY(i, card.fields.length, false, foldAt.get(home.el) ?? FOLD);
 		const u = logicCards.get(home.id)?.rows.findIndex((r) => r.id === leaf) ?? -1;
 		if (u >= 0) return logicRowY(u);
 		return home.view || home.logic ? TABLE.head / 2 : sizes.get(home.id)!.height / 2;

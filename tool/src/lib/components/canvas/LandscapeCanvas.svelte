@@ -109,7 +109,7 @@
 	/** The key explaining the canvas's marks is shown. */
 	let keyOpen = $state(false);
 
-	// Render everything: every box and rail open, every card unfolded, at any zoom.
+	// Render everything: every box and rail open at any zoom; long cards still fold.
 	const all = $derived(settings.detail === 'all');
 	// The design, or the state of a scenario or commit being compared (see changes.svelte.ts);
 	// in a focus, cut down to the subject and what connects to it, drawn the same.
@@ -117,7 +117,7 @@
 	const model = $derived(focused?.model ?? changes.shown);
 	// Laid out with every flag branch and gated item in, so setting a flag moves nothing.
 	const boxes = $derived(
-		layoutLandscape(focused?.model ?? changes.layoutModel, !all, settings.layout, focused?.foldAt)
+		layoutLandscape(focused?.model ?? changes.layoutModel, settings.layout, focused?.foldAt)
 	);
 	const rels = $derived(relationsOf(model));
 	const boxById = $derived(new Map(boxes.map((b) => [b.id, b])));
@@ -131,9 +131,7 @@
 	const label = (id: string) => refLabel(model, id) ?? id;
 	/** Where row `i` of a card sits, folded or expanded as it is now; logic cards never fold. */
 	const rowY = (b: LandscapeBox, i: number) =>
-		b.logic
-			? logicRowY(i)
-			: fieldRowY(i, b.fields?.length ?? 0, all || !!view.expanded[b.id], b.foldAt);
+		b.logic ? logicRowY(i) : fieldRowY(i, b.fields?.length ?? 0, !!view.expanded[b.id], b.foldAt);
 	/** The row of a field or logic unit in a card, or -1. */
 	const rowOf = (b: LandscapeBox, id: string | undefined) =>
 		b.logic
@@ -1113,7 +1111,7 @@
 		const zoom = Math.min(Math.max(viewport.current.zoom, 0.8 / fill(area)), 0.92 / fill(t));
 		const row = rowOf(t, target.field);
 		// A row hidden in a folded card is shown by expanding the card.
-		if (!all && t.fields && row >= shownRows(t.fields.length, !!view.expanded[t.id], t.foldAt))
+		if (t.fields && row >= shownRows(t.fields.length, !!view.expanded[t.id], t.foldAt))
 			view.expanded = { ...view.expanded, [t.id]: true };
 		// Keep [start, start + size] on a canvas side of `side` pixels, if it fits.
 		const keep = (c: number, start: number, size: number, side: number) => {
@@ -1324,7 +1322,6 @@
 		// A row hidden in a folded card is shown by expanding the card.
 		for (const e of ends)
 			if (
-				!all &&
 				e.box.fields &&
 				e.row !== undefined &&
 				e.row >= shownRows(e.box.fields.length, !!view.expanded[e.box.id], e.box.foldAt)

@@ -82,7 +82,6 @@
 		typeText
 	} from '#lib/landscape/layout.ts';
 	import { RAIL } from '#lib/landscape/apis.ts';
-	import { settings } from '#lib/client/settings.svelte.ts';
 	import { changes } from '#lib/client/changes.svelte.ts';
 	import { untrack } from 'svelte';
 	import EntityGlyph from './EntityGlyph.svelte';
@@ -97,9 +96,7 @@
 	// A card of over FOLD fields (or `foldAt`) shows the first ones and a row to show all. Expanded, it keeps
 	// its laid-out size and draws over whatever is below it (see `.node.expanded`).
 	const count = $derived(d.fields?.length ?? 0);
-	// Render everything never folds a card.
-	const all = $derived(settings.detail === 'all');
-	const expanded = $derived(all || !!d.state.expanded[id]);
+	const expanded = $derived(!!d.state.expanded[id]);
 	const at = $derived(d.foldAt ?? FOLD);
 	const shown = $derived(d.fields?.slice(0, shownRows(count, expanded, at)) ?? []);
 	// A lit row hidden in the fold lights the toggle row instead.
@@ -170,7 +167,7 @@
 	class:selected={d.state.selectedNodes.includes(id)}
 	class:peer-box={d.state.peerBoxes[id]}
 	class:api-box={apiParts}
-	class:expanded={d.table && expanded && !all}
+	class:expanded={d.table && expanded}
 	class:system={d.kind === 'system'}
 	class:faded={faded && !d.group}
 	style:--tab={d.kind === 'model' ? 'var(--sdv-model-class-head)' : 'var(--fill)'}
@@ -335,7 +332,7 @@
 							{/each}
 						</div>
 					{/each}
-					{#if foldable(count, at) && !all}
+					{#if foldable(count, at)}
 						<button
 							class="cell fold"
 							class:hot={hiddenHot}

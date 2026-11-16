@@ -1,6 +1,6 @@
 /**
  * How much of the canvas is drawn. `adaptive` opens boxes and rails as their contents become
- * readable and folds long cards; `all` draws everything open and unfolded at every zoom.
+ * readable and folds long cards; `all` draws everything open at every zoom. Long cards fold in both.
  */
 export type Detail = 'adaptive' | 'all';
 
