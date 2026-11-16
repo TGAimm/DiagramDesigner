@@ -48,8 +48,6 @@
 		height: number;
 		scale: number;
 		methodWidth: number;
-		/** Listed: rows read at LEGIBLE px, or everything is drawn; else the rail shows its name. */
-		open: boolean;
 		groups: {
 			title?: string;
 			/** `y`: the row's middle in the rail at full size. */
@@ -82,6 +80,8 @@
 		typeText
 	} from '#lib/landscape/layout.ts';
 	import { RAIL } from '#lib/landscape/apis.ts';
+	import { NAME_MIN } from '#lib/landscape/open.ts';
+	import { GLYPH, textWidth } from '#lib/render/text.ts';
 	import { changes } from '#lib/client/changes.svelte.ts';
 	import { untrack } from 'svelte';
 	import EntityGlyph from './EntityGlyph.svelte';
@@ -103,10 +103,11 @@
 	const hiddenHot = $derived(
 		!expanded && (d.fields ?? []).slice(at).some((f) => hot?.[f.id] || picked === f.id)
 	);
-	// Zoomed out in adaptive detail, a card is only its frame and a rail only its name, unless
-	// it is looked at or at the end of a lit line (see open.ts).
-	const full = $derived(!d.state.brief || !!d.state.full[id]);
-	const railListed = $derived(!!d.rail && (d.rail.open || !!d.state.full[id]));
+	// In adaptive detail a card shows its rows, and a rail its endpoints, only near the screen
+	// and while they read, or while looked at or at the end of a lit line (see open.ts).
+	// Otherwise a card is its frame and name, a rail its name.
+	const full = $derived(!!d.state.near[id] || !!d.state.full[id]);
+	const railListed = $derived(!!d.rail && (!!d.state.near[id] || !!d.state.full[id]));
 	const updateNodeInternals = useUpdateNodeInternals();
 	// Handles move with their rows, come with them, and move as rails open; Svelte Flow measures
 	// them only when told.
@@ -134,10 +135,33 @@
 		`${n} field${n > 1 ? 's' : ''} ${n > 1 ? many : one}`;
 	// A leaf is fitted round its name, so the name keeps one size.
 	const font = $derived(d.group ? groupFont(width, height) : LEAF.font);
+	/** The largest font, in canvas px, at which `text` and its glyph fit `w` by `h`. */
+	const fit = (text: string, w: number, h: number) =>
+		Math.max(0, Math.min(w / (textWidth(text, 100, true) / 100 + GLYPH), h));
+	/**
+	 * A name's font: `base` canvas px, grown as the canvas zooms out so it stays NAME_MIN px on
+	 * screen, but never past `max`, the most its box has room for.
+	 */
+	const nameFont = (base: number, max: number) =>
+		`clamp(${base}px, calc(${NAME_MIN}px / var(--z, 1)), ${Math.max(base, max)}px)`;
+	const cardName = $derived(d.logic ? 'Logic' : d.name);
+	// A card's title grows within its name bar; its frame alone shows its name across the card.
+	const titleFont = $derived(
+		nameFont(
+			TABLE.title,
+			Math.min(fit(cardName, width - 2 * TABLE.pad, Infinity), TABLE.head / 2.2)
+		)
+	);
+	const bodyFont = $derived(
+		nameFont(TABLE.title, fit(cardName, width - 2 * TABLE.pad, height * 0.6))
+	);
+	const leafFont = $derived(
+		nameFont(font, fit(d.name, width - (d.rail ? d.rail.width / 2 : 0) - 16, height * 0.6))
+	);
 	// A closed boundary reads as the model it is drawn round.
 	const glyph = $derived(d.kind === 'system' ? 'system' : d.kind === 'model' ? 'class' : 'module');
 	// Largest name tab font: the tab (about 1.8em tall) stays inside the header room above the
-	// children of every open box.
+	// children of every open box. It cannot grow past that: the boxes inside draw over it.
 	const hdr = HEADER / 2;
 	const label = (id: string) => d.labels?.[id];
 	const names = (ids: string[]) => ids.map((id) => label(id) ?? id).join(', ');
@@ -200,6 +224,7 @@
 			class="face table"
 			class:class={d.view === 'class'}
 			class:ref={d.owner && d.view === 'class'}
+			class:brief={!full}
 			style:--pad="{TABLE.pad}px"
 			style:--row="{TABLE.rowHeight}px"
 		>
@@ -216,7 +241,7 @@
 				onmouseleave={() => d.onbox?.('leave')}
 			>
 				{#if full}
-					<div class="name" style:font-size="{TABLE.title}px">
+					<div class="name" style:font-size={titleFont}>
 						<EntityGlyph
 							kind={d.view === 'table' ? 'table' : 'class'}
 						/>{#if marks.glyph.has(d.element)}<span class="op">{marks.glyph.get(d.element)}</span
@@ -229,6 +254,11 @@
 					</div>
 				{/if}
 			</div>
+			{#if !full}
+				<div class="brief-name" style:font-size={bodyFont}>
+					<EntityGlyph kind={d.view === 'table' ? 'table' : 'class'} /><span>{d.name}</span>
+				</div>
+			{/if}
 			{#if full && d.fields?.length}
 				<div
 					class="grid"
@@ -385,7 +415,12 @@
 	{:else if d.logic}
 		{@const cols = d.logic.cols}
 		{@const rows = d.logic.rows}
-		<div class="face table logic" style:--pad="{TABLE.pad}px" style:--row="{TABLE.rowHeight}px">
+		<div
+			class="face table logic"
+			class:brief={!full}
+			style:--pad="{TABLE.pad}px"
+			style:--row="{TABLE.rowHeight}px"
+		>
 			<div
 				class="thead"
 				role="presentation"
@@ -394,12 +429,17 @@
 				onmouseleave={() => d.onbox?.('leave')}
 			>
 				{#if full}
-					<div class="name" style:font-size="{TABLE.title}px">
+					<div class="name" style:font-size={titleFont}>
 						<EntityGlyph kind="logic" />Logic
 					</div>
 					<div class="note" style:font-size="{TABLE.note}px">{logicNote(rows.length)}</div>
 				{/if}
 			</div>
+			{#if !full}
+				<div class="brief-name" style:font-size={bodyFont}>
+					<EntityGlyph kind="logic" /><span>Logic</span>
+				</div>
+			{/if}
 			<div
 				class="grid"
 				style:font-size="{TABLE.row}px"
@@ -460,7 +500,7 @@
 		{#if !d.open}
 			<div
 				class="face"
-				style:font-size="{font}px"
+				style:font-size={leafFont}
 				style:--fs={font}
 				style:padding-right={!d.group && d.rail ? `${d.rail.width / 2}px` : undefined}
 			>
@@ -549,7 +589,10 @@
 			{:else}
 				<button
 					class="rail-name"
-					style:font-size="{Math.min(r.width / 4, r.height * 0.2)}px"
+					style:font-size={nameFont(
+						Math.min(RAIL.font, fit('APIs', r.width - 8, r.height * 0.6)),
+						fit('APIs', r.width - 8, r.height * 0.6)
+					)}
 					title="Zoom in to list the apis"
 					onclick={(e) => {
 						e.stopPropagation();
@@ -646,7 +689,28 @@
 		border-color: var(--sdv-model-stroke);
 		color: var(--sdv-model-text);
 	}
-	/* Rows take the pointer, unless the node is a ghost (closed parent). */
+	/* A card drawn as its frame: its name across the whole card, as large as reads. Its name
+	   bar stays for hovering, untinted, so the name does not straddle it. */
+	.node .face.table.brief .thead {
+		background: none;
+	}
+	.brief-name {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.35em;
+		padding: 0 var(--pad);
+		font-weight: 600;
+		white-space: nowrap;
+		pointer-events: none;
+	}
+	.brief-name span {
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	/* Rows take the pointer. */
 	.face.table {
 		pointer-events: inherit;
 	}

@@ -46,7 +46,7 @@
 		type LinkKind,
 		type RestLine
 	} from '#lib/landscape/connections.ts';
-	import { apiHosts, cardsBrief, railOpen, READABLE } from '#lib/landscape/open.ts';
+	import { apiHosts, drawnInFull, READABLE } from '#lib/landscape/open.ts';
 	import { sequenceOf, sequenceWidth } from '#lib/landscape/sequence.ts';
 	import SequenceDiagram from './SequenceDiagram.svelte';
 	import PlayerBar from './PlayerBar.svelte';
@@ -144,32 +144,20 @@
 	const open = $derived(new Set(boxes.filter((b) => b.group).map((b) => b.id)));
 	// Render everything, or a focus, which is small: every card and rail in full at any zoom.
 	const everything = $derived(all || !!view.focused);
-	// Hosts whose rail rows read at LEGIBLE px, so the rail lists them. State, not derived, so a
-	// zoom that changes nothing stops here instead of rebuilding nodes every frame.
-	let openRails = $state.raw(new Set<string>());
-	const sameSet = (a: Set<string>, b: Set<string>) =>
-		a.size === b.size && [...a].every((id) => b.has(id));
+	// Cards and rails drawing their rows: where they read and are on or near the screen (see
+	// open.ts). Nodes read it from the view state, and it is only replaced when it changes, so a
+	// pan rebuilds nothing and redraws only the boxes coming into or leaving view.
 	$effect(() => {
-		const zoom = viewport.current.zoom;
-		const next = new Set(
-			[...rails].filter(([, r]) => everything || railOpen(r, zoom)).map(([id]) => id)
-		);
-		if (
-			!sameSet(
-				next,
-				untrack(() => openRails)
-			)
-		)
-			openRails = next;
+		const { x, y, zoom } = viewport.current;
+		const next = everything
+			? [...boxes.map((b) => b.id), ...rails.keys()]
+			: [...drawnInFull(boxes, rails, { x, y, zoom, width: cw, height: ch })];
+		const was = untrack(() => view.near);
+		if (next.length === Object.keys(was).length && next.every((id) => was[id])) return;
+		view.near = Object.fromEntries(next.map((id) => [id, true as const]));
 	});
-	// Cards draw only their frames while their rows would be under LEGIBLE px. Nodes read it from
-	// the view state, so crossing it never rebuilds them.
-	const brief = $derived(!everything && cardsBrief(viewport.current.zoom));
-	$effect(() => {
-		view.brief = brief;
-	});
-	/** The rail on box `id` lists its endpoints: they read, or what they connect to is looked at. */
-	const listed = (id: string) => openRails.has(id) || !!view.full[id];
+	/** The rail on box `id` lists its endpoints: they read near the screen, or are looked at. */
+	const listed = (id: string) => !!view.near[id] || !!view.full[id];
 
 	// Apis sit on a rail across the right border of their parent's box, or of the nearest shown
 	// box round it, one rail per box.
@@ -413,7 +401,6 @@
 			height: r.height,
 			scale: r.scale,
 			methodWidth: r.methodWidth,
-			open: openRails.has(id),
 			groups: r.groups.map((g) => ({
 				title: g.title,
 				apis: g.apis.map((a) => {

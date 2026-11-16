@@ -75,8 +75,18 @@ describe('api rail', () => {
 		expect(few.scale).toBe(1);
 		const many = Array.from({ length: 60 }, () => 'whole');
 		const crowded = railOf(model, [{ apis: many }], 400);
-		expect(crowded.scale).toBeCloseTo((400 * (1 - 2 * RAIL.inset)) / (RAIL.head + 60 * RAIL.row));
+		expect(crowded.scale).toBeCloseTo(
+			(400 * (1 - 2 * RAIL.inset) - 2) / (RAIL.head + 60 * RAIL.row)
+		);
 		expect(crowded.width).toBeCloseTo(few.width * crowded.scale);
+	});
+
+	it('is as tall as its rows, centred on the box', () => {
+		const few = railOf(model, [{ apis: ['whole'] }], 400);
+		expect(few.height).toBe(RAIL.head + RAIL.row + 2);
+		expect(few.top).toBe((400 - few.height) / 2);
+		const crowded = railOf(model, [{ apis: Array.from({ length: 60 }, () => 'whole') }], 400);
+		expect(crowded.top).toBeCloseTo(400 * RAIL.inset);
 	});
 
 	it('finds an api’s row below the header and group headings', () => {

@@ -118,8 +118,8 @@ const methodWidth = (methods: string[]) =>
 	Math.max(...methods.map((m) => textWidth(m, RAIL.font, true)));
 
 /**
- * The rail on a box of `boxHeight`: it spans the box's height less the insets, and the rows
- * are laid out at full size, then shrunk to fit it however many there are.
+ * The rail on a box of `boxHeight`: as tall as its rows, centred on the box's border. The
+ * rows are laid out at full size, then shrunk to fit the box's height less the insets.
  */
 export function railOf(model: Model, groups: RailGroup[], boxHeight: number): Rail {
 	const apis = groups.flatMap((g) => g.apis).map((id) => model.elements.get(id)!.def);
@@ -132,12 +132,14 @@ export function railOf(model: Model, groups: RailGroup[], boxHeight: number): Ra
 	const naturalH =
 		RAIL.head +
 		groups.reduce((h, g) => h + (g.title ? RAIL.group : 0) + g.apis.length * RAIL.row, 0);
-	const height = boxHeight * (1 - 2 * RAIL.inset);
-	const scale = Math.min(1, height / naturalH);
+	// The 2px are the border, which keeps its size.
+	const room = boxHeight * (1 - 2 * RAIL.inset) - 2;
+	const scale = Math.min(1, room / naturalH);
+	const height = naturalH * scale + 2;
 	return {
 		groups,
 		scale,
-		top: boxHeight * RAIL.inset,
+		top: (boxHeight - height) / 2,
 		width: (naturalW + 2) * scale,
 		height,
 		methodWidth: mw
