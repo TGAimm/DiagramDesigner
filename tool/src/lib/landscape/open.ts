@@ -9,7 +9,7 @@ export const READABLE = 12;
  * at LEGIBLE px or more and are on or near the screen. Otherwise a card is its frame and name,
  * a rail its name. Systems and modules are always drawn open; layout never changes.
  */
-export const LEGIBLE = 6;
+export const LEGIBLE = 4;
 
 /** Names never draw under this many px on screen while the box has room for them. */
 export const NAME_MIN = 10;

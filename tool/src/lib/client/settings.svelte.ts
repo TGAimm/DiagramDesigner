@@ -1,6 +1,6 @@
 /**
  * How much of the canvas is drawn. Every box is open in both. `adaptive` draws cards and rails
- * as their frame and name unless their rows read at 6px near the screen, or they are looked at
+ * as their frame and name unless their rows read at 4px near the screen, or they are looked at
  * or lit (see open.ts);
  * `all` draws everything at every zoom. Long cards fold in both.
  */

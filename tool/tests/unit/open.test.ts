@@ -14,10 +14,10 @@ const box = (id: string, parentId?: string) => ({ id, parentId, group: true }) a
 const boxes = [box('a'), box('m', 'a'), { ...box('t', 'm'), group: false }];
 
 describe('cards', () => {
-	it('show their rows while those would read at 6px', () => {
-		// Rows 13 × 0.47 = 6.1px; 13 × 0.46 = 5.98px.
-		expect(cardsLegible(0.47)).toBe(true);
-		expect(cardsLegible(0.46)).toBe(false);
+	it('show their rows while those would read at 4px', () => {
+		// Rows 13 × 0.31 = 4.03px; 13 × 0.3 = 3.9px.
+		expect(cardsLegible(0.31)).toBe(true);
+		expect(cardsLegible(0.3)).toBe(false);
 	});
 });
 
@@ -33,7 +33,7 @@ describe('drawn in full', () => {
 	});
 
 	it('draws no card whose rows would not read', () => {
-		expect([...drawnInFull(cards, new Map(), cam(0.4))]).toEqual([]);
+		expect([...drawnInFull(cards, new Map(), cam(0.3))]).toEqual([]);
 	});
 
 	it('lists a rail near the screen once its rows read, keyed by its host', () => {
@@ -63,10 +63,10 @@ describe('api hosts', () => {
 });
 
 describe('api rail', () => {
-	it('lists its endpoints while their rows read at 6px, else shows its name', () => {
+	it('lists its endpoints while their rows read at 4px, else shows its name', () => {
 		const rail = { scale: 0.25 } as Rail;
-		// Rows 12 × 0.25 × 2 = 6px.
-		expect(railOpen(rail, 2)).toBe(true);
-		expect(railOpen(rail, 1.9)).toBe(false);
+		// Rows 12 × 0.25 × 1.34 = 4.02px; × 1.33 = 3.99px.
+		expect(railOpen(rail, 1.34)).toBe(true);
+		expect(railOpen(rail, 1.33)).toBe(false);
 	});
 });
