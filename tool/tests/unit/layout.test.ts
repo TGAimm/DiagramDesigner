@@ -96,6 +96,61 @@ describe('layout options', () => {
 		expect(laid((i) => 99 - i)).toEqual(laid((i) => i));
 	});
 
+	// Six modules in one system, each referring to the next and the one after, round a ring.
+	const ring = (() => {
+		const ms = 'abcdef';
+		const fs: Record<string, string> = { 's/s.module.yaml': 'id: s\n' };
+		[...ms].forEach((m, i) => {
+			const [n, o] = [ms[(i + 1) % 6], ms[(i + 2) % 6]];
+			fs[`s/${m}.module.yaml`] = `id: ${m}\nparent: s\n`;
+			fs[`s/${m}x.model.yaml`] = [
+				`id: ${m}x`,
+				`ownedBy: ${m}`,
+				'fields:',
+				`  - { id: ${m}-id, name: id, type: uuid, pk: true }`,
+				`  - { id: ${m}-${n}, name: ${n}, type: uuid, ref: ${n}-id }`,
+				`  - { id: ${m}-${o}, name: ${o}, type: uuid, ref: ${o}-id }`
+			].join('\n');
+		});
+		return loadStrings(fs).model;
+	})();
+	/** Total gap between the boxes each line joins, edge to edge. */
+	const gaps = (method: 'layered' | 'stress') => {
+		const { boxes, lines } = layoutLandscape(ring, { ...DEFAULT_LAYOUT, method });
+		const box = (id: string) => boxes.find((b) => b.id === id)!;
+		return lines.reduce((sum, l) => {
+			const [a, b] = [box(l.source), box(l.target)];
+			const dx = Math.max(
+				0,
+				Math.max(a.absX, b.absX) - Math.min(a.absX + a.width, b.absX + b.width)
+			);
+			const dy = Math.max(
+				0,
+				Math.max(a.absY, b.absY) - Math.min(a.absY + a.height, b.absY + b.height)
+			);
+			return sum + dx + dy;
+		}, 0);
+	};
+
+	it('places by stress without overlaps, children inside their parents, the same every time', () => {
+		const { boxes } = layoutLandscape(ring, { ...DEFAULT_LAYOUT, method: 'stress' });
+		for (const a of boxes) {
+			const parent = boxes.find((b) => b.id === a.parentId);
+			if (parent) expect(inside(a, parent), a.id).toBe(true);
+			for (const b of boxes)
+				if (a !== b && a.parentId === b.parentId)
+					expect(overlap(a, b), `${a.id} ${b.id}`).toBe(false);
+		}
+		const again = layoutLandscape(ring, { ...DEFAULT_LAYOUT, method: 'stress' }).boxes;
+		expect(again.map((b) => [b.id, b.absX, b.absY])).toEqual(
+			boxes.map((b) => [b.id, b.absX, b.absY])
+		);
+	});
+
+	it('keeps boxes in a cycle closer by stress than in layers', () => {
+		expect(gaps('stress')).toBeLessThan(gaps('layered'));
+	});
+
 	it('packs boxes no line ties together to the shape asked', () => {
 		const files: Record<string, string> = {};
 		for (const id of 'abcdefgh') files[`${id}/${id}.module.yaml`] = `id: ${id}\n`;

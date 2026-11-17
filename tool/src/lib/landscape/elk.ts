@@ -22,7 +22,13 @@ export function elkLayout(graph: ElkNode): ElkNode {
 	if (!worker) {
 		worker = new FakeWorker();
 		worker.onmessage = () => {};
-		worker.dispatcher.saveDispatch({ data: { id: 0, cmd: 'register', algorithms: ['layered'] } });
+		worker.dispatcher.saveDispatch({
+			data: {
+				id: 0,
+				cmd: 'register',
+				algorithms: ['layered', 'stress', 'sporeOverlap', 'sporeCompaction']
+			}
+		});
 	}
 	let out: { data?: ElkNode; error?: Error } = {};
 	worker.onmessage = (ev) => (out = ev.data);

@@ -4,6 +4,7 @@ import { GLYPH, textWidth } from '../render/text';
 import { triggerWords } from '../model/message';
 import { railGroups, railOf } from './apis';
 import { edgeKey, edgesOf, type Edge } from './connections';
+import type { ElkNode } from 'elkjs/lib/elk-api';
 import { elkLayout } from './elk';
 import { ROUTE } from './route';
 
@@ -74,6 +75,11 @@ export const groupFont = (width: number, height: number) => Math.min(width * 0.0
 
 /** The ELK options a viewer can change in Settings. */
 export interface LayoutOptions {
+	/**
+	 * How siblings are placed: in layers, what is depended on first (`direction`, `placement`),
+	 * or by stress, connected boxes pulled close in any direction.
+	 */
+	method: 'layered' | 'stress';
 	/** Which way connections run: what is depended on comes first. */
 	direction: 'RIGHT' | 'DOWN' | 'LEFT' | 'UP';
 	/** Scales the room between boxes: 120 px between systems, 32 inside a box at 1. */
@@ -84,6 +90,7 @@ export interface LayoutOptions {
 }
 
 export const DEFAULT_LAYOUT: LayoutOptions = {
+	method: 'layered',
 	direction: 'RIGHT',
 	spacing: 1,
 	placement: 'NETWORK_SIMPLEX',
@@ -535,6 +542,57 @@ const spacing = (gap: number) => ({
 	'elk.layered.spacing.edgeNodeBetweenLayers': String(2 * ROUTE.buffer)
 });
 
+type Placed = { id: string; x: number; y: number; width: number; height: number };
+
+/** Whether two boxes come closer than `g`. */
+const near = (a: Placed, b: Placed, g: number) =>
+	a.x < b.x + b.width + g &&
+	b.x < a.x + a.width + g &&
+	a.y < b.y + b.height + g &&
+	b.y < a.y + a.height + g;
+
+/**
+ * Boxes spread out from their middle, the arrangement kept, just until none comes closer than `g`
+ * to another: the smallest such stretch, found by halving.
+ */
+function spread(boxes: Placed[], g: number): Placed[] {
+	const mid = (b: Placed) => ({ x: b.x + b.width / 2, y: b.y + b.height / 2 });
+	const at = (k: number) =>
+		boxes.map((b) => ({ ...b, x: mid(b).x * k - b.width / 2, y: mid(b).y * k - b.height / 2 }));
+	const clear = (bs: Placed[]) => bs.every((a, i) => bs.every((b, j) => j <= i || !near(a, b, g)));
+	let [lo, hi] = [0, 1];
+	while (!clear(at(hi))) [lo, hi] = [hi, hi * 2];
+	for (let i = 0; i < 20; i++) {
+		const k = (lo + hi) / 2;
+		if (clear(at(k))) hi = k;
+		else lo = k;
+	}
+	return at(hi);
+}
+
+/**
+ * Boxes pushed left as far as those beside them allow, then up, `g` apart, so the slack between
+ * them goes. Boxes keep their order along each axis, and none can end up overlapping: a box
+ * stops right of every box before it that shares its height, then below every box above it
+ * that shares its width.
+ */
+function compact(boxes: Placed[], g: number): Placed[] {
+	const push = (bs: Placed[], ax: 'x' | 'y') => {
+		const [ay, w, h] =
+			ax === 'x' ? (['y', 'width', 'height'] as const) : (['x', 'height', 'width'] as const);
+		const done: Placed[] = [];
+		for (const b of [...bs].sort((p, q) => p[ax] - q[ax] || idOrder(p, q))) {
+			let to = 0;
+			for (const d of done)
+				if (d[ay] < b[ay] + b[h] + g && b[ay] < d[ay] + d[h] + g)
+					to = Math.max(to, d[ax] + d[w] + g);
+			done.push({ ...b, [ax]: to });
+		}
+		return done;
+	};
+	return push(push(boxes, 'x'), 'y');
+}
+
 /** By id, so the order of the files changes nothing. */
 const idOrder = (a: { id: string }, b: { id: string }) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 
@@ -874,6 +932,12 @@ export function layoutLandscape(
 			});
 		}
 		const ids = new Set(top.map((i) => i.id));
+		const children = top.map((item) => {
+			const size = sizes.get(item.id)!;
+			return { id: item.id, width: size.width + (size.right ?? 0), height: size.height };
+		});
+		const among = lines.filter((l) => ids.has(l.source));
+		if (opts.method === 'stress' && among.length) return stress(children, among, g);
 		const graph = elkLayout({
 			id: 'root',
 			layoutOptions: {
@@ -887,27 +951,57 @@ export function layoutLandscape(
 				// Pulls boxes in along the flow where the lines allow, to shorten them.
 				'elk.layered.compaction.postCompaction.strategy': 'EDGE_LENGTH'
 			},
-			children: top.map((item) => {
-				const size = sizes.get(item.id)!;
-				return {
-					id: item.id,
-					width: size.width + (size.right ?? 0),
-					height: size.height
-				};
-			}),
-			edges: lines
-				.filter((l) => ids.has(l.source))
-				.map((l) => ({
-					id: l.id,
-					sources: [l.target],
-					targets: [l.source],
-					layoutOptions: {
-						'elk.layered.priority.shortness': String(l.edges.length),
-						'elk.layered.priority.straightness': String(l.edges.length)
-					}
-				}))
+			children,
+			edges: among.map((l) => ({
+				id: l.id,
+				sources: [l.target],
+				targets: [l.source],
+				layoutOptions: {
+					'elk.layered.priority.shortness': String(l.edges.length),
+					'elk.layered.priority.straightness': String(l.edges.length)
+				}
+			}))
 		});
-		const kids = graph.children!;
+		return blockOf(graph.children!);
+	};
+	/**
+	 * Siblings placed by stress, `g` apart: each line pulls its two boxes to a distance, the
+	 * shorter the more connections it merges. Then overlapping boxes are pushed apart, and the
+	 * slack taken out again.
+	 */
+	const stress = (children: ElkNode[], among: LaidLine[], g: number): Block => {
+		const reach = new Map(children.map((c) => [c.id, Math.hypot(c.width!, c.height!) / 2]));
+		const spaced = {
+			'elk.padding': '[top=0,left=0,bottom=0,right=0]',
+			'elk.spacing.nodeNode': String(g)
+		};
+		const at = (n: ElkNode) =>
+			n.children!.map(({ id, x, y, width, height }) => ({
+				id,
+				x: x!,
+				y: y!,
+				width: width!,
+				height: height!
+			}));
+		const pulled = elkLayout({
+			id: 'root',
+			layoutOptions: { ...spaced, 'elk.algorithm': 'stress' },
+			children,
+			edges: among.map((l) => ({
+				id: l.id,
+				sources: [l.target],
+				targets: [l.source],
+				layoutOptions: {
+					'elk.stress.desiredEdgeLength': String(
+						reach.get(l.source)! + reach.get(l.target)! + g / Math.sqrt(l.edges.length)
+					)
+				}
+			}))
+		});
+		return blockOf(compact(spread(at(pulled), g), g));
+	};
+	/** Where boxes went, relative to the block they make. */
+	const blockOf = (kids: ElkNode[]): Block => {
 		const x0 = Math.min(...kids.map((c) => c.x!));
 		const y0 = Math.min(...kids.map((c) => c.y!));
 		return {

@@ -18,6 +18,11 @@
 		}
 	];
 
+	const methods: { value: LayoutOptions['method']; label: string }[] = [
+		{ value: 'layered', label: 'Layered' },
+		{ value: 'stress', label: 'Stress' }
+	];
+	const layered = $derived(settings.layout.method === 'layered');
 	const directions: { value: LayoutOptions['direction']; label: string }[] = [
 		{ value: 'RIGHT', label: '→ Right' },
 		{ value: 'DOWN', label: '↓ Down' },
@@ -75,6 +80,26 @@
 			>
 		</div>
 		<div class="fld">
+			<span class="lbl" id="method-label">Method</span>
+			<div class="seg" role="radiogroup" aria-labelledby="method-label">
+				{#each methods as m (m.value)}
+					<label class:on={settings.layout.method === m.value}>
+						<input
+							type="radio"
+							name="method"
+							value={m.value}
+							checked={settings.layout.method === m.value}
+							onchange={() => settings.setLayout({ method: m.value })}
+						/>{m.label}</label
+					>
+				{/each}
+			</div>
+			<span class="hint"
+				>Layered puts what others depend on first. Stress pulls connected boxes close, in any
+				direction.</span
+			>
+		</div>
+		<div class="fld" class:off={!layered}>
 			<span class="lbl" id="dir-label">Direction</span>
 			<div class="seg" role="radiogroup" aria-labelledby="dir-label">
 				{#each directions as d (d.value)}
@@ -83,13 +108,14 @@
 							type="radio"
 							name="direction"
 							value={d.value}
+							disabled={!layered}
 							checked={settings.layout.direction === d.value}
 							onchange={() => settings.setLayout({ direction: d.value })}
 						/>{d.label}</label
 					>
 				{/each}
 			</div>
-			<span class="hint">What others depend on comes first.</span>
+			<span class="hint">{layered ? 'What others depend on comes first.' : 'Layered only.'}</span>
 		</div>
 		<div class="fld">
 			<label class="lbl" for="spacing">Spacing</label>
@@ -107,9 +133,10 @@
 			</div>
 			<span class="hint">Room between boxes, inside and out.</span>
 		</div>
-		<label class="fld">
+		<label class="fld" class:off={!layered}>
 			<span class="lbl">Placement</span>
 			<select
+				disabled={!layered}
 				value={settings.layout.placement}
 				onchange={(e) =>
 					settings.setLayout({
@@ -118,7 +145,11 @@
 			>
 				{#each placements as p (p.value)}<option value={p.value}>{p.label}</option>{/each}
 			</select>
-			<span class="hint">Balanced keeps lines short; Straight lines lines up chains of boxes.</span>
+			<span class="hint"
+				>{layered
+					? 'Balanced keeps lines short; Straight lines lines up chains of boxes.'
+					: 'Layered only.'}</span
+			>
 		</label>
 		<label class="fld">
 			<span class="lbl">Unconnected groups</span>
@@ -303,6 +334,9 @@
 		background: var(--ui-panel);
 		border: 1px solid var(--ui-border);
 		padding: 5px 6px;
+	}
+	.fld.off {
+		opacity: 0.5;
 	}
 	footer {
 		padding: 10px 14px;
