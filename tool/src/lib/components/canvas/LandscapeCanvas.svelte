@@ -572,6 +572,8 @@
 	 * canvas leaves it as it is; looking from one thing to the next keeps it toned down.
 	 */
 	const DIM_AFTER = 3000;
+	/** How much of a toned-down box, and its name, still shows. */
+	const DIM_OPACITY = 0.2;
 	const looking = $derived(!!focus);
 	let dimming = $state(false);
 	$effect(() => {
@@ -590,11 +592,13 @@
 	$effect(() => {
 		const ids = dimming ? related : undefined;
 		if (!dimSheet) return;
-		const kept = [...(ids ?? [])].map(
-			(id) => `.canvas .svelte-flow__node[data-id=${JSON.stringify(id)}]`
-		);
+		// Boxes, and the names drawn over them while zoomed out.
+		const kept = [...(ids ?? [])].flatMap((id) => [
+			`.canvas .svelte-flow__node[data-id=${JSON.stringify(id)}]`,
+			`.canvas .front-name[data-id=${JSON.stringify(id)}]`
+		]);
 		dimSheet.textContent = ids
-			? `.canvas .svelte-flow__node { opacity: 0.3; }\n${kept.join(',\n')} { opacity: 1; }`
+			? `.canvas .svelte-flow__node, .canvas .front-name { opacity: ${DIM_OPACITY}; }\n${kept.join(',\n')} { opacity: 1; }`
 			: '';
 	});
 
@@ -2251,6 +2255,7 @@
 					<div
 						class="front-name screen-sized"
 						class:rail={m.glyph === 'api'}
+						data-id={m.b.id}
 						role="button"
 						tabindex="-1"
 						style:left="{m.x}px"
