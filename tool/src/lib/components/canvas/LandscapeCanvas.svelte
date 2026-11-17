@@ -15,6 +15,7 @@
 		ControlButton,
 		Controls,
 		SvelteFlow,
+		ViewportPortal,
 		useSvelteFlow,
 		useViewport,
 		type Edge,
@@ -35,6 +36,7 @@
 	import {
 		cardRows,
 		fieldRowY,
+		HEADER,
 		incomingCount,
 		layoutLandscape,
 		linkTarget,
@@ -58,6 +60,7 @@
 		type RestLine
 	} from '#lib/landscape/connections.ts';
 	import { apiHosts, drawnInFull, READABLE } from '#lib/landscape/open.ts';
+	import { GLYPH, textWidth } from '#lib/render/text.ts';
 	import { sequenceOf, sequenceWidth } from '#lib/landscape/sequence.ts';
 	import SequenceDiagram from './SequenceDiagram.svelte';
 	import PlayerBar from './PlayerBar.svelte';
@@ -212,6 +215,21 @@
 		};
 	});
 	$effect(() => zoomRule.style.setProperty('--z', String(viewport.current.zoom)));
+	/**
+	 * An open module's name keeps NAME_PX on screen as the canvas zooms out. Past where that fits
+	 * the room above its children (half of HEADER), it is drawn here, in front of them, no wider
+	 * than its box; until then its box draws it (see LandscapeNode's `.header`).
+	 */
+	const NAME_PX = 13;
+	const namesInFront = $derived(viewport.current.zoom < NAME_PX / (HEADER / 2));
+	const moduleNames = $derived(
+		boxes.flatMap((b) => {
+			const info = el(b.elementId)!;
+			if (!b.group || (!b.boundary && info.def.kind === 'module' && !info.parentId)) return [];
+			const max = (b.width - 16) / (textWidth(info.name, 100, true) / 100 + GLYPH);
+			return [{ b, name: info.name, glyph: b.boundary ? 'class' : 'module', max }] as const;
+		})
+	);
 	/** The rail on box `id` lists its endpoints: they read near the screen, or are looked at. */
 	const listed = (id: string) => !!view.near[id] || !!view.full[id];
 
@@ -532,14 +550,6 @@
 	}
 
 	/** Zooms in on a closed rail until its rows read, centred on it. */
-	function openRail(id: string) {
-		const b = boxById.get(id);
-		const r = rails.get(id);
-		if (!b || !r) return;
-		const zoom = Math.max(viewport.current.zoom, (READABLE / (RAIL.font * r.scale)) * 1.05);
-		flow.setCenter(b.absX + b.width, b.absY + r.top + r.height / 2, { zoom, duration: 600 });
-	}
-
 	// Boxes the picked api's bodies use, outlined with the parts using them, and the rows a
 	// trimmed body leaves out, dimmed. A model in a hidden box outlines the box that shows.
 	$effect(() => {
@@ -697,7 +707,6 @@
 					},
 					rail: railView(b.id),
 					onapi,
-					onrail: () => openRail(b.id),
 					onmenu: editing ? (target, x, y) => (menu = { target, x, y }) : undefined
 				} satisfies LandscapeNodeData
 			};
@@ -2085,6 +2094,35 @@
 				</svg>
 			</ControlButton>
 		</Controls>
+		{#if namesInFront}
+			<ViewportPortal target="front">
+				{#each moduleNames as m (m.b.id)}
+					<!-- svelte-ignore a11y_click_events_have_key_events -->
+					<div
+						class="module-name screen-sized"
+						role="button"
+						tabindex="-1"
+						style:left="{m.b.absX}px"
+						style:top="{m.b.absY}px"
+						style:font-size="min(calc({NAME_PX}px / var(--z)), {m.max}px)"
+						onmouseenter={() => {
+							overBox = m.b.id;
+							hoverLater();
+						}}
+						onmouseleave={() => {
+							if (overBox === m.b.id) overBox = null;
+							hoverLater();
+						}}
+						onclick={() => {
+							view.selectedNodes = [m.b.id];
+							unpin();
+						}}
+					>
+						<EntityGlyph kind={m.glyph} />{m.name}
+					</div>
+				{/each}
+			</ViewportPortal>
+		{/if}
 	</SvelteFlow>
 	{#if settings.minimap}
 		<Minimap boxes={mapBoxes} {cw} {ch} minZoom={MIN_ZOOM} maxZoom={MAX_ZOOM} />
@@ -2699,6 +2737,24 @@
 		flex: 1;
 		min-width: 0;
 		min-height: 0;
+	}
+	/* Drawn over the module's children, as its in-box name is (see LandscapeNode's `.header`),
+	   on a backing so it reads over them. */
+	.module-name {
+		position: absolute;
+		display: flex;
+		align-items: center;
+		gap: 0.4em;
+		margin: 0.4em 0 0 0.3em;
+		padding: 0 0.3em;
+		border-radius: 0.3em;
+		line-height: 1.2;
+		font-weight: 500;
+		white-space: nowrap;
+		color: var(--sdv-text-muted);
+		background: color-mix(in srgb, var(--sdv-canvas-bg) 85%, transparent);
+		pointer-events: auto;
+		cursor: pointer;
 	}
 	.canvas :global(.svelte-flow__node) {
 		border: none;

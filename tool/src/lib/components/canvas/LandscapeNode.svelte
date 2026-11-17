@@ -38,8 +38,6 @@
 		/** Rail on this box's right border: its own apis, and those of hidden boxes inside it. */
 		rail?: RailView;
 		onapi?: (api: string) => void;
-		/** The closed rail was clicked: zoom in until it opens. */
-		onrail?: () => void;
 		/** While a scenario is edited: a field row or a model's name bar was right-clicked. */
 		onmenu?: (target: string, x: number, y: number) => void;
 		/** Drawn in a peek, outside the flow: in full, with no line ends. */
@@ -128,9 +126,11 @@
 	);
 	// In adaptive detail a card shows its rows, and a rail its endpoints, only near the screen
 	// and while they read, or while looked at or at the end of a lit line (see open.ts).
-	// Otherwise a card is its frame and name, a rail its name.
+	// Otherwise a card is its frame and name, a rail its name. Hovered, a rail lists its
+	// endpoints at any zoom, as a hovered card draws its rows.
 	const full = $derived(!!d.peek || !!d.state.near[id] || !!d.state.full[id]);
-	const railListed = $derived(!!d.rail && (!!d.state.near[id] || !!d.state.full[id]));
+	let railHover = $state(false);
+	const railListed = $derived(!!d.rail && (railHover || !!d.state.near[id] || !!d.state.full[id]));
 	const updateNodeInternals = useUpdateNodeInternals();
 	// Handles move with their rows, come with them, and move as rails open; Svelte Flow measures
 	// them only when told. Nodes changing together are measured together (see `measureLater`).
@@ -569,6 +569,9 @@
 			style:top="{r.top}px"
 			style:width="{r.width}px"
 			style:height="{r.height}px"
+			role="presentation"
+			onmouseenter={() => (railHover = true)}
+			onmouseleave={() => (railHover = false)}
 		>
 			<!-- An api's line ends on its row, or the rail's middle while the rail is closed. -->
 			{#each r.groups.flatMap((g) => g.apis) as a (a.id)}
@@ -626,18 +629,15 @@
 					{/each}
 				</div>
 			{:else}
-				<button
+				<div
 					class="rail-name screen-sized"
 					style:font-size={nameFont(
 						Math.min(RAIL.font, fit('APIs', r.width - 8, r.height * 0.6)),
 						fit('APIs', r.width - 8, r.height * 0.6)
 					)}
-					title="Zoom in to list the apis"
-					onclick={(e) => {
-						e.stopPropagation();
-						d.onrail?.();
-					}}><EntityGlyph kind="api" />APIs</button
 				>
+					<EntityGlyph kind="api" />APIs
+				</div>
 			{/if}
 		</div>
 	{/if}
@@ -688,6 +688,11 @@
 		transition-delay: 0.1s;
 		/* Open, the name is the box's name bar: hovering it draws the box's connections. */
 		pointer-events: auto;
+	}
+	/* Zoomed out past where a module's name fits the room above its children, the canvas draws
+	   it in front of them instead (see `moduleNames` in LandscapeCanvas). */
+	:global(.svelte-flow__node.open) > .node.group:not(.system) > .header {
+		opacity: clamp(0, calc((var(--z) - 13 / var(--hdrn)) * 10000), 1);
 	}
 	.node.peer-box {
 		outline: 2px solid var(--sdv-link-ref);
@@ -1186,13 +1191,7 @@
 		gap: 0.3em;
 		width: 100%;
 		height: 100%;
-		border: none;
-		background: none;
-		color: inherit;
-		font-family: inherit;
 		font-weight: 600;
-		cursor: zoom-in;
-		padding: 0;
 	}
 	/* An open module's name: inside its top-left corner, muted, no tab. */
 	.header {
