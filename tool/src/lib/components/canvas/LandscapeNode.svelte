@@ -688,9 +688,9 @@
 		/* Open, the name is the box's name bar: hovering it draws the box's connections. */
 		pointer-events: auto;
 	}
-	/* Zoomed out past where a module's name fits the room above its children, the canvas draws
+	/* Zoomed out past where a module's (or system's) name fits its header room, the canvas draws
 	   it in front of them instead (see `moduleNames` in LandscapeCanvas). */
-	:global(.svelte-flow__node.open) > .node.group:not(.system) > .header {
+	:global(.svelte-flow__node.open) > .node.group > .header {
 		opacity: clamp(0, calc((var(--z) - 13 / var(--hdrn)) * 10000), 1);
 	}
 	.node.peer-box {

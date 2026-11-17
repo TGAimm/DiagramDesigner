@@ -216,20 +216,43 @@
 	});
 	$effect(() => zoomRule.style.setProperty('--z', String(viewport.current.zoom)));
 	/**
-	 * An open module's name keeps NAME_PX on screen as the canvas zooms out. Past where that fits
-	 * the room above its children (half of HEADER), it is drawn here, in front of them, no wider
-	 * than its box; until then its box draws it (see LandscapeNode's `.header`).
+	 * An open module's name, a system's too, keeps NAME_PX on screen as the canvas zooms out.
+	 * Past where that fits the room above its children (half of HEADER), it is drawn here, in
+	 * front of everything, never wider than its box nor taller than half of it; until then its
+	 * box draws it (see LandscapeNode's `.header`). `em` is the name's width in ems: the text,
+	 * its glyph and its backing's padding and margin (1.2em); it is 1.6em tall with its margin.
+	 * `max` is the cap, in canvas px.
 	 */
 	const NAME_PX = 13;
 	const namesInFront = $derived(viewport.current.zoom < NAME_PX / (HEADER / 2));
 	const moduleNames = $derived(
 		boxes.flatMap((b) => {
 			const info = el(b.elementId)!;
-			if (!b.group || (!b.boundary && info.def.kind === 'module' && !info.parentId)) return [];
-			const max = (b.width - 16) / (textWidth(info.name, 100, true) / 100 + GLYPH);
-			return [{ b, name: info.name, glyph: b.boundary ? 'class' : 'module', max }] as const;
+			if (!b.group) return [];
+			const system = !b.boundary && info.def.kind === 'module' && !info.parentId;
+			const em = textWidth(info.name, 100, true) / 100 + GLYPH + 1.2;
+			const max = Math.min(b.width / em, b.height / 2 / 1.6);
+			const glyph = system ? 'system' : b.boundary ? 'class' : 'module';
+			return [{ b, name: info.name, system, glyph, em, max }] as const;
 		})
 	);
+	/** The names drawn in front: the larger box's first, then each one clear of those drawn. */
+	const namesShown = $derived.by(() => {
+		if (!namesInFront) return [];
+		const z = viewport.current.zoom;
+		const placed: { x: number; y: number; w: number; h: number }[] = [];
+		return [...moduleNames]
+			.sort((a, b) => b.b.width * b.b.height - a.b.width * a.b.height)
+			.filter((m) => {
+				const f = Math.min(NAME_PX / z, m.max);
+				const r = { x: m.b.absX, y: m.b.absY - (m.system ? 1.6 * f : 0), w: f * m.em, h: 1.6 * f };
+				const hit = placed.some(
+					(p) => r.x < p.x + p.w && p.x < r.x + r.w && r.y < p.y + p.h && p.y < r.y + r.h
+				);
+				if (!hit) placed.push(r);
+				return !hit;
+			});
+	});
 	/** The rail on box `id` lists its endpoints: they read near the screen, or are looked at. */
 	const listed = (id: string) => !!view.near[id] || !!view.full[id];
 
@@ -2096,10 +2119,11 @@
 		</Controls>
 		{#if namesInFront}
 			<ViewportPortal target="front">
-				{#each moduleNames as m (m.b.id)}
+				{#each namesShown as m (m.b.id)}
 					<!-- svelte-ignore a11y_click_events_have_key_events -->
 					<div
 						class="module-name screen-sized"
+						class:system={m.system}
 						role="button"
 						tabindex="-1"
 						style:left="{m.b.absX}px"
@@ -2755,6 +2779,15 @@
 		background: color-mix(in srgb, var(--sdv-canvas-bg) 85%, transparent);
 		pointer-events: auto;
 		cursor: pointer;
+		/* Over the boxes (z-index up to 2), lit lines (1000) and an expanded card (999). */
+		z-index: 1001;
+	}
+	/* A system's name sits above its frame, as its in-box name does. */
+	.module-name.system {
+		transform: translateY(-100%);
+		margin: -0.2em 0 0 -0.3em;
+		font-weight: 600;
+		color: var(--ui-text);
 	}
 	.canvas :global(.svelte-flow__node) {
 		border: none;
