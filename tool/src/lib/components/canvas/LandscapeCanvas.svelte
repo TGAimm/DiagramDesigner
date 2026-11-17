@@ -83,6 +83,7 @@
 		routeKey,
 		type Rect,
 		type RouteEnd,
+		type RouteGroup,
 		type RouteLine,
 		type Side
 	} from '#lib/landscape/route.ts';
@@ -804,22 +805,50 @@
 	// Lines at rest and lit lines are routed apart, so a hover never moves the lines at rest.
 	// Each is drawn once routed, never first along a makeshift path.
 	const restWant = $derived.by(() => {
-		const lines = rest.map((l) => {
-			const a = headEnd(boxById.get(l.source)!);
-			const b = headEnd(boxById.get(l.target)!);
-			const [ss, ts] = sides(a, b);
-			return { id: l.id, s: routeEnd(a, ss), t: routeEnd(b, ts) };
-		});
+		// A line at rest joins two children of one box and never leaves it, so each box routes
+		// its children's lines with only its children, rails and all, in the way.
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built and returned whole
+		const groups = new Map<string, RouteGroup>();
+		const group = (parent: string | undefined) => {
+			let g = groups.get(parent ?? '');
+			if (g) return g;
+			// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built and returned whole
+			const kids = new Map<string, Rect>();
+			for (const b of boxes)
+				if (b.parentId === parent) {
+					const r = rails.get(b.id);
+					kids.set(b.id, {
+						x0: b.absX,
+						y0: b.absY,
+						x1: b.absX + b.width + (r ? r.width / 2 : 0),
+						y1: b.absY + b.height
+					});
+				}
+			g = { boxes: kids, lines: [] };
+			groups.set(parent ?? '', g);
+			return g;
+		};
+		const end = (b: LandscapeBox) => {
+			const { x0, x1, y } = headEnd(b);
+			return { on: b.id, x0, x1, y, sides: ['l', 'r'] as Side[] };
+		};
+		for (const l of rest)
+			group(l.parentId).lines.push({
+				id: l.id,
+				s: end(boxById.get(l.source)!),
+				t: end(boxById.get(l.target)!)
+			});
+		const lines = [...groups.values()].flatMap((g) => g.lines);
 		// Lines at rest leaving a box together share one exit (see the design's Routing rule).
-		return { lines, key: routeKey(lines, true) };
+		return { lines, groups: [...groups.values()], key: routeKey(lines, true) };
 	});
 	const restRoutes = $derived.by(() => {
 		void routedIn;
 		return router.get(obstacles, restWant.key);
 	});
 	$effect(() => {
-		const { key, lines } = restWant;
-		router.want(obstacles, key, lines, true, 'rest', routeCame);
+		const { key, lines, groups } = restWant;
+		router.want(obstacles, key, lines, true, 'rest', routeCame, groups);
 	});
 
 	/** Lit lines as the router takes them. */

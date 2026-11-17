@@ -3,6 +3,7 @@ import {
 	boxesNear,
 	loadRouter,
 	ROUTE,
+	routeGroups,
 	routeKey,
 	routeLines,
 	type Point,
@@ -103,6 +104,49 @@ describe('routeLines', () => {
 			{ id: 'x', s: end('a'), t: { x0: 500, x1: 600, y: 30, sides: ['l'] } }
 		]).get('x')!;
 		expect(pts.at(-1)).toEqual({ x: 500, y: 30 });
+	});
+});
+
+describe('routeGroups', () => {
+	const at = (on: string, r: Rect) => ({
+		on,
+		x0: r.x0,
+		x1: r.x1,
+		y: (r.y0 + r.y1) / 2,
+		sides: ['l', 'r'] as const
+	});
+	// Two boxes side by side; a box of another group lies across the way between them.
+	const a = rect(0, 0, 100, 60);
+	const b = rect(300, 0, 100, 60);
+	const across = rect(150, -20, 100, 120);
+	const c = rect(0, 400, 100, 60);
+	const d = rect(300, 400, 100, 60);
+
+	it('routes each group among its own boxes only, as routeLines would', () => {
+		const groups = [
+			{
+				boxes: new Map([
+					['a', a],
+					['b', b]
+				]),
+				lines: [{ id: 'ab', s: at('a', a), t: at('b', b) }]
+			},
+			{
+				boxes: new Map([
+					['across', across],
+					['c', c],
+					['d', d]
+				]),
+				lines: [{ id: 'cd', s: at('c', c), t: at('d', d) }]
+			}
+		];
+		const routes = routeGroups(groups, true);
+		// The box across the way belongs to the other group, so ab runs straight through it.
+		expect(routes.get('ab')).toEqual([
+			{ x: 100, y: 30 },
+			{ x: 300, y: 30 }
+		]);
+		expect(routes.get('cd')).toEqual(routeLines(groups[1].boxes, groups[1].lines, true).get('cd'));
 	});
 });
 

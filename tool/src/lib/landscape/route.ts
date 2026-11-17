@@ -113,8 +113,8 @@ export function routeLines(
 	// and can straighten a step between two rows into one run that ends on neither.
 	router.setRoutingOption(A.nudgeOrthogonalSegmentsConnectedToShapes, false);
 	router.setRoutingOption(A.nudgeOrthogonalTouchingColinearSegments, true);
-	// A crossing costs as much as this many px of line.
-	router.setRoutingParameter(A.crossingPenalty, 200);
+	// No crossing penalty: libavoid calls it experimental, and it doubles the time lines take
+	// together. Nudging still orders lines in a shared channel so they cross no more than needed.
 	router.setRoutingOption(A.nudgeSharedPathsWithCommonEndPoint, !shareEnds);
 	const temps: unknown[] = [];
 	const temp = <T>(o: T) => (temps.push(o), o);
@@ -186,6 +186,24 @@ export function routeLines(
 	// The router owns its shapes, pins and lines.
 	A.destroy(router);
 	for (const o of temps) A.destroy(o);
+	return out;
+}
+
+/** Lines routed among `boxes` only. */
+export interface RouteGroup {
+	boxes: Map<string, Rect>;
+	lines: RouteLine[];
+}
+
+/**
+ * Each group's lines routed among its own boxes (see `routeLines`), all by line id. Lines that
+ * can only run among a few boxes cost far less routed apart: what libavoid costs grows with
+ * every box and every line routed together.
+ */
+export function routeGroups(groups: RouteGroup[], shareEnds = false): Map<string, Point[]> {
+	const out = new Map<string, Point[]>();
+	for (const g of groups)
+		for (const [id, pts] of routeLines(g.boxes, g.lines, shareEnds)) out.set(id, pts);
 	return out;
 }
 

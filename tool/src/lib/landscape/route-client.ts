@@ -1,4 +1,4 @@
-import { routeKey, type Point, type Rect, type RouteLine } from './route.ts';
+import { routeKey, type Point, type Rect, type RouteGroup, type RouteLine } from './route.ts';
 import type { FromRouter, ToRouter } from './route-service.ts';
 
 /**
@@ -40,6 +40,8 @@ interface Job {
 	key: string;
 	lines: RouteLine[];
 	shareEnds: boolean;
+	/** Routed group by group among their own boxes, not `lines` among all the boxes. */
+	groups?: RouteGroup[];
 	slot?: Slot;
 	done?: () => void;
 }
@@ -115,7 +117,8 @@ export class RouteClient {
 	/**
 	 * Routes `lines` (known by `key`, see `routeKey`) among `boxes` before anything routed ahead,
 	 * unless they are kept, and tells `done` once `get` has them. What waits in `slot` is
-	 * dropped: only the newest is wanted.
+	 * dropped: only the newest is wanted. With `groups`, those are routed instead, each among
+	 * its own boxes; `boxes` still says which layout they belong to.
 	 */
 	want(
 		boxes: Map<string, Rect>,
@@ -123,7 +126,8 @@ export class RouteClient {
 		lines: RouteLine[],
 		shareEnds: boolean,
 		slot: Slot,
-		done: () => void
+		done: () => void,
+		groups?: RouteGroup[]
 	) {
 		this.use(boxes);
 		this.waiting.delete(slot);
@@ -133,7 +137,7 @@ export class RouteClient {
 				lane.busy.done = done;
 				return;
 			}
-		this.waiting.set(slot, { key, lines, shareEnds, slot, done });
+		this.waiting.set(slot, { key, lines, shareEnds, groups, slot, done });
 		this.sendWaiting();
 	}
 
@@ -199,7 +203,8 @@ export class RouteClient {
 			id: lane.busy.id,
 			ver: this.ver,
 			lines: job.lines,
-			shareEnds: job.shareEnds
+			shareEnds: job.shareEnds,
+			groups: job.groups
 		});
 	}
 
