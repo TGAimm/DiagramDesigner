@@ -16,6 +16,7 @@
 		Controls,
 		SvelteFlow,
 		ViewportPortal,
+		useStore,
 		useSvelteFlow,
 		useViewport,
 		type Edge,
@@ -151,6 +152,18 @@
 		layoutLandscape(focused?.model ?? changes.layoutModel, settings.layout, focused?.foldAt)
 	);
 	const boxes = $derived(laid.boxes);
+	// However large the landscape, it can be zoomed out until all of it is in view, with room
+	// to spare.
+	const minZoom = $derived.by(() => {
+		if (!boxes.length) return MIN_ZOOM;
+		const w =
+			Math.max(...boxes.map((b) => b.absX + b.width)) - Math.min(...boxes.map((b) => b.absX));
+		const h =
+			Math.max(...boxes.map((b) => b.absY + b.height)) - Math.min(...boxes.map((b) => b.absY));
+		return Math.min(MIN_ZOOM, Math.min(cw / w, ch / h) / 2);
+	});
+	const flowStore = useStore();
+	$effect(() => flowStore.setMinZoom(minZoom));
 	const rels = $derived(relationsOf(model));
 	// The minimap draws the root boxes, named, and the modules directly in them.
 	const mapBoxes = $derived(
@@ -1810,7 +1823,7 @@
 		);
 		const bottom = Math.max(...boxes.map((b) => b.absY + b.height));
 		const zoom = Math.max(
-			MIN_ZOOM,
+			minZoom,
 			Math.min(1, (cw - 2 * MARGIN) / (right - left), (ch - PLAYER - 2 * MARGIN) / (bottom - top))
 		);
 		void flow
@@ -1856,7 +1869,7 @@
 				(cw - 2 * MARGIN) / (f.right - f.left),
 				(h - 2 * MARGIN) / (f.bottom - f.top)
 			);
-			return { ...f, zoom: Math.max(MIN_ZOOM, Math.min(v.zoom, most)) };
+			return { ...f, zoom: Math.max(minZoom, Math.min(v.zoom, most)) };
 		};
 		let f = span(ends.map(placeOf));
 		if (f.zoom < f.least && to) f = span([placeOf(to)]);
@@ -2131,7 +2144,7 @@
 		{edgeTypes}
 		connectionMode={ConnectionMode.Loose}
 		colorMode={theme.current}
-		minZoom={MIN_ZOOM}
+		{minZoom}
 		maxZoom={MAX_ZOOM}
 		nodesDraggable={false}
 		nodesConnectable={false}
@@ -2225,7 +2238,7 @@
 		{/if}
 	</SvelteFlow>
 	{#if settings.minimap}
-		<Minimap boxes={mapBoxes} {cw} {ch} minZoom={MIN_ZOOM} maxZoom={MAX_ZOOM} />
+		<Minimap boxes={mapBoxes} {cw} {ch} {minZoom} maxZoom={MAX_ZOOM} />
 	{/if}
 	<!-- Line ends keep one size on screen at any zoom, like the lines. -->
 	<svg class="defs" aria-hidden="true">
