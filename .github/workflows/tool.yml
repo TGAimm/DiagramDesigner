@@ -19,12 +19,13 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: tool/package-lock.json
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run check
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run check
       - name: Unit tests (coverage gate 80% lines for model and landscape)
-        run: npm run test:coverage
-      - name: Validate the example design
-        run: node cli/bin.js validate --root ../examples/commerce
+        run: bun run test:coverage
+      - name: Validate the example designs
+        run: |
+          node cli/bin.js validate --root ../examples/commerce
+          node cli/bin.js validate --root ../examples/retail
