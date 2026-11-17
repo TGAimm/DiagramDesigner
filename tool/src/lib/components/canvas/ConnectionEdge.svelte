@@ -34,6 +34,23 @@
 				})
 	);
 
+	/**
+	 * The routed line's length, and that of its segment at the head, for the dash that stops it
+	 * under its head (see LandscapeCanvas).
+	 */
+	const len = $derived(
+		points?.reduce(
+			(n, p, i) => (i ? n + Math.hypot(p.x - points[i - 1].x, p.y - points[i - 1].y) : 0),
+			0
+		)
+	);
+	const stub = $derived.by(() => {
+		if (!points || points.length < 2) return 0;
+		const [a, b] =
+			data?.head === 'diamond' ? [points[0], points[1]] : [points.at(-1)!, points.at(-2)!];
+		return Math.hypot(a.x - b.x, a.y - b.y);
+	});
+
 	/** A head's tip, and its angle in degrees pointing out of the line. */
 	const tip = $derived.by(() => {
 		const atStart = data?.head === 'diamond';
@@ -49,13 +66,19 @@
 	});
 </script>
 
-{#if data?.halo}<path class="halo" d={path} />{/if}
-<BaseEdge {id} {path} {interactionWidth} />
+{#if data?.halo}<path class="halo screen-sized" d={path} />{/if}
+<BaseEdge
+	{id}
+	{path}
+	{interactionWidth}
+	class="screen-sized"
+	style={len ? `--len: ${len}px; --stub: ${stub}px` : undefined}
+/>
 {#if data?.head}
 	<g transform="translate({tip.x} {tip.y}) rotate({tip.a})">
 		<!-- 10px on screen at any zoom, like the lines. -->
 		<path
-			class="head"
+			class="head screen-sized"
 			fill={data.color as string}
 			d={data.head === 'diamond' ? 'M0 0 L-8 -5 L-16 0 L-8 5 Z' : 'M-10 -4 L0 0 L-10 4 Z'}
 		/>

@@ -2919,42 +2919,50 @@
 	}
 	/* Every line keeps its width on screen at any zoom: at rest 1.5, 2.5 or 3.5px by how many
 	   connections it merges (hover one for the count), solid, over a halo in the canvas colour;
-	   lit 2px. Lit, solid is structure, dashed lineage, dotted control. */
+	   lit 2px. Lit, solid is structure, dashed lineage, dotted control. Widths and dashes are
+	   divided by the zoom, not kept by `vector-effect: non-scaling-stroke`: browsers leave the
+	   canvas's CSS zoom out of that, so lines thinned to a hairline when zoomed out. */
 	.canvas :global(.conn .svelte-flow__edge-path) {
+		--w: 1px;
 		stroke: var(--sdv-edge);
-		stroke-width: 1;
-		vector-effect: non-scaling-stroke;
+		stroke-width: calc(var(--w) / var(--z));
+		/* Ends 5px into its head, so a wide line does not blunt the head's tip; never short of
+		   its last bend, so it still meets the head. */
+		stroke-dasharray: calc(var(--len) - min(5px / var(--z), var(--stub))) var(--len);
 		transition: opacity 0.12s;
 	}
+	.canvas :global(.conn.model .svelte-flow__edge-path) {
+		stroke-dasharray: 0 min(5px / var(--z), var(--stub)) var(--len) 0;
+	}
 	.canvas :global(.conn.rest .svelte-flow__edge-path) {
+		--w: 1.5px;
 		stroke: var(--sdv-edge-rest);
-		stroke-width: 1.5;
 	}
 	.canvas :global(.conn.rest.w2 .svelte-flow__edge-path) {
-		stroke-width: 2.5;
+		--w: 2.5px;
 	}
 	.canvas :global(.conn.rest.w3 .svelte-flow__edge-path) {
-		stroke-width: 3.5;
+		--w: 3.5px;
 	}
 	.canvas :global(.conn .halo) {
+		--w: 5.5px;
 		fill: none;
 		stroke: var(--sdv-canvas-bg);
-		stroke-width: 5.5;
-		vector-effect: non-scaling-stroke;
+		stroke-width: calc(var(--w) / var(--z));
 		transition: opacity 0.12s;
 	}
 	.canvas :global(.conn.w2 .halo) {
-		stroke-width: 6.5;
+		--w: 6.5px;
 	}
 	.canvas :global(.conn.w3 .halo) {
-		stroke-width: 7.5;
+		--w: 7.5px;
 	}
 	.canvas :global(.conn.from .svelte-flow__edge-path) {
-		stroke-dasharray: 5 4;
+		stroke-dasharray: calc(5px / var(--z)) calc(4px / var(--z));
 	}
 	.canvas :global(.conn.calls .svelte-flow__edge-path),
 	.canvas :global(.conn.handles .svelte-flow__edge-path) {
-		stroke-dasharray: 2 3;
+		stroke-dasharray: calc(2px / var(--z)) calc(3px / var(--z));
 	}
 	.canvas :global(.conn .head) {
 		transform: scale(calc(1 / var(--z)));
@@ -2970,8 +2978,8 @@
 		pointer-events: none;
 	}
 	.canvas :global(.conn.lit .svelte-flow__edge-path) {
+		--w: 2px;
 		stroke: var(--sdv-link-ref);
-		stroke-width: 2;
 	}
 	.canvas :global(.conn.lit.from .svelte-flow__edge-path) {
 		stroke: var(--sdv-link-from);
