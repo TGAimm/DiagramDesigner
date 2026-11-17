@@ -1,0 +1,21 @@
+id: yppg1azax1
+parent: izc0a89lge
+name: List contacts
+method: GET
+path: /api/data/v9.2/contacts
+auth: OAuth 2.0 bearer (Entra ID app registration)
+params:
+  # GAP: response projection ($select and $expand decide which fields come back; a body is fixed)
+  - { id: cmfd9ua14y, name: $filter, in: query, type: string, required: false, description: "OData filter, e.g. emailaddress1 eq 'a@b.dk'" }
+  - { id: hzchwnjxxj, name: $select, in: query, type: string, required: false, description: comma-separated columns }
+  - { id: zh20gb7bzk, name: $expand, in: query, type: string, required: false, description: "navigation properties, e.g. fjeld_contact_loyaltymember" }
+  - { id: djix4fgnif, name: $orderby, in: query, type: string, required: false }
+  - { id: phqt5fdtsj, name: $top, in: query, type: int, required: false }
+  - { id: ml9v669nlw, name: Prefer, in: header, type: string, required: false, description: "odata.maxpagesize=500; next page via @odata.nextLink" }
+responses:
+  - status: 200
+    description: "{ value: [...], @odata.nextLink }"
+    fields:
+      - { id: m3pte25wl9, name: value, model: vw2khd7qyi, many: true }
+  - { status: 400, model: blqvorzt9x, description: Invalid OData query }
+  - { status: 401, description: Missing or expired token }

@@ -1,0 +1,29 @@
+# The semantic model's measures (DAX), all in DKK. Evaluated at query time in whatever filter
+# context the report sets, so none is stored.
+# GAP: measure - a measure has no row of its own: its value depends on the filters it is
+# evaluated in (date, store, channel). Written as stored: false fields with the DAX in `derived`.
+# GAP: filter context in lineage - "Net sales" sums fact_sales.net_amount_dkk only where
+# is_return is false; the filter column is listed in `from` but not as a filter.
+id: g9ggpv79gf
+ownedBy: toy346x26m
+name: _Measures
+fields:
+  - { id: mudnz58uub, name: Gross sales, type: decimal, stored: false, from: [wl2al8x21l, qs1aep1z5x, xhxnw1g6qm], derived: "SUM(net_amount_dkk) + SUM(discount_amount_dkk), is_return = FALSE" }
+  - { id: syx6sif44t, name: Returns, type: decimal, stored: false, from: [wl2al8x21l, xhxnw1g6qm, oeekfgoe2f], derived: "store returns from fact_sales (is_return) + online refunds from fact_returns, ex VAT" }
+  - { id: ibsnqwqisl, name: Net sales, type: decimal, stored: false, from: [wl2al8x21l, xhxnw1g6qm, syx6sif44t], derived: "CALCULATE(SUM(fact_sales[net_amount_dkk]), NOT fact_sales[is_return]) - [Returns]" }
+  - { id: grkuzz8tim, name: Units sold, type: int, stored: false, from: [oscm7gep7z, xhxnw1g6qm], derived: "SUM(quantity), is_return = FALSE" }
+  - { id: kr4uidj9p3, name: Orders, type: int, stored: false, from: [dywz3qk1xj, xhxnw1g6qm], derived: "DISTINCTCOUNT(order_key), is_return = FALSE" }
+  - { id: y723t1a1px, name: AOV, type: decimal, stored: false, from: [ibsnqwqisl, kr4uidj9p3], derived: "DIVIDE([Net sales], [Orders])" }
+  - { id: uhlkdvwtum, name: Return rate, type: decimal, stored: false, from: [yq5ipar1ye, haj20czm37, grkuzz8tim], derived: "DIVIDE(SUM(fact_returns[quantity]) by sale date, [Units sold]): returns counted against the period sold (USERELATIONSHIP on sale_date_key)" }
+  - { id: wczj4dpweo, name: COGS, type: decimal, stored: false, from: [v2dk43s4sf, xhxnw1g6qm], derived: "SUM(cost_amount_dkk), is_return = FALSE" }
+  - { id: sky3l1z6qv, name: Gross margin, type: decimal, stored: false, from: [ibsnqwqisl, wczj4dpweo], derived: "[Net sales] - [COGS]" }
+  - { id: ofooek3nem, name: Gross margin %, type: decimal, stored: false, from: [sky3l1z6qv, ibsnqwqisl], derived: "DIVIDE([Gross margin], [Net sales])" }
+  - { id: fqgkf5fux8, name: Payment fees, type: decimal, stored: false, from: [f2pur42cxa], derived: "SUM(fact_payments[fee_dkk])" }
+  - { id: rkrk0jovbj, name: Fee % of online sales, type: decimal, stored: false, from: [fqgkf5fux8, ibsnqwqisl], derived: "DIVIDE([Payment fees], CALCULATE([Net sales], dim_channel[is_online]))" }
+  - { id: kcxlmzwwck, name: Stock on hand, type: decimal, stored: false, from: [tcl0ezbkg6, ep4sogb1b5], derived: "LASTNONBLANKVALUE(dim_date[date], SUM(qty_on_hand)): semi-additive, the last day in the period" }
+  - { id: ywnz00dpzy, name: Stock value, type: decimal, stored: false, from: [alkuatmg6f, ep4sogb1b5], derived: "last day in the period, like Stock on hand" }
+  - { id: rlk3y4wgc5, name: Sell-through %, type: decimal, stored: false, from: [s8ao2s2fpk, zh0stwy9gr, tl3x5ue62m], derived: "DIVIDE(SUM(units_sold), begin on hand of the first week + SUM(units_received))" }
+  - { id: tnxxw6owa8, name: Active customers, type: int, stored: false, from: [nqorc93yfb, n3au7ckomv], derived: "DISTINCTCOUNT(dim_customer[customer_key]) over sales, Unknown member excluded" }
+  - { id: zl0he3sfeb, name: Avg lifetime value, type: decimal, stored: false, from: [cma6yjlw5h], derived: AVERAGE }
+  - { id: mg9xto4i8i, name: Repeat purchase rate, type: decimal, stored: false, from: [he0lyb9gun], derived: "share of customers with order_count >= 2" }
+  - { id: ugapk3napc, name: Email-attributed revenue, type: decimal, stored: false, from: [lt769na0zm, xbhr9rgrn9, u8fyonlrsh], derived: "SUM(value_dkk) of Placed Order events with a $message (Klaviyo's 5-day click attribution)" }

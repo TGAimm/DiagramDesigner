@@ -1,0 +1,27 @@
+# GAP: triggered by subscription commerce-messages/integration-router
+id: ql9pk508g8
+parent: g55sb0eqd6
+name: routeCommerceMessage
+inputs:
+  - { id: iyy2dn4a5j, name: message, model: r36jmkzojw, required: true }
+outputs: []
+steps:
+  - { note: "subscription commerce-messages/integration-router (peek-lock, max delivery 10)" }
+  - { read: nmk8vxeclz, with: "commerce:<message.id>", gets: key }
+  - if: key exists
+    then:
+      - { write: yguluhbf6w, note: skipped_duplicate }
+      - { note: complete the message }
+    else:
+      - { write: nmk8vxeclz, note: in_progress }
+      - if: message.type is OrderCreated
+        then:
+          - { call: ba2q7bu3qj, with: "OrderCreatedEvent from message.order; user properties country, collectStoreKey" }
+      - if: message.type is CustomerCreated
+        then:
+          - { call: wo8taaexfr, with: "CustomerChangedEvent from message.customer, change created" }
+      - if: "message.type is OrderStateChanged, OrderShipmentStateChanged, ReturnInfoAdded or PaymentTransactionStateChanged"
+        then:
+          - { note: "an echo of Integration's own update actions (author is the integration API client): log and drop" }
+      - { write: yguluhbf6w, note: "processed, sourceSystem commerce, businessKey order number or customer number" }
+      - { write: nmk8vxeclz, note: done }

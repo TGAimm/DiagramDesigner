@@ -1,0 +1,17 @@
+id: b8j7eah6ro
+parent: uewuqgvbe5
+name: Request profile deletion
+method: POST
+path: /api/data-privacy-deletion-jobs
+auth: "Klaviyo-API-Key private key (scope data-privacy:write)"
+params:
+  - { id: pskoobju9a, name: revision, in: header, type: string, required: true }
+request:
+  contentType: application/vnd.api+json
+  fields:
+    - { id: thylcm8zzj, name: data.attributes.profile.data.attributes.email, type: string, to: [twxat301yi], description: give one identifier }
+    - { id: bxh12tefde, name: data.attributes.profile.data.attributes.phone_number, type: string, to: [wpaulnuzqr] }
+    - { id: kbdkmvkjsx, name: data.attributes.profile.data.id, type: string, to: [c6lytpwzen] }
+responses:
+  - { status: 202, description: deletion queued }
+  - { status: 400, model: s4w1d8x1z4 }

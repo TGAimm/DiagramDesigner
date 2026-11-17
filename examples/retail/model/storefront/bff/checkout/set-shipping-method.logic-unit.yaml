@@ -1,0 +1,31 @@
+id: g1ymrlcrem
+parent: a2x6k1ux7z
+name: setShippingMethod
+handles: [dywxfforvn]
+inputs:
+  - { id: famfegkhf0, name: shippingMethodId, type: uuid, required: true }
+  - { id: vsrj0ediyr, name: pickupPointId, type: string, nullable: true }
+  - { id: hz5xxd9px6, name: carrierCode, type: string, nullable: true }
+outputs:
+  - { id: uuk1pc8ebl, name: summary, model: c5wtilu6sm }
+fails:
+  - { name: notAvailable, description: "400: the method doesn't match the cart" }
+  - { name: pickupPointMissing, description: "400: the method needs a pickup point" }
+steps:
+  - { call: vhts24past, gets: cart }
+  - { call: citl3oc4ja, with: cart.id, gets: methods }
+  - if: shippingMethodId isn't among the matching methods
+    then:
+      - { fail: notAvailable }
+  - if: the method's key is pickup-point
+    then:
+      - if: no pickupPointId
+        then:
+          - { fail: pickupPointMissing }
+      - { call: vvr7att2ml, with: "carrierCode, country, zipcode of the shipping address: the point must still be offered", gets: points }
+      - if: the point isn't in the answer
+        then:
+          - { fail: pickupPointMissing }
+      - { write: ffqq3wfhpp, note: "pickupPointId, pickupPointCarrier" }
+  - { call: r8uoh3ve5d, with: "version, setShippingMethod (and the pickup point's address in shippingAddress.additionalStreetInfo + externalId)", gets: cart }
+  - { return: summary }

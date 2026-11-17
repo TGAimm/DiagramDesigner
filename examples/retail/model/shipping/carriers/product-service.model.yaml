@@ -1,0 +1,7 @@
+id: fk974lp1dm
+ownedBy: ztyvug6ivb
+name: ProductService
+fields:
+  - { id: b23tnw9war, name: service_code, type: string, required: true, constraints: ["e.g. EMAIL_NT, SMS_NT, FLEX_DELIVERY, ID_CHECK, SATURDAY"] }
+  - { id: ahg6bgd4pc, name: name, type: string, required: true }
+  - { id: yfvopxycdd, name: required_fields, type: string, many: true, constraints: ["e.g. receiver.mobile for SMS_NT"] }

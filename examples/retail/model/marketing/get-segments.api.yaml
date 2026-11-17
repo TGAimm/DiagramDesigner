@@ -1,0 +1,15 @@
+id: miyjlklgpw
+parent: znpte2ol9p
+name: Get segments
+method: GET
+path: /api/segments
+auth: "Klaviyo-API-Key private key (scope segments:read)"
+params:
+  - { id: m126f2c4j1, name: revision, in: header, type: string, required: true }
+  - { id: ytu7lyklu3, name: filter, in: query, type: string, required: false, description: "e.g. equals(is_active,true)" }
+  - { id: gntll83y4o, name: "fields[segment]", in: query, type: string, required: false }
+responses:
+  - status: 200
+    fields:
+      - { id: j6u4isbu5u, name: data, model: og6ds2tl8y, many: true }
+  - { status: 400, model: s4w1d8x1z4 }

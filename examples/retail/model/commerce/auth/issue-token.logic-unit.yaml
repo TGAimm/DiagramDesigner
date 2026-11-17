@@ -1,0 +1,28 @@
+id: k00cgnl5w6
+parent: pg4yiapkrt
+name: issueToken
+handles: [ekgirua9an, hrc9ssxjvw]
+inputs:
+  - { id: slsd7mx4o1, name: grantType, type: string, required: true }
+  - { id: k8vpkaez7s, name: clientId, type: string, required: true }
+  - { id: rodvg7mkwz, name: clientSecret, type: string, required: true }
+  - { id: dzxeow0cpf, name: scope, type: string, nullable: true }
+  - { id: aheqqx1kgc, name: anonymousId, type: string, nullable: true }
+outputs:
+  - { id: qov64ojazt, name: token, model: okef4sk2jd }
+fails:
+  - { name: invalidClient, description: unknown client or wrong secret (401) }
+  - { name: invalidScope, description: scope not granted to the client (400) }
+steps:
+  - { note: check clientId and clientSecret against the API client }
+  - if: client unknown or secret wrong
+    then:
+      - { fail: invalidClient }
+  - if: requested scope is not a subset of the client's scopes
+    then:
+      - { fail: invalidScope }
+  - if: grantType is anonymous token
+    then:
+      - { note: "use anonymousId, or generate one; it later ties carts and orders of the guest" }
+  - { write: okef4sk2jd, note: "valid 48h; anonymous tokens also get a refresh_token" }
+  - { return: token }

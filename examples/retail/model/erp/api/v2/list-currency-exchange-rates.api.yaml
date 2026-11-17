@@ -1,0 +1,13 @@
+id: n4ry6z443i
+parent: wyb51ibopv
+name: List currency exchange rates
+method: GET
+path: /api/v2.0/companies({companyId})/currencyExchangeRates
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: cu5piwv3ft, name: companyId, in: path, type: guid }
+  - { id: uwoy0dbmv4, name: $filter, in: query, type: string, required: false, description: "e.g. startingDate ge 2026-11-01" }
+responses:
+  # GAP: OData collection envelope { value: [...], @odata.nextLink } written as many: true
+  - { status: 200, model: t8kiqpp0i5, many: true }
+  - { status: 401, description: Unauthorized }

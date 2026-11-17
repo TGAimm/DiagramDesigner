@@ -1,0 +1,10 @@
+id: fhmv2mv6oc
+parent: fdjbxyzftg
+name: onAddToCart
+inputs:
+  - { id: w6cr7iyhvh, name: sku, type: string, required: true }
+  - { id: ckveiimh2j, name: quantity, type: int, required: true }
+outputs: []
+steps:
+  - { call: hxzqf0nk71, with: "sku, quantity", gets: cart }
+  - { note: "open the mini cart with the new count; on 409 show the out-of-stock message" }

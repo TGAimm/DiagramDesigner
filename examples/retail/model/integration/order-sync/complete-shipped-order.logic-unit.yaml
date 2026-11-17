@@ -1,0 +1,37 @@
+# GAP: triggered by subscription order-shipped/commerce
+# Flow 3, last part: Commerce gets the delivery and tracking, Stripe captures what shipped.
+id: gy1zghcfqb
+parent: w8lrzinusw
+name: completeShippedOrder
+inputs:
+  - { id: eh4lkwrior, name: event, model: hzf00evl4i, required: true }
+outputs: []
+fails:
+  - { name: captureFailed, description: "the authorisation expired (7 days) or was cancelled: finance collects by invoice" }
+steps:
+  - { note: "subscription order-shipped/commerce" }
+  - { read: n8ujyi0o8a, with: event.orderNumber, gets: ids }
+  - { call: v2gmil25dl, with: ids.commerceOrderId, gets: order }
+  - if: event.source is wms
+    then:
+      - { call: xdgvgxhc6p, with: "version, addDelivery (items = event lines, parcels with trackingData trackingId, carrier, provider), changeShipmentState Shipped or Partial", gets: order }
+    else:
+      - { call: xdgvgxhc6p, with: "version, addDelivery (items, no parcel), changeShipmentState Delivered", gets: order }
+  - if: 409 ConcurrentModification
+    then:
+      - { call: v2gmil25dl, with: ids.commerceOrderId, gets: order }
+      - { call: xdgvgxhc6p, with: "the same actions on the new version", gets: order }
+  - if: ids.capturedAmount is null
+    then:
+      - { call: by4f2wsisq, with: ids.stripePaymentIntentId, gets: intent }
+      - if: intent.status is requires_capture
+        then:
+          - { call: vov3owlhe3, with: "amount_to_capture = the whole order when orderComplete, else the shipped lines (final_capture false is not used: one capture per intent, the rest is released)", gets: intent }
+          - { call: dglp2lmh50, with: "version, addTransaction Charge Success amount, interactionId = latest_charge", gets: payment }
+          - { call: xdgvgxhc6p, with: "version, changePaymentState Paid", gets: order }
+          - { write: n8ujyi0o8a, note: "capturedAmount, status captured" }
+        else:
+          - { write: wlmvgl2qp8, note: "intent canceled or expired; retryable false; finance" }
+          - { fail: captureFailed }
+  - { write: n8ujyi0o8a, note: "status shipped / partly_shipped" }
+  - { write: yguluhbf6w, note: "processed, targetSystem commerce+payments" }

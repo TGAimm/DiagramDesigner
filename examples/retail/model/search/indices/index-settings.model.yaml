@@ -1,0 +1,29 @@
+# GAP: fields named by string - searchableAttributes, attributesForFaceting, customRanking and
+# the rest name Product Record attributes by their wire name; there is no way to point at the
+# field by id, so renaming a record field doesn't reach the settings (search silently degrades).
+id: wtqn6ejr7o
+ownedBy: mnu2zqtqzh
+storedIn: u4435mqo47
+name: Index Settings
+fields:
+  - { id: eqpqg8mp72, name: indexName, type: string, pk: true, ref: fwm01mcigb }
+  - { id: ealvm7ylhg, name: searchableAttributes, type: string, many: true, constraints: ["Fjeld: unordered(name), brand, hierarchicalCategories.lvl2, colour, sku, styleCode, unordered(description)"] }
+  - { id: znlqzw195a, name: attributesForFaceting, type: string, many: true, constraints: ["Fjeld: searchable(brand), colour, sizesAvailable, hierarchicalCategories.lvl0, .lvl1, .lvl2, price, filterOnly(categoryKeys), filterOnly(inStock), filterOnly(styleCode)"] }
+  - { id: iaf0utn5hk, name: customRanking, type: string, many: true, constraints: ["Fjeld: desc(inStock), desc(popularity), desc(newArrival)"] }
+  - { id: y94qvy3hwc, name: ranking, type: string, many: true, constraints: ["typo, geo, words, filters, proximity, attribute, exact, custom; a sort replica puts asc(price), desc(price) or desc(updatedAt) first"] }
+  - { id: juff29tl9w, name: replicas, type: string, many: true, constraints: [primary only; standard replicas] }
+  - { id: hkt6i1urop, name: attributesToRetrieve, type: string, many: true, constraints: ["Fjeld: everything but description and popularity"] }
+  - { id: e81spqcfr6, name: attributesToHighlight, type: string, many: true, constraints: ["name, brand"] }
+  - { id: nelfoyydjm, name: attributesToSnippet, type: string, many: true, constraints: ["description:20"] }
+  - { id: ipc3uk6hod, name: hitsPerPage, type: int, required: true, constraints: [48] }
+  - { id: d4uyt6y4qb, name: maxValuesPerFacet, type: int, required: true, constraints: [100] }
+  - { id: qhvbn9ul7d, name: typoTolerance, type: string, required: true, constraints: ["one of: true, false, min, strict"] }  # GAP: enum
+  - { id: hmapemu2pw, name: minWordSizefor1Typo, type: int, required: true, constraints: [4] }
+  - { id: yrvo56zhvn, name: ignorePlurals, type: string, many: true, constraints: ["the index's language: da, sv, no or de"] }
+  - { id: x0kgni7pc0, name: queryLanguages, type: string, many: true }
+  - { id: em7fryfr7i, name: removeStopWords, type: string, many: true }
+  - { id: o2xm6z6avh, name: decompoundQuery, type: bool, required: true, constraints: ["true for de and da (compound words: Regenjacke, regnjakke)"] }
+  - { id: xgxhzk815t, name: distinct, type: int, required: true, constraints: ["0, or 1 to keep one colour per style"] }
+  - { id: xrdpg2ef1d, name: attributeForDistinct, type: string, nullable: true, constraints: [styleCode] }
+  - { id: mbpj6yu4ah, name: paginationLimitedTo, type: int, required: true, constraints: [1000] }
+  - { id: al4h03wsj1, name: updatedAt, type: datetime, required: true }

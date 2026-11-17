@@ -1,0 +1,27 @@
+id: n7gkyqvsz0
+ownedBy: ntfj7i0o5t
+storedIn: hykg6pt8u2
+name: Pickup order
+tags: [pii, b2c]
+fields:
+  - { id: z5eknvpmx3, name: id, type: uuid, pk: true }
+  - { id: lqil8hi4vu, name: orderNumber, type: string, required: true, from: [lulkapcaa0] }
+  - { id: qfwhq6lxf4, name: externalId, type: string, required: true, from: [qazi456zfm], constraints: [Commerce order id] }
+  - { id: mbocbn5b8k, name: storeId, type: int, required: true, ref: h3qlberi23, from: [k5u5kiw2fk], derived: "channel key store-<storeNo> → the store with that storeNo" }
+  - { id: xxv57vr2p9, name: customerName, type: string, required: true, from: [romyz4pfcf, bsp6j20gsl], derived: "first + last name of the order's billing address" }
+  - { id: s02hr1en2a, name: customerEmail, type: string, required: true, from: [b5ftkjr0y9] }
+  - { id: lfju634958, name: customerPhone, type: string, nullable: true, from: [n8i6mdsagq] }
+  # GAP: enum
+  # GAP: state machine (new > picking > ready > collected; new, picking or ready > cancelled; ready > expired after 7 days)
+  - { id: m7rbanwl2c, name: status, type: string, required: true, constraints: ["one of: new, picking, ready, collected, cancelled, expired"] }
+  - { id: fwoa7zws96, name: lines, model: hk7nkjcw5d, many: true, required: true }
+  - { id: gc4pk8wgd0, name: prepaid, type: bool, required: true, constraints: ["always true today: paid online"] }
+  - { id: x0se6qa8q8, name: pickupCode, type: string, nullable: true, constraints: [6 digits, set when ready; the customer shows it] }
+  - { id: dus5z1kcou, name: readyAt, type: datetime, nullable: true }
+  - { id: hxi0xcl9b0, name: expiresAt, type: datetime, nullable: true, from: [dus5z1kcou], derived: readyAt + 7 days }
+  - { id: ws02m2o6k1, name: collectedAt, type: datetime, nullable: true }
+  - { id: rmc9l3g7xn, name: handledBy, type: int, nullable: true, ref: l5j11fszfp }
+  - { id: usqpbk31n7, name: createdAt, type: datetime, required: true }
+indexes:
+  - { id: xp8cbphgja, name: ux_pickup_order_number, fields: [lqil8hi4vu], unique: true }
+  - { id: sj9z7ur773, name: ix_pickup_store_status, fields: [mbocbn5b8k, m7rbanwl2c] }

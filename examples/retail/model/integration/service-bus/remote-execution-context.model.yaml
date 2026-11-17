@@ -1,0 +1,19 @@
+# What a Dataverse service endpoint posts to Service Bus when a registered step fires (the
+# standard RemoteExecutionContext, trimmed to what Fjeld's steps put in).
+# GAP: the publisher (CRM) has no model for its message; the subscriber writes the contract
+id: yaicuu7opu
+ownedBy: g55sb0eqd6
+name: RemoteExecutionContext
+fields:
+  - { id: bvnnmi16uz, name: MessageName, type: string, required: true, constraints: ["Merge (contact) or Update (contact, filtered on fjeld_loyaltytier); user property http://schemas.microsoft.com/xrm/2011/Claims/RequestName"] }
+  - { id: lg2wiqgi8o, name: PrimaryEntityName, type: string, required: true, constraints: [contact] }
+  - { id: k3kb7084i1, name: PrimaryEntityId, type: uuid, required: true, from: [gp3y3t4d1d] }
+  - { id: s6x7avtcan, name: CorrelationId, type: uuid, required: true }
+  - { id: pktgsb8nq2, name: Depth, type: int, required: true }
+  - { id: uodeq8a4p5, name: OperationCreatedOn, type: datetime, required: true }
+  - { id: tx2yhtgc6z, name: InputParameters.SubordinateId, type: uuid, nullable: true, from: [gp3y3t4d1d], constraints: [Merge only] }
+  - { id: t87cg42g57, name: PostEntityImages.fjeld_commercecustomerid, type: string, nullable: true, from: [bxs264j33o] }
+  - { id: kkk0l93ko6, name: PreEntityImages.subordinate.fjeld_commercecustomerid, type: string, nullable: true, from: [bxs264j33o], constraints: [Merge only] }
+  - { id: r2xg4qod5y, name: PostEntityImages.emailaddress1, type: string, nullable: true, from: [uunwqf9kfu] }
+  - { id: vi159mbeg2, name: PreEntityImages.fjeld_loyaltytier, type: string, nullable: true, from: [g6wd5evlsf] }
+  - { id: bhrxhpjxf7, name: PostEntityImages.fjeld_loyaltytier, type: string, nullable: true, from: [g6wd5evlsf] }

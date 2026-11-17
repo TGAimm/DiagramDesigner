@@ -1,0 +1,8 @@
+id: nmsbq15351
+ownedBy: ikoz19x2kp
+name: Money View
+fields:
+  - { id: i87h2z2cs4, name: centAmount, type: long, required: true, from: [oylo8sfbus] }
+  - { id: dvi6h8ll4w, name: currency, type: string, required: true, from: [n8mwhpvdh9] }
+  - { id: lueac6rkp8, name: amount, type: decimal, required: true, from: [oylo8sfbus, ta1m0obucj], derived: "centAmount / 10^fractionDigits" }
+  - { id: l33a4jacn7, name: formatted, type: string, required: true, from: [oylo8sfbus, n8mwhpvdh9], derived: "Intl.NumberFormat in the session locale, e.g. 1.299,00 kr." }

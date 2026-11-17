@@ -1,0 +1,17 @@
+id: kv9qsajwcc
+ownedBy: eaiyhlljnw
+storedIn: sox2v1ykga
+name: Dispute
+fields:
+  - { id: sy1te73u91, name: id, type: string, pk: true, constraints: ["prefix dp_"] }
+  - { id: grv3od02g0, name: amount, type: int, required: true }
+  - { id: b9pc5c6y72, name: currency, type: string, required: true, from: [kkxt5t6xwz] }
+  - { id: sgzany5u4p, name: charge, type: string, required: true, ref: lto0xhpsrl }
+  - { id: jy6dyctpbh, name: payment_intent, type: string, nullable: true, ref: g8pq0m68jp }
+  - { id: km77njzerx, name: reason, type: string, required: true, constraints: ["one of: fraudulent, product_not_received, product_unacceptable, duplicate, credit_not_processed, subscription_canceled, unrecognized, general"] }   # GAP: enum
+  - { id: ixqryuubfx, name: status, type: string, required: true, constraints: ["one of: warning_needs_response, warning_under_review, warning_closed, needs_response, under_review, won, lost"] }   # GAP: enum
+  - { id: qjn3lv9mq6, name: evidence_details.due_by, type: timestamp, nullable: true }
+  - { id: pz8wea1ckt, name: is_charge_refundable, type: bool }
+  - { id: a1felqqqub, name: created, type: timestamp, required: true }
+indexes:
+  - { id: covcydt0by, name: ix_dispute_charge, fields: [sgzany5u4p] }

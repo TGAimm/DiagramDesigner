@@ -1,0 +1,23 @@
+id: t58u7jbv8v
+ownedBy: dgll6k0rw6
+storedIn: kqjludw0r4
+name: msdynmkt_contactpointconsent
+tags: [pii, gdpr]
+fields:
+  - { id: s13dx9kbxr, name: msdynmkt_contactpointconsentid, type: uuid, pk: true }
+  - { id: hm05fm4vrd, name: msdynmkt_contactpointvalue, type: string, required: true, constraints: [email address or phone number] }
+  # GAP: enum
+  - { id: h6h7p9n6ng, name: msdynmkt_contactpointtype, type: string, required: true, constraints: ["one of: Email, Phone"] }
+  # GAP: enum
+  - { id: bbp0alw475, name: msdynmkt_purpose, type: string, required: true, constraints: ["one of: Commercial communication, Transactional"] }
+  # GAP: enum
+  - { id: cysebnajl4, name: msdynmkt_value, type: string, required: true, constraints: ["one of: Opted in, Opted out, Not set"] }
+  # GAP: enum
+  - { id: ctt1xzwcvx, name: msdynmkt_source, type: string, required: true, constraints: ["one of: Web signup, Checkout, Store, Marketing unsubscribe, Service, Import"] }
+  - { id: c5khy55b4o, name: msdynmkt_reason, type: string, nullable: true }
+  - { id: gftz93aoai, name: fjeld_contactid, type: uuid, nullable: true, ref: vw2khd7qyi }
+  - { id: hut3xpu6l3, name: fjeld_country, type: string, nullable: true }
+  - { id: pwivgfq5zn, name: msdynmkt_consentedon, type: datetime, required: true }
+indexes:
+  - { id: jhhfnxl5un, name: ix_consent_point, fields: [hm05fm4vrd, pwivgfq5zn] }
+  - { id: znvfiv6uqj, name: ix_consent_contact, fields: [gftz93aoai] }

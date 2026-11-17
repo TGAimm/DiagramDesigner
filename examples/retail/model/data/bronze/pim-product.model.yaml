@@ -1,0 +1,26 @@
+# GAP: file interface (the PIM Tailored Export file, one row per product and locale)
+id: h8xg9se4b5
+ownedBy: ar9pfoadj7
+storedIn: ar9pfoadj7
+name: pim_product
+fields:
+  - { id: tqi6y91p6f, name: sku, type: string, pk: true, from: [p8wyfcgywb] }
+  - { id: xya2iwedja, name: locale, type: string, pk: true, from: [vz5omggq2b] }
+  - { id: zjxtxa0zq9, name: uuid, type: uuid, from: [gzcx4y8gil] }
+  - { id: gpzvibyfkg, name: ean, type: string, nullable: true, from: [bb00vuqu9d] }
+  - { id: ia9p5tynpx, name: styleCode, type: string, from: [jvygu2no09] }
+  - { id: igprb6rg6c, name: family, type: string, from: [s96jko0qis] }
+  - { id: fz2r1wmu1b, name: name, type: string, from: [o5j7ow8nvb] }
+  - { id: toxrnvqwzb, name: brand, type: string, from: [goat59440e] }
+  - { id: qk239w8130, name: colour, type: string, nullable: true, from: [ev5p820zff] }
+  - { id: snve5c50rv, name: size, type: string, nullable: true, from: [woa27ss468] }
+  - { id: o3vjyv633o, name: material, type: string, nullable: true, from: [h9udjhssww] }
+  - { id: rg3ld9u2wi, name: weightGrams, type: int, nullable: true, from: [xo3tz19vqh] }
+  - { id: z653x5z7ql, name: categories, type: string, from: [cu90qctfbq], derived: "category codes joined with |" }
+  - { id: v4kx6cxl94, name: enabled, type: bool, from: [unll6arb9z] }
+  - { id: x0ng66wez5, name: completeness, type: int, from: [bjrqvl73qi] }
+  - { id: yrjdbi3mdd, name: updated, type: datetime, from: [ui0em7awxz] }
+  - { id: dqbqxkr7s5, name: _file_name, type: string, required: true }
+  - { id: l646vlsjpj, name: _loaded_at, type: datetime, required: true }
+  - { id: sy25ftis79, name: _source, type: string, required: true, constraints: ["pim/tailored-export"] }
+  - { id: x6wkpyowj5, name: _batch_id, type: string, required: true }

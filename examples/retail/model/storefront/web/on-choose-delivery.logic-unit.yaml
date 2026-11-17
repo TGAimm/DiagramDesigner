@@ -1,0 +1,15 @@
+id: vpjxv2i5po
+parent: ogmj497j15
+name: onChooseDelivery
+inputs:
+  - { id: z1m1p3idtd, name: option, model: vff2640otj, required: true }
+  - { id: ff3a28zymd, name: pickupPointId, type: string, nullable: true }
+outputs: []
+steps:
+  - if: option.needsPickupPoint and no pickupPointId
+    then:
+      - { call: x2dhfuyuvj, with: "option.carrierCode, the shipping postal code and street", gets: points }
+      - { note: "list the points on a map; the shopper picks one, which runs this again" }
+    else:
+      - { call: dywxfforvn, with: "option.id, pickupPointId, option.carrierCode", gets: summary }
+      - { note: "open the payment step" }

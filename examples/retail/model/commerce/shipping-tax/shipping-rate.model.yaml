@@ -1,0 +1,8 @@
+id: j296qp1l8u
+ownedBy: d2rl6i7zpf
+name: Shipping Rate
+fields:
+  - { id: pxe9c1gsek, name: price, model: ik7usc5zp1, required: true }
+  - { id: n05x4zxsy9, name: freeAbove, model: ik7usc5zp1, nullable: true }
+  - { id: ktblxzttti, name: isMatching, type: bool, nullable: true, stored: false, constraints: [only in matching-cart answers] }
+  - { id: dy4wp4ls21, name: tiers, type: "{type: CartValue | CartScore, minimumCentAmount, price}", many: true }

@@ -1,0 +1,13 @@
+id: m8sggxk9j9
+parent: wyb51ibopv
+name: Get customer
+method: GET
+path: /api/v2.0/companies({companyId})/customers({id})
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: wjtkh3nhiu, name: companyId, in: path, type: guid }
+  - { id: dzp4ocvydm, name: id, in: path, type: guid }
+responses:
+  - { status: 200, model: ocn983ouak }
+  - { status: 401, description: Unauthorized }
+  - { status: 404, description: "BadRequest_NotFound: no customer with this id" }

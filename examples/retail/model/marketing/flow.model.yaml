@@ -1,0 +1,22 @@
+# GAP: configuration records (Fjeld's flows are rows: Abandoned Checkout on Started Checkout, Shipped notification on Shipped,
+# Post-purchase review on Fulfilled Order + 14 days, Winback on Placed Order + 180 days without a new order)
+id: f5xx76vtts
+ownedBy: s3at4589xs
+storedIn: mm9tmyhvey
+name: Flow
+fields:
+  - { id: hgm4lfki5l, name: id, type: string, pk: true }
+  - { id: j6muyruacp, name: name, type: string, required: true }
+  # GAP: enum
+  - { id: cxh53qi867, name: status, type: string, required: true, constraints: ["one of: draft, manual, live"] }
+  - { id: sf43rbbyae, name: archived, type: bool, required: true }
+  # GAP: enum
+  - { id: m8bhbcyarp, name: trigger_type, type: string, required: true, constraints: ["one of: Metric, Added to List, Date Based, Low Inventory, Price Drop"] }
+  - { id: k9nzoquy3w, name: trigger_metric_id, type: string, nullable: true, ref: i98v99bkxi }
+  - { id: rm9u9djs45, name: trigger_list_id, type: string, nullable: true, ref: cgx25dzwjy }
+  - { id: msg7xt8evz, name: profile_filter, type: json, nullable: true, constraints: ["e.g. has not placed order since starting flow"] }
+  - { id: ha28uivlno, name: actions, model: qdn0ucww74, many: true }
+  - { id: wa6aakovkv, name: created, type: datetime, required: true }
+  - { id: r61o4izuag, name: updated, type: datetime, required: true }
+indexes:
+  - { id: k9975ca71t, name: ix_flow_trigger_metric, fields: [k9nzoquy3w, cxh53qi867] }

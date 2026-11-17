@@ -1,0 +1,28 @@
+# GAP: data-change trigger (Zendesk runs triggers after every ticket create or update, from any channel, not only the api)
+id: nc81lbqc2w
+parent: vdvywljuew
+name: runTicketTriggers
+inputs:
+  - { id: b49dcpny8d, name: ticket, model: cd3t7bjar1, required: true }
+  - { id: gufsbw3uwb, name: updateType, type: string, required: true, description: Create or Change }
+outputs: []
+steps:
+  - { read: u5nqof6ei9, with: "active, by position", gets: triggers }
+  - each: trigger, in position order
+    do:
+      - { read: rm73sol0he, gets: conditions }
+      - if: all conditions and one of any hold for the ticket
+        then:
+          - { read: i9rhu93x5o, gets: actions }
+          - if: "notification_user (e.g. Auto-reply to web and e-mail tickets)"
+            then:
+              - { write: h86i7pw1zl, note: "public reply from the brand's template, with the ticket number" }
+              - { note: e-mail the requester }
+          - if: "group_id (e.g. contact reason Return goes to Returns; brand fjeld.de goes to Kundenservice DE)"
+            then:
+              - { write: k08deeouym }
+          - if: set_tags or priority
+            then:
+              - { write: maigyjjtjt }
+              - { write: zkrrsnbrh2 }
+  - { note: "if any trigger fired, run the whole list again; each trigger fires at most once per update" }

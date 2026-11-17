@@ -1,0 +1,18 @@
+id: i7qgposvm6
+parent: t6al4kcu16
+name: Update return status
+method: PATCH
+path: /returns/{returnId}
+auth: API key (Integration on warehouse receipt and refund; agents' Zendesk app)
+params:
+  - { id: dvn9hc8lgd, name: returnId, in: path, type: string }
+request:
+  fields:
+    - { id: zofk9jwg34, name: status, type: string, required: true, to: [go1ylykc73] }
+    - { id: t09ilmqvki, name: received_at, type: datetime, to: [rs255iklc8] }
+    - { id: tbmpkw1beh, name: refunded_at, type: datetime, to: [kwc4254rse] }
+    - { id: v0ofjjk90y, name: "items[].inspection_result", type: string, many: true, to: [gjr7hku7d8] }
+responses:
+  - { status: 200, model: dntnqyedil }
+  - { status: 404 }
+  - { status: 409, description: the status cannot move there from the current one }

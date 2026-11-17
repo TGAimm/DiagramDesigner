@@ -1,0 +1,19 @@
+# GAP: triggered by subscription order-created/crm and order-shipped/crm and return-created/crm
+id: fc7nuflfdb
+parent: w8lrzinusw
+name: upsertCrmOrderHistory
+inputs:
+  - { id: lis1f1sc2f, name: orderNumber, type: string, required: true, description: from whichever event arrived }
+outputs: []
+steps:
+  - { note: "subscriptions order-created/crm, order-shipped/crm, return-created/crm: one unit, the order is re-read so the row is always whole" }
+  - { read: n8ujyi0o8a, with: orderNumber, gets: ids }
+  - { call: fxxz5v03t0, with: "orderNumber, expand lineItems", gets: order }
+  - if: order.customerId is null
+    then:
+      - { note: "guest: no contact to hang it on; skip" }
+    else:
+      - { call: rni3b5uac0, with: "fjeld_ordernumber; fjeld_contactid@odata.bind contacts(fjeld_commercecustomerid='…'), date, channel web / click & collect, country, currency, total, status from orderState + shipmentState, tracking number, return status, lines", gets: order history }
+      - if: 404 on the contact binding
+        then:
+          - { call: wrbtf9xjcp, with: "attempt 1, notBefore + 15 min: syncCustomerToCrm has not made the contact yet" }

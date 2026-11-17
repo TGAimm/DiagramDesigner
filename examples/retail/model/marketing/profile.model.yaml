@@ -1,0 +1,29 @@
+id: apj02aeekt
+ownedBy: x27wyx0r8h
+storedIn: mm9tmyhvey
+name: Profile
+tags: [pii, b2c]
+fields:
+  - { id: c6lytpwzen, name: id, type: string, pk: true, constraints: [Klaviyo ULID, e.g. 01GDDKASAP8TKDDA2GRZDSVP4H] }
+  - { id: twxat301yi, name: email, type: string, nullable: true, from: [uunwqf9kfu], derived: via Integration on customer-created / customer-updated, constraints: [email, unique] }
+  - { id: wpaulnuzqr, name: phone_number, type: string, nullable: true, from: [rvejr5t3yj], constraints: [E.164, unique] }
+  - { id: zctmivg3ti, name: external_id, type: string, nullable: true, from: [bxs264j33o], constraints: [unique] }
+  - { id: grqe6j9ww3, name: first_name, type: string, nullable: true, from: [if2mlrvh1r] }
+  - { id: e1sejzfw72, name: last_name, type: string, nullable: true, from: [b590a1yfa4] }
+  - { id: de2jd3v4u9, name: organization, type: string, nullable: true }
+  - { id: wcudflqpqm, name: locale, type: string, nullable: true, constraints: ["one of: da-DK, sv-SE, nb-NO, de-DE"] }
+  - { id: q5mb6ms94e, name: location.address1, type: string, nullable: true, from: [dk1mji9tc5] }
+  - { id: c5m141tkt3, name: location.city, type: string, nullable: true, from: [mqnnlwxrj2] }
+  - { id: pblspocyuu, name: location.zip, type: string, nullable: true, from: [owdahbbxyv] }
+  - { id: ogeygk4p0a, name: location.country, type: string, nullable: true, from: [kf7fvju1z1], derived: ISO code to country name }
+  - { id: qn2uk39qmc, name: location.timezone, type: string, nullable: true, derived: inferred by Klaviyo from location }
+  # GAP: free-form properties (custom profile properties are an open key-value map; Fjeld's keys are written as a held model)
+  - { id: adaxjos65n, name: properties, model: xup7zenrv4 }
+  - { id: xvgd87jdtj, name: subscriptions, model: va5eavdghf }
+  - { id: r8b3k8jugd, name: created, type: datetime, required: true }
+  - { id: owhhwgk0g8, name: updated, type: datetime, required: true }
+  - { id: zeulbm1dyr, name: last_event_date, type: datetime, nullable: true, from: [n44of8a2wj], derived: latest event time }
+indexes:
+  - { id: hdcecekc06, name: ux_profile_email, fields: [twxat301yi], unique: true }
+  - { id: yuz4ogzews, name: ux_profile_external_id, fields: [zctmivg3ti], unique: true }
+  - { id: ccrc3w2sl3, name: ux_profile_phone, fields: [wpaulnuzqr], unique: true }

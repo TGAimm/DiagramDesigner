@@ -1,0 +1,10 @@
+# e.g. jacket_colour_size: level 1 axis colour, level 2 axis size; tent_colour: one level.
+id: ecl4ha0e3z
+ownedBy: mt2wjcx7nj
+storedIn: r1xvgi7bie
+name: Family Variant
+fields:
+  - { id: vee8cxhdki, name: code, type: string, pk: true, required: true }
+  - { id: uzpk7ulg9l, name: family, type: string, required: true, ref: up92jqcxxf }
+  - { id: nz4v122lm2, name: labels, type: "map<locale, string>" }
+  - { id: ac21qto353, name: variant_attribute_sets, model: jbem9ddd53, many: true, constraints: [1 or 2 levels] }

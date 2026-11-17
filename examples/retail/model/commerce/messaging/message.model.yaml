@@ -1,0 +1,32 @@
+# GAP: polymorphic message union: every message type has its own payload fields; written as one model with all payload fields nullable
+id: r36jmkzojw
+ownedBy: scelhoohob
+storedIn: rrg5e7natg
+name: Message
+fields:
+  - { id: v85rw1hbek, name: id, type: uuid, pk: true }
+  - { id: xdblmlncpu, name: version, type: long, required: true }
+  - { id: xqoafpdsbg, name: sequenceNumber, type: long, required: true, constraints: [per resource; starts at 1; no gaps] }
+  # GAP: polymorphic reference: resource is {typeId, id} to an order, payment, customer, product or inventory entry; ref can name one model only
+  - { id: cqx8vu46go, name: resource, type: "Reference {typeId, id}", required: true }
+  - { id: grx88vr0dm, name: resourceVersion, type: long, required: true }
+  - { id: aua6uod0zb, name: resourceUserProvidedIdentifiers, type: "{key, orderNumber, customerNumber, sku, slug}", nullable: true, from: [lulkapcaa0, odn7tdqw8z, bhg7tr499g, y0vgavtgc6] }
+  - { id: lukju8s2k9, name: type, type: string, required: true, constraints: ["one of: OrderCreated, OrderStateChanged, OrderShipmentStateChanged, ReturnInfoAdded, PaymentTransactionStateChanged, CustomerCreated, ProductPublished, InventoryEntryQuantitySet"] }  # GAP: enum
+  - { id: xdshokk9u9, name: createdAt, type: datetime, required: true }
+  - { id: dim81zfiue, name: order, model: g5tcad7xx0, nullable: true, constraints: [OrderCreated] }
+  - { id: ftqndyr7o2, name: orderState, type: string, nullable: true, from: [eg3umbi5el], constraints: [OrderStateChanged] }
+  - { id: nuffsjthxh, name: oldOrderState, type: string, nullable: true, from: [eg3umbi5el], derived: value before the change }
+  - { id: vx98vqe4gz, name: shipmentState, type: string, nullable: true, from: [r29wqfepvb], constraints: [OrderShipmentStateChanged] }
+  - { id: ageyv0jm3d, name: oldShipmentState, type: string, nullable: true, from: [r29wqfepvb], derived: value before the change }
+  - { id: scn7uelkvv, name: returnInfo, model: tali50v4jz, nullable: true, constraints: [ReturnInfoAdded] }
+  - { id: rdcpdkva2v, name: transactionId, type: uuid, nullable: true, from: [g2b8ggo5nn], constraints: [PaymentTransactionStateChanged] }
+  - { id: zln47u9bsw, name: state, type: string, nullable: true, from: [a67yy5xuf5], constraints: [PaymentTransactionStateChanged] }
+  - { id: ds6u1s8f8h, name: customer, model: nrnhibse1t, nullable: true, constraints: [CustomerCreated] }
+  - { id: ku0xycd6kn, name: productProjection, model: mr1cjxh8rk, nullable: true, constraints: [ProductPublished] }
+  - { id: erbpkb5lj5, name: oldQuantityOnStock, type: long, nullable: true, from: [az9eabg78b], derived: value before the change }
+  - { id: vmjy1jmwax, name: newQuantityOnStock, type: long, nullable: true, from: [az9eabg78b], constraints: [InventoryEntryQuantitySet] }
+  - { id: bl2vesxv4b, name: newAvailableQuantity, type: long, nullable: true, from: [z6tv7i6g31] }
+  - { id: hhu23s7vr2, name: supplyChannel, type: uuid, nullable: true, ref: yi0uf2c9tg, from: [jpfyutcqja] }
+indexes:
+  - { id: pwq7rxwpfb, name: ux_message_resource_sequence, fields: [cqx8vu46go, xqoafpdsbg], unique: true }
+  - { id: h2sp8asnqf, name: ix_message_type_created, fields: [lukju8s2k9, xdshokk9u9] }

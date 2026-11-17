@@ -1,0 +1,23 @@
+# Table 83 Item Journal Line: stock adjustments, mostly the nightly WMS stock reconciliation
+# (template ITEM, batch WMS-RECON).
+id: uztvmo5gqa
+ownedBy: x2x0s3utl1
+storedIn: q43aprn5l0
+name: Item Journal Line
+fields:
+  - { id: kbnf0f4r95, name: journalTemplateName, type: string, pk: true, constraints: ["ITEM"] }
+  - { id: glrug6nhht, name: journalBatchName, type: string, pk: true, constraints: ["one of: WMS-RECON, STORE-COUNT, DEFAULT"] }   # GAP: enum
+  - { id: ft4vk0s9cu, name: lineNo, type: int, pk: true }
+  - { id: zlgu3auq72, name: systemId, type: guid, required: true }
+  - { id: ayu8jwm2nv, name: entryType, type: string, required: true, constraints: ["one of: Purchase, Sale, Positive Adjmt., Negative Adjmt., Transfer"] }   # GAP: enum
+  - { id: jlg7jz19mc, name: postingDate, type: date, required: true }
+  - { id: t4j2eclgru, name: documentNo, type: string, required: true }
+  - { id: pkl5eoms52, name: itemNo, type: string, required: true, ref: yu6wdxgb8q }
+  - { id: y1vri12bk2, name: variantCode, type: string, ref: u2mbyuw427 }
+  - { id: jst1eoi6vt, name: locationCode, type: string, required: true, ref: gsrr00mc9x }
+  - { id: lc3r44vxc7, name: quantity, type: decimal, required: true, constraints: [positive] }
+  - { id: j71k1f1v8h, name: unitOfMeasureCode, type: string, ref: oqoid63vr5 }
+  - { id: gtvji6pp1q, name: reasonCode, type: string, constraints: ["one of: WMS-COUNT, DAMAGED, SHRINKAGE, FOUND"] }   # GAP: enum
+  - { id: mpho6roqt9, name: externalDocumentNo, type: string, constraints: ["WMS stock snapshot file name"] }
+  - { id: dm58anqs62, name: unitCost, type: decimal, from: [ytq7la5syd] }
+  - { id: icp6e0fwpe, name: dimensionSetId, type: int, ref: nbwnn1hmri }

@@ -1,0 +1,17 @@
+# Published on order-created by routeCommerceMessage for each Commerce OrderCreated message.
+id: lf76fuj5g0
+ownedBy: g55sb0eqd6
+name: OrderCreatedEvent
+fields:
+  - { id: fvrf2rjjf3, name: messageId, type: uuid, required: true, from: [v85rw1hbek], constraints: ["Service Bus MessageId: duplicate detection drops a resend within 10 min"] }
+  - { id: yane319q1n, name: orderId, type: uuid, required: true, from: [qazi456zfm] }
+  - { id: idnb6fgon1, name: orderNumber, type: string, required: true, from: [lulkapcaa0, aua6uod0zb] }
+  - { id: o6l3t3h9h0, name: sequenceNumber, type: long, required: true, from: [xqoafpdsbg] }
+  - { id: ucraleg96r, name: resourceVersion, type: long, required: true, from: [grx88vr0dm] }
+  - { id: gwbhz99wq0, name: country, type: string, required: true, from: [e5lts0g7ke], constraints: ["user property: subscriptions filter on it"] }
+  - { id: skmhckaqbr, name: customerId, type: uuid, nullable: true, from: [zs9b3f85u9] }
+  - { id: p2l8hubxe3, name: customerEmail, type: string, required: true, from: [b5ftkjr0y9] }
+  - { id: kgawzfvvtr, name: collectStoreKey, type: string, nullable: true, from: [k5u5kiw2fk], constraints: ["user property: set for click & collect; the click-collect subscription filters on it"] }
+  - { id: vq7e36dwk0, name: totalGross, type: long, required: true, from: [oylo8sfbus], derived: "totalPrice.centAmount" }
+  - { id: a0gcl57jow, name: currency, type: string, required: true, from: [n8mwhpvdh9] }
+  - { id: cqx873lc20, name: createdAt, type: datetime, required: true, from: [xdshokk9u9] }

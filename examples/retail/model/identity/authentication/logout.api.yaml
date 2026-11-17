@@ -1,0 +1,13 @@
+id: owbrjdfiit
+parent: z4a8fcfwai
+name: Logout
+method: GET
+path: /{tenant}/oauth2/v2.0/logout
+auth: none (browser redirect)
+params:
+  - { id: oluh69kwq5, name: tenant, in: path, type: string }
+  - { id: ql8g5er131, name: post_logout_redirect_uri, in: query, type: string, required: false }
+  - { id: n9mbwkr40g, name: id_token_hint, in: query, type: string, required: false }
+  - { id: je5r41qtoy, name: state, in: query, type: string, required: false }
+responses:
+  - { status: 302, description: to post_logout_redirect_uri }

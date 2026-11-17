@@ -1,0 +1,27 @@
+# GAP: triggered by the shopper paying on the Stripe-hosted page (a UI, not an api)
+id: q2n9lcnfqf
+parent: pbv5f8a0tz
+name: completeCheckoutSession
+inputs:
+  - { id: ukiyjp2ck6, name: session, type: string, required: true }
+  - { id: ew84r9btpg, name: payment_method, type: string, required: true, description: what the shopper entered on the hosted page }
+outputs:
+  - { id: hl940j722b, name: session, model: jlokrbulgw }
+fails:
+  - { name: expired, description: the session expired before the shopper paid }
+  - { name: cardDeclined, description: the issuer declined; the shopper stays on the page and can retry }
+steps:
+  - { read: jlokrbulgw, with: session, gets: session }
+  - if: status isn't open
+    then:
+      - { fail: expired }
+  - { call: asdfh3utad, with: "amount_total, currency, customer, payment_intent_data (capture_method manual, metadata commerce_cart_id)", gets: intent }
+  - { call: q6gv2g3fyb, with: "intent, payment_method, return_url = the hosted page", gets: intent }
+  - if: confirm failed with cardDeclined
+    then:
+      - { fail: cardDeclined }
+  - { write: k7o2zlei5c }
+  - { write: fr0xp36y7h, note: complete }
+  - { call: knbcqp1ram, with: "checkout.session.completed, session" }
+  - { note: "303 the browser to success_url with {CHECKOUT_SESSION_ID} filled in" }
+  - { return: session }

@@ -1,0 +1,9 @@
+id: mu2wqd926l
+ownedBy: ktxxdlpyeb
+name: Batch Operation
+fields:
+  - { id: i3sccm36db, name: action, type: string, required: true, constraints: ["one of: addObject, updateObject, partialUpdateObject, partialUpdateObjectNoCreate, deleteObject"] }  # GAP: enum
+  # GAP: partial body - partialUpdateObject sends any subset of the record (Integration's 5-minute
+  # price and stock delta sends objectID, price, salePrice, discountPercent, inStock, sizesAvailable);
+  # a held model is all of it, and omit/pick only exist on an api body.
+  - { id: yp8q8y266k, name: body, model: s08z88xp3c, required: true, constraints: ["deleteObject: objectID only"] }

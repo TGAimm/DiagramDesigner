@@ -1,0 +1,26 @@
+# nb_silver_sales: stores, orders, lines, payments, shipments and returns, in dependency order.
+id: ltnik7azi0
+parent: c9pk2gmf7l
+name: buildSales
+meta: { notebook: nb_silver_sales }
+inputs: []
+outputs: []
+steps:
+  - { read: tvu2dmay18, gets: stores }
+  - { write: j9aznog0dp, note: overwrite (12 rows) }
+  - { read: xxiv4r3zd7, with: "_loaded_at since the last run", gets: online orders }
+  - { read: ueunlh95mg, with: those orders, gets: line items }
+  - { read: w9k21lsudl, with: "_loaded_at since the last run", gets: receipts }
+  - { read: xhhmfktmbw, with: those receipts, gets: receipt lines }
+  - { read: i0coshp5wa, with: "commerce ids, guest e-mails, member numbers", gets: customer keys }
+  - { note: "drop POS receipts with a pickupOrderId: the Commerce order already counts the click & collect sale" }
+  - { write: l9wari4ncs, note: MERGE on order_key }
+  - { read: ukqbycykfj, with: "sku, valid at ordered_at", gets: unit cost }
+  - { write: g8hvlajkgw, note: "MERGE on order_line_key; lines gone from a Commerce order are deleted" }
+  - { read: fp7gmidmzm, with: "_loaded_at since the last run", gets: balance transactions }
+  - { read: mwrogcwqle, gets: payouts }
+  - { write: mh10ze19ky, note: MERGE on payment_key }
+  - { read: uh4r6n0g75, with: "_loaded_at since the last run", gets: shipment confirmations }
+  - { write: wdoo1579l9, note: MERGE on shipment_key }
+  - { read: vk9sw5k48f, with: "_loaded_at since the last run", gets: online returns }
+  - { write: lf52toylkg, note: "MERGE on return_key; POS return lines come from the receipts read above" }

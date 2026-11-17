@@ -1,0 +1,12 @@
+id: va9b7zje5b
+parent: woc2py521s
+name: searchProductProjections
+handles: [o8fu6yl41y]
+inputs:
+  - { id: r123417rxc, name: text, type: string, nullable: true }
+  - { id: bkh2hxlxxc, name: filters, type: string, many: true }
+  - { id: z2prj42k0j, name: facets, type: string, many: true }
+  - { id: kplx7b4xxy, name: storeKey, type: string, nullable: true }
+  - { id: z13o794qei, name: priceScope, type: "{currency, country, channel, customerGroup}", nullable: true }
+outputs:
+  - { id: j1fb0akkwv, name: results, model: mr1cjxh8rk, many: true }

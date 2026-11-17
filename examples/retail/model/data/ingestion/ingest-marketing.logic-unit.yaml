@@ -1,0 +1,14 @@
+# GAP: scheduled trigger
+id: k4p3vrefi8
+parent: oyqmyb5nc3
+name: ingestMarketing
+meta: { schedule: "40 * * * *", pipeline: pl_ingest_marketing, note: "Klaviyo rate limits: 75/s burst, 700/min steady on profiles" }
+inputs: []
+outputs: []
+steps:
+  - { read: qhfxfz0h8j, with: "source_system = marketing", gets: watermarks }
+  - { call: wla5m60bxu, with: "filter=greater-than(updated, watermark), additional-fields[profile]=subscriptions, page[size]=100, page[cursor]", gets: profiles }
+  - { write: v82y2iuse8, note: MERGE on id }
+  - { call: whp14ffgmn, with: "filter=greater-than(datetime, watermark), include=metric, page[cursor]", gets: events }
+  - { write: htkt4tsw3g, note: MERGE on id }
+  - { write: axtovqyj39, note: "max updated (profiles) and max datetime (events)" }

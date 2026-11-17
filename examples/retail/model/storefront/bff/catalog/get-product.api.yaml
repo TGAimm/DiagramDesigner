@@ -1,0 +1,11 @@
+id: bu92uq53ka
+parent: lnizoffy7m
+name: Product detail
+method: GET
+path: /api/products/{slug}
+auth: session cookie fj_sid
+params:
+  - { id: acegk3y2fz, name: slug, in: path, type: string }
+responses:
+  - { status: 200, model: gel7vz7th1, omit: [as81hfjqvy] }
+  - { status: 404, description: "no published product with this slug in the locale" }

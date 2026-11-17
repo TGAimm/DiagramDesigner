@@ -1,0 +1,18 @@
+id: b7kdjegmu4
+parent: g249oo5ag4
+name: Query channels
+method: GET
+path: /{projectKey}/channels
+auth: "bearer (view_products or manage_project)"
+links: [{ label: Channels, url: "https://docs.commercetools.com/api/projects/channels" }]
+params:
+  - { id: zmwojfyn0w, name: projectKey, in: path, type: string, description: fjeld-prod }
+  - { id: dz578jc5i6, name: where, in: query, type: string, required: false, description: "predicate, e.g. key starts with \"store-\" and roles contains any (\"InventorySupply\")" }
+  - { id: yeuavbf62g, name: limit, in: query, type: int, required: false, description: "default 20, max 500" }
+  - { id: txpwkmqnbx, name: offset, in: query, type: int, required: false }
+responses:
+  - status: 200
+    fields:
+      - { id: d8kkhs3d91, name: results, model: x77t8lupv4, many: true }
+      - { id: qp7t8e2950, name: total, type: int, nullable: true, from: [yi0uf2c9tg], derived: count of matches }
+  - { status: 400, description: InvalidInput (bad predicate) }

@@ -1,0 +1,10 @@
+id: xfiqw13cdi
+ownedBy: ybylhi4dg2
+name: Transaction
+fields:
+  - { id: g2b8ggo5nn, name: id, type: uuid, required: true }
+  - { id: gp43cvihiw, name: timestamp, type: datetime, nullable: true }
+  - { id: pzpdz83iov, name: type, type: string, required: true, constraints: ["one of: Authorization, CancelAuthorization, Charge, Refund, Chargeback"] }  # GAP: enum
+  - { id: v2klvihs15, name: amount, model: ik7usc5zp1, required: true }
+  - { id: p6b7gwnxuz, name: interactionId, type: string, nullable: true, from: [ey80qr53ah, pg4eb4bda5], derived: "charge id for Charge, refund id for Refund" }
+  - { id: a67yy5xuf5, name: state, type: string, required: true, from: [sl01f2hb53, ddpdex8wea], derived: "succeeded -> Success, pending -> Pending, failed -> Failure", constraints: ["one of: Initial, Pending, Success, Failure"] }  # GAP: enum

@@ -1,0 +1,8 @@
+id: ik7usc5zp1
+ownedBy: mptlxipd5n
+name: Money
+fields:
+  - { id: qd1at5r31m, name: type, type: string, required: true, constraints: ["one of: centPrecision, highPrecision"] }  # GAP: enum
+  - { id: n8mwhpvdh9, name: currencyCode, type: string, required: true, constraints: ["ISO 4217", "one of: DKK, SEK, NOK, EUR"] }  # GAP: enum
+  - { id: oylo8sfbus, name: centAmount, type: long, required: true }
+  - { id: ta1m0obucj, name: fractionDigits, type: int, required: true, constraints: [2 for all Fjeld currencies] }

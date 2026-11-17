@@ -1,0 +1,23 @@
+# The standard customers api has no fjeldCommerceCustomerId (the extension field on the table),
+# so ERP customers can only be matched by e-mail.
+id: zs1qghnwpx
+ownedBy: ar9pfoadj7
+storedIn: ar9pfoadj7
+name: erp_customer
+tags: [pii]
+fields:
+  - { id: ohdf8q2kop, name: id, type: guid, pk: true, from: [lpk7mmqx3k] }
+  - { id: mlpulx8dmi, name: number, type: string, required: true, from: [owbo5jn4ru] }
+  - { id: ltkdx5v5nq, name: displayName, type: string, from: [hs38b34z61] }
+  - { id: f36g0putmv, name: addressLine1, type: string, nullable: true, from: [hvqgzjo28z] }
+  - { id: ng447xe9e3, name: city, type: string, nullable: true, from: [x7mjfnnp9r] }
+  - { id: c9et8wedxo, name: country, type: string, nullable: true, from: [kvfjtnmhve] }
+  - { id: cbi0gvsgzt, name: postalCode, type: string, nullable: true, from: [hvj8wc9ett] }
+  - { id: u9ancqv7ba, name: phoneNumber, type: string, nullable: true, from: [qqszy48xvs] }
+  - { id: bd3oxhi1pv, name: email, type: string, nullable: true, from: [iaweh258mk] }
+  - { id: dpmnhf24xp, name: currencyCode, type: string, nullable: true, from: [vmc62aulq6] }
+  - { id: wl5dib6r8u, name: blocked, type: string, from: [eso7cc5832] }
+  - { id: ipoctnt8ci, name: lastModifiedDateTime, type: datetime, from: [vyggsd0z5t] }
+  - { id: fkq350ipai, name: _loaded_at, type: datetime, required: true }
+  - { id: hfuhg2w882, name: _source, type: string, required: true, constraints: ["erp/customers"] }
+  - { id: aboc1lclid, name: _batch_id, type: string, required: true }

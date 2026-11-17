@@ -1,0 +1,7 @@
+id: g55sb0eqd6
+parent: mleccno0ev
+name: Service Bus
+meta: { namespace: sb-fjeld-integration, tier: Standard, maxDeliveryCount: "10", lockDuration: PT1M, duplicateDetection: PT10M }
+links:
+  - { label: Topics and subscriptions, url: https://learn.microsoft.com/azure/service-bus-messaging/service-bus-queues-topics-subscriptions }
+  - { label: Dead-letter queues, url: https://learn.microsoft.com/azure/service-bus-messaging/service-bus-dead-letter-queues }

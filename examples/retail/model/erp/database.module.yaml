@@ -1,0 +1,4 @@
+id: q43aprn5l0
+parent: s7eejjfr7l
+name: Database
+meta: { engine: "Azure SQL, Microsoft-managed (no direct access for the tenant)" }

@@ -1,0 +1,20 @@
+id: t3mridx182
+ownedBy: p6h0yiqcjm
+storedIn: ka6mzbfc7x
+name: Inbound receipt
+fields:
+  - { id: r36bl4v3k9, name: id, type: int, pk: true }
+  - { id: zlkvl8i22t, name: receiptNo, type: string, required: true, constraints: ["RC-<seq>"] }
+  - { id: s179m5nyr6, name: inboundOrderId, type: int, required: true, ref: rqh29xdiae }
+  - { id: s7ozfo7q8b, name: inboundOrderLineId, type: int, nullable: true, ref: zdgllbeptr, constraints: [null for an item not on the ASN] }
+  - { id: xqmdv4hvnc, name: itemId, type: int, required: true, ref: ixjus3gqio }
+  - { id: u5hge1y38k, name: locationId, type: int, required: true, ref: emtjsw8emx, constraints: [putaway bin] }
+  - { id: fraym2opxs, name: lotNo, type: string, nullable: true }
+  - { id: nclnfu1otx, name: qtyReceived, type: int, required: true, constraints: [min 1] }
+  - { id: fov26wnaix, name: qtyDamaged, type: int, required: true, constraints: [min 0, at most qtyReceived] }
+  - { id: cz8p0c1zn8, name: receivedBy, type: string, required: true }
+  - { id: olyrltz4u1, name: receivedAt, type: datetime, required: true }
+  - { id: guesxrzda9, name: exportedAt, type: datetime, nullable: true }
+indexes:
+  - { id: b5mjuoocx9, name: ux_receipt_no, fields: [zlkvl8i22t], unique: true }
+  - { id: sqnxdn4qsw, name: ix_receipt_order, fields: [s179m5nyr6] }

@@ -1,0 +1,32 @@
+id: jm9nwegl6i
+parent: tuvm3c6m5l
+name: saveProductModel
+handles: [mosg8tbkzd]
+inputs:
+  - { id: ffm5jlinvj, name: code, type: string, required: true }
+  - { id: wxchdqa9ys, name: changes, model: aukbkxsjc3, required: true }
+outputs:
+  - { id: hhpb0u9vl0, name: productModel, model: aukbkxsjc3 }
+  - { id: ii0xgwuhgi, name: created, type: bool }
+fails:
+  - { name: invalid, description: "422: wrong level for an attribute, family variant change, or axis value used by a sibling" }
+steps:
+  - { read: aukbkxsjc3, with: code, gets: "existing model, or none (create)" }
+  - if: existing model and changes.family_variant differs
+    then:
+      - { fail: invalid }
+  - { read: ecl4ha0e3z, with: family_variant, gets: variant attribute sets }
+  - each: value in changes.values
+    do:
+      - { read: hjsj87ps7y, with: value.attribute, gets: rules }
+      - if: the attribute is not at this model's level
+        then:
+          - { fail: invalid }
+  - { write: aukbkxsjc3, note: insert or update; raw_values JSON }
+  - { read: qitb6ezis6, with: "all descendant products (parent = this or its sub-models)", gets: variant products }
+  - each: descendant product
+    do:
+      - { call: jbwiro1t6h, with: product uuid }
+      - { call: g572jw9v7n, with: "product, product.updated", note: "inherited values changed, so each variant's content changed" }
+  - { return: productModel }
+  - { return: created }

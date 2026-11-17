@@ -1,0 +1,17 @@
+id: b8rzoiyo20
+ownedBy: ikoz19x2kp
+name: Address Form
+tags: [pii]
+fields:
+  - { id: es02f1ilwx, name: id, type: string, nullable: true, from: [bk4lcoskkv], constraints: [saved addresses only] }
+  - { id: lwllqgyyeu, name: firstName, type: string, required: true, from: [romyz4pfcf] }
+  - { id: zfds5q4xdh, name: lastName, type: string, required: true, from: [bsp6j20gsl] }
+  - { id: cf5imp86f5, name: company, type: string, nullable: true, from: [a6f8fq31va] }
+  - { id: kjdcwued3a, name: streetName, type: string, required: true, from: [igsvyvkfo3] }
+  - { id: tjy52jk3g4, name: streetNumber, type: string, nullable: true, from: [omcvn591ci] }
+  - { id: vf0op7lww1, name: additionalStreetInfo, type: string, nullable: true, from: [ob7rb7es6y], constraints: ["c/o, floor, door"] }
+  - { id: ni9p0osass, name: postalCode, type: string, required: true, from: [qromjahmgy], constraints: ["4 digits DK and NO, 5 SE and DE"] }
+  - { id: e0k5589qjm, name: city, type: string, required: true, from: [u8pwxyruqv] }
+  - { id: lbv4vn927z, name: country, type: string, required: true, from: [czbauzymbt], constraints: [must be the shop's country] }
+  - { id: szrx5drxqr, name: phone, type: string, nullable: true, from: [n8i6mdsagq], constraints: [carriers text the pickup code to it] }
+  - { id: noh1mznn23, name: email, type: string, nullable: true, from: [zla33ac4c4] }

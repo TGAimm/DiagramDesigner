@@ -1,0 +1,13 @@
+id: g7h3wk0ixm
+ownedBy: epryor5l9v
+storedIn: mm9tmyhvey
+name: Template
+fields:
+  - { id: zb5xddbqbg, name: id, type: string, pk: true }
+  - { id: qlzy0zpdog, name: name, type: string, required: true }
+  # GAP: enum
+  - { id: wi2ranxem5, name: editor_type, type: string, required: true, constraints: ["one of: CODE, SYSTEM_DRAGGABLE, USER_DRAGGABLE"] }
+  - { id: twqma6rweg, name: html, type: string, required: true, constraints: [Django-style template tags over profile and event properties] }
+  - { id: io3ncoqoou, name: text, type: string, nullable: true }
+  - { id: gbdj5rd2ys, name: created, type: datetime, required: true }
+  - { id: lwtnabiud1, name: updated, type: datetime, required: true }

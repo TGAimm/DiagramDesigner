@@ -1,0 +1,29 @@
+id: wqjaf1fdjf
+parent: oumwpbl70c
+name: signUpCustomer
+handles: [x17b80t6tq]
+inputs:
+  - { id: odv89c0hwz, name: email, type: string, required: true }
+  - { id: wdripcke9w, name: externalId, type: string, required: true }
+  - { id: h4b1apescx, name: firstName, type: string, nullable: true }
+  - { id: c25tdxnjs9, name: lastName, type: string, nullable: true }
+  - { id: f96rgqpqtr, name: storeKey, type: string, required: true }
+  - { id: qq190sv7vi, name: anonymousId, type: string, nullable: true }
+outputs:
+  - { id: irjgn2ylie, name: customer, model: nrnhibse1t }
+  - { id: dswr0srhmk, name: cart, model: w4i82sypi6, nullable: true }
+fails:
+  - { name: duplicateEmail, description: DuplicateField email (400) }
+steps:
+  - { read: ehf2zs4sc2, with: email, gets: existing }
+  - if: existing found
+    then:
+      - { fail: duplicateEmail }
+  - { write: nrnhibse1t, note: "authenticationMode ExternalAuth, isEmailVerified from Identity, stores [storeKey]" }
+  - if: anonymousId given
+    then:
+      - { read: w4i82sypi6, with: "anonymousId, cartState Active", gets: guestCart }
+      - { write: t7o0kf74is, note: "anonymousCartSignInMode MergeWithExistingCustomerCart; guest orders get the customerId too" }
+  - { call: lg4db2fxip, with: "Customer, CustomerCreated, customer", gets: message }
+  - { return: customer }
+  - { return: cart }

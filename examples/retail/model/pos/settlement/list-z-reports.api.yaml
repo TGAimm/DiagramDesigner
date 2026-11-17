@@ -1,0 +1,13 @@
+id: j5oni9ol3b
+parent: sd8724jaqj
+name: List Z reports
+method: GET
+path: /v2/z-reports
+auth: bearer (API key per integration user)
+params:
+  - { id: yuwv0y2w8e, name: businessDay, in: query, type: date, required: true }
+  - { id: utxqiy3vt0, name: storeNo, in: query, type: string, required: false }
+responses:
+  - { status: 200, model: srngby2fkx, many: true, description: with tenders }
+  - { status: 400, description: businessDay missing }
+  - { status: 401, description: Bad API key }

@@ -1,0 +1,36 @@
+id: x9wbqv5kob
+parent: w84no1i22u
+name: executeQuery
+handles: [rlbt46vo3u]
+inputs:
+  - { id: uii0cmv8d4, name: indexName, type: string, required: true }
+  - { id: jk6d35csdn, name: params, model: hvgl8g3qr7, required: true }
+outputs:
+  - { id: ijgvnp8zoc, name: response, model: kvwb8tpsfj }
+fails:
+  - { name: indexNotFound, description: "404" }
+  - { name: invalidFilter, description: "400: filters don't parse, or name an attribute that isn't facetable" }
+steps:
+  - { read: xb9pymmha0, with: indexName, gets: index }
+  - if: no such index
+    then:
+      - { fail: indexNotFound }
+  - { read: wtqn6ejr7o, with: indexName, gets: settings }
+  - if: filters or facetFilters don't parse against attributesForFaceting
+    then:
+      - { fail: invalidFilter }
+  - { read: u2jtnahx4h, with: "enabled rules valid now whose conditions match the query words (pattern, anchoring) or one of ruleContexts", gets: rules }
+  - if: a rule matched
+    then:
+      - { note: "apply its consequence: edit the query, add filters, pin promote objectIDs at their positions, drop hide objectIDs, collect userData" }
+  - { read: s08z88xp3c, with: "records of indexName containing every query word (prefix on the last) in searchableAttributes, within typoTolerance and the plurals and stop words of the language; then filters, facetFilters, numericFilters", gets: matches }
+  - if: no matches and removeWordsIfNoResults is set
+    then:
+      - { read: s08z88xp3c, with: "again with the query words made optional", gets: matches }
+  - { note: "rank: tie-break on ranking in order (typo, geo, words, filters, proximity, attribute, exact), then customRanking (inStock, popularity, newArrival); a sort replica ranks by price or date first" }
+  - if: distinct is 1
+    then:
+      - { note: "keep the best hit per attributeForDistinct (styleCode)" }
+  - { note: "facets: count matches per value of each asked facet, top maxValuesPerFacet; facets_stats for price" }
+  - { note: "slice hitsPerPage at page; cut each hit to attributesToRetrieve and add _highlightResult" }
+  - { return: response }

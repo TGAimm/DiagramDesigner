@@ -1,0 +1,17 @@
+id: sx6zs6jcwh
+parent: y5739ri6l0
+name: Reset sync cursor
+method: PUT
+path: /ops/sync-cursors/{source}/{entity}
+auth: "bearer (Entra ID, app role Integration.Operator)"
+params:
+  - { id: kz9d2kxj3l, name: source, in: path, type: string }
+  - { id: h3shg2f3we, name: entity, in: path, type: string }
+request:
+  fields:
+    - { id: r4z49bomcx, name: lastModifiedDateTime, type: datetime, required: true, to: [xp7kavyurc], description: "move back to replay a window" }
+responses:
+  - { status: 200, model: nanvethhnv }
+  - { status: 403, description: Missing app role }
+  - { status: 404, description: Unknown source and entity }
+  - { status: 409, description: A run holds the cursor }

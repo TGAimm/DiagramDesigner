@@ -1,0 +1,17 @@
+id: p24mectfxj
+parent: a2x6k1ux7z
+name: Place order (Payment Element)
+method: POST
+path: /api/checkout/confirm
+auth: session cookie fj_sid
+when: { flag: p9sg006xy9, is: on }
+request:
+  fields:
+    - { id: esgmr3sd3x, name: paymentIntentId, type: string, required: true, to: [xhwkjtoolk] }
+responses:
+  - status: 201
+    fields:
+      - { id: tsqs8rg8w2, name: orderNumber, type: string, from: [lulkapcaa0] }
+      - { id: kooa716zr9, name: orderId, type: uuid, from: [qazi456zfm] }
+  - { status: 402, description: the payment is not authorised }
+  - { status: 409, description: "out of stock or the price changed: the authorisation is cancelled" }

@@ -1,0 +1,7 @@
+id: lt6cnhiott
+name: CRM
+meta: { vendor: Microsoft, product: Dynamics 365 Sales, kind: saas, owner: cx-team }
+links:
+  - { label: Dataverse Web API, url: https://learn.microsoft.com/power-apps/developer/data-platform/webapi/overview }
+  - { label: Table reference, url: https://learn.microsoft.com/power-apps/developer/data-platform/reference/about-entity-reference }
+  - { label: Plug-ins, url: https://learn.microsoft.com/power-apps/developer/data-platform/plug-ins }

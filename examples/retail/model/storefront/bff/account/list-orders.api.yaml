@@ -1,0 +1,14 @@
+id: mc8t8ucb9l
+parent: r3utcx4a06
+name: My orders
+method: GET
+path: /api/account/orders
+auth: session cookie fj_sid
+params:
+  - { id: foh7o4zanl, name: page, in: query, type: int, required: false }
+responses:
+  - status: 200
+    fields:
+      - { id: s9j81jhmke, name: orders, model: u2alh1f0hd, many: true }
+      - { id: y16mw08qxw, name: total, type: int, from: [qazi456zfm], derived: "count of the customer's orders" }
+  - { status: 401, description: not signed in }

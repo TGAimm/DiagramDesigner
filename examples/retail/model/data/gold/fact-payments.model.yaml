@@ -1,0 +1,16 @@
+# Grain: one row per Stripe balance transaction.
+id: hpko1dlz2s
+ownedBy: d0jfpet25d
+storedIn: d0jfpet25d
+name: fact_payments
+fields:
+  - { id: wlxlao4hep, name: payment_key, type: string, pk: true, from: [rjo56go6m4] }
+  - { id: utkky1tnrp, name: order_key, type: string, nullable: true, from: [d0ii8u2wo2] }
+  - { id: l27u0iou5m, name: date_key, type: int, required: true, ref: bgzdmszmqm, from: [th3wqn3grc] }
+  - { id: hvgg92sgxm, name: channel_sk, type: int, required: true, ref: ha5ot8uh2x, from: [d0ii8u2wo2, jyonhj34gj, ha5ot8uh2x], derived: "the order's channel; web when no order" }
+  - { id: or7upwzinc, name: type, type: string, required: true, from: [kuqamlk6o0] }
+  - { id: v652vduh20, name: amount_dkk, type: decimal, required: true, from: [egsrukr3z4, z6k7v5cvga], derived: "settlement currency is DKK; checked, not converted" }
+  - { id: f2pur42cxa, name: fee_dkk, type: decimal, required: true, from: [e27irikmy1] }
+  - { id: czzw47z32v, name: net_dkk, type: decimal, required: true, from: [wct6i1ewfj] }
+  - { id: imqk0gf7lv, name: payout_id, type: string, nullable: true, from: [we19qlto8y] }
+  - { id: n2xhf6abwb, name: payout_date_key, type: int, nullable: true, ref: bgzdmszmqm, from: [frzwkjmu11] }

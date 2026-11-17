@@ -1,0 +1,6 @@
+id: woc2py521s
+parent: ygmbkn58fj
+name: Products
+links:
+  - { label: Products, url: "https://docs.commercetools.com/api/projects/products" }
+  - { label: Product Projection Search, url: "https://docs.commercetools.com/api/projects/products-search" }

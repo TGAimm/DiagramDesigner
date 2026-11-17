@@ -1,0 +1,15 @@
+id: ry02p86mfk
+parent: pfvgbz7fey
+name: Cancel a PaymentIntent
+method: POST
+path: /v1/payment_intents/{intent}/cancel
+auth: bearer (secret key)
+params:
+  - { id: c2qfafsvlf, name: intent, in: path, type: string }
+request:
+  contentType: application/x-www-form-urlencoded
+  fields:
+    - { id: dbt76dpev3, name: cancellation_reason, type: string, to: [v5vgtwqv4y] }
+responses:
+  - { status: 200, model: g8pq0m68jp, description: canceled; an uncaptured authorization is released }
+  - { status: 400, model: pwpsr0fyli, description: "payment_intent_unexpected_state (succeeded or already canceled)" }

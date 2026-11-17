@@ -1,0 +1,54 @@
+id: z4v732hofv
+parent: b1ptklldw3
+name: applyCartUpdateActions
+handles: [qvdp86i2vg, r8uoh3ve5d]
+inputs:
+  - { id: arez647zeo, name: cartId, type: uuid, required: true }
+  - { id: tcabsinlg8, name: version, type: long, required: true }
+  - { id: qhhilhbkop, name: actions, model: hbavag5dcj, many: true, required: true }
+outputs:
+  - { id: gu5g1pwbui, name: cart, model: w4i82sypi6 }
+fails:
+  - { name: notFound, description: ResourceNotFound (404) }
+  - { name: concurrentModification, description: version is stale (409) }
+  - { name: cartNotActive, description: "InvalidOperation: cart is Ordered or Merged (400)" }
+  - { name: discountCodeNonApplicable, description: "code unknown, inactive or outside validity (400)" }
+steps:
+  - { call: il3qm5h2mr, with: "token, manage_orders or manage_my_orders", gets: principal }
+  - { read: w4i82sypi6, with: cartId, gets: cart }
+  - if: cart not found, or a /me call and the cart is not the principal's
+    then:
+      - { fail: notFound }
+  - if: cart.version != version
+    then:
+      - { fail: concurrentModification }
+  - if: cart.cartState is not Active
+    then:
+      - { fail: cartNotActive }
+  - each: action in actions
+    do:
+      - if: action is addLineItem
+        then:
+          - { read: w1g1lt9yyv, with: "sku or productId + variantId", gets: variant from current data }
+          - { write: haxkxd4qhw, note: "merges into an existing line with the same variant, channel and custom fields" }
+      - if: action is changeLineItemQuantity or removeLineItem
+        then:
+          - { write: ae7tr09nmb, note: 0 removes the line }
+      - if: action is setShippingAddress or setBillingAddress
+        then:
+          - { write: zhm5q0qjk4 }
+      - if: action is setShippingMethod
+        then:
+          - { write: ldmh0wvzze }
+      - if: action is addDiscountCode
+        then:
+          - { read: b5wltiomiu, with: code, gets: discountCode }
+          - if: code unknown, inactive or outside validFrom/validUntil
+            then:
+              - { fail: discountCodeNonApplicable }
+          - { write: u607md5szl }
+      - if: action is addPayment
+        then:
+          - { write: ijoq8f8nr0 }
+  - { call: pgzgs1m2r3, with: "cartId, updateProductData from a recalculate action", gets: cart }
+  - { return: cart }

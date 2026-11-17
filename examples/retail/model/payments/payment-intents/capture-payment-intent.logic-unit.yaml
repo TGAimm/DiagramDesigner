@@ -1,0 +1,35 @@
+id: d67qgv7crp
+parent: pfvgbz7fey
+name: capturePaymentIntent
+handles: [vov3owlhe3]
+inputs:
+  - { id: u751db0icb, name: intent, type: string, required: true }
+  - { id: oufwsr9ads, name: amount_to_capture, type: int }
+outputs:
+  - { id: raj9x49vqh, name: intent, model: g8pq0m68jp }
+fails:
+  - { name: unexpectedState, description: status is not requires_capture }
+  - { name: amountTooLarge, description: more than amount_capturable }
+  - { name: authorizationExpired, description: the card authorization lapsed (7 days) }
+steps:
+  - { read: g8pq0m68jp, with: intent, gets: intent }
+  - if: status is not requires_capture
+    then:
+      - { fail: unexpectedState }
+  - if: amount_to_capture > amount_capturable
+    then:
+      - { fail: amountTooLarge }
+  - { read: lto0xhpsrl, with: latest_charge, gets: charge }
+  - if: authorization older than 7 days
+    then:
+      - { fail: authorizationExpired }
+  - { note: capture at the card network or Klarna }
+  - { write: lto0xhpsrl, note: "captured true, amount_captured; the rest is released" }
+  - { write: te75334qto, note: "insert type charge, amount, fee, net, status pending, available_on" }
+  - { write: xais10bogu }
+  - { write: p8152nu84z }
+  - { write: fxa7uwf74j, note: "0" }
+  - { write: dmfyebtj3a, note: succeeded }
+  - { call: knbcqp1ram, with: "charge.captured, charge" }
+  - { call: knbcqp1ram, with: "payment_intent.succeeded, intent" }
+  - { return: intent }

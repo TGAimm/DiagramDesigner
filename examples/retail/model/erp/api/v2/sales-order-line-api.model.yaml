@@ -1,0 +1,26 @@
+# API page 30044 APIV2 - Sales Order Lines (entity salesOrderLine)
+id: khgyxzn0cx
+ownedBy: wyb51ibopv
+name: salesOrderLine (API)
+fields:
+  - { id: m5e9susqjm, name: id, type: guid, from: [c8y45n1jkp] }
+  - { id: vq9w8fu2d7, name: documentId, type: guid, from: [u8gwdhud9r] }
+  - { id: aswvu34ixo, name: sequence, type: int, from: [k3o7yzcc26] }
+  - { id: gv2t74ggvi, name: itemId, type: guid, from: [rb6xm6b02o, vyrbqcg8xn], derived: "systemId of the item" }
+  - { id: ky98uvztvy, name: lineType, type: string, from: [hhtder4u0q], derived: "Item, Account, Comment" }
+  - { id: gs710hhxzf, name: lineObjectNumber, type: string, from: [rb6xm6b02o] }
+  - { id: q955dn222o, name: description, type: string, from: [y0v8srt70n] }
+  - { id: dzcam0e1p0, name: unitOfMeasureCode, type: string, from: [t9ikj1n85i] }
+  - { id: fmmrzvdfda, name: quantity, type: decimal, from: [eqjj9f1mlv] }
+  - { id: thsupdlc5m, name: unitPrice, type: decimal, from: [k3hc75df9p] }
+  - { id: ciejgdyorp, name: discountAmount, type: decimal, from: [rfsp69gwrq] }
+  - { id: m87f180nnu, name: discountPercent, type: decimal, from: [dbszms3i9q] }
+  - { id: pr8uxfsj4h, name: amountExcludingTax, type: decimal, from: [khhoq2yeax] }
+  - { id: q1s1v3fjhg, name: taxPercent, type: decimal, from: [xd8vftybkk] }
+  - { id: xqbgbhos07, name: amountIncludingTax, type: decimal, from: [qv93sjzupk] }
+  - { id: h3yk2b2wg5, name: shipQuantity, type: decimal, from: [ymxoxlznx0] }
+  - { id: oepbnsnovv, name: shippedQuantity, type: decimal, from: [g6nhm9odkn] }
+  - { id: kthol8bsqs, name: invoiceQuantity, type: decimal, from: [mzydf3dx6s] }
+  - { id: rkqd9gb2bg, name: invoicedQuantity, type: decimal, from: [z86s14bjrr] }
+  - { id: yw6rswyq0t, name: itemVariantId, type: guid, from: [ca4tdaa49z, ltnsfq79pv], derived: "systemId of the variant" }
+  - { id: ebrqf0s76i, name: locationId, type: guid, from: [b9ea6tbrzd, pd9j849qnx], derived: "systemId of the location" }

@@ -1,0 +1,21 @@
+id: l95pgmxptg
+parent: wyb51ibopv
+name: List sales shipment lines
+method: GET
+path: /api/v2.0/companies({companyId})/salesShipments({id})/salesShipmentLines
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: s6jaln586n, name: companyId, in: path, type: guid }
+  - { id: zzke1j1b9y, name: id, in: path, type: guid, description: the shipment's id }
+responses:
+  - status: 200
+    many: true
+    fields:
+      - { id: ekcuukqu02, name: documentNo, type: string, from: [e53sop086d] }
+      - { id: c1iu1t6tkf, name: sequence, type: int, from: [u6vmx3i5y5] }
+      - { id: q8gpxnbud3, name: lineType, type: string, from: [l7z7qj1a87] }
+      - { id: v0iplskz8j, name: lineObjectNumber, type: string, from: [yuxp8atbut] }
+      - { id: wc744ii3ch, name: description, type: string, from: [wy752wtdjk] }
+      - { id: lsus2bhl9j, name: quantity, type: decimal, from: [bhqnnifsxx] }
+      - { id: y92sd1kudb, name: unitOfMeasureCode, type: string, from: [j5nv2tx8tw] }
+  - { status: 404, description: no shipment with this id }

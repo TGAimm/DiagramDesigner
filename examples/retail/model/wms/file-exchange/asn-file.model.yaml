@@ -1,0 +1,14 @@
+# GAP: file interface (inbound ASN_<ts>.csv: expected receipts from purchase orders, one row per line)
+id: jbnnepejhg
+ownedBy: tn4azsu06u
+storedIn: tn4azsu06u
+name: ASN_<ts>.csv
+fields:
+  - { id: kjz7xed0nq, name: asn_no, type: string, pk: true, from: [d1cqu9qwzq], constraints: ["ERP purchase order no., e.g. PO-20931"] }
+  - { id: ivl5imn2hz, name: line_no, type: int, pk: true, from: [v0tyzhmt2l] }
+  - { id: mfubewjq17, name: supplier_no, type: string, required: true, from: [oz0tu7wkiv] }
+  - { id: cxjr2ki90u, name: supplier_name, type: string, required: true, from: [sag0mx5oqd] }
+  - { id: fevcl0s2il, name: expected_date, type: date, required: true, from: [yaoe5eghpc] }
+  - { id: x2j42vo6og, name: item_no, type: string, required: true, from: [rzz8g2t7wf] }
+  - { id: evwjtml045, name: qty_expected, type: int, required: true, from: [cdmb4nqt1j], derived: "decimal to whole units", constraints: [min 1] }
+  - { id: ndg2aikq97, name: container_no, type: string, nullable: true, constraints: [sea container or truck reference from the supplier's dispatch note] }

@@ -1,0 +1,6 @@
+id: ld3q0h95p5
+ownedBy: dodjtgoau2
+name: Custom field value
+fields:
+  - { id: liaoalqi8w, name: id, type: int, required: true, ref: k3dvavecw5 }
+  - { id: majuhgo665, name: value, type: string, nullable: true, constraints: ["text, number, or a tagger option's tag, by the field's type"] }

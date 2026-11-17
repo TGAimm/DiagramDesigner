@@ -1,0 +1,4 @@
+id: y5739ri6l0
+parent: mleccno0ev
+name: Operations API
+meta: { functionApp: func-fjeld-ops, runtime: ".NET 8 isolated", plan: Premium EP1 }

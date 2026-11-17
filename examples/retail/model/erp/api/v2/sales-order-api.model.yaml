@@ -1,0 +1,38 @@
+# API page 30028 APIV2 - Sales Orders (entity salesOrder): Sales Header filtered to Document
+# Type = Order.
+id: j4uwq30pr1
+ownedBy: wyb51ibopv
+name: salesOrder (API)
+tags: [pii]
+fields:
+  - { id: dhn4gae35u, name: id, type: guid, from: [u8gwdhud9r] }
+  - { id: aq2v5k54f3, name: number, type: string, from: [rgkzrhf9cx] }
+  - { id: shria7urcn, name: externalDocumentNumber, type: string, from: [ogicbd970k] }
+  - { id: euqztn9f8v, name: orderDate, type: date, from: [gyuqizl9h5] }
+  - { id: o31unep6p6, name: postingDate, type: date, from: [mybwo4yymx] }
+  - { id: exylp5unc7, name: customerId, type: guid, from: [jxi66gwzsa, ixdytd8nrf], derived: "systemId of the sell-to customer" }
+  - { id: rst3ltbxtl, name: customerNumber, type: string, from: [jxi66gwzsa] }
+  - { id: emk1fr7rb9, name: customerName, type: string, from: [kcchmko5aq] }
+  - { id: atva9j8p1y, name: billToCustomerNumber, type: string, from: [qdwhwtkg5g] }
+  - { id: cxw6keey41, name: sellToAddressLine1, type: string, from: [z47zeh2gvk] }
+  - { id: dbt7br3mv1, name: sellToAddressLine2, type: string, from: [gd70gu5shw] }
+  - { id: vyssf513mq, name: sellToCity, type: string, from: [c08f83zc1u] }
+  - { id: gwy1hc8xse, name: sellToCountry, type: string, from: [buozwdkaid] }
+  - { id: ji9dwgufmw, name: sellToPostCode, type: string, from: [rh47r7gl2d] }
+  - { id: t0j000f6ro, name: shipToName, type: string, from: [o5hf9ar6tl] }
+  - { id: laly4xiy7s, name: shipToAddressLine1, type: string, from: [v7bki5knvj] }
+  - { id: czh6i0sp61, name: shipToCity, type: string, from: [is2lk0iyzn] }
+  - { id: cj08x70i8k, name: shipToCountry, type: string, from: [vu6570igtt] }
+  - { id: g4qkqlw5iz, name: shipToPostCode, type: string, from: [w7szlebf82] }
+  - { id: kl3bd1tg9y, name: email, type: string, from: [mkmn56v2yg] }
+  - { id: u3odsty44b, name: shortcutDimension1Code, type: string, from: [uivc2hle8y] }
+  - { id: xjf3js56tu, name: currencyCode, type: string, from: [j23trmmk7p] }
+  - { id: bovctonncd, name: pricesIncludeTax, type: bool, from: [kfm0c9x19t] }
+  - { id: y7bdrrre8w, name: requestedDeliveryDate, type: date, from: [l2gb7p6lt9] }
+  - { id: wo4ayd1pmv, name: totalAmountExcludingTax, type: decimal, from: [irn986hlj9] }
+  - { id: dfzopngqii, name: totalTaxAmount, type: decimal, from: [tkj9ud9mkt, irn986hlj9], derived: "amountIncludingVat - amount" }
+  - { id: y38jbm6fjw, name: totalAmountIncludingTax, type: decimal, from: [tkj9ud9mkt] }
+  - { id: i93wwlh0fy, name: fullyShipped, type: bool, from: [eqjj9f1mlv, g6nhm9odkn], derived: "every line shipped in full" }
+  - { id: k44x8rzn4y, name: status, type: string, from: [xalurnbl6g], derived: "Open -> Draft, Pending Approval -> In Review, Released -> Released" }
+  - { id: urkyn5541e, name: lastModifiedDateTime, type: datetime, from: [dp6jhozgnk] }
+  - { id: n1qf01z4bq, name: salesOrderLines, model: khgyxzn0cx, many: true }

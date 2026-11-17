@@ -1,0 +1,13 @@
+id: zdgllbeptr
+ownedBy: p6h0yiqcjm
+storedIn: ka6mzbfc7x
+name: Inbound order line
+fields:
+  - { id: jq86ailzrt, name: id, type: int, pk: true }
+  - { id: g90ybjpq91, name: inboundOrderId, type: int, required: true, ref: rqh29xdiae }
+  - { id: v6ngtopjv0, name: lineNo, type: int, required: true, from: [ivl5imn2hz] }
+  - { id: yry985vdy7, name: itemId, type: int, required: true, ref: ixjus3gqio, from: [x2j42vo6og], derived: looked up by item no. }
+  - { id: ls89thqkgq, name: qtyExpected, type: int, required: true, from: [evwjtml045] }
+  - { id: lzsuhmdvcx, name: qtyReceived, type: int, required: true, from: [nclnfu1otx], derived: sum of receipts }
+indexes:
+  - { id: uosv7dbvl0, name: ux_inbound_line, fields: [g90ybjpq91, v6ngtopjv0], unique: true }

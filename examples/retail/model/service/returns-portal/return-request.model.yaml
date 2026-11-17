@@ -1,0 +1,31 @@
+id: dntnqyedil
+ownedBy: t6al4kcu16
+storedIn: lhfbozuhuf
+name: Return request
+tags: [pii]
+fields:
+  - { id: x773wm1yhr, name: id, type: uuid, pk: true }
+  - { id: hrk1dbsomu, name: rma_number, type: string, pi: true, required: true, constraints: ["RMA-<year>-<seq 6>"] }
+  - { id: twmqcvgacf, name: order_number, type: string, required: true, from: [wel6u264d3] }
+  - { id: xmnn7zyg3w, name: commerce_order_id, type: string, required: true, from: [avuni8vnwe] }
+  - { id: vm8fhaf7i8, name: email, type: string, required: true, from: [yn6om4p9fm] }
+  - { id: k6rrjodq5l, name: customer_id, type: string, nullable: true, from: [zdngrgphyp] }
+  - { id: c0c39f8sy6, name: country, type: string, required: true, from: [s9qhgn6o6r] }
+  - { id: j0rkt10jr3, name: currency, type: string, required: true, from: [ufb4khg0vb] }
+  # GAP: enum
+  # GAP: state machine (allowed moves: requested > approved | rejected; approved > label_created > in_transit > received > inspected > refunded; requested or approved > cancelled)
+  - { id: go1ylykc73, name: status, type: string, required: true, constraints: ["one of: requested, approved, rejected, label_created, in_transit, received, inspected, refunded, cancelled"] }
+  # GAP: enum
+  - { id: p3hb1kuqk6, name: refund_method, type: string, required: true, constraints: ["one of: original_payment, store_credit, exchange"] }
+  - { id: td2nsup6tp, name: items, model: bej5xqj7kg, many: true, required: true }
+  - { id: b0b990w8mf, name: refund_amount, type: decimal, required: true, from: [dotgxpusff, ahbcn2o13t], derived: sum of item refund amounts minus the return fee }
+  - { id: z2nzkag6bk, name: zendesk_ticket_id, type: int, nullable: true, ref: cd3t7bjar1, from: [ksaqjqmrmp] }
+  - { id: vojruyg9lf, name: customer_comment, type: string, nullable: true }
+  - { id: jj2p49hi29, name: created_at, type: datetime, required: true }
+  - { id: sqglkanl2u, name: updated_at, type: datetime, required: true }
+  - { id: rs255iklc8, name: received_at, type: datetime, nullable: true }
+  - { id: kwc4254rse, name: refunded_at, type: datetime, nullable: true }
+indexes:
+  - { id: uq6ina9dbo, name: ux_return_rma, fields: [hrk1dbsomu], unique: true }
+  - { id: jbd9f58xbn, name: ix_return_order, fields: [twmqcvgacf] }
+  - { id: t0jyss3cip, name: ix_return_status, fields: [go1ylykc73, jj2p49hi29] }

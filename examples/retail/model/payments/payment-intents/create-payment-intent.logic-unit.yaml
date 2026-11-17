@@ -1,0 +1,27 @@
+id: asdfh3utad
+parent: pfvgbz7fey
+name: createPaymentIntent
+handles: [vb25x790bc]
+inputs:
+  - { id: ufby85gb6t, name: amount, type: int, required: true }
+  - { id: c5zjtxo49k, name: currency, type: string, required: true }
+  - { id: jr542lj96z, name: customer, type: string, nullable: true }
+outputs:
+  - { id: r5cxfwfko2, name: intent, model: g8pq0m68jp }
+fails:
+  - { name: invalidRequest, description: missing or bad parameter }
+  - { name: idempotencyConflict, description: key reused with other parameters }
+steps:
+  - if: Idempotency-Key seen in the last 24 h
+    then:
+      - if: parameters differ
+        then:
+          - { fail: idempotencyConflict }
+      - { read: g8pq0m68jp, with: the stored result, gets: intent }
+      - { return: intent }
+  - if: currency or payment_method_types not enabled on the account
+    then:
+      - { fail: invalidRequest }
+  - { write: g8pq0m68jp, note: "insert, status requires_payment_method, new client_secret" }
+  - { call: knbcqp1ram, with: "payment_intent.created, intent", note: only if an endpoint listens }
+  - { return: intent }

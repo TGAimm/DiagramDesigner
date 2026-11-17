@@ -1,0 +1,38 @@
+# Codeunit 22 Item Jnl.-Post Line: the one place stock moves; every posting routine calls it.
+id: dfac9bllv7
+parent: x2x0s3utl1
+name: itemJnlPostLine
+inputs:
+  - { id: wz0oqvonxp, name: entryType, type: string, required: true, description: "Purchase, Sale, Positive Adjmt., Negative Adjmt., Transfer" }
+  - { id: vz3ftdzeoc, name: itemNo, type: string, required: true }
+  - { id: fgaq3kdaar, name: variantCode, type: string, nullable: true }
+  - { id: ljoevk8w6j, name: locationCode, type: string, required: true }
+  - { id: qmawvgfi3y, name: quantity, type: decimal, required: true, description: negative for outbound }
+  - { id: oehmz23fxc, name: documentNo, type: string, required: true }
+  - { id: i22o9rz0we, name: unitCost, type: decimal, nullable: true }
+  - { id: p4slernw7t, name: appliesToEntry, type: int, nullable: true }
+outputs:
+  - { id: ffvcqxc3vh, name: itemLedgerEntryNo, type: int }
+fails:
+  - { name: itemBlocked, description: the item is blocked }
+  - { name: variantRequired, description: the item has variants and none was given }
+  - { name: insufficientInventory, description: outbound quantity exceeds the inventory at the location }
+steps:
+  - { read: edi8izn1qa, with: itemNo, gets: item }
+  - if: item.blocked
+    then:
+      - { fail: itemBlocked }
+  - { read: qokf6rurzg, with: itemNo, gets: variants }
+  - if: variants exist and variantCode is blank
+    then:
+      - { fail: variantRequired }
+  - if: quantity < 0
+    then:
+      - { read: c35ejweexz, with: "open inbound entries for item, variant, location", gets: inventory }
+      - if: inventory < -quantity
+        then:
+          - { fail: insufficientInventory }
+      - { write: c35ejweexz, note: "apply to open inbound entries, oldest first (or to appliesToEntry); close those used up" }
+  - { write: z3s5srw5r2, note: "insert entry with the next entry no." }
+  - { write: qq1p83ss5p, note: "insert value entry: cost (actual for adjustments and receipts, expected for shipments)" }
+  - { return: itemLedgerEntryNo }

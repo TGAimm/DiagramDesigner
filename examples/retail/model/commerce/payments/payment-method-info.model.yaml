@@ -1,0 +1,7 @@
+id: ie4ybkea6i
+ownedBy: ybylhi4dg2
+name: Payment Method Info
+fields:
+  - { id: ku2vdnwecx, name: paymentInterface, type: string, nullable: true, constraints: ["one of: stripe"] }  # GAP: enum
+  - { id: ywcl4gj6l7, name: method, type: string, nullable: true, constraints: ["one of: card, mobilepay, klarna, swish, vipps, giftcard"] }  # GAP: enum
+  - { id: kmh76jqowk, name: name, type: LocalizedString, nullable: true }

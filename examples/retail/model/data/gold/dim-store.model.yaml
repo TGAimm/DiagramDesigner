@@ -1,0 +1,13 @@
+id: j7u638ho8v
+ownedBy: d0jfpet25d
+storedIn: d0jfpet25d
+name: dim_store
+fields:
+  - { id: b9k4oabttz, name: store_sk, type: int, pk: true, constraints: ["-1 = no store (web orders)"] }
+  - { id: uc0pp2x7nr, name: store_key, type: string, required: true, from: [d3vg1yf3fk] }
+  - { id: gnnq80ufbx, name: name, type: string, required: true, from: [tm5zxi5ukq] }
+  - { id: hcp5bii3ug, name: city, type: string, required: true, from: [upi2kwvs5q] }
+  - { id: gmp6n7s8nx, name: country, type: string, required: true, from: [hvyiosb8pv] }
+  - { id: u8il1ir17i, name: erp_location_code, type: string, required: true, from: [fvr4fq2kkc] }
+  - { id: wl7u7smjrr, name: click_collect_enabled, type: bool, required: true, from: [un8xhfa2r3] }
+  - { id: wyirdouusx, name: is_open, type: bool, required: true, from: [mgdf8elxmd] }

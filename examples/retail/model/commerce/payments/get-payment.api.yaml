@@ -1,0 +1,12 @@
+id: uxmnh3i48b
+parent: ybylhi4dg2
+name: Get payment
+method: GET
+path: /{projectKey}/payments/{id}
+auth: "bearer (view_payments)"
+params:
+  - { id: oryp10ubc2, name: projectKey, in: path, type: string, description: fjeld-prod }
+  - { id: rn7x9h0al8, name: id, in: path, type: uuid }
+responses:
+  - { status: 200, model: ucmgflrykd }
+  - { status: 404, description: ResourceNotFound }

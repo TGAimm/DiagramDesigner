@@ -1,0 +1,14 @@
+id: hxgepxoakp
+ownedBy: f6x7dhgzlz
+name: Return Item
+fields:
+  - { id: xwv3uj0wub, name: id, type: uuid, required: true }
+  - { id: yedl39qopg, name: key, type: string, nullable: true, constraints: [= returns portal RMA line] }
+  - { id: my64iz1eh2, name: type, type: string, required: true, constraints: ["one of: LineItemReturnItem, CustomLineItemReturnItem"] }  # GAP: enum
+  - { id: oc8qs46mf2, name: lineItemId, type: uuid, required: true, ref: c9xmzjnpp8 }
+  - { id: jtowx3ssf5, name: quantity, type: int, required: true, constraints: [min 1] }
+  - { id: p6xxbhzhov, name: comment, type: string, nullable: true }
+  - { id: g11vzl4rwo, name: shipmentState, type: string, required: true, constraints: ["one of: Advised, Returned, BackInStock, Unusable"] }  # GAP: enum
+  - { id: kcdu2qz2wz, name: paymentState, type: string, required: true, constraints: ["one of: NonRefundable, Initial, Refunded, NotRefunded"] }  # GAP: enum
+  - { id: bm8e1iv9x7, name: createdAt, type: datetime, required: true }
+  - { id: hytho2kp8c, name: lastModifiedAt, type: datetime, required: true }

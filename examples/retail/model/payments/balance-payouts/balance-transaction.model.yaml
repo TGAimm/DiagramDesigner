@@ -1,0 +1,25 @@
+id: te75334qto
+ownedBy: vuo50id8ln
+storedIn: sox2v1ykga
+name: BalanceTransaction
+fields:
+  - { id: qb2q7z19dc, name: id, type: string, pk: true, constraints: ["prefix txn_"] }
+  - { id: qcebp0k7a8, name: amount, type: int, required: true, from: [fp5046rr6t, noo838prte], derived: "gross, signed: + charge, - refund; a payout row is - the payout amount" }
+  - { id: tlyd5xmf5c, name: fee, type: int, required: true, constraints: ["Stripe fee, minor units"] }
+  - { id: kw8he4reox, name: net, type: int, required: true, from: [qcebp0k7a8, tlyd5xmf5c], derived: amount - fee }
+  - { id: kti9cnks25, name: currency, type: string, required: true, constraints: ["settlement currency: dkk"] }
+  - { id: exuua2wgil, name: exchange_rate, type: decimal, nullable: true, constraints: ["set when the charge currency is not dkk"] }
+  - { id: yns2e2eoou, name: type, type: string, required: true, constraints: ["one of: charge, payment, refund, payment_refund, adjustment, payout, stripe_fee, application_fee, dispute"] }   # GAP: enum
+  - { id: faroj9yrhw, name: reporting_category, type: string, required: true, constraints: ["one of: charge, refund, dispute, payout, fee, other_adjustment"] }   # GAP: enum
+  # GAP: polymorphic reference (ch_, py_, re_, po_, dp_): ref can name one model only, so it names none
+  - { id: oz74t9igb1, name: source, type: string, nullable: true }
+  - { id: mil72fzphw, name: status, type: string, required: true, constraints: ["one of: pending, available"] }   # GAP: enum
+  - { id: t9sefltdh0, name: available_on, type: timestamp, required: true }
+  - { id: ccwgo82vwh, name: description, type: string, nullable: true }
+  - { id: larwbkwjou, name: created, type: timestamp, required: true }
+  # GAP: hidden association: the automatic payout a transaction was paid out in is no field on the object, only a list filter (?payout=)
+  - { id: ickiwbul7m, name: payout, type: string, nullable: true, stored: true, ref: uzfenyzyi8 }
+indexes:
+  - { id: o9eb0dkzic, name: ix_bt_source, fields: [oz74t9igb1] }
+  - { id: gki9es0ieq, name: ix_bt_payout, fields: [ickiwbul7m] }
+  - { id: zo1wzc4udz, name: ix_bt_type_created, fields: [yns2e2eoou, larwbkwjou] }

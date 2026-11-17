@@ -1,0 +1,24 @@
+# Flow 5: the ERP customer is only made on a customer's first order.
+id: a1wq3f2ys6
+parent: w8lrzinusw
+name: ensureErpCustomer
+inputs:
+  - { id: xpmeo9byvb, name: order, model: g5tcad7xx0, required: true }
+outputs:
+  - { id: cfdm2zxy14, name: erpCustomerNo, type: string }
+steps:
+  - if: order.customerId is null (guest)
+    then:
+      - { note: "erpCustomerNo = B2C-GUEST-<country>; the address travels on the order" }
+      - { return: erpCustomerNo }
+  - if: order.custom.erpCustomerNo is set
+    then:
+      - { return: erpCustomerNo }
+  - { call: l3fnnvgsvg, with: "$filter fjeldCommerceCustomerId eq '<customerId>'", gets: customers }
+  - if: none
+    then:
+      - { call: gthq1faetp, with: "where id = order.customerId", gets: customer }
+      - { call: c9xs8f26qx, with: "displayName, billing address, country (picks template B2C-<country>), email, phone, currencyCode", gets: erp customer }
+      - { call: xyxqlr3l4f, with: "fjeldCommerceCustomerId = customer.id (If-Match etag)", gets: erp customer }
+      - { call: n5s9evk4bf, with: "version, setCustomField erpCustomerNo", gets: customer }
+  - { return: erpCustomerNo }

@@ -1,0 +1,27 @@
+# Table 110 Sales Shipment Header: written once by posting, never changed after.
+id: dznaramfzx
+ownedBy: vss7pk1oh5
+storedIn: q43aprn5l0
+name: Sales Shipment Header
+tags: [pii]
+fields:
+  - { id: w9uf1h6oz1, name: no, type: string, pk: true, constraints: ["No. Series SSHIP"] }
+  - { id: wluf8wirig, name: systemId, type: guid, required: true }
+  - { id: ygeu3nwrdy, name: orderNo, type: string, required: true, from: [rgkzrhf9cx] }
+  - { id: s6hyuh0onz, name: sellToCustomerNo, type: string, required: true, ref: iloktksmbd, from: [jxi66gwzsa] }
+  - { id: eyprjxya1v, name: sellToCustomerName, type: string, from: [kcchmko5aq] }
+  - { id: a89bhzza18, name: shipToName, type: string, from: [o5hf9ar6tl] }
+  - { id: a2v2nio75h, name: shipToAddress, type: string, from: [v7bki5knvj] }
+  - { id: gp95j8djdv, name: shipToCity, type: string, from: [is2lk0iyzn] }
+  - { id: o8ukcca3gf, name: shipToPostCode, type: string, from: [w7szlebf82] }
+  - { id: vl5jbht8ww, name: shipToCountryRegionCode, type: string, from: [vu6570igtt] }
+  - { id: gm0tfqpc0k, name: postingDate, type: date, required: true }
+  - { id: fkiklq4iis, name: externalDocumentNo, type: string, from: [ogicbd970k] }
+  - { id: o470lmftnz, name: locationCode, type: string, ref: gsrr00mc9x, from: [xn764vj10c] }
+  - { id: a5aazfmfzn, name: shippingAgentCode, type: string, from: [j3vwm01ky9] }
+  - { id: o3lz6rs12d, name: packageTrackingNo, type: string, from: [py17kpp1a0] }
+  - { id: jwg6bvxs7h, name: lines, model: hqt21ykoll, many: true }
+  - { id: axfbmq6ehf, name: systemModifiedAt, type: datetime, required: true }
+indexes:
+  - { id: sdiaaz9jpz, name: ux_sales_shipment_systemid, fields: [wluf8wirig], unique: true }
+  - { id: h89dn4qkbh, name: ix_sales_shipment_order, fields: [ygeu3nwrdy] }

@@ -1,0 +1,45 @@
+id: vw2khd7qyi
+ownedBy: izc0a89lge
+storedIn: kqjludw0r4
+name: contact
+tags: [pii, b2c]
+fields:
+  - { id: gp3y3t4d1d, name: contactid, type: uuid, pk: true }
+  - { id: if2mlrvh1r, name: firstname, type: string, nullable: true, constraints: [max 50] }
+  - { id: b590a1yfa4, name: lastname, type: string, required: true, constraints: [max 50] }
+  - { id: rf8pnjiicy, name: fullname, type: string, stored: false, from: [if2mlrvh1r, b590a1yfa4], derived: "firstname + ' ' + lastname (Dataverse name format)" }
+  - { id: uunwqf9kfu, name: emailaddress1, type: string, nullable: true, constraints: [max 100, email] }
+  - { id: rvejr5t3yj, name: mobilephone, type: string, nullable: true, constraints: [max 50, E.164] }
+  - { id: eou5yzi7ag, name: birthdate, type: date, nullable: true }
+  - { id: dk1mji9tc5, name: address1_line1, type: string, nullable: true, constraints: [max 250] }
+  - { id: t1wx6todi4, name: address1_line2, type: string, nullable: true, constraints: [max 250] }
+  - { id: mqnnlwxrj2, name: address1_city, type: string, nullable: true, constraints: [max 80] }
+  - { id: owdahbbxyv, name: address1_postalcode, type: string, nullable: true, constraints: [max 20] }
+  # GAP: enum
+  - { id: kf7fvju1z1, name: address1_country, type: string, nullable: true, constraints: ["one of: DK, SE, NO, DE"] }
+  # GAP: polymorphic lookup (parentcustomerid is a Customer lookup: account or contact; ref names one model)
+  - { id: v1rihdgcnm, name: parentcustomerid, type: uuid, nullable: true, ref: kv9n6l36ml }
+  - { id: bxs264j33o, name: fjeld_commercecustomerid, type: string, nullable: true, from: [zhf6a5r56z], derived: uuid as text, constraints: [alternate key, max 100] }
+  - { id: r4139fb0f4, name: fjeld_identityuserid, type: string, nullable: true, from: [pyd47ra3l8], derived: uuid as text, constraints: [max 100] }
+  # GAP: enum
+  - { id: g6wd5evlsf, name: fjeld_loyaltytier, type: string, nullable: true, from: [a5mmzwangy], derived: copied by the loyalty plugin when the tier changes, constraints: ["one of: Basecamp, Trail, Summit"] }
+  - { id: zfzskiajiw, name: fjeld_lifetimevalue, type: decimal, nullable: true, from: [do7q5k7yj2, xar9g43u0g], derived: "sum of fjeld_totalamount_base over the contact's order history, cancelled and fully returned orders left out; nightly", constraints: [money, DKK] }
+  - { id: haxlloxail, name: fjeld_ordercount, type: int, nullable: true, from: [j2wyc1gm9s], derived: "count of order history rows, nightly" }
+  - { id: ih7y93cbv2, name: donotbulkemail, type: bool, required: true, from: [cysebnajl4], derived: "true when the latest commercial email consent is Opted out" }
+  # GAP: enum
+  - { id: d69xwf0z65, name: preferredcontactmethodcode, type: string, nullable: true, constraints: ["one of: Any, Email, Phone, Mail"] }
+  # GAP: enum
+  - { id: bsjywpi9m2, name: statecode, type: string, required: true, constraints: ["one of: Active, Inactive"] }
+  # GAP: enum
+  - { id: u32w7f3td1, name: statuscode, type: string, required: true, constraints: ["one of: Active, Inactive (with statecode)"] }
+  - { id: pj0zs4w4qa, name: masterid, type: uuid, nullable: true, ref: vw2khd7qyi }
+  - { id: z2achf3dnk, name: merged, type: bool, required: true }
+  # GAP: polymorphic lookup (ownerid is a systemuser or team; neither is modelled)
+  - { id: cu4595re2g, name: ownerid, type: uuid, required: true }
+  - { id: bub9p9vhub, name: createdon, type: datetime, required: true }
+  - { id: ea7vpe0hdo, name: modifiedon, type: datetime, required: true }
+indexes:
+  - { id: fdb44jhzu9, name: ak_fjeld_commercecustomerid, fields: [bxs264j33o], unique: true }
+  - { id: c9h6ka5ydg, name: ix_contact_email, fields: [uunwqf9kfu] }
+  - { id: j1m56ywnxv, name: ix_contact_identityuser, fields: [r4139fb0f4] }
+  - { id: v6ltt8ajjr, name: ix_contact_modified, fields: [ea7vpe0hdo] }

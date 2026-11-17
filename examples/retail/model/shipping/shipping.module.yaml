@@ -1,0 +1,6 @@
+id: f8fl9u54jp
+name: Shipping
+meta: { vendor: Shipmondo, product: Shipping API v3 (aggregator; nShift-style), kind: saas, owner: integration-team }
+links:
+  - { label: Shipmondo API v3, url: https://app.shipmondo.com/api/public/v3/specification }
+  - { label: nShift Delivery API, url: https://helpcenter.nshift.com/hc/en-us/categories/4405346353042-Delivery-API }

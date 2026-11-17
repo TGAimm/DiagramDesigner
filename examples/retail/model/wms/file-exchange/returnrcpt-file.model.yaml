@@ -1,0 +1,16 @@
+# GAP: file interface (outbound RETURNRCPT_<ts>.csv: graded returns, one row per item received, read by Integration for refund and credit memo)
+id: gkqoftgixd
+ownedBy: tn4azsu06u
+storedIn: tn4azsu06u
+name: RETURNRCPT_<ts>.csv
+fields:
+  - { id: y21p844d84, name: receipt_id, type: int, pk: true, from: [d95q195bk6] }
+  - { id: i4h007yzfy, name: return_no, type: string, nullable: true, from: [ehqa9kdbss], constraints: [empty for an unannounced return] }
+  - { id: xlw8row70p, name: rma_number, type: string, nullable: true, from: [qmh1m8eyjv] }
+  - { id: dc84wa93wp, name: line_no, type: int, nullable: true, from: [mb8rezow3y] }
+  - { id: whlshuybc7, name: item_no, type: string, required: true, from: [yfuhon49xq] }
+  - { id: dzbpmm0pid, name: qty_received, type: int, required: true, from: [wklehm66vf] }
+  - { id: sh19k8fah0, name: grade, type: string, required: true, from: [og84gaygsx] }
+  - { id: bx6vpk9pys, name: disposition, type: string, required: true, from: [yzgvlm39nw] }
+  - { id: iul8m20lcv, name: note, type: string, nullable: true, from: [z5jmh223ee] }
+  - { id: ax4x2temzn, name: received_at, type: datetime, required: true, from: [kctxzx442o] }

@@ -1,0 +1,24 @@
+id: l0gy9lfxcf
+parent: y5739ri6l0
+name: resetSyncCursor
+handles: [sx6zs6jcwh]
+inputs:
+  - { id: vowmt3ha2b, name: source, type: string, required: true }
+  - { id: xhi0edrcnh, name: entity, type: string, required: true }
+  - { id: vcpbkw7a3x, name: lastModifiedDateTime, type: datetime, required: true }
+outputs:
+  - { id: p39nom6ztz, name: cursor, model: nanvethhnv }
+fails:
+  - { name: notFound, description: unknown source and entity (404) }
+  - { name: locked, description: a run holds the cursor (409) }
+steps:
+  - { read: nanvethhnv, with: "source, entity", gets: cursor }
+  - if: none
+    then:
+      - { fail: notFound }
+  - if: lockedUntil in the future
+    then:
+      - { fail: locked }
+  - { write: nanvethhnv, note: "lastModifiedDateTime, lastError cleared" }
+  - { write: yguluhbf6w, note: "an audit row: who moved which cursor from when to when" }
+  - { return: cursor }

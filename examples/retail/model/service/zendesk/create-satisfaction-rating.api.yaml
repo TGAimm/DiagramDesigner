@@ -1,0 +1,17 @@
+id: l21irab00e
+parent: dodjtgoau2
+name: Create satisfaction rating
+method: POST
+path: /api/v2/tickets/{ticket_id}/satisfaction_rating
+auth: "OAuth bearer (end-user's token, from the CSAT e-mail link)"
+params:
+  - { id: oscarnyo0w, name: ticket_id, in: path, type: int }
+request:
+  fields:
+    - { id: f1agfuky4t, name: satisfaction_rating.score, type: string, required: true, to: [toxjb45ooh], description: good or bad }
+    - { id: z2k6y51uzu, name: satisfaction_rating.comment, type: string, to: [toxjb45ooh], description: free text }
+responses:
+  - status: 200
+    fields:
+      - { id: k2vnix74ku, name: satisfaction_rating, model: rb09clayu8 }
+  - { status: 422, model: zkkh7sjnsz, description: ticket not solved }

@@ -1,0 +1,18 @@
+id: t4lt3x6zr4
+parent: nlc4zljjz8
+name: lookupWebshopOrder
+handles: [pp88xlfmmr]
+inputs:
+  - { id: vmcnkeo54l, name: orderNumber, type: string, required: true }
+  - { id: wqcf2l5wh8, name: email, type: string, required: true }
+outputs:
+  - { id: yoc7vw63ym, name: order, model: tj82h3poo1 }
+fails:
+  - { name: notFound, description: "no order, or the e-mail does not match (404)" }
+steps:
+  - { call: fxxz5v03t0, with: "orderNumber, expand paymentInfo.payments[*]", gets: order }
+  - if: 404 or order.customerEmail is not email (case-insensitive)
+    then:
+      - { fail: notFound }
+  - { note: "map to WebshopOrderView; returnedQuantity from returnInfo" }
+  - { return: order }

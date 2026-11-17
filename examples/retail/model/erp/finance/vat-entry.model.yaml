@@ -1,0 +1,18 @@
+# Table 254 VAT Entry: the base for the DK VAT return and the OSS return.
+id: ymy8r2yqbs
+ownedBy: gob5rrh7wh
+storedIn: q43aprn5l0
+name: VAT Entry
+fields:
+  - { id: c4jn73f8ey, name: entryNo, type: int, pk: true }
+  - { id: gybnle0an7, name: postingDate, type: date, required: true }
+  - { id: iv5do32ive, name: documentNo, type: string, required: true }
+  - { id: rvkyv5n0x8, name: type, type: string, constraints: ["one of: Purchase, Sale, Settlement"] }   # GAP: enum
+  - { id: dfmuzilb79, name: base, type: decimal }
+  - { id: oqqubp6t5m, name: amount, type: decimal }
+  - { id: gooblqodks, name: vatBusPostingGroup, type: string, ref: z5j4u9tg8x }
+  - { id: o52i5dgcrc, name: vatProdPostingGroup, type: string, ref: w1vficcjeb }
+  - { id: oaopeoz6b4, name: countryRegionCode, type: string }
+  - { id: kmi4opqfg6, name: billToPayToNo, type: string }
+  - { id: w97ahijlcv, name: transactionNo, type: int }
+  - { id: x1wzu2qo97, name: closed, type: bool }

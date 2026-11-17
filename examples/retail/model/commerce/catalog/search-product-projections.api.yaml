@@ -1,0 +1,31 @@
+id: o8fu6yl41y
+parent: woc2py521s
+name: Search product projections
+method: GET
+path: /{projectKey}/product-projections/search
+auth: "bearer (view_published_products)"
+params:
+  - { id: nb5ieff3w8, name: projectKey, in: path, type: string, description: fjeld-prod }
+  - { id: hek0y77ehv, name: "text.{locale}", in: query, type: string, required: false, description: full-text search in the locale }
+  - { id: q2a3thlzxv, name: fuzzy, in: query, type: bool, required: false }
+  - { id: fspyw7uv85, name: filter, in: query, type: string, required: false, description: "filters results and facets, e.g. variants.attributes.brand:\"Fjeld\"" }
+  - { id: cmfxfyk76g, name: filter.query, in: query, type: string, required: false }
+  - { id: ndlaxy63u0, name: facet, in: query, type: string, required: false }
+  - { id: hdycwv2yah, name: sort, in: query, type: string, required: false }
+  - { id: uhp298hbqr, name: limit, in: query, type: int, required: false, description: "default 20, max 500" }
+  - { id: ab141lfiv6, name: offset, in: query, type: int, required: false, description: max 10000 }
+  - { id: u4bx96d4fb, name: staged, in: query, type: bool, required: false }
+  - { id: f1wlel7efp, name: priceCurrency, in: query, type: string, required: false }
+  - { id: h39g46ay96, name: priceCountry, in: query, type: string, required: false }
+  - { id: eb6e9vs2fw, name: priceChannel, in: query, type: uuid, required: false }
+  - { id: vdk0yf6bic, name: storeProjection, in: query, type: string, required: false, description: "fjeld-dk, fjeld-se, fjeld-no or fjeld-de" }
+  - { id: rzoadov28y, name: markMatchingVariants, in: query, type: bool, required: false }
+responses:
+  # GAP: paging envelope: limit and offset echo query params, which a response field cannot name in from; left out
+  - status: 200
+    fields:
+      - { id: stuwfqyz83, name: results, model: mr1cjxh8rk, many: true }
+      - { id: efndnup1ct, name: total, type: int, from: [aa7p2zmxzw], derived: count of matches }
+      - { id: flunahxxwb, name: count, type: int, from: [aa7p2zmxzw], derived: number of results in this page }
+      - { id: ub50a6ene4, name: facets, type: "map<facet, {type, terms[] | ranges[] | count}>", from: [b5zlg7995z, o4853v7a28], derived: counts per term or range over the matches }
+  - { status: 400, description: "InvalidInput (bad filter or facet expression)" }

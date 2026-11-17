@@ -1,0 +1,19 @@
+id: hvwnpnh9na
+parent: vsn79avah8
+name: getProduct
+handles: [apypxitd32]
+inputs:
+  - { id: t80nhnp5gy, name: uuid, type: uuid, required: true }
+outputs:
+  - { id: zsdhbjtva2, name: product, model: qitb6ezis6 }
+fails:
+  - { name: notFound, description: "404" }
+steps:
+  - { read: qitb6ezis6, with: uuid, gets: product }
+  - if: none
+    then:
+      - { fail: notFound }
+  - if: with_attribute_options
+    then:
+      - { read: ftmepi2ion, with: option codes in values, gets: labels into linked_data }
+  - { return: product }

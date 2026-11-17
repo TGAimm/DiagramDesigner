@@ -1,0 +1,45 @@
+# Page 50102 FJ Sales Return Orders (insert, receiveAndCreditMemo)
+id: aslu3v133g
+parent: efcxalw7mu
+name: salesReturnOrdersApi
+handles: [fj50ns4hdq, o8dld263pp]
+inputs:
+  - { id: xd12y476t9, name: id, type: guid, nullable: true }
+  - { id: yyuoopujrq, name: originalInvoiceNumber, type: string, nullable: true }
+  - { id: g2wm79u7e1, name: lines, model: zm3yeyn1gr, many: true }
+outputs:
+  - { id: j0sul4x0bd, name: returnOrder, model: ejg622chhy }
+  - { id: sdfeirhxkf, name: creditMemo, model: p5w0ghuarm }
+fails:
+  - { name: invoiceNotFound, description: the original invoice does not exist }
+  - { name: duplicateReturn, description: a return order with this externalDocumentNumber exists }
+  - { name: quantityExceedsInvoice, description: a line returns more than was invoiced less earlier returns }
+  - { name: notFound, description: no return order with this id }
+steps:
+  - if: receiveAndCreditMemo
+    then:
+      - { read: ejg622chhy, with: "Return Order, id", gets: returnOrder }
+      - if: not found
+        then:
+          - { fail: notFound }
+      - { call: a1s8fyvt2r, with: returnOrder.no, gets: creditMemo }
+      - { return: creditMemo }
+  - { read: v9er9w3t9v, with: originalInvoiceNumber, gets: invoice }
+  - if: invoice not found
+    then:
+      - { fail: invoiceNotFound }
+  - { read: ogicbd970k, with: "Return Order, externalDocumentNumber", gets: existing }
+  - if: existing found
+    then:
+      - { fail: duplicateReturn }
+  - { write: ejg622chhy, note: "insert Return Order; no. from series SRO; customer, currency, price group copied from the invoice; appliesToDocNo = invoice" }
+  - each: line in lines
+    do:
+      - { read: rd7sjmorm0, with: "invoice no., invoiceLineSequence", gets: invoice line }
+      - { read: ev3z8sxglr, with: "earlier credit memos for the invoice", gets: already returned }
+      - if: quantity > invoice line quantity - already returned
+        then:
+          - { fail: quantityExceedsInvoice }
+      - { write: i09cr44p1c, note: "insert Return Order line; unit price and discount from the invoice line; returnQtyToReceive = quantity" }
+  - { call: nrqpqup513, with: "Return Order, no.", gets: header }
+  - { return: returnOrder }

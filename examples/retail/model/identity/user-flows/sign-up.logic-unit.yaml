@@ -1,0 +1,41 @@
+id: uh8cyhr6je
+parent: dsa7av53v5
+name: signUp
+inputs:
+  - { id: qd13q4gq12, name: flow, model: ctuxygbaj9, required: true }
+  - { id: xyadbezvi5, name: app, model: yrqt9pcc7g, required: true }
+outputs:
+  - { id: sn3kcgihwm, name: user, model: nozb9f6rc0 }
+fails:
+  - { name: alreadyExists, description: the email has an account; offer sign-in }
+  - { name: blocked, description: the extension answered showBlockPage }
+  - { name: extensionFailed, description: "the extension did not answer 200 in time; the shopper sees an error and can retry" }
+steps:
+  - { note: "page 1: email; or a social provider from flow.onAuthenticationMethodLoadStart" }
+  - { read: u24xst6unw, with: "issuer fjeldid.onmicrosoft.com, issuerAssignedId email", gets: existing }
+  - if: existing
+    then:
+      - { fail: alreadyExists }
+  - { note: "send a one-time code to the email; the shopper enters it (email verified)" }
+  - { note: "page 2: password, then the attributes in flow.onAttributeCollection.attributes, in the shopper's locale" }
+  - { read: s9lv74uj34, with: flow.onAttributeCollectionSubmit.customExtension, gets: extension }
+  - if: flow has an attribute-collection-submit extension
+    then:
+      - { note: "build AttributeCollectionSubmitRequest; get a token for extension.resourceId" }
+      - { call: yar30cdvas, with: "AttributeCollectionSubmitRequest to extension.targetUrl (Storefront BFF), within timeoutInMilliseconds, maximumRetries", gets: action }
+      - if: no 200 in time
+        then:
+          - { fail: extensionFailed }
+      - if: action is showBlockPage
+        then:
+          - { fail: blocked }
+      - if: action is showValidationError
+        then:
+          - { note: "show message and attributeErrors on page 2; the shopper fixes and submits again (loop)" }
+      - if: action is modifyAttributeValues
+        then:
+          - { note: "take attributes from the answer over the collected ones (commerceCustomerId)" }
+  - { write: nozb9f6rc0, note: "insert: collected attributes, accountEnabled true, creationType LocalAccount" }
+  - { write: u24xst6unw, note: "emailAddress identity (or federated for social)" }
+  - { write: jvv29vdigj, note: "now, when marketingConsent is true" }
+  - { return: user }

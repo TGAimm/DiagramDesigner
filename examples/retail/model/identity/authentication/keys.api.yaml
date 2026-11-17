@@ -1,0 +1,13 @@
+id: gqgvy92yr4
+parent: z4a8fcfwai
+name: Signing keys (JWKS)
+method: GET
+path: /{tenant}/discovery/v2.0/keys
+auth: none
+params:
+  - { id: uk542dils8, name: tenant, in: path, type: string }
+responses:
+  - status: 200
+    fields:
+      - { id: b1q2k1dobg, name: keys, model: gsx2w0iahj, many: true }
+  - { status: 404, description: Unknown tenant }

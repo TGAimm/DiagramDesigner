@@ -1,0 +1,23 @@
+id: mr1cjxh8rk
+ownedBy: woc2py521s
+storedIn: c27jabc6tw
+name: Product Projection
+fields:
+  - { id: aa7p2zmxzw, name: id, type: uuid, pk: true, from: [zchid5zayi] }
+  - { id: szhvvsmp4f, name: version, type: long, required: true, from: [el6553deun] }
+  - { id: uqaqpknqg8, name: key, type: string, nullable: true, from: [y0vgavtgc6] }
+  - { id: ct0ma7scaj, name: productType, type: uuid, required: true, ref: ot7coaln4t, from: [wp8uvw4o9v] }
+  - { id: ez2hw75s1w, name: name, type: LocalizedString, required: true, from: [huyilro2b9], derived: "current, or staged when ?staged=true; only locales asked for with localeProjection" }
+  - { id: mkdgmqqqdq, name: description, type: LocalizedString, nullable: true, from: [v6uo25nnmi] }
+  - { id: h079linx9w, name: slug, type: LocalizedString, required: true, from: [gw8rv1dzbo] }
+  - { id: lluzym68rv, name: categories, type: uuid, many: true, ref: nfhbnrj8ng, from: [jk1nv0r5mp] }
+  - { id: ib9bt37z4w, name: metaTitle, type: LocalizedString, nullable: true, from: [mhv7ikbma4] }
+  - { id: gqoem2zpqa, name: searchKeywords, type: "map<locale, {text}[]>", nullable: true, from: [ri06kq4cd6] }
+  - { id: vt2sbeysn0, name: masterVariant, model: zey11c3zfk, required: true, from: [h1rdhrnd74], derived: "prices filtered to one scoped price with priceCurrency/priceCountry/priceChannel" }
+  - { id: mj8t14b7my, name: variants, model: zey11c3zfk, many: true, from: [h4ytihxxz6] }
+  - { id: sd26488jxz, name: taxCategory, type: uuid, nullable: true, ref: yzii05r372, from: [hfjcbtj15y] }
+  - { id: ky8y47imz9, name: published, type: bool, required: true, from: [s4wl996ngt] }
+  - { id: ja2h577z6s, name: hasStagedChanges, type: bool, required: true, from: [kj8xtiktza] }
+  - { id: cfynkgc2fz, name: lastModifiedAt, type: datetime, required: true, from: [halk2wxidg] }
+indexes:
+  - { id: h9982ki0df, name: ix_projection_slug, fields: [h079linx9w] }

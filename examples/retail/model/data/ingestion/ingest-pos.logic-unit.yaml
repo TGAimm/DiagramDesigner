@@ -1,0 +1,17 @@
+# GAP: scheduled trigger
+id: cdw4a9jf6q
+parent: oyqmyb5nc3
+name: ingestPos
+meta: { schedule: "0 2 * * *", pipeline: pl_ingest_pos, note: "after the stores' Z-reports have closed the business day" }
+inputs: []
+outputs: []
+steps:
+  - { read: qhfxfz0h8j, with: "source_system = pos, source_object = receipts", gets: last business day }
+  - { call: eyk06ixi2l, gets: stores }
+  - { write: tvu2dmay18, note: MERGE on id }
+  - each: store and business day after the watermark, up to yesterday
+    do:
+      - { call: tp4ijb3abm, with: "storeNo, businessDay, pageSize=200, page", gets: receipts }
+      - { write: w9k21lsudl, note: MERGE on id }
+      - { write: xhhmfktmbw, note: "receipt lines exploded, MERGE on id" }
+  - { write: axtovqyj39, note: yesterday }

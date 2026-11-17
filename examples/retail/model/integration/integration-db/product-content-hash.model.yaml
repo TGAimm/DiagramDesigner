@@ -1,0 +1,19 @@
+# Hash of the mapped content last sent per PIM product, so the nightly full sync only
+# re-sends what changed and finds products that disappeared from the export.
+id: yd9iwthx32
+ownedBy: v38tj7w8bg
+storedIn: v38tj7w8bg
+name: sync.ProductContentHash
+fields:
+  - { id: dl9vee7ym6, name: pimUuid, type: uuid, pk: true, from: [gziztcdf03] }
+  - { id: gxaxbysav2, name: sku, type: string, required: true, from: [caehs975j2] }
+  - { id: bbhvrkmawe, name: styleCode, type: string, required: true, from: [fyg4fug865] }
+  - { id: mr7pmtp1pv, name: contentHash, type: string, required: true, from: [yaqlws3v6v, uwfgvbex2u, lk2zshusva, t6owhoapm5, n69fehd02m, cxwo80mec2, cthu6gdr3j, yfgun8lsbs], derived: "SHA-256 of the mapped content, all locales" }
+  - { id: ds9rndqpg8, name: commerceProductId, type: uuid, nullable: true, from: [zchid5zayi] }
+  - { id: eqg0aklxhx, name: commerceVersion, type: long, nullable: true, from: [el6553deun] }
+  - { id: mxqx3iv403, name: lastSyncedAt, type: datetime, required: true }
+  - { id: dtad4xrsrt, name: lastSeenInExport, type: date, required: true }
+  - { id: dcph5xghkm, name: removed, type: bool, required: true }
+indexes:
+  - { id: m33anxd43s, name: ux_contenthash_sku, fields: [gxaxbysav2], unique: true }
+  - { id: hyr3dlsvv7, name: ix_contenthash_style, fields: [bbhvrkmawe] }

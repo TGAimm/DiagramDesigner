@@ -1,0 +1,48 @@
+id: krxscdg8pe
+parent: d8hyu4qiq7
+name: bookShipment
+handles: [d5brhsdbg0]
+inputs:
+  - { id: eocwg3qj1z, name: product_code, type: string, nullable: true }
+  - { id: smz3q0okew, name: receiver, model: grcw7cakmk, required: true }
+  - { id: x7y2hdcs5l, name: parcels, model: x8ugoms0sh, many: true, required: true }
+  - { id: esbql9iiks, name: reference, type: string, required: true }
+  - { id: y3fg871xtc, name: pickup_point_id, type: string, nullable: true }
+outputs:
+  - { id: xrrgbaiqf1, name: shipment, model: o96th79s8y }
+fails:
+  - { name: invalidProduct, description: no product for this route }
+  - { name: servicePointRequired, description: a pickup product without pickup_point_id }
+  - { name: tooHeavy, description: a parcel is over the product's max weight }
+  - { name: carrierRejected, description: the carrier refused the booking }
+steps:
+  - if: product_code is not given
+    then:
+      - { note: "shipping rules: by receiver country and weight, e.g. DK pickup → PDK_MC, DK home → GLS_PRIVATE, SE → PDK_MC (SE), NO → BRING_PNL, DE → DHL_PAKET" }
+  - { read: kpmp1cr4lc, with: product_code, gets: product }
+  - if: no product, or not for sender → receiver country
+    then:
+      - { fail: invalidProduct }
+  - if: product.service_point_required and no pickup_point_id
+    then:
+      - { fail: servicePointRequired }
+  - each: parcel in parcels
+    do:
+      - if: parcel.weight > product.max_weight
+        then:
+          - { fail: tooHeavy }
+  - { write: o96th79s8y, note: "insert, status pending" }
+  - { read: vy1t0d26e3, with: product.carrier_code, gets: "carrier, own agreement and customer number" }
+  # GAP: external API with no system in the design (the carriers' booking APIs: PostNord, GLS, Bring, DAO, DHL Express)
+  - { note: "book with the carrier's API (EDI for DAO), on Fjeld's own agreement where it has one" }
+  - if: carrier refuses
+    then:
+      - { write: o96th79s8y, note: "status error, booking_error" }
+      - { fail: carrierRejected }
+  - each: parcel in parcels
+    do:
+      - { write: x8ugoms0sh, note: "insert with pkg_no and tracking_url from the carrier" }
+  - { write: punlk0tvcx, note: "one per format asked, built from the carrier's label data" }
+  - { write: e2ken4rl8u, note: "status created per parcel" }
+  - { write: dsfx8xs8om, note: booked }
+  - { return: shipment }

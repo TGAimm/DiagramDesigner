@@ -1,0 +1,27 @@
+# Table 17 G/L Entry: append-only; one posting transaction balances to zero.
+id: tmmsilj09u
+ownedBy: gob5rrh7wh
+storedIn: q43aprn5l0
+name: G/L Entry
+fields:
+  - { id: bl4eibz3g0, name: entryNo, type: int, pk: true }
+  - { id: i7lh819mru, name: systemId, type: guid, required: true }
+  - { id: om9b84n3o4, name: glAccountNo, type: string, required: true, ref: ro270d71oh }
+  - { id: oflvbfejmm, name: postingDate, type: date, required: true }
+  - { id: a20gqm9c27, name: documentType, type: string, constraints: ["one of: ' ', Payment, Invoice, Credit Memo, Finance Charge Memo, Reminder, Refund"] }   # GAP: enum
+  - { id: h0ls3k915p, name: documentNo, type: string, required: true }
+  - { id: hsl35z7k1z, name: externalDocumentNo, type: string }
+  - { id: aewk6ff2i8, name: description, type: string }
+  - { id: gqbwwthvko, name: amount, type: decimal, required: true }
+  - { id: nvlibc1004, name: debitAmount, type: decimal, from: [gqbwwthvko], derived: "amount when positive" }
+  - { id: ppq9qr6rcj, name: creditAmount, type: decimal, from: [gqbwwthvko], derived: "-amount when negative" }
+  - { id: v6ti4id2k2, name: vatAmount, type: decimal }
+  - { id: o9ledul23b, name: sourceType, type: string, constraints: ["one of: ' ', Customer, Vendor, Bank Account, Fixed Asset"] }   # GAP: enum
+  - { id: p1368towzc, name: sourceNo, type: string }
+  - { id: kam76mdgc2, name: dimensionSetId, type: int, ref: nbwnn1hmri }
+  - { id: kw5as7krco, name: transactionNo, type: int, required: true }
+  - { id: b3x648qq0g, name: systemModifiedAt, type: datetime, required: true }
+indexes:
+  - { id: w370d2wyxu, name: ix_gl_entry_account_date, fields: [om9b84n3o4, oflvbfejmm] }
+  - { id: keuupgqin5, name: ix_gl_entry_document, fields: [h0ls3k915p, oflvbfejmm] }
+  - { id: avjw6oj84t, name: ix_gl_entry_modified, fields: [b3x648qq0g] }

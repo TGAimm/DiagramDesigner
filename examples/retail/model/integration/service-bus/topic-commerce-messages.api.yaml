@@ -1,0 +1,17 @@
+# Publisher: the Commerce Subscription (destination AzureServiceBus). Subscriptions: integration-router.
+id: eklte5q4cf
+parent: g55sb0eqd6
+name: Topic commerce-messages
+method: POST
+path: /topics/commerce-messages
+auth: "Entra ID managed identity (Azure Service Bus Data Sender), or SAS key with Send (Commerce Subscription)"
+params:
+  - { id: v34l96pdog, name: BrokerProperties, in: header, type: json, required: false, description: "MessageId, CorrelationId, Label, ScheduledEnqueueTimeUtc" }
+request: { model: r36jmkzojw }
+responses:
+  - { status: 201, description: Enqueued }
+  - { status: 400, description: Malformed body or properties }
+  - { status: 401, description: Missing or expired token }
+  - { status: 403, description: "Quota exceeded, or message over 256 KB" }
+  - { status: 410, description: The topic or queue does not exist }
+  - { status: 503, description: "Busy (throttled): retry with backoff" }

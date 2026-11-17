@@ -1,0 +1,23 @@
+# lineItems exploded out of the order document, one row per line item.
+id: ueunlh95mg
+ownedBy: ar9pfoadj7
+storedIn: ar9pfoadj7
+name: commerce_order_line
+fields:
+  - { id: qdoweb3twc, name: order_id, type: uuid, pk: true, ref: wcuyzzwo11, from: [qazi456zfm] }
+  - { id: n6bazj54yq, name: line_item_id, type: uuid, pk: true, from: [c9xmzjnpp8] }
+  - { id: jxbgzgx3fi, name: product_id, type: uuid, from: [amrxr25tzn] }
+  - { id: zjx6vqduwv, name: product_key, type: string, nullable: true, from: [ibpdw4zlak] }
+  - { id: u0gic56npn, name: sku, type: string, from: [mfm2nwfwft, c1uzjurwuu], derived: variant.sku }
+  - { id: yh7g915n2q, name: name_en, type: string, from: [tzgfqq0q8b], derived: "name['en-GB']" }
+  - { id: szlehcq2au, name: quantity, type: int, from: [ae7tr09nmb] }
+  - { id: vnicirik8t, name: unit_price_cent_amount, type: long, from: [bctto5wq1y, o4853v7a28, oylo8sfbus], derived: "price.value.centAmount (gross, before cart discounts)" }
+  - { id: wuuxkmvqpg, name: total_cent_amount, type: long, from: [mh5uizwxp4, oylo8sfbus], derived: "totalPrice.centAmount (gross, after discounts)" }
+  - { id: m9gfwe0806, name: currency_code, type: string, from: [mh5uizwxp4, n8mwhpvdh9], derived: totalPrice.currencyCode }
+  - { id: kqoc2q1rsw, name: tax_rate, type: decimal, from: [oab1g1w2xd], derived: taxRate.amount }
+  - { id: vdkk5yfa7e, name: supply_channel, type: uuid, nullable: true, from: [k1q2bof4we] }
+  - { id: mo615pjqzy, name: line_item_mode, type: string, from: [dads2hzct3] }
+  - { id: p46eq4qis4, name: added_at, type: datetime, from: [rumgwwtf0e] }
+  - { id: qp4bxsr3oc, name: _loaded_at, type: datetime, required: true }
+  - { id: wky2l14m0e, name: _source, type: string, required: true, constraints: ["commerce/orders.lineItems"] }
+  - { id: c3ep6go1j4, name: _batch_id, type: string, required: true }

@@ -1,0 +1,9 @@
+# GAP: embedded document: commercetools keeps nested objects inside the resource's JSON document; the schema can only say "held model, its own table"
+id: jriykyt3n4
+ownedBy: woc2py521s
+name: Product Catalog Data
+fields:
+  - { id: s4wl996ngt, name: published, type: bool, required: true }
+  - { id: kj8xtiktza, name: hasStagedChanges, type: bool, required: true }
+  - { id: bhkkpvg1xc, name: current, model: f4k1ljvlhl, required: true }
+  - { id: a5faw68iwv, name: staged, model: f4k1ljvlhl, required: true }

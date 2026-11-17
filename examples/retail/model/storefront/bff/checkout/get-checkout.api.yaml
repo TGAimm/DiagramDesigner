@@ -1,0 +1,9 @@
+id: s9a7yaz3bg
+parent: a2x6k1ux7z
+name: Checkout
+method: GET
+path: /api/checkout
+auth: session cookie fj_sid
+responses:
+  - { status: 200, model: c5wtilu6sm }
+  - { status: 409, description: the cart is empty }

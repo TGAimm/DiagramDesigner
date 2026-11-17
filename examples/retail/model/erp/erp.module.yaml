@@ -1,0 +1,9 @@
+id: s7eejjfr7l
+name: ERP
+tags: [bought]
+links:
+  - { label: Business Central API v2.0, url: "https://learn.microsoft.com/en-us/dynamics365/business-central/dev-itpro/api-reference/v2.0/" }
+  - { label: Developing a custom API, url: "https://learn.microsoft.com/en-us/dynamics365/business-central/dev-itpro/developer/devenv-develop-custom-api" }
+  - { label: Delta queries and webhooks, url: "https://learn.microsoft.com/en-us/dynamics365/business-central/dev-itpro/api-reference/v2.0/dynamics-subscriptions" }
+  - { label: Job queues, url: "https://learn.microsoft.com/en-us/dynamics365/business-central/admin-job-queues-schedule-tasks" }
+meta: { vendor: Microsoft, product: Dynamics 365 Business Central, kind: saas, owner: erp-team, apiVersion: "v2.0", company: "Fjeld Outdoor A/S (one company; DK, SE, NO, DE sold in their currencies under OSS)", lcy: DKK, extension: "Fjeld Integration (per-tenant extension, publisher fjeld)" }

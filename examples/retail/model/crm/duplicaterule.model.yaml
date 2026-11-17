@@ -1,0 +1,15 @@
+# GAP: configuration records (the rules Fjeld runs, "Contacts with the same e-mail" and "Contacts with the same mobile phone", are rows, not types; the schema has no instances)
+id: ebqcdh4t1d
+ownedBy: wh40r2i41o
+storedIn: kqjludw0r4
+name: duplicaterule
+fields:
+  - { id: hub86in22s, name: duplicateruleid, type: uuid, pk: true }
+  - { id: dnxvmcsjvq, name: name, type: string, required: true }
+  - { id: kerpjpl4w1, name: baseentityname, type: string, required: true, constraints: [table logical name] }
+  - { id: ezbqwjksh2, name: matchingentityname, type: string, required: true }
+  - { id: dsiak1gyk3, name: iscasesensitive, type: bool, required: true }
+  - { id: lizf7s175w, name: excludeinactiverecords, type: bool, required: true }
+  # GAP: enum
+  - { id: gmltkqmrvk, name: statecode, type: string, required: true, constraints: ["one of: Inactive, Active (published)"] }
+  - { id: ipkuvnwfbe, name: conditions, model: u2sm9s43t6, many: true }

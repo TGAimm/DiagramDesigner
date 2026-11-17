@@ -1,0 +1,19 @@
+# What Integration last sent to Commerce per price. The ERP delta cannot report a deleted
+# price list line, so the nightly full sync compares the full read with this table.
+id: dcsafzlsgm
+ownedBy: v38tj7w8bg
+storedIn: v38tj7w8bg
+name: sync.PriceMirror
+fields:
+  - { id: a286qa7i7s, name: sku, type: string, pk: true, from: [rkjvkv9x3b, wm2ctpbax6], derived: "item no. + '-' + variant code" }
+  - { id: algbm4f78x, name: priceListCode, type: string, pk: true, from: [m8xb6ceh1z], constraints: ["WEB-DKK, WEB-SEK, WEB-NOK, WEB-EUR, CAMPAIGN-<code>, STORE-<currency>"] }
+  - { id: sf56g7r3nh, name: currency, type: string, required: true, from: [dr41csivdn] }
+  - { id: js7zuo3xwf, name: erpLineSystemId, type: guid, required: true, from: [t4amrq5aak] }
+  - { id: lhicnuccqb, name: unitPrice, type: decimal, required: true, from: [kqip2xr4t7] }
+  - { id: fwu4x5q75f, name: startingDate, type: date, nullable: true, from: [ck1kd7z8q8] }
+  - { id: x2bsaxi105, name: endingDate, type: date, nullable: true, from: [frlq0a7tky] }
+  - { id: r5y7ra0kd7, name: commercePriceId, type: uuid, nullable: true, from: [jo9o42wafl] }
+  - { id: ivfz6q40kk, name: lastSeenRun, type: date, required: true, constraints: [night of the last full read that still had the line] }
+  - { id: y9johet9pc, name: sentAt, type: datetime, required: true }
+indexes:
+  - { id: btwss8glkm, name: ix_pricemirror_last_seen, fields: [ivfz6q40kk] }

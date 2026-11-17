@@ -1,0 +1,11 @@
+id: no7a3ieq3i
+ownedBy: d0jfpet25d
+storedIn: d0jfpet25d
+name: dim_geography
+fields:
+  - { id: tudxv1xefc, name: geography_sk, type: int, pk: true }
+  - { id: ee13flbfmv, name: country_code, type: string, required: true, from: [lwl2uyf7r1, mwi07f19ww, hvyiosb8pv], derived: distinct values }
+  - { id: vcqdm75ulx, name: postal_area, type: string, required: true, from: [tw47z03mne, ssqemd6hnd], derived: "first 2 digits of the postal code (DK, NO: first 2 of 4; SE: first 3 of 5; DE: first 2 of 5)" }
+  - { id: iq1zz29vd2, name: country_name, type: string, required: true }
+  - { id: vhr32z2zxv, name: region, type: string, required: true, constraints: ["Nordics, DACH"] }
+  - { id: hmr67xd0xh, name: currency, type: string, required: true, from: [x8ja645hr5], derived: "the country's selling currency" }

@@ -1,0 +1,18 @@
+id: srqayj3ctw
+parent: yzg8gfwzwo
+name: Create a customer
+method: POST
+path: /v1/customers
+auth: bearer (secret key)
+request:
+  contentType: application/x-www-form-urlencoded
+  fields:
+    - { id: du7nm6j4s2, name: email, type: string, to: [kqt4y5d9hx] }
+    - { id: ar69fvufh5, name: name, type: string, to: [xx8dwdsarj] }
+    - { id: wiirkaes11, name: phone, type: string, to: [wpwpc1nhm9] }
+    - { id: cwhgbsqcfl, name: address, model: efxi7uugd5 }
+    - { id: go8jdbj6j6, name: "preferred_locales[]", type: string, many: true, to: [bvu4jg9p8w] }
+    - { id: sbdmvgns86, name: "metadata[commerce_customer_id]", type: string, to: [ic1ogbz56i] }
+responses:
+  - { status: 200, model: b55i3wbaym, description: Created }
+  - { status: 400, model: pwpsr0fyli, description: invalid_request_error }

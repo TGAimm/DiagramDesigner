@@ -1,0 +1,13 @@
+id: u52qy7r7cz
+ownedBy: woc2py521s
+storedIn: rrg5e7natg
+name: Product Type
+fields:
+  - { id: ot7coaln4t, name: id, type: uuid, pk: true }
+  - { id: zxruh5bqoz, name: version, type: long, required: true }
+  - { id: l9mv7p75ux, name: key, type: string, nullable: true, constraints: ["= PIM family code, e.g. jackets, tents, footwear"] }
+  - { id: zw1zl86w61, name: name, type: string, required: true }
+  - { id: hoqcwmtn9n, name: description, type: string, required: true }
+  - { id: ks2e6s2n18, name: attributes, model: j6sb5rcvta, many: true }
+indexes:
+  - { id: g5yw9vfj2a, name: ux_product_type_key, fields: [l9mv7p75ux], unique: true }

@@ -1,0 +1,15 @@
+# Fjeld: product_images (packshots, linked to products by naming convention {sku}-{index}.jpg),
+# size_guides (one PDF per family and fit).
+id: nhxf6w0xjq
+ownedBy: t9ah36fepl
+storedIn: r1xvgi7bie
+name: Asset Family
+fields:
+  - { id: b87u64269r, name: code, type: string, pk: true, required: true }
+  - { id: x33pmbpsly, name: labels, type: "map<locale, string>" }
+  - { id: aoq5xjzz28, name: attribute_as_main_media, type: string, required: true, constraints: [an asset attribute of type media_file or media_link] }
+  - { id: wpqz5qsvxf, name: naming_convention, type: json, nullable: true, constraints: ["{source, pattern, abort_asset_creation_on_error}"] }
+  - { id: af7c8itxn2, name: product_link_rules, type: json, many: true, constraints: ["[{product_selections, assign_assets_to}]"] }
+  - { id: k4klckncxl, name: transformations, type: json, many: true, constraints: ["thumbnails and web renditions"] }
+# GAP: asset family attributes (media_file, text, option ...) are their own entity in Akeneo;
+# not modelled, Asset Value names them by code only.

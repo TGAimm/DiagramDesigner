@@ -1,0 +1,15 @@
+id: mosg8tbkzd
+parent: vsn79avah8
+name: Update or create product model
+method: PATCH
+path: /api/rest/v1/product-models/{code}
+auth: bearer
+params:
+  - { id: o3oo811ob6, name: code, in: path, type: string }
+request: { model: aukbkxsjc3, omit: [csa02hlebc, hnlzp42nxi] }
+responses:
+  - { status: 201, description: "Created, no body" }
+  - { status: 204, description: "Updated, no body" }
+  - { status: 400, description: Malformed JSON }
+  - { status: 401, description: Missing or expired token }
+  - { status: 422, description: Validation failed }

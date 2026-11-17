@@ -1,0 +1,22 @@
+id: u1pinbbcyz
+ownedBy: z4a8fcfwai
+name: IdTokenClaims
+tags: [pii]
+fields:
+  - { id: jchiu3g6bt, name: iss, type: string, required: true, from: [gcu3ue2h17] }
+  - { id: rjaf78q2jl, name: aud, type: string, required: true, from: [rii92gdhxd] }
+  - { id: uv4brhwrj7, name: sub, type: string, required: true, from: [pyd47ra3l8, rii92gdhxd], derived: "pairwise: differs per app for one user" }
+  - { id: bjin99rbt4, name: oid, type: uuid, required: true, from: [pyd47ra3l8] }
+  - { id: yj3z3ff2mj, name: tid, type: uuid, required: true, from: [rknpht5c6k] }
+  - { id: ubrpb99xdq, name: nonce, type: string, required: true, from: [ettxkdy4me] }
+  - { id: dgw1h5irg7, name: iat, type: int, required: true }
+  - { id: m1zjyukx70, name: exp, type: int, required: true, constraints: ["iat + 1 h"] }
+  - { id: sduatgse73, name: auth_time, type: int }
+  - { id: rallfm674w, name: idp, type: string, nullable: true, from: [eyjva2j1i9], derived: "only for social sign-in" }
+  - { id: aotdzxokwb, name: email, type: string, nullable: true, from: [bwvqltczxj] }
+  - { id: fbdxbz2s0z, name: name, type: string, from: [z2ki6fbhiv] }
+  - { id: ovhx9mbhg7, name: given_name, type: string, nullable: true, from: [rg79eelcd5] }
+  - { id: i02ztbf2c3, name: family_name, type: string, nullable: true, from: [gaf9qlyk35] }
+  - { id: kf66cp6esl, name: ctry, type: string, nullable: true, from: [mocqzowc3c], derived: "display name to ISO 3166 alpha-2" }
+  - { id: amummm21bl, name: commerce_customer_id, type: string, nullable: true, from: [x0p9drrvt5], derived: claims mapping on the app registration }
+  - { id: t1qxsuftux, name: marketing_consent, type: bool, nullable: true, from: [o0a4plawj8], derived: claims mapping on the app registration }

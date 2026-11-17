@@ -1,0 +1,18 @@
+# GAP: batch request (the body is a multipart/mixed list of other api requests, in change sets that commit together; it cannot name the apis it carries)
+id: u5hmmuub8w
+parent: wh40r2i41o
+name: Batch
+method: POST
+path: /api/data/v9.2/$batch
+auth: OAuth 2.0 bearer (Entra ID app registration)
+params:
+  - { id: x62t1q49mr, name: Prefer, in: header, type: string, required: false, description: odata.continue-on-error }
+request:
+  contentType: multipart/mixed
+  fields:
+    - { id: l9i6kzqgyo, name: changesets, model: vw2khd7qyi, many: true, description: "multipart/mixed changesets of up to 1000 requests each; Integration sends PATCH upserts of contacts (and of order history)" }
+responses:
+  - status: 200
+    contentType: multipart/mixed
+    description: "one HTTP response per request, in order"
+  - { status: 400, model: blqvorzt9x, description: malformed batch }

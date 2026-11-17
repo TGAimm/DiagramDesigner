@@ -1,0 +1,4 @@
+id: ft040pevh9
+parent: mleccno0ev
+name: Webhook receivers
+meta: { functionApp: func-fjeld-webhooks, runtime: ".NET 8 isolated", plan: Premium EP1 }

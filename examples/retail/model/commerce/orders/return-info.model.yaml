@@ -1,0 +1,7 @@
+id: tali50v4jz
+ownedBy: f6x7dhgzlz
+name: Return Info
+fields:
+  - { id: uahy9unled, name: items, model: hxgepxoakp, many: true, required: true }
+  - { id: k9xg47afey, name: returnTrackingId, type: string, nullable: true }
+  - { id: fvck32zjzd, name: returnDate, type: datetime, nullable: true }

@@ -1,0 +1,23 @@
+# API page 30012 APIV2 - Sales Invoices (entity salesInvoice), posted invoices only here.
+id: y4izto0ijr
+ownedBy: wyb51ibopv
+name: salesInvoice (API)
+tags: [pii]
+fields:
+  - { id: fxepii2x1g, name: id, type: guid, from: [iblbkf2pyw] }
+  - { id: xglupncpbb, name: number, type: string, from: [p4ya5jzozb] }
+  - { id: fk59iks2nj, name: externalDocumentNumber, type: string, from: [lhxtnflzkl] }
+  - { id: ddeply5jc7, name: invoiceDate, type: date, from: [dl8l9uhstg] }
+  - { id: jlg3rx3b75, name: postingDate, type: date, from: [ar5ufoev36] }
+  - { id: w11hocqbn2, name: dueDate, type: date, from: [gu84gmfg6m] }
+  - { id: j1abw0pdl5, name: customerNumber, type: string, from: [igi5a1f5uk] }
+  - { id: hzcp6jf1p9, name: customerName, type: string, from: [tpfevxh7q1] }
+  - { id: ur2t8j2xds, name: orderNumber, type: string, from: [dxas00756t] }
+  - { id: d3thnlbqer, name: currencyCode, type: string, from: [a1ba18266e] }
+  - { id: j0bv007w3b, name: pricesIncludeTax, type: bool, from: [k2kcq3n7py] }
+  - { id: pz99ke4c2b, name: totalAmountExcludingTax, type: decimal, from: [min3kqho0l] }
+  - { id: r6oymvsy1p, name: totalTaxAmount, type: decimal, from: [wqrdxzjvdh, min3kqho0l], derived: "amountIncludingVat - amount" }
+  - { id: y3blawr65a, name: totalAmountIncludingTax, type: decimal, from: [wqrdxzjvdh] }
+  - { id: ftj28gpbd4, name: remainingAmount, type: decimal, from: [x1z1c1d32z] }
+  - { id: qwp9x7cwpy, name: status, type: string, from: [x1z1c1d32z, uiep5eggxd], derived: "Canceled when cancelled, Paid when remainingAmount = 0, else Open" }
+  - { id: xveza7k6xh, name: lastModifiedDateTime, type: datetime, from: [jfueo7u2kz] }

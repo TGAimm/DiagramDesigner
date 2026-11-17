@@ -1,0 +1,14 @@
+id: t9d49kjuut
+parent: wh40r2i41o
+name: detectDuplicates
+inputs:
+  - { id: ivvlsi1su2, name: candidate, model: vw2khd7qyi, required: true }
+outputs:
+  - { id: yczp2xxo1r, name: matches, model: vw2khd7qyi, many: true }
+steps:
+  - { read: ebqcdh4t1d, with: "baseentityname = contact, statecode = Active", gets: rules with their conditions }
+  - each: published rule
+    do:
+      - { note: "build a match code from the candidate per condition (e-mail exact, mobile phone last 8 digits)" }
+      - { read: vw2khd7qyi, with: "match code, statecode = Active", gets: rule matches }
+  - { return: matches }

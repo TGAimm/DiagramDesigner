@@ -1,0 +1,10 @@
+# One Direct Lake semantic model over gold: the dims and facts are its tables, measures live in
+# the _Measures table.
+# GAP: row-level security - role StoreManager filters dim_store[store_key] to the signed-in
+# user's store (USERPRINCIPALNAME() looked up in a security table); a row filter on a model has
+# no place in the schema.
+id: toy346x26m
+parent: wmz797zr34
+name: Fjeld Sales semantic model
+meta: { mode: Direct Lake, datasetId: "7c1e5b9a-3f0d-4c2e-9a61-2b8f0e4d7a13", rls: "StoreManager, Finance (all rows)" }
+models: [yv9c2ik117, dihqzxsjgl, j7u638ho8v, qlntrhv9zx, pg9z87iutw, no7a3ieq3i, jogoyx9y7y, tb9l4es1im, hpko1dlz2s, zbqliu1qyj, jfxjfy6y2t, nr0aq1hjrv, g6f9axlg7k]

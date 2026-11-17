@@ -1,0 +1,14 @@
+id: x3sx7t0bnz
+parent: ffmcq3ieun
+name: onSaveProfile
+inputs:
+  - { id: oxeby347mm, name: changes, type: "{firstName, lastName, dateOfBirth, locale}", nullable: true }
+  - { id: syb1brn4pk, name: newAddress, model: b8rzoiyo20, nullable: true }
+outputs: []
+steps:
+  - if: newAddress
+    then:
+      - { call: ylvrtxfjqt, with: newAddress, gets: profile }
+    else:
+      - { call: qczxb1q4s5, with: changes, gets: profile }
+  - { note: "show Saved, or the field errors" }

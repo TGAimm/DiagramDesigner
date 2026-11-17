@@ -1,0 +1,18 @@
+id: uvyftcjr0i
+parent: f6x7dhgzlz
+name: Query orders
+method: GET
+path: /{projectKey}/orders
+auth: "bearer (view_orders)"
+params:
+  - { id: d4y84rb0um, name: projectKey, in: path, type: string, description: fjeld-prod }
+  - { id: zwkm5542xh, name: where, in: query, type: string, required: false, description: "e.g. lastModifiedAt > \"2026-11-17T08:00:00Z\"" }
+  - { id: fcm344w5aa, name: sort, in: query, type: string, required: false, description: "e.g. lastModifiedAt asc" }
+  - { id: w1by36xent, name: limit, in: query, type: int, required: false }
+  - { id: vas8z3unpu, name: offset, in: query, type: int, required: false }
+responses:
+  - status: 200
+    fields:
+      - { id: yfj0yqnnnb, name: results, model: g5tcad7xx0, many: true }
+      - { id: c2kppk6uvo, name: total, type: int, nullable: true, from: [qazi456zfm], derived: count of matches }
+  - { status: 400, description: InvalidInput (bad predicate) }

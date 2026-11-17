@@ -1,0 +1,11 @@
+id: bp1nfqvgx5
+parent: u86dgrutjt
+name: showHome
+inputs: []
+outputs:
+  - { id: i7tjxwzfwd, name: rails, model: a4ypghsn5d, many: true }
+steps:
+  - { call: b8l1c902ne, gets: menu }
+  - { call: kuucfn97xp, gets: rails }
+  - { note: "hero and campaign tiles are static content in code; rails render under them" }
+  - { return: rails }

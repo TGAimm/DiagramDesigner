@@ -1,0 +1,15 @@
+id: rh9j0zqc59
+parent: yzg8gfwzwo
+name: List a customer's payment methods
+method: GET
+path: /v1/customers/{customer}/payment_methods
+auth: bearer (secret key)
+params:
+  - { id: vabfzfx6ne, name: customer, in: path, type: string }
+  - { id: ao0cgzjysm, name: type, in: query, type: string, required: false, description: "card, klarna, mobilepay" }
+  - { id: iatafy1j7w, name: limit, in: query, type: int, required: false, description: "1-100, default 10" }
+  - { id: xm00vci4i3, name: starting_after, in: query, type: string, required: false, description: cursor }
+responses:
+  # GAP: list envelope ({ object: list, data, has_more, url }) and cursor pagination: written as many of the model
+  - { status: 200, model: lr73v0q0h8, many: true }
+  - { status: 404, model: pwpsr0fyli, description: resource_missing }

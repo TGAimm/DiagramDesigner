@@ -1,0 +1,40 @@
+id: g5tcad7xx0
+ownedBy: f6x7dhgzlz
+storedIn: rrg5e7natg
+name: Order
+tags: [pii]
+fields:
+  - { id: qazi456zfm, name: id, type: uuid, pk: true }
+  - { id: bmzyt48cy8, name: version, type: long, required: true }
+  - { id: lulkapcaa0, name: orderNumber, type: string, nullable: true, constraints: ["set by Storefront on create, e.g. FJ-DK-1004821; unique"] }
+  - { id: zs9b3f85u9, name: customerId, type: uuid, nullable: true, ref: zhf6a5r56z, from: [t7o0kf74is] }
+  - { id: b5ftkjr0y9, name: customerEmail, type: string, nullable: true, from: [gci0aev7hj] }
+  - { id: hnqn0a76eg, name: anonymousId, type: string, nullable: true, from: [t5ctabsu6j] }
+  - { id: wp6lcqc5ar, name: customerGroup, type: uuid, nullable: true, ref: dosb9gjm5q, from: [phqnwlp4r3] }
+  - { id: l4uantreae, name: store, type: string, nullable: true, ref: vomy6kr4nq, from: [vkpb2ika6w] }
+  - { id: e5lts0g7ke, name: country, type: string, nullable: true, from: [q352ftjm2k] }
+  - { id: gvk3486s33, name: locale, type: string, nullable: true, from: [qeov4vu4az] }
+  - { id: j0hx4rd1qc, name: cart, type: uuid, nullable: true, ref: zin8vxu1v5 }
+  - { id: eg3umbi5el, name: orderState, type: string, required: true, constraints: ["one of: Open, Confirmed, Complete, Cancelled"] }  # GAP: enum
+  - { id: r29wqfepvb, name: shipmentState, type: string, nullable: true, constraints: ["one of: Shipped, Delivered, Ready, Pending, Delayed, Partial, Backorder"] }  # GAP: enum
+  - { id: b0edsryzw7, name: paymentState, type: string, nullable: true, constraints: ["one of: BalanceDue, Failed, Pending, CreditOwed, Paid"] }  # GAP: enum
+  - { id: icsoh6axm7, name: lineItems, model: haxkxd4qhw, many: true, from: [q63yvujwgi], derived: copied from the cart when ordered }
+  - { id: pxcdgn4yd5, name: totalPrice, model: ik7usc5zp1, required: true, from: [k3nskt5l62] }
+  - { id: qm8k0kk56q, name: taxedPrice, model: wfw9x2aejp, nullable: true, from: [eyflaxa8zc] }
+  - { id: sr3l239ybl, name: shippingAddress, model: mrllytyew7, nullable: true, from: [zhm5q0qjk4] }
+  - { id: gjkww7gnsq, name: billingAddress, model: mrllytyew7, nullable: true, from: [grm3w7hrus] }
+  - { id: lwgxpams2f, name: shippingInfo, model: fsxk836i4v, nullable: true, from: [ldmh0wvzze] }
+  - { id: qbubte5gqd, name: discountCodes, model: vhafikux7j, many: true, from: [u607md5szl] }
+  - { id: jl5a720ws2, name: discountOnTotalPrice, type: "{discountedAmount: Money, includedDiscounts[], discountedNetAmount, discountedGrossAmount}", nullable: true, constraints: [set when a cart discount targets the total price] }
+  - { id: cqr391r34s, name: paymentInfo, type: uuid, many: true, ref: qqf0oorxab, from: [ijoq8f8nr0] }
+  - { id: t33kdymlz1, name: returnInfo, model: tali50v4jz, many: true }
+  - { id: m73mrjedkn, name: custom, model: rtvkj5293v, nullable: true }
+  - { id: owwborscsx, name: inventoryMode, type: string, required: true, from: [qay8apurvi] }
+  - { id: jh92a57fc6, name: origin, type: string, required: true, constraints: ["one of: Customer, Merchant, Quote"] }  # GAP: enum
+  - { id: cqbmiwr5ee, name: completedAt, type: datetime, nullable: true }
+  - { id: ifyxx7dooz, name: createdAt, type: datetime, required: true }
+  - { id: tqzli8reqt, name: lastModifiedAt, type: datetime, required: true }
+indexes:
+  - { id: p4olieu8kv, name: ux_order_number, fields: [lulkapcaa0], unique: true }
+  - { id: y9dexxqmin, name: ix_order_customer_created, fields: [zs9b3f85u9, ifyxx7dooz] }
+  - { id: vgkmve1pui, name: ix_order_store_state, fields: [l4uantreae, eg3umbi5el] }

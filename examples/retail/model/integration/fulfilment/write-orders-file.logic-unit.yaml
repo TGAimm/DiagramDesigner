@@ -1,0 +1,19 @@
+# GAP: scheduled trigger
+# GAP: triggered by subscription wms-outbound-orders (queue), drained on a timer instead of per message
+id: tym2hdmo28
+parent: myr8ju3xsr
+name: writeOrdersFile
+meta: { schedule: "*/15 6-22 * * *" }
+when: { flag: exafkh0xzs, is: off }
+inputs: []
+outputs: []
+steps:
+  - { note: "receive up to 500 messages from wms-outbound-orders (peek-lock)" }
+  - if: none
+    then:
+      - { note: "no file: the 3PL does not want empty files" }
+    else:
+      - { write: l03dfm19e0, note: "ORDERS_<yyyyMMddHHmmss>.csv to /fjeld/in: one row per order line, ';'-separated, UTF-8; written as .tmp then renamed so the 3PL never reads half a file" }
+      - { write: cc1v719mlz, note: "archive/wms-in/…/ORDERS_<ts>.csv" }
+      - { note: "complete the messages; on an SFTP error abandon them, they come back next run" }
+      - { write: yguluhbf6w, note: "one row per order: channel sftp:ORDERS_<ts>.csv, targetSystem wms" }

@@ -1,0 +1,9 @@
+id: mvqvpm1eun
+parent: fdjbxyzftg
+name: onSelectSize
+inputs:
+  - { id: t05ihhxwe0, name: sku, type: string, required: true }
+outputs: []
+steps:
+  - { call: troq0apfr4, with: "sku, near = the remembered store or postal code", gets: availability }
+  - { note: "show Only n left, the restock date, and click & collect stores with stock" }

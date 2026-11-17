@@ -1,0 +1,18 @@
+# GAP: scheduled trigger
+id: sdo31es3m1
+parent: f1xy7xguug
+name: syncStockDelta
+meta: { schedule: "2-57/5 * * * *" }
+inputs: []
+outputs: []
+steps:
+  - { read: nanvethhnv, with: "erp / inventoryByLocation; take the lock", gets: cursor }
+  - { call: h11w5t51c7, with: "$filter lastModifiedDateTime gt cursor - 2 min; Prefer odata.maxpagesize=5000", gets: rows }
+  - if: 429 or 5xx
+    then:
+      - { write: nanvethhnv, note: "failed, cursor unchanged" }
+    else:
+      - each: row in rows
+        do:
+          - { call: khrlg0wtb1, with: "kind stock, sku, locationCode, inventory, availableQty; user property locationCode" }
+      - { write: nanvethhnv, note: "highest lastModifiedDateTime, ok, items" }

@@ -1,0 +1,25 @@
+id: i9820gfcwk
+parent: oidhle7bm8
+name: createReturnOrder
+handles: [h14t5yh29l]
+inputs:
+  - { id: e0w0f701wz, name: returnOrder, model: otm133ip2y, required: true }
+outputs:
+  - { id: u1iauj9gp2, name: returnOrder, model: otm133ip2y }
+fails:
+  - { name: duplicateReturn, description: returnNo or rmaNumber already announced (409) }
+  - { name: unknownItem, description: a line's item is not in the item master (422) }
+steps:
+  - { read: otm133ip2y, with: "returnNo, rmaNumber", gets: existing }
+  - if: existing
+    then:
+      - { fail: duplicateReturn }
+  - each: line in lines
+    do:
+      - { read: yfuhon49xq, with: line item no., gets: item }
+      - if: no item
+        then:
+          - { fail: unknownItem }
+  - { write: otm133ip2y, note: "insert, status expected" }
+  - { write: nc62fwb9eg, note: "insert each line, qtyReceived 0" }
+  - { return: returnOrder }

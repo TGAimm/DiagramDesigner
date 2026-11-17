@@ -1,0 +1,20 @@
+id: tvu2dmay18
+ownedBy: ar9pfoadj7
+storedIn: ar9pfoadj7
+name: pos_store
+fields:
+  - { id: fuot73ztd4, name: id, type: int, pk: true, from: [hvpe1ot6lm] }
+  - { id: gvunxbdw4q, name: storeNo, type: string, from: [ta0yzi1b46] }
+  - { id: dkkjhu7n9e, name: name, type: string, from: [gtt4ohjqdi] }
+  - { id: yh4ox6u2b1, name: erpLocationCode, type: string, from: [g6s8welf7y] }
+  - { id: y0iadexh3h, name: street, type: string, from: [iwtx1ky2fz] }
+  - { id: ish2zqlc7d, name: zip, type: string, from: [lw90l5eb4j] }
+  - { id: v08nek8w94, name: city, type: string, from: [fihlkzaai2] }
+  - { id: qhd7ruqsyk, name: country, type: string, from: [ygf3qzp7tm] }
+  - { id: vgxt4yjb1r, name: currency, type: string, from: [ainz12ukbb] }
+  - { id: k4cwpj23xw, name: timezone, type: string, from: [ix5o2jm5h2] }
+  - { id: f3oso9bu1m, name: clickCollectEnabled, type: bool, from: [mkctz5x6te] }
+  - { id: bzfwzcasm5, name: status, type: string, from: [ttn3wxft0b] }
+  - { id: q1dcm5g1n6, name: _loaded_at, type: datetime, required: true }
+  - { id: hb9orxuzra, name: _source, type: string, required: true, constraints: ["pos/stores"] }
+  - { id: cwu97ve4vc, name: _batch_id, type: string, required: true }

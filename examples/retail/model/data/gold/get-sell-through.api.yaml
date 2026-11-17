@@ -1,0 +1,24 @@
+id: yrgqfvk5ci
+parent: flpant1ni7
+name: Export sell-through
+method: GET
+path: /exports/sell-through
+auth: "bearer (Entra ID; service principals in the sg-data-export-readers group)"
+external: true
+params:
+  - { id: zu2y9xb5jr, name: weekStart, in: query, type: date, required: true, description: a Monday }
+  - { id: ej895v8b7b, name: category, in: query, type: string, required: false }
+responses:
+  - status: 200
+    many: true
+    fields:
+      - { id: jidg614tl4, name: sku, type: string, required: true, from: [tx898qausm] }
+      - { id: p7okibhjk4, name: name, type: string, required: true, from: [d8sczxawwu] }
+      - { id: vc1i9zct7g, name: category, type: string, nullable: true, from: [g7xo7fodgq] }
+      - { id: ewvjrrykjm, name: weekStart, type: date, required: true, from: [s11keoifls], derived: yyyyMMdd to date }
+      - { id: oetupcmya1, name: unitsSold, type: int, required: true, from: [s8ao2s2fpk] }
+      - { id: ghfekzkx9r, name: unitsReturned, type: int, required: true, from: [ehvlx7mi18] }
+      - { id: e0v6vvv94p, name: beginOnHand, type: decimal, required: true, from: [zh0stwy9gr] }
+      - { id: ty5vovypv8, name: sellThroughPct, type: decimal, required: true, from: [s8ao2s2fpk, zh0stwy9gr, tl3x5ue62m], derived: "units sold / (begin on hand + units received) * 100" }
+  - { status: 400, description: weekStart is not a Monday }
+  - { status: 401, description: Token missing or not in the readers group }

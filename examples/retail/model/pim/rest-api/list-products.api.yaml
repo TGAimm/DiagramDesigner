@@ -1,0 +1,25 @@
+# GAP: pagination envelope - the 200 body is {_links: {self, first, next}, current_page,
+# items_count, _embedded: {items: [...]}}; written as the item list only.
+id: zajzch8peu
+parent: vsn79avah8
+name: List products
+method: GET
+path: /api/rest/v1/products-uuid
+auth: bearer
+params:
+  - { id: s8hbelue5i, name: search, in: query, type: json, required: false, description: "filters, e.g. {\"updated\":[{\"operator\":\">\",\"value\":\"2026-11-17 00:00:00\"}],\"enabled\":[{\"operator\":\"=\",\"value\":true}],\"completeness\":[{\"operator\":\"=\",\"value\":100,\"scope\":\"ecommerce\"}]}" }
+  - { id: zsmmjo86sa, name: scope, in: query, type: string, required: false, description: only values of this channel }
+  - { id: v8oh10eiqm, name: locales, in: query, type: string, required: false, description: comma-separated locale codes }
+  - { id: agqn2bww36, name: attributes, in: query, type: string, required: false, description: comma-separated attribute codes to return }
+  - { id: xeghvu3rah, name: pagination_type, in: query, type: string, required: false, description: "page (default) or search_after" }
+  - { id: e55jtzgts7, name: page, in: query, type: int, required: false }
+  - { id: twmkbi7erx, name: search_after, in: query, type: string, required: false, description: cursor from the next link }
+  - { id: fjuv5v6v3k, name: limit, in: query, type: int, required: false, description: "10 by default, max 100" }
+  - { id: etyd8eqve2, name: with_count, in: query, type: bool, required: false }
+  - { id: rm0z6rtoob, name: with_attribute_options, in: query, type: bool, required: false }
+  - { id: fpe4od2xr2, name: with_completenesses, in: query, type: bool, required: false }
+responses:
+  - { status: 200, model: qitb6ezis6, many: true, description: "page of products, application/json" }
+  - { status: 401, description: Missing or expired token }
+  - { status: 403, description: Connection's user lacks the product list permission }
+  - { status: 422, description: "Invalid search filter, unknown locale, scope or attribute" }

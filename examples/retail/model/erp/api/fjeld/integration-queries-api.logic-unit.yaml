@@ -1,0 +1,21 @@
+# Pages 50100 FJ Inventory By Location and 50101 FJ Price List Lines (read-only, delta by
+# lastModifiedDateTime)
+id: gnjrf0tbd2
+parent: efcxalw7mu
+name: integrationQueriesApi
+handles: [h11w5t51c7, re3p0ieali]
+inputs:
+  - { id: sdcuoq8ri8, name: filter, type: string, nullable: true }
+outputs:
+  - { id: vvm86t17cm, name: inventory, model: la0b5vcx3a, many: true }
+steps:
+  - if: priceListLines
+    then:
+      - { read: zk2ozptnx5, with: "status Active, price type Sale, filter", gets: lines }
+      - { read: go4v61dp2i, with: each line's price list, gets: "source, currency" }
+  - if: inventoryByLocation
+    then:
+      - { read: z3s5srw5r2, with: "grouped by item, variant, location; changed since filter", gets: inventory }
+      - { read: i09cr44p1c, with: "Order lines with outstanding quantity, same grouping", gets: reserved }
+      - { note: "available = inventory - reserved, floored at 0" }
+      - { return: inventory }

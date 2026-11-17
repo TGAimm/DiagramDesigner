@@ -1,0 +1,20 @@
+id: ossdh2dm43
+ownedBy: pnvbx85509
+storedIn: kqjludw0r4
+name: fjeld_loyaltytransaction
+fields:
+  - { id: sojs3nojuu, name: fjeld_loyaltytransactionid, type: uuid, pk: true }
+  - { id: e8ytxgzyat, name: fjeld_loyaltymemberid, type: uuid, required: true, ref: vr2vfukamq }
+  # GAP: enum
+  - { id: xi73yv0pci, name: fjeld_type, type: string, required: true, constraints: ["one of: Earn, Redeem, Expire, Adjust"] }
+  - { id: o8qa1i94nr, name: fjeld_points, type: int, required: true, constraints: [negative for Redeem and Expire] }
+  - { id: tvrzfqircc, name: fjeld_ordernumber, type: string, nullable: true, from: [lulkapcaa0,b9spjarvr6], derived: "web: the order number; store: the receipt number" }
+  # GAP: enum
+  - { id: mo42oycvu3, name: fjeld_channel, type: string, required: true, constraints: ["one of: Web, Store, Service"] }
+  - { id: sr48wooa7q, name: fjeld_storeid, type: string, nullable: true }
+  - { id: n0coa544bq, name: fjeld_transactiondate, type: datetime, required: true }
+  - { id: bfolx7uyhu, name: fjeld_description, type: string, nullable: true, constraints: [max 200] }
+  - { id: zf98l7w5xi, name: fjeld_externalid, type: string, required: true, constraints: [alternate key, idempotency key from the sender] }
+indexes:
+  - { id: kgmrtk2afx, name: ix_tx_member_date, fields: [e8ytxgzyat, n0coa544bq] }
+  - { id: xbwbycogev, name: ak_fjeld_externalid, fields: [zf98l7w5xi], unique: true }

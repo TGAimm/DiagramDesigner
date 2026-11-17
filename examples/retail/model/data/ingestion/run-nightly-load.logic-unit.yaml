@@ -1,0 +1,23 @@
+# The nightly pipeline: silver, then gold, then the semantic model. Each notebook runs as an
+# activity; a failure stops the chain and gold keeps yesterday's Delta version.
+# GAP: scheduled trigger
+id: g2lewxlcpe
+parent: oyqmyb5nc3
+name: runNightlyLoad
+meta: { schedule: "0 5 * * *", pipeline: pl_nightly_load, note: "after the ERP, POS, WMS, PIM and Stripe night loads" }
+inputs: []
+outputs: []
+fails:
+  - { name: loadFailed, description: "a notebook failed; Teams alert to data-team, reports show yesterday" }
+steps:
+  - { call: jcfgpt7rd9 }
+  - { call: arrz7orblm }
+  - { call: ltnik7azi0 }
+  - { call: wmtzxnghvx }
+  - { call: lad06v9zq5 }
+  - { call: p1h61k7lab }
+  - { call: tx6zv4knuz }
+  - if: a notebook failed
+    then:
+      - { fail: loadFailed }
+  - { call: ezrgvgwhvx, with: "groupId, datasetId of Fjeld Sales", note: "Direct Lake reframe onto the new Delta versions" }

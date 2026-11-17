@@ -1,0 +1,12 @@
+id: xlwthxt8yk
+parent: efcxalw7mu
+name: Post item journal
+method: POST
+path: /api/fjeld/integration/v1.0/companies({companyId})/itemJournals({journalBatchName})/Microsoft.NAV.post
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: dnlnqnm1kw, name: companyId, in: path, type: guid }
+  - { id: jnk9gfpwnk, name: journalBatchName, in: path, type: string, description: "WMS-RECON or STORE-COUNT" }
+responses:
+  - { status: 204, description: "Posted; the batch is empty again" }
+  - { status: 400, description: "BadRequest: a line fails posting (blocked item, insufficient inventory); nothing is posted" }

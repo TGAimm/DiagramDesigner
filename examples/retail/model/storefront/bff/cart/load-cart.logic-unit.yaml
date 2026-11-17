@@ -1,0 +1,17 @@
+id: vhts24past
+parent: jzcljy1080
+name: loadCart
+handles: [u0ur2d2664]
+inputs: []
+outputs:
+  - { id: atzvgrnz3n, name: cart, model: lq4foj9308, nullable: true }
+steps:
+  - { call: cylyc9xl5m, gets: session }
+  - if: session has no cartId
+    then:
+      - { return: cart }
+  - { call: t2l6i8nkh1, with: "the session's token (anonymous, or the Identity token via External OAuth)", gets: cart }
+  - if: 404 (ordered, merged or deleted after 30 days)
+    then:
+      - { write: r40by5rpuu, note: clear }
+  - { return: cart }

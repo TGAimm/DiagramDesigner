@@ -1,0 +1,21 @@
+id: b55i3wbaym
+ownedBy: yzg8gfwzwo
+storedIn: sox2v1ykga
+name: Customer
+tags: [pii, b2c]
+fields:
+  - { id: svljmuxjik, name: id, type: string, pk: true, constraints: ["prefix cus_"] }
+  - { id: kqt4y5d9hx, name: email, type: string, nullable: true }
+  - { id: xx8dwdsarj, name: name, type: string, nullable: true }
+  - { id: wpwpc1nhm9, name: phone, type: string, nullable: true }
+  # GAP: embedded sub-object of a stored record: the held model has no table, so the stored view loses it
+  - { id: fo99pnil0t, name: address, model: efxi7uugd5, nullable: true }
+  - { id: bvu4jg9p8w, name: preferred_locales, type: string, many: true, constraints: ["Fjeld: da, sv, nb, de"] }
+  - { id: bruolgicod, name: invoice_settings.default_payment_method, type: string, nullable: true, ref: lr73v0q0h8 }
+  # GAP: free-form key/value map (metadata): written as the fixed keys Fjeld sets, dotted
+  - { id: ic1ogbz56i, name: metadata.commerce_customer_id, type: string, from: [zhf6a5r56z], derived: uuid as text }
+  - { id: zepnis7od8, name: deleted, type: bool }
+  - { id: s7rlvah7hf, name: created, type: timestamp, required: true }
+indexes:
+  - { id: lmor4ti9pp, name: ix_customer_email, fields: [kqt4y5d9hx] }
+  - { id: fs5q43drfe, name: ix_customer_commerce_id, fields: [ic1ogbz56i] }

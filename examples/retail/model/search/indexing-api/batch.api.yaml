@@ -1,0 +1,19 @@
+id: kn0ruulrv9
+parent: ktxxdlpyeb
+name: Batch write operations
+method: POST
+path: /1/indexes/{indexName}/batch
+auth: "X-Algolia-Application-Id + X-Algolia-API-Key (Integration's write key: addObject, deleteObject)"
+params:
+  - { id: bjylp9qhn4, name: indexName, in: path, type: string, description: "a primary index, products_<locale>" }
+request:
+  fields:
+    - { id: zusrc5juom, name: requests, model: mu2wqd926l, many: true, required: true, description: "up to 1,000 per call (Integration sends 500)" }
+responses:
+  - status: 200
+    fields:
+      - { id: amwpfqxhdz, name: taskID, type: long, from: [s7s7oe1bfu] }
+      - { id: opu5dakohv, name: objectIDs, type: string, many: true, from: [kfdn4jaxfq] }
+  - { status: 400, description: "a record over 10 KB, or a body without objectID on an update" }
+  - { status: 403, description: "invalid API key, or missing addObject / deleteObject ACL" }
+  - { status: 404, description: index does not exist (only for partialUpdateObjectNoCreate) }

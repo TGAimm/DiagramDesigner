@@ -1,0 +1,15 @@
+id: nc62fwb9eg
+ownedBy: oidhle7bm8
+storedIn: ka6mzbfc7x
+name: Return order line
+fields:
+  - { id: a713mdmb7w, name: id, type: int, pk: true }
+  - { id: utpq6a46gz, name: returnOrderId, type: int, required: true, ref: otm133ip2y }
+  - { id: mb8rezow3y, name: lineNo, type: int, required: true, from: [nhvh5ysu87] }
+  - { id: l7ogrklcbb, name: itemId, type: int, required: true, ref: ixjus3gqio, from: [q51zzts0jb], derived: looked up by item no. }
+  - { id: ascjmkq0jc, name: qtyExpected, type: int, required: true, from: [adjzjxwanh] }
+  - { id: pzqxn369jk, name: reasonCode, type: string, required: true, from: [gmlhzgidej] }
+  - { id: k5e7jrttmq, name: customerCondition, type: string, nullable: true, from: [rk58hdfhva] }
+  - { id: uup96smmws, name: qtyReceived, type: int, required: true, from: [wklehm66vf], derived: sum of return receipts }
+indexes:
+  - { id: totviwqds2, name: ux_return_line, fields: [utpq6a46gz, mb8rezow3y], unique: true }

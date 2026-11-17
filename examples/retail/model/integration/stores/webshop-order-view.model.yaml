@@ -1,0 +1,15 @@
+# What the till shows when a webshop order is returned in a store.
+id: tj82h3poo1
+ownedBy: nlc4zljjz8
+name: WebshopOrderView
+tags: [pii]
+fields:
+  - { id: j1mmx2kln6, name: orderNumber, type: string, required: true, from: [lulkapcaa0] }
+  - { id: y1oiwuszbi, name: orderDate, type: date, required: true, from: [ifyxx7dooz] }
+  - { id: uzjrggtryy, name: customerName, type: string, required: true, from: [romyz4pfcf, bsp6j20gsl], derived: billing first + last name }
+  - { id: c8d9tel0bb, name: email, type: string, required: true, from: [b5ftkjr0y9] }
+  - { id: hcrf7w8zwh, name: currency, type: string, required: true, from: [n8mwhpvdh9] }
+  - { id: svxpyo818d, name: paymentMethod, type: string, required: true, from: [cqr391r34s], derived: "card, klarna or mobilepay: the refund goes back there, never cash" }
+  - { id: xf8c6u37mb, name: shippedAt, type: datetime, nullable: true, from: [zss6mp6153] }
+  - { id: px2nuamq36, name: returnableUntil, type: date, nullable: true, from: [zss6mp6153], derived: "shippedAt + 30 days (100 for members)" }
+  - { id: psd0p6or2v, name: lines, type: "{lineItemId, sku, name, quantity, returnedQuantity, unitPriceGross}", many: true, required: true, from: [c9xmzjnpp8, c1uzjurwuu, tzgfqq0q8b, ae7tr09nmb, jtowx3ssf5, oylo8sfbus], derived: "returnedQuantity = sum of return items per line item" }

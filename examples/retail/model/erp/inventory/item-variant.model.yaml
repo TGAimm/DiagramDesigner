@@ -1,0 +1,18 @@
+# Table 5401 Item Variant, extended with size, colour and GTIN.
+id: qokf6rurzg
+ownedBy: x2x0s3utl1
+storedIn: q43aprn5l0
+name: Item Variant
+fields:
+  - { id: f469sma5pc, name: itemNo, type: string, pk: true, ref: yu6wdxgb8q }
+  - { id: u2mbyuw427, name: code, type: string, pk: true, constraints: [max 10, "colour-size, e.g. BLK-M"] }
+  - { id: ltnsfq79pv, name: systemId, type: guid, required: true }
+  - { id: xzqesc3cbv, name: description, type: string, from: [iz5mxs1rl5, wr2bk1xkfr], derived: "colour name and size" }
+  - { id: wr2bk1xkfr, name: fjeldSize, type: string, constraints: ["table extension field"] }
+  - { id: iz5mxs1rl5, name: fjeldColour, type: string, constraints: ["table extension field"] }
+  - { id: hvppx4kt1w, name: fjeldGtin, type: string, constraints: ["table extension field; EAN-13"] }
+  - { id: xfrbaemefw, name: blocked, type: bool }
+  - { id: njpwhhy6im, name: systemModifiedAt, type: datetime, required: true }
+indexes:
+  - { id: v8j1an2ex7, name: ux_item_variant_systemid, fields: [ltnsfq79pv], unique: true }
+  - { id: glv19z92q6, name: ux_item_variant_gtin, fields: [hvppx4kt1w], unique: true }

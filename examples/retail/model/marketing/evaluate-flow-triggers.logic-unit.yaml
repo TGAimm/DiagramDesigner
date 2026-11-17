@@ -1,0 +1,28 @@
+id: s5efm6lnfz
+parent: s3at4589xs
+name: evaluateFlowTriggers
+inputs:
+  - { id: dnpt0ztlyk, name: event, model: g4j7b6f21o, required: true }
+  - { id: dd1hd1kls9, name: profile, model: apj02aeekt, required: true }
+outputs:
+  - { id: qae23y0cly, name: entered, model: f5xx76vtts, many: true }
+steps:
+  - { read: f5xx76vtts, with: "trigger_metric_id = event.metric_id, status live", gets: flows }
+  - each: flow
+    do:
+      - { read: msg7xt8evz, gets: profile filter }
+      - if: profile passes the filter (e.g. Abandoned Checkout - has not placed order since starting this flow)
+        then:
+          - { read: qdn0ucww74, with: flow, gets: actions in position order }
+          - each: action
+            do:
+              - if: TIME_DELAY
+                then:
+                  - { note: "park the profile until the delay passes (Shipped: none; Abandoned Checkout: 4 hours; Post-purchase review: 14 days)" }
+              - if: SEND_EMAIL
+                then:
+                  - { call: rkfy26cvxh, with: "action, profile, event properties" }
+              - if: CONDITIONAL_SPLIT
+                then:
+                  - { note: "re-check profile and events, e.g. loyalty_tier = Summit takes the VIP branch" }
+  - { return: entered }

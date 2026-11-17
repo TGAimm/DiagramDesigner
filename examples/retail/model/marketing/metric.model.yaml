@@ -1,0 +1,11 @@
+id: i98v99bkxi
+ownedBy: dtgcjgjtna
+storedIn: mm9tmyhvey
+name: Metric
+fields:
+  - { id: dvxz9vct5y, name: id, type: string, pk: true }
+  - { id: lcojyx6z0a, name: name, type: string, required: true, constraints: ["Fjeld: Placed Order, Ordered Product, Started Checkout, Shipped, Fulfilled Order, Cancelled Order, Refunded Order, Viewed Product; Klaviyo: Received Email, Opened Email, Clicked Email, Unsubscribed"] }
+  - { id: fa6t2htz39, name: integration.name, type: string, required: true, constraints: ["API for Fjeld's own events, Klaviyo for email events"] }
+  - { id: bm2jvuo2t7, name: created, type: datetime, required: true }
+indexes:
+  - { id: bb0mcsv9i1, name: ux_metric_name, fields: [lcojyx6z0a], unique: true }

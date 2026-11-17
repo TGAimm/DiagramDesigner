@@ -1,0 +1,16 @@
+id: cy3wdd7n7k
+parent: f6x7dhgzlz
+name: Create my order from cart
+method: POST
+path: /{projectKey}/me/orders
+auth: "bearer (customer or anonymous session token, manage_my_orders)"
+params:
+  - { id: nzd4cute89, name: projectKey, in: path, type: string, description: fjeld-prod }
+request:
+  fields:
+    - { id: gmlnspjzsu, name: id, type: uuid, required: true, description: the cart's id, to: [j0hx4rd1qc] }
+    - { id: ovoqavzn9w, name: version, type: long, required: true, description: the cart's version, to: [q4kzs22wi1] }
+responses:
+  - { status: 201, model: g5tcad7xx0, description: no orderNumber; Storefront sets it with setOrderNumber via the server API }
+  - { status: 400, description: "OutOfStock, PriceChanged, InvalidOperation" }
+  - { status: 409, description: ConcurrentModification }

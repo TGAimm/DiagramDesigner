@@ -1,0 +1,8 @@
+id: wsq1k6kkif
+ownedBy: pfvgbz7fey
+name: NextAction
+fields:
+  # GAP: enum
+  - { id: xs1fwhjn18, name: type, type: string, required: true, constraints: ["one of: redirect_to_url, use_stripe_sdk, mobilepay_handle_redirect_or_display_qr_code"] }
+  - { id: hu6ss0yzfi, name: redirect_to_url.url, type: string, nullable: true, constraints: ["3DS or Klarna hosted page"] }
+  - { id: fvca3dsn74, name: redirect_to_url.return_url, type: string, nullable: true }

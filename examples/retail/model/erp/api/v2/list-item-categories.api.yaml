@@ -1,0 +1,17 @@
+id: v3yydrkiib
+parent: wyb51ibopv
+name: List item categories
+method: GET
+path: /api/v2.0/companies({companyId})/itemCategories
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: l8hhtsr93u, name: companyId, in: path, type: guid }
+responses:
+  - status: 200
+    many: true
+    fields:
+      - { id: jfi62vgu38, name: id, type: guid, from: [vupcnyiu4i] }
+      - { id: hfoexgqbsk, name: code, type: string, from: [rhw9pqyx42] }
+      - { id: zbnada8kty, name: displayName, type: string, from: [ve2ebmn5db] }
+      - { id: uc2pq2ej20, name: lastModifiedDateTime, type: datetime, from: [ojai8xfqb9] }
+  - { status: 401, description: Unauthorized }

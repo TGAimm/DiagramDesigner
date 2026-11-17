@@ -1,0 +1,25 @@
+# Read with expand[]=data.source.payment_intent, so the charge's or refund's payment intent and its
+# metadata come along; the order id is the join that ties a fee to an order.
+id: fp7gmidmzm
+ownedBy: ar9pfoadj7
+storedIn: ar9pfoadj7
+name: stripe_balance_transaction
+fields:
+  - { id: k20t6grymw, name: id, type: string, pk: true, from: [qb2q7z19dc] }
+  - { id: m7s1xvcvkt, name: amount, type: long, from: [qcebp0k7a8], constraints: [minor units] }
+  - { id: ppw6hxr9np, name: fee, type: long, from: [tlyd5xmf5c], constraints: [minor units] }
+  - { id: gesblujdcs, name: net, type: long, from: [kw8he4reox], constraints: [minor units] }
+  - { id: w6pg0nullx, name: currency, type: string, from: [kti9cnks25], constraints: [settlement currency, lower case (dkk)] }
+  - { id: tvffjsowk8, name: exchange_rate, type: decimal, nullable: true, from: [exuua2wgil] }
+  - { id: e5djr043ja, name: type, type: string, from: [yns2e2eoou] }
+  - { id: bz8cwqc2ci, name: reporting_category, type: string, from: [faroj9yrhw] }
+  - { id: z3sojvsvi9, name: source, type: string, nullable: true, from: [oz74t9igb1] }
+  - { id: m3neoasazi, name: status, type: string, from: [mil72fzphw] }
+  - { id: bmsa9dg6c5, name: available_on, type: timestamp, from: [t9sefltdh0] }
+  - { id: ayb61yfekn, name: created, type: timestamp, from: [larwbkwjou] }
+  - { id: fic5othmzr, name: payout, type: string, nullable: true, from: [ickiwbul7m] }
+  - { id: ox7jv4lrwt, name: source_payment_intent, type: string, nullable: true, from: [oz74t9igb1, fflcl5djng, h4pwdoemtx], derived: "source expanded: charge.payment_intent, or refund.payment_intent" }
+  - { id: ia0xnxse0e, name: commerce_order_id, type: string, nullable: true, from: [n0tso6nfsf, ta751euqp5], derived: "source.payment_intent.metadata.commerce_order_id (charges), source.metadata.commerce_order_id (refunds)" }
+  - { id: faybufvah5, name: _loaded_at, type: datetime, required: true }
+  - { id: y6014le036, name: _source, type: string, required: true, constraints: ["stripe/balance_transactions"] }
+  - { id: zecn99ctki, name: _batch_id, type: string, required: true }

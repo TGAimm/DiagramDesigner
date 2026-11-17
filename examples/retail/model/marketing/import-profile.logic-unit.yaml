@@ -1,0 +1,27 @@
+id: uivfylvr86
+parent: x27wyx0r8h
+name: importProfile
+handles: [f703dhaapi, kszuzobco0]
+inputs:
+  - { id: uv70dswsj3, name: attributes, model: apj02aeekt, required: true }
+outputs:
+  - { id: c74bjrtvec, name: profile, model: apj02aeekt }
+  - { id: bumb45xtc8, name: created, type: bool }
+fails:
+  - { name: noIdentifier, description: "none of email, phone_number or external_id" }
+  - { name: conflict, description: "the identifiers belong to two profiles (409)" }
+steps:
+  - if: no email, phone_number or external_id
+    then:
+      - { fail: noIdentifier }
+  - { read: apj02aeekt, with: "external_id, then email, then phone_number", gets: matches }
+  - if: matches are two different profiles
+    then:
+      - { fail: conflict }
+  - if: no match
+    then:
+      - { write: apj02aeekt, note: insert; created = true }
+    else:
+      - { write: apj02aeekt, note: "merge attributes; properties merged key by key" }
+  - { return: profile }
+  - { return: created }

@@ -1,0 +1,18 @@
+id: kpmp1cr4lc
+ownedBy: ztyvug6ivb
+storedIn: t99y8h5mfb
+name: CarrierProduct
+fields:
+  - { id: dehcqow1vf, name: product_code, type: string, pk: true, constraints: ["e.g. PDK_MC (PostNord MyPack Collect), PDK_MH (MyPack Home), GLS_PSS (ParcelShop), BRING_PNL (Pickup Parcel), DAO_SPD (Pakkeshop), DHL_EXP_WW"] }
+  - { id: de3hu1abxh, name: carrier_code, type: string, required: true, ref: vy1t0d26e3 }
+  - { id: rhrlt9tdjv, name: name, type: string, required: true }
+  - { id: q42alnskf6, name: sender_country_code, type: string, required: true }
+  - { id: t4dceldyha, name: receiver_country_code, type: string, required: true }
+  - { id: mkcorhyh3c, name: product_type, type: string, constraints: ["one of: parcel, letter, pallet, express"] }   # GAP: enum
+  - { id: l915a1xh2k, name: service_point_required, type: bool, constraints: ["true for pickup-point products"] }
+  - { id: it0xbozw3g, name: max_weight, type: int, constraints: ["grams"] }
+  - { id: culneqs9e8, name: return_product, type: bool }
+  # GAP: embedded sub-object of a stored record: the held model has no table, so the stored view loses it
+  - { id: x7uek7xbrc, name: available_services, model: fk974lp1dm, many: true }
+indexes:
+  - { id: a2bdjpxd89, name: ix_product_route, fields: [de3hu1abxh, q42alnskf6, t4dceldyha] }

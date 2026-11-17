@@ -1,0 +1,20 @@
+id: qq1hzhaotk
+parent: vsn79avah8
+name: Get access token
+method: POST
+path: /api/oauth/v1/token
+auth: "basic: base64(clientId:secret) of the Connection"
+params:
+  - { id: wilw4hvljx, name: Authorization, in: header, type: string, required: true, description: "Basic base64(client_id:secret)" }
+request: { model: usfaesrwyh }
+responses:
+  - status: 200
+    fields:
+      - { id: fb2tf9dfyz, name: access_token, type: string, from: [ob16ob6sri] }
+      - { id: yllotegtvi, name: expires_in, type: int, from: [jt51n8lx22], derived: seconds until expiresAt (3600) }
+      # GAP: constant field - token_type is always "bearer"; has no source field.
+      - { id: dbosadkdqx, name: token_type, type: string, from: [ob16ob6sri], derived: "always 'bearer'" }
+      - { id: qotf1u7y5t, name: scope, type: string, nullable: true, from: [z6rleqz57r] }
+      - { id: k3a1mli75o, name: refresh_token, type: string, from: [gqykle1ev0] }
+  - { status: 400, description: "invalid_grant / invalid_client: wrong credentials or expired refresh token" }
+  - { status: 422, description: Missing or unknown grant_type }

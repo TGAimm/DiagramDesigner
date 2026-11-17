@@ -1,0 +1,27 @@
+id: kq1kjmxrvs
+parent: wyb51ibopv
+name: List general ledger entries
+method: GET
+path: /api/v2.0/companies({companyId})/generalLedgerEntries
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: rl2ke5dhw3, name: companyId, in: path, type: guid }
+  - { id: rqoq1fob9x, name: $filter, in: query, type: string, required: false, description: "delta: lastModifiedDateTime gt <last run>" }
+  - { id: kws68t5p4s, name: $top, in: query, type: int, required: false }
+  - { id: uscxw74ot7, name: $skip, in: query, type: int, required: false }
+responses:
+  - status: 200
+    many: true
+    fields:
+      - { id: xxtkqwnc1x, name: id, type: guid, from: [i7lh819mru] }
+      - { id: rpvymuxryx, name: entryNumber, type: int, from: [bl4eibz3g0] }
+      - { id: lqxor662b5, name: postingDate, type: date, from: [oflvbfejmm] }
+      - { id: fdkhzo73m6, name: documentNumber, type: string, from: [h0ls3k915p] }
+      - { id: dqgk4asi2b, name: documentType, type: string, from: [a20gqm9c27] }
+      - { id: a0w0720hr9, name: accountNumber, type: string, from: [om9b84n3o4] }
+      - { id: g3gbalv3r5, name: description, type: string, from: [aewk6ff2i8] }
+      - { id: zuacsdiasg, name: debitAmount, type: decimal, from: [nvlibc1004] }
+      - { id: ku5gg67tcn, name: creditAmount, type: decimal, from: [ppq9qr6rcj] }
+      - { id: epznp0e8gs, name: dimensionSetId, type: int, from: [kam76mdgc2], description: "expand dimensionSetLines for the values" }
+      - { id: ac55qb4jbh, name: lastModifiedDateTime, type: datetime, from: [b3x648qq0g] }
+  - { status: 401, description: Unauthorized }

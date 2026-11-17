@@ -1,0 +1,26 @@
+id: puwxwdjg6b
+parent: izc0a89lge
+name: Upsert contact by Commerce customer id
+method: PATCH
+path: /api/data/v9.2/contacts(fjeld_commercecustomerid='{customerId}')
+auth: OAuth 2.0 bearer (Entra ID app registration)
+params:
+  - { id: u13bktqj57, name: customerId, in: path, type: string, description: alternate key fjeld_commercecustomerid }
+  - { id: cwix5riyng, name: Prefer, in: header, type: string, required: false, description: return=representation }
+request:
+  fields:
+    - { id: monwekm2gq, name: firstname, type: string, to: [if2mlrvh1r] }
+    - { id: nor4h67bv1, name: lastname, type: string, required: true, to: [b590a1yfa4] }
+    - { id: fs06s8jcom, name: emailaddress1, type: string, required: true, to: [uunwqf9kfu] }
+    - { id: ng11yom960, name: mobilephone, type: string, to: [rvejr5t3yj] }
+    - { id: gaxfew7978, name: address1_line1, type: string, to: [dk1mji9tc5] }
+    - { id: gezycpqslb, name: address1_city, type: string, to: [mqnnlwxrj2] }
+    - { id: juwgvvqvq6, name: address1_postalcode, type: string, to: [owdahbbxyv] }
+    - { id: wxrinpjmz2, name: address1_country, type: string, to: [kf7fvju1z1] }
+    - { id: d4lqy4qdtd, name: fjeld_identityuserid, type: string, to: [r4139fb0f4] }
+    - { id: t2ayy9mqes, name: donotbulkemail, type: bool, to: [ih7y93cbv2] }
+responses:
+  - { status: 200, model: vw2khd7qyi, description: "Created or updated (Prefer: return=representation)" }
+  - { status: 204, description: Created or updated }
+  - { status: 400, model: blqvorzt9x }
+  - { status: 412, model: blqvorzt9x, description: more than one existing contact matches the e-mail; left for an agent to merge }

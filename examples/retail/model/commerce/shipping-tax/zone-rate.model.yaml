@@ -1,0 +1,6 @@
+id: opgo6nklq7
+ownedBy: d2rl6i7zpf
+name: Zone Rate
+fields:
+  - { id: fnhtxjzxlu, name: zone, type: uuid, required: true, ref: lmho1c8o3r }
+  - { id: j3nadur1bc, name: shippingRates, model: j296qp1l8u, many: true, constraints: [one per currency] }

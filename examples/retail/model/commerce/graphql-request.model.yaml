@@ -1,0 +1,7 @@
+id: c4ndv61qjj
+ownedBy: ygmbkn58fj
+name: GraphQL Request
+fields:
+  - { id: sf029vijzb, name: query, type: string, required: true }
+  - { id: ctbtjlnetl, name: operationName, type: string, nullable: true }
+  - { id: rr6zmqgy1a, name: variables, type: json, nullable: true }

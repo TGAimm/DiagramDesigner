@@ -1,0 +1,7 @@
+id: szsrjoq7ot
+ownedBy: lnizoffy7m
+name: Facet Value
+fields:
+  - { id: nz379ws14k, name: value, type: string, required: true, from: [k2a7o9ojdw] }
+  - { id: f0xlsrmk95, name: count, type: int, required: true, from: [k2a7o9ojdw] }
+  - { id: zyoga3760m, name: selected, type: bool, required: true, constraints: [from the request's filters] }

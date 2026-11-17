@@ -1,0 +1,26 @@
+# API page 50102 FJ Sales Return Orders: standard API v2.0 has no return orders.
+id: fj50ns4hdq
+parent: efcxalw7mu
+name: Create sales return order
+method: POST
+path: /api/fjeld/integration/v1.0/companies({companyId})/salesReturnOrders
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: jqpa6huyig, name: companyId, in: path, type: guid }
+request:
+  fields:
+    - { id: mk0041pnek, name: externalDocumentNumber, type: string, required: true, to: [ogicbd970k], description: the returns portal RMA number }
+    - { id: fhh66vmnkq, name: customerNumber, type: string, required: true, to: [jxi66gwzsa] }
+    - { id: jdxo4t7b0m, name: originalInvoiceNumber, type: string, required: true, to: [v54boby13i] }
+    - { id: mvqygnfxp7, name: returnReasonCode, type: string, required: true, to: [pqepl2cr9g], description: "one of: SIZE, DEFECT, NOTASDESCR, REGRET" }
+    - { id: affqvf7fon, name: locationCode, type: string, to: [xn764vj10c], description: "CENTRAL, or the store for an in-store return" }
+    - { id: z8c9ev5cas, name: salesReturnOrderLines, model: zm3yeyn1gr, many: true, required: true }
+responses:
+  - status: 201
+    description: Created and released
+    fields:
+      - { id: y4yra9yjn5, name: id, type: guid, from: [u8gwdhud9r] }
+      - { id: ck2gwyymhk, name: number, type: string, from: [rgkzrhf9cx] }
+      - { id: ovbu3xou7w, name: status, type: string, from: [xalurnbl6g] }
+  - { status: 400, description: "BadRequest: invoice not found, or a quantity exceeds what was invoiced" }
+  - { status: 409, description: "a return order with this externalDocumentNumber exists" }

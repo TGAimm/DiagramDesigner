@@ -1,0 +1,13 @@
+id: apfvit8co0
+parent: ztyvug6ivb
+name: List carrier products
+method: GET
+path: /api/public/v3/products
+auth: basic (API user + key)
+params:
+  - { id: n58ig6rh0c, name: carrier_code, in: query, type: string, required: false }
+  - { id: yk6y0ujh2p, name: sender_country_code, in: query, type: string, required: false }
+  - { id: gd9waoku8i, name: receiver_country_code, in: query, type: string, required: false }
+responses:
+  - { status: 200, model: kpmp1cr4lc, many: true }
+  - { status: 401, description: Wrong API user or key }

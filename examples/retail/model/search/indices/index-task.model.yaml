@@ -1,0 +1,12 @@
+# Every write is an asynchronous task; taskID says when it is searchable.
+id: uy48nlidqz
+ownedBy: mnu2zqtqzh
+storedIn: u4435mqo47
+name: Index Task
+fields:
+  - { id: s7s7oe1bfu, name: taskID, type: long, pk: true }
+  - { id: fzic57aozf, name: indexName, type: string, required: true, ref: fwm01mcigb }
+  - { id: c4sgr17xab, name: status, type: string, required: true, constraints: ["one of: notPublished, published"] }  # GAP: enum
+  - { id: nk02opnv10, name: createdAt, type: datetime, required: true }
+indexes:
+  - { id: z9ddhec9l1, name: ix_task_index_status, fields: [fzic57aozf, c4sgr17xab] }

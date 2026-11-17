@@ -1,0 +1,23 @@
+id: plxrorvafg
+ownedBy: x1aigxm73q
+storedIn: t99y8h5mfb
+name: ReturnShipment
+fields:
+  - { id: q4qerp6wwc, name: id, type: int, pk: true }
+  - { id: qr2ft3petg, name: original_shipment_id, type: int, nullable: true, ref: o96th79s8y }
+  - { id: mj6uwuhkg9, name: product_code, type: string, required: true, ref: kpmp1cr4lc, constraints: ["a return product, e.g. PDK_RETURN, GLS_SHOP_RETURN"] }
+  # GAP: embedded sub-object of a stored record: the held model has no table, so the stored view loses it
+  - { id: u8r8aw11j3, name: sender, model: grcw7cakmk, required: true, from: [plqrbg3gk7], derived: the customer who got the order }
+  - { id: fyaxiz2sv7, name: receiver, model: grcw7cakmk, required: true, from: [f4ujj1cp9p], derived: "the 3PL's returns address" }
+  - { id: jyff1nrddk, name: weight, type: int, constraints: [grams] }
+  - { id: urhtuv0udb, name: reference, type: string, required: true, from: [hrk1dbsomu], constraints: ["Fjeld return id (RMA)"] }
+  - { id: uv14bc2h86, name: order_id, type: string, nullable: true, from: [zerukfefcp] }
+  - { id: rn9ay7olrf, name: pkg_no, type: string, nullable: true }
+  - { id: ys8d9tj64o, name: label_delivery, type: string, required: true, constraints: ["one of: pdf, qr_code (printerless, shown at the drop-off point)"] }   # GAP: enum
+  - { id: dj0veyvvtj, name: qr_code, type: string, nullable: true }
+  - { id: ka1dx4408v, name: status, type: string, required: true, constraints: ["one of: created, dropped_off, in_transit, delivered, expired"] }   # GAP: enum
+  - { id: qeph6ntdmy, name: price, type: decimal, nullable: true }
+  - { id: geqzzwdx13, name: created_at, type: datetime, required: true }
+indexes:
+  - { id: vyquzb5f3g, name: ix_return_reference, fields: [urhtuv0udb] }
+  - { id: u4dhadx92k, name: ix_return_original, fields: [qr2ft3petg] }

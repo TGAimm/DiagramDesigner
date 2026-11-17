@@ -1,0 +1,25 @@
+id: gay18202bx
+ownedBy: wuk6o6ekkf
+storedIn: kqjludw0r4
+name: lead
+tags: [b2b, pii]
+fields:
+  - { id: n5xrwrkd57, name: leadid, type: uuid, pk: true }
+  - { id: t88xqgaldz, name: subject, type: string, required: true, constraints: [max 300] }
+  - { id: svbhirfk4y, name: firstname, type: string, nullable: true }
+  - { id: t4ltzn2k56, name: lastname, type: string, required: true }
+  - { id: qhgdncwxh5, name: companyname, type: string, nullable: true, constraints: [max 100] }
+  - { id: oxr4vcqou7, name: emailaddress1, type: string, nullable: true, constraints: [email] }
+  - { id: g0j4p9qzz8, name: telephone1, type: string, nullable: true }
+  # GAP: enum
+  - { id: rz9ouousfp, name: leadsourcecode, type: string, nullable: true, constraints: ["one of: Web, Trade Show, Store, Partner, Other"] }
+  # GAP: enum
+  - { id: l5i4nonq3z, name: fjeld_accounttype, type: string, nullable: true, constraints: ["one of: Club, School, Dealer, Corporate"] }
+  - { id: nn4zhr30ul, name: fjeld_estimatedannualvolume, type: decimal, nullable: true, constraints: [money] }
+  - { id: aeu9t3w47o, name: parentaccountid, type: uuid, nullable: true, ref: kv9n6l36ml }
+  - { id: cy3kyz9fgd, name: parentcontactid, type: uuid, nullable: true, ref: vw2khd7qyi }
+  # GAP: enum
+  - { id: p7i5bcsohe, name: statecode, type: string, required: true, constraints: ["one of: Open, Qualified, Disqualified"] }
+  # GAP: enum
+  - { id: teofnc6f34, name: statuscode, type: string, required: true, constraints: ["one of: New, Contacted, Qualified, Lost, Cannot Contact, No Longer Interested, Canceled"] }
+  - { id: hp6jdl202t, name: createdon, type: datetime, required: true }

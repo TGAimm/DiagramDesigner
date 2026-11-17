@@ -1,0 +1,9 @@
+id: yoohy7gvbx
+parent: gkng6vfutd
+name: onApplyCode
+inputs:
+  - { id: wry5yd3gt9, name: code, type: string, required: true }
+outputs: []
+steps:
+  - { call: i468v09qbd, with: code, gets: cart }
+  - { note: "show the discount line, or the code's error under the field" }

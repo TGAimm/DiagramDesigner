@@ -1,0 +1,19 @@
+# Every file and webhook payload Integration takes in or sends, kept as it was, with index tags.
+id: cc1v719mlz
+ownedBy: gd7b9xmakj
+storedIn: gd7b9xmakj
+name: Archived file
+fields:
+  - { id: ihzgplaat2, name: path, type: string, pk: true, constraints: ["archive/<source>/<yyyy>/<MM>/<dd>/<name> or payloads/<yyyy>/<MM>/<dd>/<messageId>.json"] }
+  # GAP: enum
+  - { id: fvha2ee5g1, name: source, type: string, required: true, constraints: ["one of: wms-in, wms-out, pim, stripe, shipping, service, pos, commerce"] }
+  - { id: rdddhmk1x1, name: originalName, type: string, required: true, constraints: ["e.g. SHIPCONF_20261117103500.csv"] }
+  - { id: g51en0m9dk, name: sha256, type: string, required: true, constraints: [a file seen before with the same hash is skipped] }
+  - { id: bpvh11jzac, name: sizeBytes, type: long, required: true }
+  - { id: myqads51xj, name: rowCount, type: int, nullable: true }
+  - { id: dfjmplrn63, name: receivedAt, type: datetime, required: true }
+  - { id: edhp53fi2o, name: processedAt, type: datetime, nullable: true }
+  # GAP: enum
+  - { id: ny373rmwc7, name: status, type: string, required: true, constraints: ["one of: received, processed, partly_failed, failed, duplicate (blob index tag)"] }
+indexes:
+  - { id: frfsxmdk23, name: tag_sha256, fields: [g51en0m9dk] }

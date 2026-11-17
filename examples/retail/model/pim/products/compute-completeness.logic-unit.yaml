@@ -1,0 +1,24 @@
+id: jbwiro1t6h
+parent: tuvm3c6m5l
+name: computeCompleteness
+inputs:
+  - { id: sm98zf3rbu, name: productUuid, type: uuid, required: true }
+outputs:
+  - { id: q28ylcddkz, name: completenesses, model: y3n2a1xjts, many: true }
+steps:
+  - { read: qitb6ezis6, with: productUuid, gets: "family, parent, own values" }
+  - if: product has no family
+    then:
+      - { write: y3n2a1xjts, note: delete all rows for the product }
+      - { return: completenesses }
+  - { read: aukbkxsjc3, with: parent chain, gets: inherited values }
+  - { read: fuyymtyer2, with: family code, gets: required attributes per channel }
+  - each: channel in Channel
+    do:
+      - { read: wnhy05z81c, with: channel code, gets: activated locales }
+      - each: locale of the channel
+        do:
+          - { read: hjsj87ps7y, with: required attribute codes, gets: "localizable, scopable, available_locales" }
+          - { note: "count required attributes that apply to the locale, and those without a non-empty value for it (own or inherited; prices need every channel currency)" }
+          - { write: y3n2a1xjts, note: "upsert requiredCount, missingCount for (product, channel, locale)" }
+  - { return: completenesses }

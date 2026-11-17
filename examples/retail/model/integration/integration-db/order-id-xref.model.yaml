@@ -1,0 +1,28 @@
+# One row per webshop order: the ids each system gave it, so any message can be traced back.
+id: n8ujyi0o8a
+ownedBy: v38tj7w8bg
+storedIn: v38tj7w8bg
+name: xref.OrderIds
+fields:
+  - { id: ucdgar74cb, name: commerceOrderId, type: uuid, pk: true, from: [qazi456zfm] }
+  - { id: a0mf35pi6j, name: orderNumber, type: string, required: true, from: [lulkapcaa0], constraints: ["FJ-<country>-<n>"] }
+  - { id: wob9e2yl13, name: commerceCustomerId, type: uuid, nullable: true, from: [zs9b3f85u9], constraints: [null for a guest order] }
+  - { id: z21cfk50oi, name: country, type: string, required: true, from: [e5lts0g7ke] }
+  - { id: j28005n5ys, name: erpCustomerNo, type: string, nullable: true, from: [owbo5jn4ru] }
+  - { id: bgqbj5hfu7, name: erpSalesOrderId, type: guid, nullable: true, from: [dhn4gae35u] }
+  - { id: w8dzy2k42v, name: erpSalesOrderNo, type: string, nullable: true, from: [aq2v5k54f3] }
+  - { id: nzsnojqior, name: wmsOrderId, type: int, nullable: true, from: [py3wo1s5fb], constraints: [only when the order went over the WMS API] }
+  - { id: xmz8mesqk3, name: stripePaymentIntentId, type: string, nullable: true, from: [xhwkjtoolk, p8benaa0fr], derived: "the Commerce payment's interfaceId, which is the PaymentIntent id (pi_…)" }
+  - { id: zndfocy11b, name: collectStoreNo, type: string, nullable: true, from: [k5u5kiw2fk], constraints: [click & collect only] }
+  - { id: kkerdidtiy, name: posPickupOrderId, type: uuid, nullable: true, from: [z5eknvpmx3] }
+  - { id: ywwfefbkui, name: erpInvoiceNos, type: string, many: true, from: [xglupncpbb], constraints: [one per shipment; partial shipments give several] }
+  # GAP: enum
+  - { id: brrt4ew8pv, name: status, type: string, required: true, constraints: ["one of: received, erp_created, sent_to_wms, sent_to_store, partly_shipped, shipped, captured, failed"] }
+  - { id: x4l0ntivhj, name: capturedAmount, type: decimal, nullable: true, from: [p8152nu84z], derived: "/ 100" }
+  - { id: mwsjito2wf, name: createdAt, type: datetime, required: true }
+  - { id: time7io1xd, name: updatedAt, type: datetime, required: true }
+indexes:
+  - { id: z05auxeoy5, name: ux_orderids_number, fields: [a0mf35pi6j], unique: true }
+  - { id: pcyddta234, name: ux_orderids_erp_so, fields: [w8dzy2k42v], unique: true }
+  - { id: urrxxbq3pa, name: ix_orderids_payment_intent, fields: [xmz8mesqk3] }
+  - { id: m88wnb3r1q, name: ix_orderids_status_updated, fields: [brrt4ew8pv, time7io1xd] }

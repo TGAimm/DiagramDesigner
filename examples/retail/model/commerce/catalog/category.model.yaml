@@ -1,0 +1,21 @@
+id: z6o1gq525i
+ownedBy: woc2py521s
+storedIn: rrg5e7natg
+name: Category
+fields:
+  - { id: nfhbnrj8ng, name: id, type: uuid, pk: true }
+  - { id: wthr7hu5dx, name: version, type: long, required: true }
+  - { id: ctu59t9nlv, name: key, type: string, nullable: true, constraints: [= PIM category code] }
+  - { id: fvgx6wpgyf, name: name, type: LocalizedString, required: true }
+  - { id: rzb5426w90, name: slug, type: LocalizedString, required: true }
+  - { id: p6nfo4hd8z, name: description, type: LocalizedString, nullable: true }
+  - { id: tajoem5geq, name: parent, type: uuid, nullable: true, ref: nfhbnrj8ng }
+  - { id: wjgggt5chj, name: ancestors, type: uuid, many: true, ref: nfhbnrj8ng, stored: false }
+  - { id: vtcsoa5f1p, name: orderHint, type: string, required: true, constraints: ["decimal between 0 and 1, as text"] }
+  - { id: hix5mkjdzw, name: externalId, type: string, nullable: true }
+  - { id: g8nuhrd9ni, name: metaTitle, type: LocalizedString, nullable: true }
+  - { id: punid3ultb, name: createdAt, type: datetime, required: true }
+  - { id: peswin1lqf, name: lastModifiedAt, type: datetime, required: true }
+indexes:
+  - { id: brp7z7tc1z, name: ux_category_key, fields: [ctu59t9nlv], unique: true }
+  - { id: qa8r89fs2m, name: ix_category_parent, fields: [tajoem5geq] }

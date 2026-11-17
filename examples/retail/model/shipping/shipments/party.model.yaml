@@ -1,0 +1,14 @@
+id: grcw7cakmk
+ownedBy: d8hyu4qiq7
+name: Party
+tags: [pii]
+fields:
+  - { id: nsdjdyklng, name: name, type: string, required: true }
+  - { id: g1vumamrh4, name: attention, type: string, nullable: true }
+  - { id: i3sdybsbxt, name: address1, type: string, required: true }
+  - { id: wwlaf0cso2, name: address2, type: string, nullable: true }
+  - { id: whgdgw68ml, name: zipcode, type: string, required: true }
+  - { id: ax093rtfb8, name: city, type: string, required: true }
+  - { id: z4fpyw972q, name: country_code, type: string, required: true, constraints: ["ISO 3166-1 alpha-2"] }
+  - { id: mxihgiox6t, name: email, type: string, nullable: true, constraints: ["needed for EMAIL_NT"] }
+  - { id: otdpaszi7s, name: mobile, type: string, nullable: true, constraints: ["E.164; needed for SMS_NT"] }

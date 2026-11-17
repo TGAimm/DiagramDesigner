@@ -1,0 +1,24 @@
+# API page 50100 FJ Inventory By Location over query 50100; read every 5 minutes as a delta.
+id: h11w5t51c7
+parent: efcxalw7mu
+name: List inventory by location
+method: GET
+path: /api/fjeld/integration/v1.0/companies({companyId})/inventoryByLocation
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: qqpbel4bjp, name: companyId, in: path, type: guid }
+  - { id: tx4bdg2lg7, name: $filter, in: query, type: string, required: false, description: "delta: lastModifiedDateTime gt <last run>; locationCode eq 'S03'" }
+  - { id: j1m9cn1kid, name: Prefer, in: header, type: string, required: false, description: "odata.maxpagesize=5000" }
+responses:
+  # GAP: OData collection envelope { value: [...], @odata.nextLink } written as many: true
+  - status: 200
+    many: true
+    fields:
+      - { id: davcdssgtm, name: itemNumber, type: string, from: [uyb5ygukb9] }
+      - { id: s6cceyfplt, name: variantCode, type: string, from: [zx5k1zft1o] }
+      - { id: qz5k02r0oz, name: locationCode, type: string, from: [uprcju7fdf] }
+      - { id: apnita4yhe, name: inventory, type: decimal, from: [wbgofszc3q] }
+      - { id: xq1qzeo1ab, name: quantityOnSalesOrders, type: decimal, from: [t2oqxs7ee1] }
+      - { id: sg01ndf4ik, name: availableQuantity, type: decimal, from: [fj7wbj8f9j] }
+      - { id: dtry60ci4b, name: lastModifiedDateTime, type: datetime, from: [jwid5gdy97] }
+  - { status: 401, description: Unauthorized }

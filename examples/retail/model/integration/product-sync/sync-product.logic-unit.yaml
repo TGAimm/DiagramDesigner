@@ -1,0 +1,47 @@
+# GAP: triggered by subscription product-changed/commerce-search
+id: j657kw4aw1
+parent: w032iyqws6
+name: syncProduct
+inputs:
+  - { id: qxz10hw8cv, name: event, model: no6pifpr62, required: true }
+outputs: []
+fails:
+  - { name: notInPim, description: "the uuid is gone from PIM (404) though the event said updated: treated as removed" }
+steps:
+  - { note: "subscription product-changed/commerce-search (max 20 concurrent: Commerce allows ~ 300 writes/s per project, Algolia batches)" }
+  - { call: qq1hzhaotk, with: "client credentials of Connection integration-hub (token cached 50 min)", gets: pimToken }
+  - if: event.action is removed
+    then:
+      - { read: yd9iwthx32, with: event.pimUuid, gets: "sku, styleCode, commerceProductId" }
+      - { call: id3wj2m0zi, with: "version, removeVariant sku (unpublish the product when it was the last variant)", gets: product }
+      - { call: kn0ruulrv9, with: "deleteObject objectID = sku, every locale index (products_da_dk, products_sv_se, products_nb_no, products_de_de)" }
+      - { write: yd9iwthx32, note: "removed true" }
+    else:
+      - { call: apypxitd32, with: "event.pimUuid, with_completenesses true", gets: product }
+      - if: 404
+        then:
+          - { fail: notInPim }
+      - if: product.parent set
+        then:
+          - { call: gan6znbym8, with: "product.parent, then that model's parent", gets: inherited values }
+      - { note: "option labels (brand, colour, size, material) from a cache refreshed hourly with list-attribute-options" }
+      - { note: "map to ProductContent" }
+      - { read: yd9iwthx32, with: product.uuid, gets: last hash }
+      - if: same hash
+        then:
+          - { write: yguluhbf6w, note: "skipped_duplicate: nothing the shop shows changed" }
+        else:
+          - { call: b5bvdjmbcf, with: "key = styleCode, expand productType", gets: commerce product }
+          - if: 404
+            then:
+              - { call: b07aw12lvy, with: "ProductDraft: key styleCode, productType by family, name, slug per locale, categories, masterVariant (sku, attributes, images), publish when complete and enabled", gets: commerce product }
+            else:
+              - { call: id3wj2m0zi, with: "version, actions: changeName, setDescription, addVariant or setAttribute per changed attribute, setImages, addToCategory / removeFromCategory, publish or unpublish", gets: commerce product }
+              - if: 409 ConcurrentModification
+                then:
+                  - { call: b5bvdjmbcf, with: styleCode, gets: commerce product }
+                  - { call: id3wj2m0zi, with: "the same actions on the new version", gets: commerce product }
+          - { read: dcsafzlsgm, with: sku, gets: current web prices }
+          - { call: kn0ruulrv9, with: "updateObject per locale index: Product Record from ProductContent, price and inStock kept from the current record (partialUpdateObject when it exists)", gets: taskID }
+          - { write: yd9iwthx32, note: "hash, commerceProductId, commerceVersion, lastSyncedAt" }
+          - { write: yguluhbf6w, note: "processed, targetSystem commerce+search, businessKey sku" }

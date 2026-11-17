@@ -1,0 +1,43 @@
+# GAP: scheduled trigger
+# Flow 4: Stripe payouts and their balance transactions > ERP general journal, posted when it nets to the payout.
+id: mso3kyetep
+parent: mwsgna90tw
+name: reconcilePayouts
+meta: { schedule: "0 6 * * *" }
+inputs: []
+outputs: []
+steps:
+  - { read: nanvethhnv, with: stripe / payouts, gets: cursor }
+  - { call: d9rqhzexn0, with: "status paid, arrival_date[gte] cursor - 3 days, limit 100, auto-paginate", gets: payouts }
+  - each: payout in payouts
+    do:
+      - { read: skmw1qynw9, with: payout.id, gets: done }
+      - if: done.status is posted
+        then:
+          - { note: skip }
+        else:
+          - { call: irtushvfl9, with: "payout = payout.id, expand data.source, limit 100, auto-paginate", gets: transactions }
+          - each: transaction (not the payout's own)
+            do:
+              - if: type is charge or refund
+                then:
+                  - { call: by4f2wsisq, with: source.payment_intent, gets: "intent (metadata.order_number)" }
+              - { write: lctrjdt67j, note: "gross line, and a fee line when fee > 0" }
+          - { write: skmw1qynw9, note: "amount, transactionCount, journalTotal, difference" }
+          - if: difference is not 0
+            then:
+              - { write: wlmvgl2qp8, note: "targetSystem erp, retryable false: finance looks at it" }
+              - { write: skmw1qynw9, note: status difference }
+            else:
+              - { call: p0tngi23im, with: "$filter code eq 'STRIPE-<currency>'", gets: journal }
+              - each: journal line
+                do:
+                  - { call: dduwg38kcl, with: "journal.id; accountType G/L Account, accountNumber, postingDate, documentNumber = payout id, externalDocumentNumber, amount, description, balanceAccountType Bank Account, balancingAccountNumber", gets: line }
+              - { call: xris3u29wu, with: journal.id }
+              - if: 400 from posting
+                then:
+                  - { write: wlmvgl2qp8, note: "lines stay in the batch; erp-team posts by hand" }
+                  - { write: skmw1qynw9, note: status lines_created }
+                else:
+                  - { write: skmw1qynw9, note: "status posted, erpDocumentNo, postedAt" }
+  - { write: nanvethhnv, note: "newest arrival_date posted" }

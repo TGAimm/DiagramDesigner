@@ -1,0 +1,18 @@
+id: k5fwoyuzi6
+parent: ktxxdlpyeb
+name: Save synonyms
+method: POST
+path: /1/indexes/{indexName}/synonyms/batch
+auth: "X-Algolia-Application-Id + X-Algolia-API-Key (admin key: editSettings ACL)"
+params:
+  - { id: anwyz5qeyn, name: indexName, in: path, type: string }
+  - { id: rxy24da92m, name: forwardToReplicas, in: query, type: bool, required: false }
+  - { id: d6m8tsc3m7, name: replaceExistingSynonyms, in: query, type: bool, required: false }
+request: { model: tzc68qcqx4, many: true, omit: [xe1enoffbg] }
+responses:
+  - status: 200
+    fields:
+      - { id: r1l699yj6w, name: taskID, type: long, from: [s7s7oe1bfu] }
+      - { id: gy61666r3d, name: updatedAt, type: datetime, from: [nk02opnv10] }
+  - { status: 400, description: "a synonym without the fields its type needs" }
+  - { status: 403, description: missing editSettings ACL }

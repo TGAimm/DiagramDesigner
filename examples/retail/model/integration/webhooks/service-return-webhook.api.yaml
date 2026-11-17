@@ -1,0 +1,16 @@
+# The returns portal's webhook: the whole Return request after each change.
+id: cab3aj0v8b
+parent: ft040pevh9
+name: Receive return event
+method: POST
+path: /webhooks/service/returns
+auth: "X-Fjeld-Signature = HMAC-SHA256(body, shared secret in Key Vault)"
+params:
+  - { id: h7cysxvt7e, name: X-Fjeld-Signature, in: header, type: string, required: true }
+  # GAP: enum
+  - { id: jrfxzvqnqn, name: X-Fjeld-Event, in: header, type: string, required: true, description: "one of: return.created, return.status_changed" }
+request: { model: dntnqyedil }
+responses:
+  - { status: 202, description: Accepted }
+  - { status: 401, description: Bad signature }
+  - { status: 409, description: "a status change older than the one held (updated_at): ignored" }

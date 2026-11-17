@@ -1,0 +1,15 @@
+# GAP: triggered by subscription price-stock-changed/search
+id: kai0eqmgit
+parent: f1xy7xguug
+name: applyPriceStockToSearch
+inputs:
+  - { id: zn5a5aknv1, name: events, model: j3qk5xyr4i, many: true, required: true, description: "a batch of up to 500 (Service Bus batch receive)" }
+outputs: []
+steps:
+  - { note: "subscription price-stock-changed/search (filter: locationCode = 'CENTRAL' OR priceListCode LIKE 'WEB-%' OR priceListCode LIKE 'CAMPAIGN-%')" }
+  - { note: "keep the last event per sku and index; currency picks the index (DKK > products_da_dk, SEK > products_sv_se, NOK > products_nb_no, EUR > products_de_de)" }
+  - { call: kn0ruulrv9, with: "partialUpdateObjectNoCreate per sku: price, salePrice, discountPercent (stock: inStock = availableQty > 0)", gets: taskID }
+  - if: 429 or 5xx
+    then:
+      - { note: "abandon the batch: Service Bus redelivers it" }
+  - { write: yguluhbf6w, note: "processed, targetSystem search, one row per batch" }

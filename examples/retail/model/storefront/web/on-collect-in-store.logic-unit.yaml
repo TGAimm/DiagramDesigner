@@ -1,0 +1,10 @@
+id: h7xii3m5m4
+parent: pcwnkmmuwj
+name: onCollectInStore
+inputs:
+  - { id: txdkkujl3i, name: sku, type: string, required: true }
+  - { id: pvb3cgrsjv, name: storeKey, type: string, required: true }
+outputs: []
+steps:
+  - { call: hxzqf0nk71, with: "sku, quantity 1, storeKey", gets: cart }
+  - { note: "remember the store for the session; the checkout then offers the click-collect method" }

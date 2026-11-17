@@ -1,0 +1,10 @@
+# Fjeld: general, marketing, technical, sizing, media, erp (read-only, fed from ERP).
+id: iba22sbvi0
+ownedBy: mt2wjcx7nj
+storedIn: r1xvgi7bie
+name: Attribute Group
+fields:
+  - { id: p5rkkxbc5e, name: code, type: string, pk: true, required: true }
+  - { id: b77nb9va5r, name: sort_order, type: int }
+  - { id: fsu7qs4xjs, name: attributes, type: string, many: true, ref: z66zy4j2n8 }
+  - { id: k1unh2uu8z, name: labels, type: "map<locale, string>" }

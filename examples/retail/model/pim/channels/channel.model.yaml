@@ -1,0 +1,12 @@
+# Fjeld: ecommerce (webshop DK/SE/NO/DE, tree fjeld_web), stores (POS shelf labels), print (catalogue).
+id: wnhy05z81c
+ownedBy: c654efbgqw
+storedIn: r1xvgi7bie
+name: Channel
+fields:
+  - { id: k4nfak5v5g, name: code, type: string, pk: true, required: true }
+  - { id: jp7us5n6uq, name: category_tree, type: string, required: true, ref: o2peddxqos, constraints: [a tree root] }
+  - { id: zm2gv06fiv, name: locales, type: string, many: true, required: true, ref: pjdrglpirc }
+  - { id: azwho4sdyi, name: currencies, type: string, many: true, required: true, ref: s290ixwdog }
+  - { id: lq04bnzrc2, name: conversion_units, type: "map<attribute code, unit code>", constraints: [metric values exported in these units] }
+  - { id: mpqh3dy58g, name: labels, type: "map<locale, string>" }

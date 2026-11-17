@@ -1,0 +1,13 @@
+id: u1dn6w0tne
+parent: wyb51ibopv
+name: Get sales order
+method: GET
+path: /api/v2.0/companies({companyId})/salesOrders({id})
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: bcvn156bqv, name: companyId, in: path, type: guid }
+  - { id: c5v0572a4a, name: id, in: path, type: guid }
+  - { id: ax3k5hl3p6, name: $expand, in: query, type: string, required: false, description: salesOrderLines }
+responses:
+  - { status: 200, model: j4uwq30pr1 }
+  - { status: 404, description: "no open order with this id (posted in full: it is gone, see salesInvoices)" }

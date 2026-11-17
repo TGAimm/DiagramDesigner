@@ -1,0 +1,13 @@
+# GAP: configuration records (Fjeld's reasons are rows: TOO_SMALL, TOO_LARGE, NOT_AS_DESCRIBED, DEFECTIVE, WRONG_ITEM, CHANGED_MIND, LATE_DELIVERY)
+id: dqkug7urdt
+ownedBy: i3cjkl2kdw
+storedIn: lhfbozuhuf
+name: Return reason
+fields:
+  - { id: ude4lhu5jc, name: code, type: string, pk: true }
+  - { id: ub47zgt5tl, name: label, type: json, required: true, constraints: ["by locale: da, sv, nb, de, en"] }
+  - { id: bfqux58r6z, name: requires_comment, type: bool, required: true }
+  - { id: u566hg40p0, name: requires_photo, type: bool, required: true }
+  - { id: elcxkdsjjn, name: is_fault, type: bool, required: true, constraints: [true = Fjeld pays the return and no fee] }
+  - { id: fukdfuktxy, name: active, type: bool, required: true }
+  - { id: sup8cl2bhk, name: position, type: int, required: true }

@@ -1,0 +1,12 @@
+id: hu4lmlya6m
+ownedBy: i282x7cdne
+name: Pickup Point View
+fields:
+  - { id: md3mtsmzv3, name: id, type: string, required: true, from: [zpxk2h0vb2] }
+  - { id: uxor319bj3, name: carrierCode, type: string, required: true, from: [fbluj4mfnj] }
+  - { id: b4dmr0rmx9, name: name, type: string, required: true, from: [ttt4sah84p] }
+  - { id: qi463w3lu4, name: address, type: string, required: true, from: [lmp8u42sfx] }
+  - { id: e7ob184y54, name: postalCode, type: string, required: true, from: [lhor5l7yzv] }
+  - { id: apmv2e07u7, name: city, type: string, required: true, from: [bar4ux49ar] }
+  - { id: a3prxlhkn7, name: distanceM, type: int, nullable: true, from: [tw2mbotx5v] }
+  - { id: zy1smv90gj, name: openingHours, type: string, many: true, from: [x6zinfqru7] }

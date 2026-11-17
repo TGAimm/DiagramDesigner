@@ -1,0 +1,19 @@
+# GAP: triggered by subscription crm-events/contact-merged
+id: dxeaxx8hkw
+parent: mwg6alxci7
+name: onContactMerged
+inputs:
+  - { id: ad3qb0smo6, name: context, model: yaicuu7opu, required: true }
+outputs: []
+steps:
+  - { note: "subscription crm-events/contact-merged (filter MessageName = 'Merge')" }
+  - { call: wla5m60bxu, with: "filter equals(external_id, target commerce id)", gets: target profile }
+  - { call: wla5m60bxu, with: "filter equals(external_id, subordinate commerce id)", gets: subordinate profile }
+  - if: both exist
+    then:
+      - { call: mlyjyz8wss, with: "destination = target profile, source = subordinate profile" }
+  - if: only the subordinate exists
+    then:
+      - { call: cc4xwm61gz, with: "subordinate profile: external_id = target commerce id, properties.crm_contact_id = target contactid", gets: profile }
+  - { note: "Commerce keeps both customers (both can still sign in); nothing to do there" }
+  - { write: yguluhbf6w, note: "processed, sourceSystem crm, targetSystem marketing" }

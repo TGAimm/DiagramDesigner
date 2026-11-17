@@ -1,0 +1,17 @@
+id: n1iz3fyu71
+parent: y5739ri6l0
+name: resubmitDeadLetter
+handles: [upwd9cv0k6]
+inputs:
+  - { id: yjd55aglbx, name: messageId, type: string, required: true }
+outputs: []
+fails:
+  - { name: notFound, description: not on the dead-letter queue (404) }
+steps:
+  - { note: "receive the message with this MessageId from queue dead-letter (peek by sequence number)" }
+  - if: not there
+    then:
+      - { fail: notFound }
+  - { call: wrbtf9xjcp, with: "the envelope, attempt 1, notBefore now" }
+  - { write: wlmvgl2qp8, note: "resolvedAt, resolvedBy resubmit by <user>" }
+  - { write: yguluhbf6w, note: resubmitted }

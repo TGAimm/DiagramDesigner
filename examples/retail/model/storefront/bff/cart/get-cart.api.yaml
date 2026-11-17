@@ -1,0 +1,9 @@
+id: u0ur2d2664
+parent: jzcljy1080
+name: Get cart
+method: GET
+path: /api/cart
+auth: session cookie fj_sid
+responses:
+  - { status: 200, model: lq4foj9308 }
+  - { status: 204, description: no cart yet }

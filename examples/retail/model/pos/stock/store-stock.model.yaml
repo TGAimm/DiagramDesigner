@@ -1,0 +1,16 @@
+id: wdcm6cs4ja
+ownedBy: vgv4575wz1
+storedIn: hykg6pt8u2
+name: Store stock
+fields:
+  - { id: poqeq2oxtg, name: storeId, type: int, pk: true, ref: h3qlberi23 }
+  - { id: irgtzk6axo, name: sku, type: string, pk: true, ref: jw2rr761o3 }
+  - { id: zp69ptx4zg, name: qtyOnHand, type: int, required: true, constraints: [may go negative when the till sells what the system lacks] }
+  - { id: n9rzk3z11x, name: qtyReserved, type: int, required: true, constraints: [held for click & collect orders not yet collected] }
+  - { id: whjf9y210f, name: qtyAvailable, type: int, stored: false, from: [zp69ptx4zg, n9rzk3z11x], derived: on hand - reserved }
+  - { id: mm8eoo6f87, name: minLevel, type: int, nullable: true, constraints: [replenishment point the ERP planner uses] }
+  - { id: rrjtshmqva, name: lastSetAt, type: datetime, nullable: true, constraints: [last set by Integration from ERP] }
+  - { id: zakjkd8oig, name: updatedAt, type: datetime, required: true }
+indexes:
+  - { id: gtic0afg01, name: ix_stock_sku, fields: [irgtzk6axo] }
+  - { id: gqpuuiuh4a, name: ix_stock_store_updated, fields: [poqeq2oxtg, zakjkd8oig] }

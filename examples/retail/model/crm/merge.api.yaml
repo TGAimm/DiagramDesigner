@@ -1,0 +1,14 @@
+id: k3nt8yueni
+parent: wh40r2i41o
+name: Merge (action)
+method: POST
+path: /api/data/v9.2/Merge
+auth: OAuth 2.0 bearer (Entra ID app registration)
+request:
+  fields:
+    - { id: ten1n8ei5l, name: Target, type: uuid, required: true, to: [gp3y3t4d1d], description: "{ contactid, @odata.type: Microsoft.Dynamics.CRM.contact }: the contact kept" }
+    - { id: xii8qbaepl, name: Subordinate, type: uuid, required: true, to: [pj0zs4w4qa], description: the contact merged in and deactivated }
+    - { id: yyco77bq45, name: UpdateContent, model: vw2khd7qyi, description: "a contact entity: columns copied from the subordinate onto the target" }
+responses:
+  - { status: 204, description: Merged }
+  - { status: 400, model: blqvorzt9x, description: "same record twice, or a record is inactive" }

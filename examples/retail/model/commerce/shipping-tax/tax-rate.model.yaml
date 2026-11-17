@@ -1,0 +1,10 @@
+id: oxv3h61cni
+ownedBy: d2rl6i7zpf
+name: Tax Rate
+fields:
+  - { id: fxcusl54xj, name: id, type: string, nullable: true }
+  - { id: wxgfwgax8l, name: name, type: string, required: true, constraints: ["e.g. DK moms 25%"] }
+  - { id: amkw5ozpkf, name: amount, type: decimal, required: true, constraints: [0 to 1; DK 0.25, SE 0.25, NO 0.25, DE 0.19] }
+  - { id: tvx5087y38, name: includedInPrice, type: bool, required: true, constraints: [true for all Fjeld prices] }
+  - { id: w8pa4353al, name: country, type: string, required: true, constraints: ["one of: DK, SE, NO, DE"] }  # GAP: enum
+  - { id: f860pxz7z5, name: state, type: string, nullable: true }

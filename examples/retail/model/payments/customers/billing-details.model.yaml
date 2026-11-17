@@ -1,0 +1,9 @@
+id: ozpw11jr97
+ownedBy: yzg8gfwzwo
+name: BillingDetails
+tags: [pii]
+fields:
+  - { id: tyxdkb4tw5, name: name, type: string, nullable: true }
+  - { id: kzx3l6hn9v, name: email, type: string, nullable: true }
+  - { id: jaupe2g5g8, name: phone, type: string, nullable: true }
+  - { id: rsey3qsvs5, name: address, model: efxi7uugd5, nullable: true }

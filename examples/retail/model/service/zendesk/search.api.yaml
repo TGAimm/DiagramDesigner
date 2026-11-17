@@ -1,0 +1,17 @@
+id: h6imfcougo
+parent: y0w8820v7y
+name: Search
+method: GET
+path: /api/v2/search
+auth: "basic (agent e-mail/token + API token) or OAuth bearer"
+params:
+  - { id: dg7mog5ksr, name: query, in: query, type: string, required: true, description: "e.g. type:ticket custom_field_360001234567:FJ-100234 status<solved" }
+  - { id: hfnpzoyplz, name: sort_by, in: query, type: string, required: false, description: "updated_at, created_at, priority, status, ticket_type" }
+  - { id: vsnhn36407, name: sort_order, in: query, type: string, required: false }
+responses:
+  # GAP: polymorphic results (each result is a ticket, user, organization or group, told by result_type; written as tickets, Fjeld's use)
+  - status: 200
+    fields:
+      - { id: ex7ya10kp9, name: results, model: cd3t7bjar1, many: true }
+      - { id: i9a7u7l4lp, name: count, type: int, from: [ksaqjqmrmp], derived: number of matches }
+  - { status: 422, model: zkkh7sjnsz, description: invalid query or over 1000 results }

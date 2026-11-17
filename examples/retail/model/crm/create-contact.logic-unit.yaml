@@ -1,0 +1,24 @@
+id: r5s0g0jaif
+parent: izc0a89lge
+name: createContact
+handles: [ffxbfylqhk]
+inputs:
+  - { id: f7egwq1w5s, name: contact, model: vw2khd7qyi, required: true }
+  - { id: uuyk8a74u2, name: suppressDuplicateDetection, type: bool }
+outputs:
+  - { id: pmvqf7d48x, name: created, model: vw2khd7qyi }
+fails:
+  - { name: duplicateFound, description: "412, 0x80040333" }
+  - { name: invalid, description: a required column is missing or a value is out of range }
+steps:
+  - if: lastname missing or e-mail not valid
+    then:
+      - { fail: invalid }
+  - if: suppressDuplicateDetection is false
+    then:
+      - { call: t9d49kjuut, with: contact, gets: matches }
+      - if: matches not empty
+        then:
+          - { fail: duplicateFound }
+  - { write: vw2khd7qyi, note: "insert, statecode Active" }
+  - { return: created }

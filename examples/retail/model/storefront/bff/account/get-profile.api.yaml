@@ -1,0 +1,9 @@
+id: kj2e67wd0e
+parent: r3utcx4a06
+name: My profile
+method: GET
+path: /api/account/profile
+auth: session cookie fj_sid
+responses:
+  - { status: 200, model: cu38cv7e7h }
+  - { status: 401, description: not signed in }

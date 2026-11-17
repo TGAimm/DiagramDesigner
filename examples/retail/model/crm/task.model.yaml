@@ -1,0 +1,11 @@
+id: ofrzcemiw1
+ownedBy: bez4ea9raq
+storedIn: kqjludw0r4
+name: task
+fields:
+  - { id: vyxtov6m0q, name: activityid, type: uuid, pk: true, ref: bu7y6rgq9y }
+  # GAP: enum
+  - { id: heb2qc15jc, name: prioritycode, type: string, required: true, constraints: ["one of: Low, Normal, High"] }
+  - { id: wf00hr3q1o, name: percentcomplete, type: int, nullable: true, constraints: [min 0, max 100] }
+  # GAP: enum
+  - { id: rlo60zmxgx, name: fjeld_source, type: string, nullable: true, constraints: ["one of: Service, Store, Sales"] }

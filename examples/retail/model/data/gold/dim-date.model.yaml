@@ -1,0 +1,18 @@
+# Generated, not loaded: 2015-01-01 to 2035-12-31.
+id: pg9z87iutw
+ownedBy: d0jfpet25d
+storedIn: d0jfpet25d
+name: dim_date
+fields:
+  - { id: bgzdmszmqm, name: date_key, type: int, pk: true, constraints: [yyyyMMdd] }
+  - { id: wzbguc42vn, name: date, type: date, required: true }
+  - { id: ptrnwrzzel, name: year, type: int, required: true }
+  - { id: mkdyfidta5, name: quarter, type: int, required: true }
+  - { id: jqroyypgu8, name: month, type: int, required: true }
+  - { id: ae2w0wus13, name: month_name, type: string, required: true }
+  - { id: ny2cpm5j16, name: iso_week, type: int, required: true }
+  - { id: y5rbmxr4p7, name: day_of_week, type: int, required: true, constraints: [1 = Monday] }
+  - { id: jyrmyi86i2, name: is_weekend, type: bool, required: true }
+  - { id: t76wg2fklw, name: fiscal_year, type: int, required: true, constraints: [same as calendar year] }
+  - { id: uhub6tnu2k, name: is_holiday_dk, type: bool, required: true }
+  - { id: i9v62y6dud, name: week_start_date, type: date, required: true }

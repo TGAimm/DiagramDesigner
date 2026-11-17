@@ -1,0 +1,16 @@
+id: bai6zu9s9z
+parent: yrxcxi1txk
+name: Create catalog item
+method: POST
+path: /api/catalog-items
+auth: "Klaviyo-API-Key private key (scope catalogs:write)"
+params:
+  - { id: c9mzkelbw2, name: revision, in: header, type: string, required: true }
+request:
+  contentType: application/vnd.api+json
+  model: wlcd5j8z28
+  omit: [kpuvox45iy]
+responses:
+  - { status: 201, model: wlcd5j8z28 }
+  - { status: 409, model: s4w1d8x1z4, description: external_id already exists }
+  - { status: 400, model: s4w1d8x1z4 }

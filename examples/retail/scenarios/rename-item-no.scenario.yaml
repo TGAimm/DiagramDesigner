@@ -1,0 +1,4 @@
+name: Rename the ERP item number
+description: The ERP team wants Item.no called itemNo before the upgrade; see how far it reaches.
+changes:
+  - { set: yu6wdxgb8q, key: name, was: no, to: itemNo }

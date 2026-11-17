@@ -1,0 +1,10 @@
+id: ygmbkn58fj
+name: Commerce
+meta: { vendor: commercetools, product: Composable Commerce, kind: saas, owner: commerce-team, region: europe-west1.gcp, projectKey: fjeld-prod }
+links:
+  - { label: HTTP API, url: "https://docs.commercetools.com/api/" }
+  - { label: Update actions, url: "https://docs.commercetools.com/api/general-concepts#update-actions" }
+  - { label: Subscriptions, url: "https://docs.commercetools.com/api/projects/subscriptions" }
+  - { label: Messages, url: "https://docs.commercetools.com/api/projects/messages" }
+  - { label: GraphQL, url: "https://docs.commercetools.com/api/graphql" }
+  - { label: Authorization, url: "https://docs.commercetools.com/api/authorization" }

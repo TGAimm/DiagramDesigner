@@ -1,0 +1,14 @@
+# pim_api_access_token
+id: c4vt77sgj8
+ownedBy: vsn79avah8
+storedIn: r1xvgi7bie
+name: Access Token
+fields:
+  - { id: ob16ob6sri, name: token, type: string, pk: true, required: true }
+  - { id: gqykle1ev0, name: refreshToken, type: string, required: true }
+  - { id: wma2em3wbz, name: clientId, type: string, required: true, constraints: [the Connection's client id] }
+  - { id: liq6wqkqqz, name: username, type: string, required: true, constraints: [the Connection's API user] }
+  - { id: jt51n8lx22, name: expiresAt, type: datetime, required: true, constraints: [issued + 3600 s] }
+  - { id: z6rleqz57r, name: scope, type: string, nullable: true }
+indexes:
+  - { id: ep91ku8b90, name: ix_access_token_refresh, fields: [gqykle1ev0], unique: true }

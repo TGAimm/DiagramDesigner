@@ -1,0 +1,17 @@
+id: iilvycwlpt
+ownedBy: scelhoohob
+storedIn: rrg5e7natg
+name: Subscription
+fields:
+  - { id: vsbw63ch8q, name: id, type: uuid, pk: true }
+  - { id: xmj3fbt19r, name: version, type: long, required: true }
+  - { id: gd0hba7150, name: key, type: string, nullable: true, constraints: [integration-commerce-messages] }
+  - { id: r7g6n0f52w, name: destination.type, type: string, required: true, constraints: ["one of: AzureServiceBus, EventGrid, SQS, SNS, GoogleCloudPubSub, EventBridge, ConfluentCloud"] }  # GAP: enum
+  - { id: kj9qbokf5l, name: destination.connectionString, type: string, required: true, constraints: ["Service Bus SAS connection string with EntityPath=commerce-messages; secret"] }
+  - { id: wc9glrk1hx, name: messages, type: "{resourceTypeId, types[]}", many: true, constraints: ["order: OrderCreated, OrderStateChanged, OrderShipmentStateChanged, ReturnInfoAdded; payment: PaymentTransactionStateChanged; customer: CustomerCreated; product: ProductPublished; inventory-entry: InventoryEntryQuantitySet"] }
+  - { id: k5pfh2yr0m, name: changes, type: "{resourceTypeId}", many: true }
+  - { id: gkqo6m5msp, name: format, type: string, required: true, constraints: ["one of: Platform, CloudEvents"] }  # GAP: enum
+  - { id: z0jcyx5rki, name: status, type: string, required: true, constraints: ["one of: Healthy, ConfigurationError, ConfigurationErrorDeliveryStopped, ManuallySuspended, TemporaryError"] }  # GAP: enum
+  - { id: k95iuimb4z, name: createdAt, type: datetime, required: true }
+indexes:
+  - { id: vtwttosuax, name: ux_subscription_key, fields: [gd0hba7150], unique: true }

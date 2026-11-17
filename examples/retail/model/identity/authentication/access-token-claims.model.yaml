@@ -1,0 +1,14 @@
+id: ozbh84xjpn
+ownedBy: z4a8fcfwai
+name: AccessTokenClaims
+fields:
+  - { id: izrhexfa6a, name: iss, type: string, required: true, from: [gcu3ue2h17] }
+  - { id: w4vg4btrvm, name: aud, type: string, required: true, from: [bm9p06cpwp], constraints: ["Fjeld: api://fjeld-commerce-api"] }
+  - { id: j4qvfcpj7n, name: azp, type: string, required: true, from: [rii92gdhxd], derived: the client app }
+  - { id: rst3txois7, name: sub, type: string, required: true, from: [pyd47ra3l8], derived: pairwise }
+  - { id: ojzx9zupxf, name: oid, type: uuid, required: true, from: [pyd47ra3l8] }
+  - { id: zypy4k8ral, name: tid, type: uuid, required: true, from: [rknpht5c6k] }
+  - { id: x0gtae8p1y, name: scp, type: string, required: true, constraints: ["space separated, e.g. customer.read orders.read checkout"] }
+  - { id: ksrop96mqy, name: iat, type: int, required: true }
+  - { id: miztsw278p, name: exp, type: int, required: true, constraints: ["iat + 60-90 min"] }
+  - { id: dv6x5txny9, name: commerce_customer_id, type: string, nullable: true, from: [x0p9drrvt5], derived: claims mapping }

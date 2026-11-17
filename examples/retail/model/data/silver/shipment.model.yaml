@@ -1,0 +1,15 @@
+id: wdoo1579l9
+ownedBy: c9pk2gmf7l
+storedIn: c9pk2gmf7l
+name: shipment
+fields:
+  - { id: uiuoyhoh7c, name: shipment_key, type: string, pk: true, from: [u7eet2580l, ht6tg70k0y, j9z9vrckwm], derived: "order_no | erp_line_no | parcel_no" }
+  - { id: srlr1o1uyg, name: order_key, type: string, nullable: true, ref: czdt9fjnll, from: [hjiw00if1x, se2awu780s, czdt9fjnll], derived: "customer_ref is the Commerce order number; looked up in order" }
+  - { id: zdcsvi6tds, name: erp_order_no, type: string, required: true, from: [u7eet2580l] }
+  - { id: bungrz2643, name: sku, type: string, required: true, from: [lwic0r73jh] }
+  - { id: clm6pu6xqs, name: quantity, type: int, required: true, from: [ds6nthmxjc] }
+  - { id: va9b2t0ke0, name: shipped_at, type: datetime, required: true, from: [xlde0cj6np] }
+  - { id: yz82h4u8f4, name: carrier, type: string, required: true, from: [yf94ouy2b9, n924u96icy], derived: "carrier + ' ' + product code" }
+  - { id: lyf1kibafq, name: tracking_no, type: string, required: true, from: [m9cazq8lig] }
+  - { id: u0ldj6wnf3, name: weight_kg, type: decimal, required: true, from: [bbyyc5m7vq], derived: grams / 1000 }
+  - { id: q8k8fqlluk, name: hours_to_ship, type: decimal, nullable: true, from: [va9b2t0ke0, pxn20ueycc], derived: shipped_at - ordered_at in hours }

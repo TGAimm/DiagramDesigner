@@ -1,0 +1,20 @@
+# One price or one stock figure that changed in ERP (or vanished: removed). Subscribers:
+# commerce, search, pos.
+id: j3qk5xyr4i
+ownedBy: g55sb0eqd6
+name: PriceStockChangedEvent
+fields:
+  # GAP: enum
+  - { id: arkg0u3kn8, name: kind, type: string, required: true, constraints: ["one of: price, stock (user property: subscriptions filter on it)"] }
+  - { id: canxkb5yt8, name: sku, type: string, required: true, from: [rkjvkv9x3b, wm2ctpbax6, uyb5ygukb9, zx5k1zft1o], derived: "item no. + '-' + variant code" }
+  - { id: kl48xornlq, name: priceListCode, type: string, nullable: true, from: [m8xb6ceh1z] }
+  - { id: y9oir6603l, name: currency, type: string, nullable: true, from: [dr41csivdn] }
+  - { id: w0lkjlsqti, name: unitPrice, type: decimal, nullable: true, from: [kqip2xr4t7] }
+  - { id: fzvhqcohp4, name: priceIncludesVat, type: bool, nullable: true, from: [wiqy2eaw2b] }
+  - { id: izcgi4kugk, name: startingDate, type: date, nullable: true, from: [ck1kd7z8q8] }
+  - { id: vyn517j19s, name: endingDate, type: date, nullable: true, from: [frlq0a7tky] }
+  - { id: tscrnxp7om, name: locationCode, type: string, nullable: true, from: [uprcju7fdf], constraints: ["CENTRAL (the 3PL) or S01-S12; user property"] }
+  - { id: ms9bt13tak, name: inventory, type: decimal, nullable: true, from: [wbgofszc3q] }
+  - { id: xwq5pk9oj7, name: availableQty, type: decimal, nullable: true, from: [fj7wbj8f9j] }
+  - { id: e8swnepqz5, name: removed, type: bool, required: true, from: [ivfz6q40kk], derived: "true only from the nightly full sync: the line was in the mirror but not in tonight's read" }
+  - { id: uyig7zvnrk, name: changedAt, type: datetime, required: true, from: [jxvus70k0s, jwid5gdy97] }

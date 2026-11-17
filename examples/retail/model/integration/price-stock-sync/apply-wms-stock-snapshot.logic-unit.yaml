@@ -1,0 +1,37 @@
+# GAP: scheduled trigger
+# The 3PL's count is the truth for CENTRAL: the nightly difference goes to ERP as positive and
+# negative adjustments in item journal batch WMS-ADJ.
+id: kffw7hegx4
+parent: f1xy7xguug
+name: applyWmsStockSnapshot
+meta: { schedule: "30 4 * * *" }
+inputs: []
+outputs: []
+fails:
+  - { name: noSnapshot, description: no STOCK file since yesterday }
+steps:
+  - { read: k8fmicwjqb, with: "newest STOCK_<ts>.csv in /fjeld/out", gets: rows }
+  - if: none
+    then:
+      - { write: wlmvgl2qp8, note: "targetSystem wms, retryable false" }
+      - { fail: noSnapshot }
+  - { read: cc1v719mlz, with: sha256 of the file, gets: seen before }
+  - if: seen before
+    then:
+      - { note: "already applied: move it to /fjeld/archive and stop" }
+    else:
+      - { call: h11w5t51c7, with: "$filter locationCode eq 'CENTRAL'; all pages", gets: erp inventory }
+      - { read: n8ujyi0o8a, with: "status sent_to_wms or partly_shipped, updated after snapshot_at", gets: orders in transit }
+      - each: row in rows
+        do:
+          - { write: q1zs67pdnk, note: "difference per item and variant" }
+      - if: any difference over 50 units or 20 % of on-hand
+        then:
+          - { write: wlmvgl2qp8, note: "warning for erp-team; the lines still post" }
+      - { call: ql8hoi10k9, with: "$batch of lines: journalBatchName WMS-ADJ, entryType Positive Adjmt. / Negative Adjmt., locationCode CENTRAL, reasonCode 3PL-COUNT, documentNumber WMS-<date>", gets: lines }
+      - { call: xlwthxt8yk, with: journalBatchName WMS-ADJ }
+      - if: 400 from posting
+        then:
+          - { write: wlmvgl2qp8, note: "lines stay in the batch for erp-team to fix and post" }
+      - { write: cc1v719mlz, note: "archive/wms-out/…/STOCK_<ts>.csv, processed" }
+      - { note: "move the file to /fjeld/archive on the 3PL SFTP" }

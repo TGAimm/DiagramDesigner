@@ -1,0 +1,5 @@
+# GAP: file interface (CSV over SFTP: Integration puts files in /in, picks them up from /out)
+id: tn4azsu06u
+parent: c636znasve
+name: SFTP
+meta: { host: sftp.nordlager.dk, inbound: /fjeld/in, outbound: /fjeld/out, archive: /fjeld/archive, format: "CSV, ; separated, UTF-8, header row" }

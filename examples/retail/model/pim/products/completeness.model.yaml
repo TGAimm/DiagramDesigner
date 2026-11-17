@@ -1,0 +1,15 @@
+# Share of required attributes filled, per channel and locale (family attribute requirements).
+id: y3n2a1xjts
+ownedBy: tuvm3c6m5l
+storedIn: r1xvgi7bie
+name: Completeness
+fields:
+  - { id: eybnd2acel, name: productUuid, type: uuid, pk: true, ref: gziztcdf03 }
+  - { id: nb5f450kv6, name: scope, type: string, pk: true, ref: k4nfak5v5g }
+  - { id: i7vb6lrr7c, name: locale, type: string, pk: true, ref: pjdrglpirc }
+  - { id: hthopgzvfs, name: requiredCount, type: int, required: true, constraints: [min 0] }
+  - { id: nu7l92b07o, name: missingCount, type: int, required: true, constraints: [min 0] }
+  - { id: pg1t64p8fm, name: missingAttributes, type: string, many: true, stored: false, from: [c5aredoeii, ymt19shyk9], derived: required attribute codes without a value }
+  - { id: nopyi44oky, name: data, type: int, stored: false, from: [hthopgzvfs, nu7l92b07o], derived: "round(100 * (required - missing) / required), the percent shown" }
+indexes:
+  - { id: vfjbwjpjxu, name: ix_completeness_scope_locale, fields: [nb5f450kv6, i7vb6lrr7c], unique: false }

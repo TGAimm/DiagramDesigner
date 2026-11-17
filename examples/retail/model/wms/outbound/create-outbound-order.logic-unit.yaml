@@ -1,0 +1,30 @@
+id: pke0ptch5c
+parent: yvrhh8zk8f
+name: createOutboundOrder
+handles: [r11ikjpjzs]
+inputs:
+  - { id: wgx9gz2vt7, name: order, model: zitqiyfbjs, required: true }
+  - { id: v7uutl8oow, name: source, type: string, required: true, description: "file (with the file name) or api" }
+outputs:
+  - { id: h4a72huath, name: order, model: zitqiyfbjs }
+fails:
+  - { name: duplicateOrder, description: orderNumber already received (409) }
+  - { name: unknownItem, description: a line's item no. is not in the item master (422) }
+  - { name: invalidAddress, description: "no zip, or a country the client has no carrier for (422)" }
+steps:
+  - { read: epw5zsq6wa, with: orderNumber, gets: existing }
+  - if: existing
+    then:
+      - { fail: duplicateOrder }
+  - if: ship-to zip missing, or country not in DK, SE, NO, DE
+    then:
+      - { fail: invalidAddress }
+  - each: line in order.lines
+    do:
+      - { read: yfuhon49xq, with: line.itemNo, gets: item }
+      - if: no item
+        then:
+          - { fail: unknownItem }
+  - { write: zitqiyfbjs, note: "insert, status received (on_hold when an item is blocked)" }
+  - { write: hh65a8yt9w, note: "insert each line, quantities allocated / picked / shipped 0" }
+  - { return: order }

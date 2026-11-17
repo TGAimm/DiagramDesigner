@@ -1,0 +1,7 @@
+id: d2rl6i7zpf
+parent: ygmbkn58fj
+name: Shipping and tax
+links:
+  - { label: Shipping Methods, url: "https://docs.commercetools.com/api/projects/shippingMethods" }
+  - { label: Zones, url: "https://docs.commercetools.com/api/projects/zones" }
+  - { label: Tax Categories, url: "https://docs.commercetools.com/api/projects/taxCategories" }

@@ -1,0 +1,24 @@
+id: w9k21lsudl
+ownedBy: ar9pfoadj7
+storedIn: ar9pfoadj7
+name: pos_receipt
+fields:
+  - { id: pvtiaf6yea, name: id, type: uuid, pk: true, from: [i459bnqelo] }
+  - { id: fhqaax3d1a, name: receiptNo, type: string, from: [b9spjarvr6] }
+  - { id: ulejnf1iz6, name: storeId, type: int, from: [nyhfkn9t6c] }
+  - { id: irlifm94y5, name: registerId, type: int, from: [y1s1o4g2lb] }
+  - { id: jgzbrsr6zf, name: staffId, type: int, from: [ghlylcm3to] }
+  - { id: b9ooeh5b9p, name: type, type: string, from: [dk261gmfj3], constraints: ["one of: sale, return, exchange"] } # GAP: enum
+  - { id: gcdr2vhvxc, name: originalReceiptId, type: uuid, nullable: true, from: [eri8sgorp3] }
+  - { id: i9444tyf4f, name: memberNumber, type: string, nullable: true, from: [bcojp4v7wd] }
+  - { id: admxyift9i, name: pickupOrderId, type: uuid, nullable: true, from: [n31v6p8uw8] }
+  - { id: ftm57ddruu, name: currency, type: string, from: [xwf28n2bqx] }
+  - { id: r4gmf8ci6u, name: discountTotal, type: decimal, from: [o5iiw5y19m] }
+  - { id: vdjqtmxss6, name: vatTotal, type: decimal, from: [r4ggzd30uj] }
+  - { id: fsaxgtcr7c, name: total, type: decimal, from: [dl9feil8c3] }
+  - { id: vgz2hz3v9p, name: status, type: string, from: [dqvk762h8w] }
+  - { id: h9z4arl9xh, name: businessDay, type: date, from: [lz87p5mqnv] }
+  - { id: ot3lzu5gkc, name: createdAt, type: datetime, from: [yczz035e4k] }
+  - { id: qr9tqlac5h, name: _loaded_at, type: datetime, required: true }
+  - { id: o7eazm3wc9, name: _source, type: string, required: true, constraints: ["pos/receipts"] }
+  - { id: y52ogsi24g, name: _batch_id, type: string, required: true }

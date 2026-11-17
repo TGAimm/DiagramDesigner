@@ -1,0 +1,20 @@
+# Runs on load and again on every filter, sort or page change (URL state, no reload).
+id: d5qbcwjw2t
+parent: mbno02j577
+name: showListing
+inputs:
+  - { id: zb5deejyf9, name: categoryPath, type: string, nullable: true, description: "/c/men/jackets" }
+  - { id: fdutwlctiv, name: q, type: string, nullable: true, description: "/search?q=" }
+  - { id: c9nduia5wm, name: filters, type: string, nullable: true }
+  - { id: wgqx59hrh6, name: sort, type: string, nullable: true }
+  - { id: ozqz0vx073, name: page, type: int, nullable: true }
+outputs:
+  - { id: ng2rt9wlpa, name: view, model: lfl06w7glo }
+steps:
+  - if: q
+    then:
+      - { call: zs95d67zfk, with: "q, filters, sort, page", gets: view }
+    else:
+      - { call: hjoe5q8cud, with: "last slug of categoryPath, filters, sort, page", gets: view }
+  - { note: "render the grid, facets and breadcrumbs; on 404 show the not-found page" }
+  - { return: view }

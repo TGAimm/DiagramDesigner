@@ -1,0 +1,9 @@
+id: en5fzkz9lg
+ownedBy: f6x7dhgzlz
+name: Tracking Data
+fields:
+  - { id: r075zqcsse, name: trackingId, type: string, nullable: true, from: [bq0e1j92yw] }
+  - { id: elj18pyzam, name: carrier, type: string, nullable: true, constraints: ["e.g. PostNord, Bring, DHL, GLS"] }
+  - { id: q0otei22tv, name: provider, type: string, nullable: true, constraints: [shipping aggregator name] }
+  - { id: wazwrb8ggb, name: providerTransaction, type: string, nullable: true, constraints: [aggregator shipment id] }
+  - { id: rm1uyjxol9, name: isReturn, type: bool, nullable: true }

@@ -1,0 +1,16 @@
+id: zb70kb1he1
+ownedBy: g249oo5ag4
+storedIn: rrg5e7natg
+name: Store
+fields:
+  - { id: n2c67j8ubm, name: id, type: uuid, pk: true }
+  - { id: l9fwl8ht0i, name: version, type: long, required: true }
+  - { id: vomy6kr4nq, name: key, type: string, required: true, constraints: ["one of: fjeld-dk, fjeld-se, fjeld-no, fjeld-de"] }
+  - { id: t8pri2d9s4, name: name, type: LocalizedString, required: true }
+  - { id: mth8smt5m1, name: languages, type: string, many: true, constraints: ["e.g. da-DK, en"] }
+  - { id: suqh2brtew, name: countries, type: string, many: true, constraints: [one country per store] }
+  - { id: zj21tc762p, name: distributionChannels, type: uuid, many: true, ref: yi0uf2c9tg }
+  - { id: lhmekbdz5k, name: supplyChannels, type: uuid, many: true, ref: yi0uf2c9tg, constraints: [3PL warehouse + the country's physical stores] }
+  - { id: v4f39cjcke, name: createdAt, type: datetime, required: true }
+indexes:
+  - { id: ft8h3ag1m2, name: ux_store_key, fields: [vomy6kr4nq], unique: true }

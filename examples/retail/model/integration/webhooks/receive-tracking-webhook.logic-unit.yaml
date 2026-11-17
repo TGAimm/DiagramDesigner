@@ -1,0 +1,34 @@
+id: ym0wgyyt27
+parent: ft040pevh9
+name: receiveTrackingWebhook
+handles: [yo31h6b52c]
+inputs:
+  - { id: q5bq6qvmwo, name: payload, model: auv8rnp3yb, required: true }
+outputs: []
+fails:
+  - { name: badSignature, description: X-Signature does not match (401) }
+  - { name: unknownOrder, description: "order_id is not in xref.OrderIds (422)" }
+steps:
+  - if: X-Signature wrong
+    then:
+      - { fail: badSignature }
+  - { read: nmk8vxeclz, with: "shipping:<shipment_id>:<status>", gets: key }
+  - if: key exists
+    then:
+      - { note: "answer 200" }
+    else:
+      - { write: nmk8vxeclz, note: done }
+      - { read: n8ujyi0o8a, with: "orderNumber = payload.order_id", gets: ids }
+      - if: no ids
+        then:
+          - { fail: unknownOrder }
+      - { call: v2gmil25dl, with: ids.commerceOrderId, gets: "order (version, deliveries, parcels)" }
+      - if: status is delivered
+        then:
+          - { call: xdgvgxhc6p, with: "version, changeShipmentState Delivered (when every parcel is delivered)", gets: order }
+          - { call: na6iutswge, with: "metric Delivered Order, profile email, unique_id <order number>-<pkg_no>-delivered" }
+      - if: "status is exception, returned_to_sender or awaiting_pickup"
+        then:
+          - { call: xdgvgxhc6p, with: "version, setDeliveryCustomField trackingStatus on the parcel's delivery", gets: order }
+          - { call: na6iutswge, with: "metric Delivery Update (status, description, pickup point), unique_id per status" }
+      - { write: yguluhbf6w, note: "processed, sourceSystem shipping, businessKey order number" }

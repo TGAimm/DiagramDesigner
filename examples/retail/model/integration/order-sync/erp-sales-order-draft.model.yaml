@@ -1,0 +1,28 @@
+# The Commerce order as ERP's salesOrders deep insert wants it (B2C: prices incl. VAT).
+id: m3ygzaeftc
+ownedBy: w8lrzinusw
+name: ErpSalesOrderDraft
+fields:
+  - { id: rf8amiktqe, name: externalDocumentNumber, type: string, required: true, from: [lulkapcaa0] }
+  - { id: bzmfo8kgzr, name: customerNumber, type: string, required: true, from: [owbo5jn4ru], derived: "the customer's ERP number; B2C-GUEST-<country> for a guest" }
+  - { id: bfuvfb1r5n, name: orderDate, type: date, required: true, from: [ifyxx7dooz], derived: "date in Europe/Copenhagen" }
+  - { id: x5znam62l2, name: currencyCode, type: string, required: true, from: [n8mwhpvdh9], derived: "blank for DKK (ERP's local currency)" }
+  - { id: vfymffo2qb, name: pricesIncludeTax, type: bool, required: true, derived: "always true (B2C)" }
+  - { id: ak8q172ek2, name: sellToAddressLine1, type: string, required: true, from: [igsvyvkfo3, omcvn591ci], derived: "billing streetName + ' ' + streetNumber" }
+  - { id: gouc67x2su, name: sellToAddressLine2, type: string, nullable: true, from: [ob7rb7es6y] }
+  - { id: l256u76lrl, name: sellToCity, type: string, required: true, from: [u8pwxyruqv] }
+  - { id: koen7mkwb3, name: sellToPostCode, type: string, required: true, from: [qromjahmgy] }
+  - { id: vyf6gs6owt, name: sellToCountry, type: string, required: true, from: [czbauzymbt] }
+  - { id: o7nsqrt4dm, name: shipToName, type: string, required: true, from: [romyz4pfcf, bsp6j20gsl, a6f8fq31va], derived: "shipping firstName + lastName (company when given)" }
+  - { id: qdymjh25b5, name: shipToAddressLine1, type: string, required: true, from: [igsvyvkfo3, omcvn591ci], derived: "shipping streetName + ' ' + streetNumber; the store's address for click & collect" }
+  - { id: ugrwq6t6mx, name: shipToCity, type: string, required: true, from: [u8pwxyruqv] }
+  - { id: sakjo4okdz, name: shipToPostCode, type: string, required: true, from: [qromjahmgy] }
+  - { id: eqll0f6u78, name: shipToCountry, type: string, required: true, from: [czbauzymbt] }
+  - { id: zbtr7pscra, name: email, type: string, required: true, from: [b5ftkjr0y9] }
+  - { id: dpko5hfl8p, name: phone, type: string, nullable: true, from: [zpxuly18oh, n8i6mdsagq] }
+  - { id: m5s3ltc5uu, name: shortcutDimension1Code, type: string, required: true, from: [k5u5kiw2fk], derived: "CC when collectStoreKey is set, else WEB" }
+  - { id: l2jd0ka3vn, name: locationCode, type: string, required: true, from: [k5u5kiw2fk], derived: "CENTRAL (the 3PL) or the store's location code S01-S12" }
+  - { id: p7xf549b6n, name: shippingAgentServiceCode, type: string, nullable: true, from: [lwgxpams2f], derived: "shipping method key (gls-private, pdk-mypack-collect, …) mapped to the ERP service code" }
+  - { id: kedos6mv1p, name: pickupPointId, type: string, nullable: true, from: [lwgxpams2f], derived: "shippingInfo custom field pickupPointId" }
+  - { id: zde1kyfnq9, name: paymentMethodCode, type: string, required: true, from: [cqr391r34s], derived: "STRIPE-CARD, STRIPE-KLARNA or STRIPE-MOBILEPAY" }
+  - { id: zin5yxe6if, name: salesOrderLines, model: ei03hl8rwj, many: true, required: true }

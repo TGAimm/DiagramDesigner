@@ -1,0 +1,16 @@
+id: s25px5lyo8
+parent: flpant1ni7
+name: Export customer segments
+method: GET
+path: /exports/customer-segments
+auth: "bearer (Entra ID; service principals in the sg-data-export-readers group)"
+external: true
+params:
+  - { id: bmyafz0znd, name: segment, in: query, type: string, required: false, description: "champions, loyal, promising, new, at_risk, lapsed" }
+  - { id: fzcyvn8oht, name: changedSince, in: query, type: datetime, required: false }
+  - { id: x8vhf5w4m5, name: top, in: query, type: int, required: false, description: "page size, max 10000" }
+  - { id: vp8ohr2pk0, name: skip, in: query, type: int, required: false }
+responses:
+  - { status: 200, model: ds642k1483, many: true }
+  - { status: 400, description: A filter does not parse }
+  - { status: 401, description: Token missing or not in the readers group }

@@ -1,0 +1,13 @@
+id: v2gmil25dl
+parent: f6x7dhgzlz
+name: Get order
+method: GET
+path: /{projectKey}/orders/{id}
+auth: "bearer (view_orders)"
+params:
+  - { id: frfo3ge9ih, name: projectKey, in: path, type: string, description: fjeld-prod }
+  - { id: u06cg3q6co, name: id, in: path, type: uuid }
+  - { id: gbsi893ka8, name: expand, in: query, type: string, required: false, description: "e.g. paymentInfo.payments[*]" }
+responses:
+  - { status: 200, model: g5tcad7xx0 }
+  - { status: 404, description: ResourceNotFound }

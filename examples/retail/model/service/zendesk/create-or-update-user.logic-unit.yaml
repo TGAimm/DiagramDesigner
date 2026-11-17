@@ -1,0 +1,21 @@
+id: kc9mtrat7r
+parent: rd06mopkno
+name: createOrUpdateUser
+handles: [qxzz2apdc8]
+inputs:
+  - { id: jd407ldg9c, name: user, model: ekcor3oja3, required: true }
+outputs:
+  - { id: fxv9xzk6jg, name: user, model: ekcor3oja3 }
+  - { id: is1ivp2jjr, name: created, type: bool }
+steps:
+  - { read: n127hodmtq, with: external_id, gets: existing }
+  - if: none
+    then:
+      - { read: fvt97h71xi, with: email, gets: existing }
+  - if: existing
+    then:
+      - { write: ekcor3oja3, note: update }
+    else:
+      - { write: ekcor3oja3, note: insert }
+  - { return: user }
+  - { return: created }

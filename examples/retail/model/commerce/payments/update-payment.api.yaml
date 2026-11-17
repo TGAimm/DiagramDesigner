@@ -1,0 +1,19 @@
+id: dglp2lmh50
+parent: ybylhi4dg2
+name: Update payment
+method: POST
+path: /{projectKey}/payments/{id}
+auth: "bearer (manage_payments)"
+params:
+  - { id: qubdt59p5o, name: projectKey, in: path, type: string, description: fjeld-prod }
+  - { id: mgmly71ptb, name: id, in: path, type: uuid }
+request:
+  fields:
+    - { id: dh4t53qnmx, name: version, type: long, required: true, to: [d13nt469el] }
+    # GAP: polymorphic update action union (addTransaction, changeTransactionState, changeTransactionInteractionId, changeTransactionTimestamp, setStatusInterfaceCode, setStatusInterfaceText)
+    - { id: sm0hicx24e, name: actions, type: "UpdateAction {action, ...}", many: true, required: true, to: [q0qlcnm8la, a67yy5xuf5, p6b7gwnxuz, o1802xzmdz, t6lurp3gms] }
+responses:
+  - { status: 200, model: ucmgflrykd }
+  - { status: 400, description: "InvalidOperation (unknown transactionId)" }
+  - { status: 404, description: ResourceNotFound }
+  - { status: 409, description: ConcurrentModification }

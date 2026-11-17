@@ -1,0 +1,32 @@
+id: zz06pixl8w
+parent: ft040pevh9
+name: receiveStripeEvent
+handles: [d34nzrvicc]
+inputs:
+  - { id: rk6plm95an, name: event, model: mumhsnhnkb, required: true }
+  - { id: mppbczxot4, name: stripeSignature, type: string, required: true }
+outputs: []
+fails:
+  - { name: badSignature, description: "no v1 signature matches, or t is over 5 min old (400)" }
+steps:
+  - if: Stripe-Signature does not verify against the whsec_ secret
+    then:
+      - { fail: badSignature }
+  - { read: nmk8vxeclz, with: "stripe:<event.id>", gets: key }
+  - if: key exists
+    then:
+      - { note: "answer 200: Stripe resent it" }
+    else:
+      - { write: nmk8vxeclz, note: done }
+      - { write: cc1v719mlz, note: "payloads/…/<evt id>.json" }
+      - if: "type is payment_intent.succeeded, payment_intent.payment_failed, payment_intent.canceled, charge.refunded or charge.dispute.created"
+        then:
+          - { call: p7828cgxzt, with: "the event; MessageId = event.id, Label = type" }
+      - if: type is payout.failed
+        then:
+          - { write: wlmvgl2qp8, note: "targetSystem payments, retryable false: finance must act (failure_code)" }
+          - { write: skmw1qynw9, note: status failed }
+      - if: type is payout.paid
+        then:
+          - { note: "nothing now: reconcilePayouts picks it up at 06:00 when its balance transactions are final" }
+      - { write: yguluhbf6w, note: "processed, sourceSystem payments" }

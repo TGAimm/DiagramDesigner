@@ -1,0 +1,20 @@
+# GAP: triggered by subscription crm-events/loyalty-tier
+id: zmqalsjvkm
+parent: mwg6alxci7
+name: onLoyaltyTierChanged
+inputs:
+  - { id: m2cj3hoo77, name: context, model: yaicuu7opu, required: true }
+outputs: []
+steps:
+  - { note: "subscription crm-events/loyalty-tier (filter MessageName = 'Update' AND PrimaryEntityName = 'contact')" }
+  - if: old and new tier are the same
+    then:
+      - { note: drop }
+    else:
+      - { call: wla5m60bxu, with: "filter equals(external_id, fjeld_commercecustomerid)", gets: profile }
+      - if: no profile
+        then:
+          - { call: kszuzobco0, with: "email, external_id, properties.loyalty_tier", gets: profile }
+        else:
+          - { call: cc4xwm61gz, with: "properties.loyalty_tier = new tier (a Marketing flow sends the tier mail)", gets: profile }
+      - { write: yguluhbf6w, note: "processed, sourceSystem crm, targetSystem marketing" }

@@ -1,0 +1,23 @@
+id: o6a89deewe
+parent: lzm2qjgaov
+name: reserveInventoryOnOrder
+inputs:
+  - { id: uwpcq7kiss, name: lineItems, model: haxkxd4qhw, many: true, required: true }
+  - { id: bqptbop7en, name: inventoryMode, type: string, required: true, description: "TrackOnly or ReserveOnOrder" }
+outputs:
+  - { id: rkryar3zm4, name: entries, model: fsdygpvm9i, many: true }
+fails:
+  - { name: outOfStock, description: "OutOfStock (400): an entry is missing or has too little, in ReserveOnOrder" }
+steps:
+  - each: lineItem in lineItems
+    do:
+      - { read: fsdygpvm9i, with: "lineItem.variant.sku + lineItem.supplyChannel (3PL or click & collect store)", gets: entry }
+      - if: inventoryMode is ReserveOnOrder and (no entry or entry.availableQuantity < lineItem.quantity)
+        then:
+          - { fail: outOfStock }
+      - if: entry found
+        then:
+          - { write: z6tv7i6g31, note: "minus lineItem.quantity; TrackOnly may go negative" }
+          - { write: hu3pb2kbi4, note: +1 }
+  - { note: all entries change in the order's transaction; any failure rolls all back }
+  - { return: entries }

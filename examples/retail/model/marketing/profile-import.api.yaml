@@ -1,0 +1,27 @@
+id: f703dhaapi
+parent: x27wyx0r8h
+name: Create or update profile
+method: POST
+path: /api/profile-import
+auth: "Klaviyo-API-Key private key (scope profiles:write)"
+params:
+  - { id: hwj6kljyoi, name: revision, in: header, type: string, required: true }
+request:
+  contentType: application/vnd.api+json
+  fields:
+    - { id: kbgm4ip6x6, name: data.attributes.email, type: string, to: [twxat301yi] }
+    - { id: lhukzgitle, name: data.attributes.phone_number, type: string, to: [wpaulnuzqr] }
+    - { id: o7oxmegmv2, name: data.attributes.external_id, type: string, to: [zctmivg3ti] }
+    - { id: ewrazbolhf, name: data.attributes.first_name, type: string, to: [grqe6j9ww3] }
+    - { id: d0mxphudue, name: data.attributes.last_name, type: string, to: [e1sejzfw72] }
+    - { id: fne15fm2x2, name: data.attributes.locale, type: string, to: [wcudflqpqm] }
+    - { id: bj4lnkyuai, name: data.attributes.location.address1, type: string, to: [q5mb6ms94e] }
+    - { id: alpk239btk, name: data.attributes.location.city, type: string, to: [c5m141tkt3] }
+    - { id: fuw28vkog9, name: data.attributes.location.zip, type: string, to: [pblspocyuu] }
+    - { id: mph6iom2q2, name: data.attributes.location.country, type: string, to: [ogeygk4p0a] }
+    - { id: fqezqzrhxc, name: data.attributes.properties, model: xup7zenrv4 }
+responses:
+  - { status: 200, model: apj02aeekt, description: updated }
+  - { status: 201, model: apj02aeekt, description: created }
+  - { status: 400, model: s4w1d8x1z4 }
+  - { status: 409, model: s4w1d8x1z4, description: identifiers point at two different profiles }

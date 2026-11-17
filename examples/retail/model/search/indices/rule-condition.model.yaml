@@ -1,0 +1,9 @@
+id: s0y9sesfo7
+ownedBy: mnu2zqtqzh
+name: Rule Condition
+fields:
+  - { id: x71wxqg1nq, name: pattern, type: string, nullable: true, constraints: ["query words, or {facet:brand}"] }
+  - { id: h42t1mub3o, name: anchoring, type: string, nullable: true, constraints: ["one of: is, startsWith, endsWith, contains"] }  # GAP: enum
+  - { id: xesmoz63ro, name: alternatives, type: bool, nullable: true }
+  - { id: g2vvwh6zwo, name: context, type: string, nullable: true, constraints: ["matched against ruleContexts: home-featured, home-new, home-sale, category-<key>"] }
+  - { id: etq5ipu744, name: filters, type: string, nullable: true }

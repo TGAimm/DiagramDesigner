@@ -1,0 +1,6 @@
+id: yzg8gfwzwo
+parent: v4gnz1sgts
+name: Customers
+links:
+  - { label: Customers API, url: https://docs.stripe.com/api/customers }
+  - { label: PaymentMethods API, url: https://docs.stripe.com/api/payment_methods }

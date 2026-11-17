@@ -1,0 +1,15 @@
+id: i3prn3tbmp
+parent: tap5kc5bph
+name: Get campaigns
+method: GET
+path: /api/campaigns
+auth: "Klaviyo-API-Key private key (scope campaigns:read)"
+params:
+  - { id: s0be7l8t7m, name: revision, in: header, type: string, required: true }
+  - { id: i1hoqoupp6, name: filter, in: query, type: string, required: true, description: "must name the channel: equals(messages.channel,'email')" }
+  - { id: gkddp0flqa, name: "page[cursor]", in: query, type: string, required: false }
+responses:
+  - status: 200
+    fields:
+      - { id: y4ahzzymdd, name: data, model: q5r754lh11, many: true }
+  - { status: 400, model: s4w1d8x1z4, description: missing channel filter }

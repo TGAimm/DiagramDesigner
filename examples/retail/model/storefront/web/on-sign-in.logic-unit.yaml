@@ -1,0 +1,10 @@
+id: hy5f92tvpk
+parent: ffmcq3ieun
+name: onSignIn
+inputs:
+  - { id: t72ygenv7j, name: signUp, type: bool, required: true, description: "Create account rather than Sign in" }
+outputs: []
+steps:
+  - { call: n3lmxrely7, with: "returnTo = the current page, signUp", gets: authorizeUrl }
+  - { call: j09kgaxudj, with: "the browser follows the 302; the sign-in or sign-up page", gets: code }
+  - { call: mzvsl5y5gp, with: "code, state (Identity redirects the browser back)" }

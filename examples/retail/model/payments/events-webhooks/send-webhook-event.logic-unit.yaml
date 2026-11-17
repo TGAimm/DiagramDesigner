@@ -1,0 +1,22 @@
+id: knbcqp1ram
+parent: egb813hfbr
+name: sendWebhookEvent
+inputs:
+  - { id: aks8yzq8kk, name: type, type: string, required: true }
+  - { id: rt1vfz75tg, name: object, type: json, required: true, description: the changed object }
+outputs: []
+fails:
+  - { name: deliveryFailed, description: "no 2xx after retrying for 3 days; endpoint may be disabled" }
+steps:
+  - { write: mumhsnhnkb, note: "insert, data.object = object as now, previous_attributes" }
+  - { read: eap9orpsna, with: "status enabled, enabled_events contains type", gets: endpoints }
+  - each: endpoint in endpoints
+    do:
+      - { note: "sign: Stripe-Signature = t, v1 HMAC-SHA256 of t.payload with the endpoint secret" }
+      - { call: d34nzrvicc, with: "the Event as json, Stripe-Signature header (Fjeld: Integration verifies, dedupes on evt id, answers 2xx within 10 s)" }
+      - if: no 2xx within 10 s
+        then:
+          - { note: "retry with exponential backoff for up to 3 days; order between events is not kept" }
+          - { write: qce9hns75f, note: stays above 0 until delivered }
+          - { fail: deliveryFailed }
+      - { write: qce9hns75f, note: "- 1" }

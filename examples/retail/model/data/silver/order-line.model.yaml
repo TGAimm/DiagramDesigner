@@ -1,0 +1,21 @@
+id: g8hvlajkgw
+ownedBy: c9pk2gmf7l
+storedIn: c9pk2gmf7l
+name: order_line
+fields:
+  - { id: wvksc7fxsj, name: order_line_key, type: string, pk: true, from: [n6bazj54yq, ewnnodqiwp], derived: "'C-' or 'P-' + source line id" }
+  - { id: p05ld4k5l9, name: order_key, type: string, required: true, ref: czdt9fjnll, from: [qdoweb3twc, w32durq49f], derived: same prefixing as order }
+  - { id: jpda0xr5jj, name: line_no, type: int, required: true, from: [q61vfq68w8, n6bazj54yq], derived: "POS lineNo; Commerce position in lineItems" }
+  - { id: vvpa5weohe, name: sku, type: string, required: true, from: [u0gic56npn, gqqvzs3hu4] }
+  - { id: cd1t16hxej, name: quantity, type: int, required: true, from: [szlehcq2au, g2h8bhjcu9], derived: negative on POS return lines }
+  - { id: qcxq3nzmus, name: unit_price, type: decimal, required: true, from: [vnicirik8t, c69b0pcrcr], derived: "incl. VAT, Commerce cents / 100" }
+  - { id: q5ofud4zoz, name: discount_amount, type: decimal, required: true, from: [vnicirik8t, szlehcq2au, wuuxkmvqpg, owg1kas6g4], derived: "Commerce: unit price * quantity - line total" }
+  - { id: b1nlpddm21, name: gross_amount, type: decimal, required: true, from: [wuuxkmvqpg, wrew270gti], derived: incl. VAT after discounts }
+  - { id: yzrrui4j7a, name: net_amount, type: decimal, required: true, from: [b1nlpddm21, kqoc2q1rsw, indep93uc6], derived: "gross / (1 + VAT rate)" }
+  - { id: a1t71bupog, name: tax_amount, type: decimal, required: true, from: [b1nlpddm21, yzrrui4j7a], derived: gross - net }
+  - { id: qj6tmvtede, name: currency, type: string, required: true, from: [m9gfwe0806, ftm57ddruu] }
+  - { id: gl2yi1g2td, name: unit_cost_dkk, type: decimal, nullable: true, from: [lk24le8261, mvnvr29wuf, yigezw6v1q, pxn20ueycc], derived: "as-of join: the product version valid at ordered_at" }
+  - { id: dq2auoa9wt, name: is_return, type: bool, required: true, from: [cd1t16hxej], derived: quantity < 0 }
+indexes:
+  - { id: w4ydnarhhh, name: ix_order_line_order, fields: [p05ld4k5l9] }
+  - { id: jgztzh0yl5, name: ix_order_line_sku, fields: [vvpa5weohe] }

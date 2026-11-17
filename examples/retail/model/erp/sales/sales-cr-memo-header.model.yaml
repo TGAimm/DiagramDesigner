@@ -1,0 +1,26 @@
+# Table 114 Sales Cr.Memo Header: posted from a return order.
+id: p5w0ghuarm
+ownedBy: vss7pk1oh5
+storedIn: q43aprn5l0
+name: Sales Cr.Memo Header
+tags: [pii]
+fields:
+  - { id: ld3h1958zh, name: no, type: string, pk: true, constraints: ["No. Series SCRM"] }
+  - { id: k34lw0n0rm, name: systemId, type: guid, required: true }
+  - { id: znituicbt4, name: returnOrderNo, type: string, from: [rgkzrhf9cx] }
+  - { id: dgw38e5zz3, name: sellToCustomerNo, type: string, required: true, ref: iloktksmbd, from: [jxi66gwzsa] }
+  - { id: mfu6z90bdy, name: sellToCustomerName, type: string, from: [kcchmko5aq] }
+  - { id: defdmw4dvs, name: postingDate, type: date, required: true }
+  - { id: l3zonhcith, name: appliesToDocNo, type: string, ref: p4ya5jzozb, from: [v54boby13i] }
+  - { id: mzhrawosv7, name: externalDocumentNo, type: string, from: [ogicbd970k] }
+  - { id: krqslpmhbq, name: returnReasonCode, type: string, from: [pqepl2cr9g] }
+  - { id: n6hxv76ict, name: currencyCode, type: string, ref: nirn4ae2ma, from: [j23trmmk7p] }
+  - { id: hn2ldkj7sj, name: pricesIncludingVat, type: bool, from: [kfm0c9x19t] }
+  - { id: q5860qcjzf, name: amount, type: decimal, from: [fhkhbyoawt], derived: "sum of lines" }
+  - { id: qhc5urannw, name: amountIncludingVat, type: decimal, from: [b9smp1hdm8], derived: "sum of lines" }
+  - { id: ng4ozjb2np, name: custLedgerEntryNo, type: int, ref: drsz4tv52b }
+  - { id: g6689kz01u, name: lines, model: ev3z8sxglr, many: true }
+  - { id: sh51f9no12, name: systemModifiedAt, type: datetime, required: true }
+indexes:
+  - { id: alpyn1ilxi, name: ux_sales_cr_memo_systemid, fields: [k34lw0n0rm], unique: true }
+  - { id: j4elr73uxr, name: ix_sales_cr_memo_modified, fields: [sh51f9no12] }

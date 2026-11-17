@@ -1,0 +1,25 @@
+id: q5r754lh11
+ownedBy: tap5kc5bph
+storedIn: mm9tmyhvey
+name: Campaign
+fields:
+  - { id: fv5lv0d62z, name: id, type: string, pk: true }
+  - { id: q0zsq33znv, name: name, type: string, required: true }
+  # GAP: enum
+  - { id: faow97blh3, name: status, type: string, required: true, constraints: ["one of: Draft, Scheduled, Queued without Recipients, Sending, Sent, Cancelled"] }
+  # GAP: enum
+  - { id: dfig8pnz65, name: channel, type: string, required: true, constraints: ["one of: email, sms"] }
+  # GAP: polymorphic lookup (audiences.included holds list ids and segment ids together)
+  - { id: aigspnkl4l, name: audiences.included, type: string, many: true, ref: cgx25dzwjy }
+  - { id: ybflh8kw10, name: audiences.excluded, type: string, many: true, ref: cgx25dzwjy }
+  # GAP: enum
+  - { id: wldioh1j4y, name: send_strategy.method, type: string, required: true, constraints: ["one of: static, throttled, smart_send_time"] }
+  - { id: kro9iatzl4, name: send_time, type: datetime, nullable: true }
+  - { id: xzvspmm4mw, name: message.subject, type: string, required: true }
+  - { id: ogbetphp6e, name: message.preview_text, type: string, nullable: true }
+  - { id: qfzk4bts2i, name: message.from_email, type: string, required: true, constraints: ["nyhedsbrev@fjeld.dk and per-country senders"] }
+  - { id: zavodzf5ik, name: message.template_id, type: string, nullable: true, ref: g7h3wk0ixm }
+  - { id: mnga9t19x7, name: tracking_options.utm_params, type: json, nullable: true }
+  - { id: kxxn0frgna, name: archived, type: bool, required: true }
+  - { id: i39qzc51m1, name: created_at, type: datetime, required: true }
+  - { id: n5jw3yrh3d, name: updated_at, type: datetime, required: true }

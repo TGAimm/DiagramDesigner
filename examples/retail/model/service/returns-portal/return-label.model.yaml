@@ -1,0 +1,19 @@
+id: al96kyiny7
+ownedBy: jzdz677osb
+storedIn: lhfbozuhuf
+name: Return label
+fields:
+  - { id: ywwsj8obj3, name: id, type: uuid, pk: true }
+  - { id: sfnc8syj3s, name: return_request_id, type: uuid, required: true, ref: dntnqyedil }
+  - { id: ddmp94smud, name: shipment_id, type: int, required: true, from: [q4qerp6wwc], derived: the Shipping return shipment id }
+  - { id: bh6qqu7aua, name: tracking_number, type: string, nullable: true, from: [rn9ay7olrf] }
+  - { id: py405esk80, name: qr_code, type: string, nullable: true, from: [dj0veyvvtj] }
+  - { id: dl5m2fs8it, name: label_pdf_url, type: string, nullable: true, constraints: ["the PDF stored by the portal, shown and e-mailed to the customer"] }
+  - { id: gpbq8wj2zv, name: carrier_product_code, type: string, required: true, from: [wv97xwyrap] }
+  # GAP: enum
+  - { id: ob02beogs9, name: status, type: string, required: true, from: [ka1dx4408v], derived: polled from Shipping every hour, constraints: ["one of: created, dropped_off, in_transit, delivered, expired"] }
+  - { id: qawkwriqhh, name: created_at, type: datetime, required: true }
+  - { id: mx3ogppgmj, name: expires_at, type: datetime, nullable: true, constraints: [QR codes expire after 30 days] }
+indexes:
+  - { id: z1ui1uxh7w, name: ix_label_return, fields: [sfnc8syj3s] }
+  - { id: h6dgelhmds, name: ix_label_tracking, fields: [bh6qqu7aua] }

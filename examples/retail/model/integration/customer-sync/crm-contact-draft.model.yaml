@@ -1,0 +1,18 @@
+# The Commerce customer as a CRM contact upsert, keyed on the alternate key fjeld_commercecustomerid.
+id: kvtxnzco2c
+ownedBy: mwg6alxci7
+name: CrmContactDraft
+tags: [pii]
+fields:
+  - { id: pyz7htvuhk, name: fjeld_commercecustomerid, type: string, required: true, from: [lc3793npj5] }
+  - { id: xcddc11hzh, name: fjeld_identityuserid, type: string, nullable: true, from: [g0imp4by1b] }
+  - { id: cs2nrzc3za, name: firstname, type: string, nullable: true, from: [dnw21d6sno] }
+  - { id: wjuhufz6zj, name: lastname, type: string, required: true, from: [xh48sj3zzv], derived: "'(unknown)' when empty: lastname is required in Dataverse" }
+  - { id: kgxr1w4wpd, name: emailaddress1, type: string, required: true, from: [iin853se04] }
+  - { id: femfcywwxp, name: mobilephone, type: string, nullable: true, from: [n8i6mdsagq, zpxuly18oh] }
+  - { id: ow63dxp722, name: birthdate, type: date, nullable: true, from: [x7n98o1bcz] }
+  - { id: gwwnrgpxmv, name: address1_line1, type: string, nullable: true, from: [igsvyvkfo3, omcvn591ci], derived: default shipping address }
+  - { id: rz9eyaecdx, name: address1_city, type: string, nullable: true, from: [u8pwxyruqv] }
+  - { id: xqeswf5h17, name: address1_postalcode, type: string, nullable: true, from: [qromjahmgy] }
+  - { id: dc4lqxstha, name: address1_country, type: string, nullable: true, from: [grygzr61to] }
+  - { id: fk11wnex36, name: donotbulkemail, type: bool, required: true, from: [apqk81ijfv], derived: not marketingConsent }

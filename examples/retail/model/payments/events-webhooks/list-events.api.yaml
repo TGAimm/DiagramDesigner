@@ -1,0 +1,15 @@
+id: ogjslmk6yz
+parent: egb813hfbr
+name: List all events
+method: GET
+path: /v1/events
+auth: bearer (secret key)
+params:
+  - { id: je8rg2xukc, name: type, in: query, type: string, required: false, description: "e.g. payment_intent.*" }
+  - { id: bsrhjhlnsa, name: "created[gte]", in: query, type: timestamp, required: false }
+  - { id: x6zs9n1fmi, name: delivery_success, in: query, type: bool, required: false, description: "false: events a webhook failed to deliver (catch-up)" }
+  - { id: si3n5wj61y, name: limit, in: query, type: int, required: false }
+  - { id: z5kxhojtnj, name: starting_after, in: query, type: string, required: false }
+responses:
+  # GAP: list envelope ({ object: list, data, has_more, url }) and cursor pagination: written as many of the model
+  - { status: 200, model: mumhsnhnkb, many: true }

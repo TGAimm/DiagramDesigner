@@ -1,0 +1,10 @@
+# Akeneo PIM (SaaS edition) with Asset Manager: Fjeld's single source of product content.
+id: x72oqgh6of
+name: PIM
+meta: { vendor: Akeneo, product: Akeneo PIM, kind: saas, owner: commerce-team }
+links:
+  - { label: REST API reference, url: https://api.akeneo.com/api-reference-index.html }
+  - { label: Product (UUID) API, url: https://api.akeneo.com/api-reference.html#Productuuid }
+  - { label: Asset Manager API, url: https://api.akeneo.com/api-reference-asset-manager.html }
+  - { label: Events API, url: https://api.akeneo.com/events-documentation/overview.html }
+  - { label: Authentication, url: https://api.akeneo.com/documentation/authentication.html }

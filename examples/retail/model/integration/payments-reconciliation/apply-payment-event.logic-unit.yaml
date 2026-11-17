@@ -1,0 +1,29 @@
+# GAP: triggered by subscription payment-events/commerce
+id: y2ppvtwh9n
+parent: mwsgna90tw
+name: applyPaymentEvent
+inputs:
+  - { id: u25n2rec7v, name: event, model: mumhsnhnkb, required: true }
+outputs: []
+steps:
+  - { note: "subscription payment-events/commerce" }
+  - { read: n8ujyi0o8a, with: "stripePaymentIntentId = data.object.id or data.object.payment_intent", gets: ids }
+  - if: no ids
+    then:
+      - { note: "an intent whose order was never placed (abandoned checkout): log and drop" }
+    else:
+      - { call: fxxz5v03t0, with: "ids.orderNumber, expand paymentInfo.payments[*]", gets: order }
+      - if: type is payment_intent.payment_failed or payment_intent.canceled
+        then:
+          - { call: dglp2lmh50, with: "version, changeTransactionState of the Authorization to Failure", gets: payment }
+          - if: the order is not shipped
+            then:
+              - { call: xdgvgxhc6p, with: "version, changePaymentState Failed, transitionState fjeld-order-state on-hold", gets: order }
+      - if: type is charge.refunded
+        then:
+          - { call: dglp2lmh50, with: "version, addTransaction Refund Success per refund not yet on the payment (interactionId = re_ id)", gets: payment }
+      - if: type is charge.dispute.created
+        then:
+          - { call: q6xacaktb8, with: "subject 'Chargeback <order number>', group Finance, priority high, tags dispute, custom field Order number", gets: ticket }
+          - { write: wlmvgl2qp8, note: "retryable false: finance answers the dispute in Stripe within 7 days" }
+  - { write: yguluhbf6w, note: "processed, targetSystem commerce" }

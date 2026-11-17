@@ -1,0 +1,35 @@
+# Pushes lifetime value and segment back to CRM contacts and Klaviyo profile properties.
+# GAP: scheduled trigger
+# GAP: outbound lineage - the values land in CRM contact.fjeld_lifetimevalue and Klaviyo
+# properties.lifetime_value; only the target can say `from`, so from here the mapping is only
+# in `with`, and changing agg_customer_lifetime_value does not show CRM or Klaviyo as impacted.
+# GAP: two writers of one field - CRM's own recalculateLifetimeValue also writes
+# fjeld_lifetimevalue nightly (online orders only); nothing in the schema says who owns it.
+# GAP: free-form property - fjeld_segment is a custom Klaviyo profile property that the
+# Profile properties model does not list.
+id: nq6xkkymcu
+parent: n56pfhb1um
+name: pushCustomerScores
+meta: { schedule: "0 7 * * *", pipeline: pl_reverse_etl, note: "after the nightly load" }
+inputs: []
+outputs: []
+fails:
+  - { name: crmBatchFailed, description: "the $batch request itself failed (401, 5xx); single changeset errors are only logged" }
+steps:
+  - { read: qhfxfz0h8j, with: "reverse_etl, customer_scores", gets: last push }
+  - { read: nr0aq1hjrv, with: "calculated_at > last push and segment or lifetime value changed", gets: changed scores }
+  - { read: bd62nmz25d, with: "customer_key, is_current", gets: "crm_contact_id, klaviyo_profile_id" }
+  - each: batch of 500 customers with a crm_contact_id
+    do:
+      - { call: u5hmmuub8w, with: "one changeset per contact: PATCH contacts(crm_contact_id) { fjeld_lifetimevalue }, Prefer: odata.continue-on-error", gets: changeset results }
+      - if: the batch request failed
+        then:
+          - { fail: crmBatchFailed }
+      - { note: "log changesets answered 404 (contact merged or deleted); silver follows masterid next run" }
+  - each: customer with a klaviyo_profile_id
+    do:
+      - { call: cc4xwm61gz, with: "id, properties { lifetime_value, fjeld_segment }", gets: profile }
+      - if: answered 429
+        then:
+          - { note: "wait Retry-After, then retry the same profile" }
+  - { write: axtovqyj39, note: max calculated_at pushed }

@@ -1,0 +1,31 @@
+id: jv02vsmixl
+parent: wh40r2i41o
+name: mergeContacts
+handles: [k3nt8yueni]
+inputs:
+  - { id: xl09m7z9uz, name: target, type: uuid, required: true }
+  - { id: i3c0r39gbs, name: subordinate, type: uuid, required: true }
+outputs: []
+fails:
+  - { name: sameRecord, description: target and subordinate are the same contact }
+  - { name: inactive, description: one of them is already inactive }
+steps:
+  - if: target = subordinate
+    then:
+      - { fail: sameRecord }
+  - { read: vw2khd7qyi, with: "target, subordinate", gets: both }
+  - if: either is inactive
+    then:
+      - { fail: inactive }
+  - { write: zdktr6vzgt, note: move the subordinate's activities to the target }
+  - { write: ix5hz1aa0h, note: move order history }
+  - { write: gftz93aoai, note: move consent rows }
+  - { read: lts0cl73lp, with: "both", gets: loyalty members }
+  - if: both are members
+    then:
+      - { write: ossdh2dm43, note: "Adjust transaction moving the subordinate's balance to the target's member" }
+      - { write: vr2vfukamq, note: deactivate the subordinate's member }
+    else:
+      - { write: lts0cl73lp, note: point the only member at the target }
+  - { write: vw2khd7qyi, note: "target: UpdateContent columns; subordinate: statecode Inactive, merged true, masterid = target" }
+  - { call: ou5ubt8x3f, with: "RemoteExecutionContext of the Merge (service endpoint step on Merge of contact): target and subordinate commerce customer ids" }

@@ -1,0 +1,10 @@
+# One line of the application/vnd.akeneo.collection+json answer to a bulk PATCH.
+id: i47cwqndtt
+ownedBy: vsn79avah8
+name: Bulk Upsert Line
+fields:
+  - { id: kr39uuoogd, name: line, type: int, required: true }
+  - { id: p98njytqbe, name: uuid, type: uuid, nullable: true, from: [gziztcdf03] }
+  - { id: twxh29msuj, name: status_code, type: int, required: true, constraints: ["201 created, 204 updated, 400/415/422 failed"] }
+  - { id: flkc60cbwx, name: message, type: string, nullable: true }
+  - { id: api3ciqjst, name: errors, type: json, many: true, constraints: ["[{property, message, attribute?, locale?, scope?}]"] }

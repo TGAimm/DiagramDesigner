@@ -1,0 +1,14 @@
+id: sc31kmk0u5
+ownedBy: bez4ea9raq
+storedIn: kqjludw0r4
+name: email
+tags: [pii]
+fields:
+  - { id: gn5dvvz1fb, name: activityid, type: uuid, pk: true, ref: bu7y6rgq9y }
+  - { id: m3bwu630wd, name: sender, type: string, required: true }
+  - { id: aqxgdkzqh1, name: torecipients, type: string, required: true }
+  - { id: xjhlbgifq5, name: directioncode, type: bool, required: true, constraints: [true = outgoing] }
+  # GAP: enum
+  - { id: vcbpqxn1zv, name: statuscode, type: string, required: true, constraints: ["one of: Draft, Sent, Received, Failed"] }
+  - { id: hd8j6r36ap, name: messageid, type: string, nullable: true }
+  - { id: s2z73dkgmu, name: senton, type: datetime, nullable: true }

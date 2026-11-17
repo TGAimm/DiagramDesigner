@@ -1,0 +1,38 @@
+# Page 50103 FJ Shipment Confirmations (OnInsertRecord)
+id: bjj2tpfek8
+parent: efcxalw7mu
+name: shipmentConfirmationsApi
+handles: [hooked7xsj]
+inputs:
+  - { id: e9zrz1llo2, name: orderNumber, type: string, required: true }
+  - { id: a077oo9e3u, name: shippingAgentCode, type: string, required: true }
+  - { id: ldswykpatf, name: packageTrackingNumber, type: string, required: true }
+  - { id: zpat6sek5d, name: lines, model: u0efrijt7p, many: true, required: true }
+outputs:
+  - { id: tv79fuq2sd, name: shipment, model: dznaramfzx }
+fails:
+  - { name: orderNotFound, description: no open order with this number }
+  - { name: overShipment, description: a quantity exceeds the outstanding quantity of its line }
+  - { name: postingFailed, description: the shipment did not post }
+steps:
+  - { read: dznaramfzx, with: "orderNo, packageTrackingNo", gets: earlier shipment }
+  - if: earlier shipment found
+    then:
+      - { return: shipment }
+  - { read: ejg622chhy, with: "Order, orderNumber", gets: order }
+  - if: order not found
+    then:
+      - { fail: orderNotFound }
+  - { read: i09cr44p1c, with: "order lines", gets: orderLines }
+  - each: line in lines
+    do:
+      - if: "no order line with the item and variant has quantity - quantityShipped >= quantity"
+        then:
+          - { fail: overShipment }
+      - { write: ymxoxlznx0, note: "set on the matching order line (others set to 0)" }
+  - { write: ejg622chhy, note: "shippingAgentCode, packageTrackingNo, postingDate = shipmentDate" }
+  - { call: qnj97ja5i1, with: orderNumber, gets: shipment }
+  - if: posting fails
+    then:
+      - { fail: postingFailed }
+  - { return: shipment }

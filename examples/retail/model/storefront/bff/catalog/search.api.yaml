@@ -1,0 +1,14 @@
+id: zs95d67zfk
+parent: lnizoffy7m
+name: Search products
+method: GET
+path: /api/search
+auth: session cookie fj_sid
+params:
+  - { id: b11xearbnz, name: q, in: query, type: string, required: true }
+  - { id: n44tmotsiu, name: filters, in: query, type: string, required: false, description: "e.g. brand:Fjeld|colour:Red,Blue|size:M" }
+  - { id: a9j2sln2n5, name: sort, in: query, type: string, required: false, description: "relevance, price-asc, price-desc, newest" }
+  - { id: zc7qoaxy8b, name: page, in: query, type: int, required: false }
+responses:
+  - { status: 200, model: lfl06w7glo }
+  - { status: 400, description: unknown filter attribute }

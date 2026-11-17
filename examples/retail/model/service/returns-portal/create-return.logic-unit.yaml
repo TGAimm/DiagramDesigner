@@ -1,0 +1,37 @@
+id: z0y0f1ulx3
+parent: t6al4kcu16
+name: createReturn
+handles: [ov82wvitdc]
+inputs:
+  - { id: cb80085tp8, name: orderNumber, type: string, required: true }
+  - { id: vwilxzby46, name: email, type: string, required: true }
+  - { id: kjbyy07s7m, name: refundMethod, type: string, required: true }
+  - { id: ljxzx85ed5, name: items, model: bej5xqj7kg, many: true, required: true }
+outputs:
+  - { id: xerzlmd99r, name: return, model: dntnqyedil }
+fails:
+  - { name: notFound, description: the lookup failed }
+  - { name: windowClosed, description: today is past shipped_at + return window }
+  - { name: invalidItem, description: "quantity over returnable, non-returnable category, or a reason needs a comment" }
+steps:
+  - { call: r46tvyl99q, with: "orderNumber, email", gets: "order, policy" }
+  - if: lookup failed
+    then:
+      - { fail: notFound }
+  - if: "today > order.shipped_at + policy.return_window_days (or the tier's extended window)"
+    then:
+      - { fail: windowClosed }
+  - each: item
+    do:
+      - { read: dqkug7urdt, with: reason_code, gets: reason }
+      - if: "quantity > returnable_quantity, or reason.requires_comment and no comment"
+        then:
+          - { fail: invalidItem }
+  - { note: "refund amounts per item; return fee unless any reason is a fault" }
+  - { write: dntnqyedil, note: "status approved (all within policy), RMA number" }
+  - { write: bej5xqj7kg }
+  - { call: q6xacaktb8, with: "subject 'Return RMA-…', requester e-mail, custom fields Order number and Return id, tag returns_portal", gets: ticket }
+  - { write: z2nzkag6bk }
+  - { call: cab3aj0v8b, with: "the return with its items, X-Fjeld-Event return.created (Integration: Commerce return info, ERP sales return order, WMS expected return)" }
+  - { note: e-mail the customer a confirmation with the next step (label) }
+  - { return: return }

@@ -1,0 +1,8 @@
+id: wfw9x2aejp
+ownedBy: b1ptklldw3
+name: Taxed Price
+fields:
+  - { id: o65b6zniu9, name: totalNet, model: ik7usc5zp1, required: true, from: [mh5uizwxp4, oab1g1w2xd, j6aeqj954u], derived: "net of every line and shipping (prices include VAT: gross / (1 + rate))" }
+  - { id: qml6sngkyr, name: totalGross, model: ik7usc5zp1, required: true, from: [mh5uizwxp4, j6aeqj954u], derived: sum }
+  - { id: o7bjoxmffq, name: totalTax, model: ik7usc5zp1, nullable: true, from: [qml6sngkyr, o65b6zniu9], derived: gross minus net }
+  - { id: v7y08t6suv, name: taxPortions, type: "{name, rate, amount: Money}", many: true, from: [amkw5ozpkf, wxgfwgax8l], derived: tax summed per rate }

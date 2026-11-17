@@ -1,0 +1,12 @@
+id: d8e4650ps0
+parent: xi92dufx8c
+name: Get user
+method: GET
+path: /v1.0/users/{id}
+auth: bearer (app-only Graph token, User.Read.All)
+params:
+  - { id: batx0ehtxt, name: id, in: path, type: uuid }
+  - { id: xjs0nw9o3l, name: $select, in: query, type: string, required: false }
+responses:
+  - { status: 200, model: nozb9f6rc0 }
+  - { status: 404, description: Request_ResourceNotFound }

@@ -1,0 +1,11 @@
+id: l4qb6llpmv
+parent: ij7k9nyzqa
+name: showConfirmation
+inputs:
+  - { id: vjrkw2plcl, name: orderNumber, type: string, required: true }
+outputs:
+  - { id: iefh9rkwwk, name: order, model: u2alh1f0hd }
+steps:
+  - { call: ebauq9hcdi, with: orderNumber, gets: order }
+  - { note: "thank-you page with lines, delivery and the sign-up offer for guests; the purchase is sent to analytics tags" }
+  - { return: order }

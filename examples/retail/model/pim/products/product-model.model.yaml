@@ -1,0 +1,20 @@
+# A product model: Fjeld's root model holds style-level content (FJ-JKT-1042, name, description,
+# material), the level-1 sub-model the colour (FJ-JKT-1042-RED, images); products below hold size and EAN.
+id: aukbkxsjc3
+ownedBy: tuvm3c6m5l
+storedIn: r1xvgi7bie
+name: Product Model
+fields:
+  - { id: bjqn3xm3lr, name: code, type: string, pk: true, required: true, constraints: [unique] }
+  - { id: xsudpa9ql7, name: family, type: string, required: true, ref: up92jqcxxf }
+  - { id: a1czb1649b, name: family_variant, type: string, required: true, ref: vee8cxhdki }
+  - { id: jutcmn2c3j, name: parent, type: string, nullable: true, ref: bjqn3xm3lr, constraints: [null on the root model] }
+  - { id: evst4siuh2, name: categories, type: string, many: true, ref: o2peddxqos }
+  # GAP: keyed map / embedded JSON column, as on Product.
+  - { id: ph7r1qdz35, name: values, model: st851mrt6f, many: true }
+  - { id: w1le0wmoqf, name: associations, model: yaxzl3embi, many: true }
+  - { id: csa02hlebc, name: created, type: datetime, required: true }
+  - { id: hnlzp42nxi, name: updated, type: datetime, required: true }
+indexes:
+  - { id: ffd5e5kvwd, name: ix_product_model_parent, fields: [jutcmn2c3j], unique: false }
+  - { id: ppkikd9zqw, name: ix_product_model_family_variant, fields: [a1czb1649b], unique: false }

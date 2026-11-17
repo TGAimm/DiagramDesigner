@@ -1,0 +1,13 @@
+id: f7lv0e4cp6
+parent: ntfj7i0o5t
+name: List pickup orders
+method: GET
+path: /v2/pickup-orders
+auth: bearer (API key, or the store app's staff session)
+params:
+  - { id: beuzyhb5vo, name: storeNo, in: query, type: string, required: false }
+  - { id: g7xz9k5eki, name: status, in: query, type: string, required: false }
+  - { id: cuqx02wdlt, name: updatedSince, in: query, type: datetime, required: false }
+responses:
+  - { status: 200, model: n7gkyqvsz0, many: true }
+  - { status: 401, description: Bad API key or session }

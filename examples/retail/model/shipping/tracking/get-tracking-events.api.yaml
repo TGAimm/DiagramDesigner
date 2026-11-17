@@ -1,0 +1,11 @@
+id: qt6s9pvacp
+parent: vssqq48tt7
+name: Get tracking events
+method: GET
+path: /api/public/v3/shipments/{id}/tracking_events
+auth: basic (API user + key)
+params:
+  - { id: xtc0p6xofm, name: id, in: path, type: int }
+responses:
+  - { status: 200, model: e2ken4rl8u, many: true, description: "oldest first, all parcels" }
+  - { status: 404, description: Not found }

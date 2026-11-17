@@ -1,0 +1,18 @@
+id: htkt4tsw3g
+ownedBy: ar9pfoadj7
+storedIn: ar9pfoadj7
+name: marketing_event
+fields:
+  - { id: hd9dbpnzdy, name: id, type: string, pk: true, from: [jvn6w8hd6p] }
+  - { id: e2rf9t4qjc, name: metric_id, type: string, from: [fpwvnlgw98] }
+  - { id: pldf43m1hu, name: metric_name, type: string, from: [fpwvnlgw98, lcojyx6z0a], derived: "include=metric: the metric's name (Placed Order, Opened Email, Clicked Email, ...)" }
+  - { id: kku3xxfyxl, name: profile_id, type: string, from: [pqvve1lr0f] }
+  - { id: f4bhdimz81, name: time, type: datetime, from: [n44of8a2wj] }
+  - { id: vr2nnnrp9s, name: value, type: decimal, nullable: true, from: [mgsgvv7631] }
+  - { id: l6w7kb9rgm, name: value_currency, type: string, nullable: true, from: [h60zrun8mz] }
+  - { id: socfkxm1gg, name: unique_id, type: string, nullable: true, from: [s4ov6l78rp] }
+  - { id: ytv8jl49iu, name: order_id, type: string, nullable: true, from: [jjwkf27p31, r8d8pthz9s], derived: "event_properties.OrderId (Placed Order events)" }
+  - { id: h5ra85ltn0, name: event_properties, type: json, from: [jjwkf27p31], derived: "serialised as JSON; $message (campaign or flow message id) and $flow live here" }
+  - { id: l4wz4g5brp, name: _loaded_at, type: datetime, required: true }
+  - { id: h5d9ofqybf, name: _source, type: string, required: true, constraints: ["marketing/events"] }
+  - { id: kwfn6yequh, name: _batch_id, type: string, required: true }

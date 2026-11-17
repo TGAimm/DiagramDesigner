@@ -1,0 +1,24 @@
+id: tekcdjdubg
+parent: z4a8fcfwai
+name: Token
+method: POST
+path: /{tenant}/oauth2/v2.0/token
+auth: client_secret in the body (BFF is a confidential client)
+params:
+  - { id: eb7y2eaf5s, name: tenant, in: path, type: string }
+request:
+  contentType: application/x-www-form-urlencoded
+  fields:
+    # GAP: lookup and credential fields: `to` names the stored field the value is checked against or selects by; nothing is written
+    - { id: cx78d7bcdf, name: grant_type, type: string, required: true, to: [et1k8bs181], description: authorization_code or refresh_token }
+    - { id: nbzqwx94fl, name: client_id, type: string, required: true, to: [j92tbt7bnb] }
+    - { id: or2rc6lell, name: client_secret, type: string, required: true, to: [fjp1o62ru6], description: checked against the app's password credentials }
+    - { id: olvdsq5lfh, name: code, type: string, to: [blgrqu8b1u], description: authorization_code grant }
+    - { id: kyujfy4kq1, name: redirect_uri, type: string, to: [gifhl870eo], description: must match the authorize call }
+    - { id: smtqbj8z9n, name: code_verifier, type: string, to: [eho578fign], description: "PKCE: SHA256 must equal the code_challenge" }
+    - { id: ndn7gqnzc3, name: refresh_token, type: string, to: [blgrqu8b1u], description: refresh_token grant }
+    - { id: zpyk18qvee, name: scope, type: string, to: [hj297grc14] }
+responses:
+  - { status: 200, model: douprfp1i9 }
+  - { status: 400, description: "invalid_grant (code used or expired, refresh token revoked, user deleted or disabled), invalid_request" }
+  - { status: 401, description: invalid_client (bad client_secret) }

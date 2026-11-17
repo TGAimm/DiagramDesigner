@@ -1,0 +1,36 @@
+# Flow 6, on receipt: ERP credit memo first, then the Stripe refund of exactly its amount.
+id: sl6980o0s2
+parent: sicmj00m5m
+name: creditAndRefund
+inputs:
+  - { id: qygxc64p4w, name: rmaNumber, type: string, required: true }
+  - { id: eglcox81k0, name: acceptedItems, model: bej5xqj7kg, many: true, required: true }
+outputs: []
+fails:
+  - { name: refundFailed, description: "Stripe refused the refund (charge too old, disputed): finance refunds by bank transfer" }
+steps:
+  - { read: r1iwd1t2bt, with: rmaNumber, gets: ids }
+  - if: ids.stripeRefundId is set
+    then:
+      - { note: "done before: nothing" }
+    else:
+      - if: some items were rejected
+        then:
+          - { note: "lower the return order lines to the accepted quantities first (PATCH salesReturnOrderLines)" }
+      - { call: o8dld263pp, with: ids.erpReturnOrderId, gets: "credit memo (number, totalAmountIncludingTax)" }
+      - if: 400 already credited
+        then:
+          - { note: "read the credit memo number from the return order and carry on" }
+      - { write: r1iwd1t2bt, note: "erpCreditMemoNo, refundAmount, status credited" }
+      - { read: n8ujyi0o8a, with: ids.orderNumber, gets: order ids }
+      - { call: ekwvusqfdf, with: "payment_intent = order ids.stripePaymentIntentId, amount = refundAmount x 100, reason requested_by_customer, metadata return_id, commerce_order_id; Idempotency-Key = refund-<RMA>", gets: refund }
+      - if: refund.status is failed or 400
+        then:
+          - { write: wlmvgl2qp8, note: "retryable false, finance" }
+          - { fail: refundFailed }
+      - { write: r1iwd1t2bt, note: "stripeRefundId, status refunded" }
+      - { call: v2gmil25dl, with: order ids.commerceOrderId, gets: order }
+      - { call: xdgvgxhc6p, with: "version, setReturnPaymentState Refunded and setReturnShipmentState Returned per return item", gets: order }
+      - if: the return came from the portal
+        then:
+          - { call: i7qgposvm6, with: "status refunded, refund_amount", gets: return }

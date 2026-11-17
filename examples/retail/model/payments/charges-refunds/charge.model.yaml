@@ -1,0 +1,32 @@
+id: lto0xhpsrl
+ownedBy: eaiyhlljnw
+storedIn: sox2v1ykga
+name: Charge
+fields:
+  - { id: ey80qr53ah, name: id, type: string, pk: true, constraints: ["prefix ch_ (py_ for Klarna, MobilePay)"] }
+  - { id: nuof2btp89, name: amount, type: int, required: true, from: [rkvxoeiokq] }
+  - { id: fp5046rr6t, name: amount_captured, type: int }
+  - { id: wamybbu6c2, name: amount_refunded, type: int }
+  - { id: kkxt5t6xwz, name: currency, type: string, required: true, from: [j431blwzja] }
+  - { id: dn3o0ycu27, name: captured, type: bool }
+  - { id: tshw9fn0pi, name: refunded, type: bool, from: [wamybbu6c2, fp5046rr6t], derived: amount_refunded = amount_captured }
+  - { id: y4opzi8zra, name: disputed, type: bool }
+  - { id: mazdsw92kx, name: paid, type: bool }
+  - { id: sl01f2hb53, name: status, type: string, required: true, constraints: ["one of: succeeded, pending, failed"] }   # GAP: enum
+  - { id: fflcl5djng, name: payment_intent, type: string, nullable: true, ref: g8pq0m68jp }
+  - { id: fnfcg5inh1, name: customer, type: string, nullable: true, ref: b55i3wbaym }
+  - { id: ph93f3dxno, name: payment_method, type: string, ref: lr73v0q0h8 }
+  - { id: xais10bogu, name: balance_transaction, type: string, nullable: true, ref: te75334qto }
+  - { id: jwj1f5kvxs, name: payment_method_details.type, type: string, from: [sig8q2wcur] }
+  - { id: jsoh62d8bd, name: payment_method_details.card.brand, type: string, nullable: true, from: [kv2l7v6ncc] }
+  - { id: rb61rz7mm1, name: payment_method_details.card.last4, type: string, nullable: true, from: [wsh5kxhjxo] }
+  - { id: noegfj0ivr, name: payment_method_details.card.three_d_secure.result, type: string, nullable: true, constraints: ["one of: authenticated, attempt_acknowledged, failed, not_supported"] }   # GAP: enum
+  - { id: nl7czgokw2, name: outcome.type, type: string, constraints: ["one of: authorized, manual_review, issuer_declined, blocked, invalid"] }   # GAP: enum
+  - { id: g4p9e7hfu3, name: outcome.risk_level, type: string, constraints: ["one of: normal, elevated, highest"] }   # GAP: enum
+  - { id: bqd2dwa0qo, name: failure_code, type: string, nullable: true }
+  - { id: tulpazzolp, name: failure_message, type: string, nullable: true }
+  - { id: hjaxdslsy0, name: receipt_url, type: string, nullable: true }
+  - { id: abfu0n514p, name: created, type: timestamp, required: true }
+indexes:
+  - { id: hbjq8eoydv, name: ix_charge_payment_intent, fields: [fflcl5djng] }
+  - { id: qdsz9st6d5, name: ix_charge_customer, fields: [fnfcg5inh1, abfu0n514p] }

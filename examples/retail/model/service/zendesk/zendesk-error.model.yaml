@@ -1,0 +1,7 @@
+id: zkkh7sjnsz
+ownedBy: y0w8820v7y
+name: Zendesk error
+fields:
+  - { id: xg24xf8ymo, name: error, type: string, required: true, constraints: ["e.g. RecordInvalid, RecordNotFound"] }
+  - { id: qwfjf8bnnw, name: description, type: string, required: true }
+  - { id: gnrt95d8vy, name: details, type: json, nullable: true, constraints: ["per field: [{description, error}]"] }

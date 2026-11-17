@@ -1,0 +1,37 @@
+id: lloj1vz3mi
+parent: ntfj7i0o5t
+name: updatePickupOrderStatus
+handles: [uiwnq3pcel]
+inputs:
+  - { id: u3oqz8cwod, name: id, type: uuid, required: true }
+  - { id: j83tthk8ub, name: status, type: string, required: true }
+  - { id: vr665xj2js, name: staffId, type: int, nullable: true }
+outputs:
+  - { id: jow2u5gnvn, name: pickupOrder, model: n7gkyqvsz0 }
+fails:
+  - { name: notFound, description: no such pickup order (404) }
+  - { name: invalidMove, description: the status cannot move this way (409) }
+steps:
+  - { read: n7gkyqvsz0, with: id, gets: order }
+  - if: no order
+    then:
+      - { fail: notFound }
+  - if: move not in new > picking > ready > collected, or to cancelled from before collected
+    then:
+      - { fail: invalidMove }
+  - if: status is ready
+    then:
+      - { write: sy54d9d8w3 }
+      - { write: n7gkyqvsz0, note: "status ready, readyAt, pickupCode, expiresAt" }
+      - { call: i7wwl5qj48, with: "the pickup order (orderNumber, storeId, status ready, pickupCode, expiresAt): Integration sets the Commerce order Ready and Marketing sends the ready-for-pickup mail / SMS" }
+  - if: status is collected
+    then:
+      - { write: n7gkyqvsz0, note: "status collected, collectedAt, handledBy" }
+      - { write: wdcm6cs4ja, note: "qtyOnHand - quantity, qtyReserved - quantity" }
+      - { write: xi19qutu0h, note: "reason pickup_collected" }
+      - { call: i7wwl5qj48, with: "the pickup order (status collected, collectedAt, lines): Integration has ERP post the shipment from the store location and Commerce set the order Delivered" }
+  - if: status is cancelled
+    then:
+      - { write: n7gkyqvsz0, note: status cancelled }
+      - { write: n9rzk3z11x, note: "- quantity" }
+  - { return: pickupOrder }

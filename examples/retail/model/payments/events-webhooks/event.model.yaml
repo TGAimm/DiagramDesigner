@@ -1,0 +1,18 @@
+id: mumhsnhnkb
+ownedBy: egb813hfbr
+storedIn: sox2v1ykga
+name: Event
+fields:
+  - { id: yfa5me2dg4, name: id, type: string, pk: true, constraints: ["prefix evt_", "receivers dedupe on it"] }
+  - { id: lvyi6pkmm4, name: type, type: string, required: true, constraints: ["Fjeld listens to: payment_intent.succeeded, payment_intent.payment_failed, payment_intent.amount_capturable_updated, payment_intent.canceled, charge.refunded, charge.dispute.created, payout.paid, payout.failed"] }
+  - { id: ag0f99vjsf, name: api_version, type: string, constraints: ["e.g. 2024-06-20"] }
+  # GAP: polymorphic payload (data.object is a PaymentIntent, Charge, Refund, Dispute or Payout, by type): no "one of these models" field
+  - { id: b27zkfj5pv, name: data.object, type: json, required: true, from: [p8benaa0fr, ey80qr53ah, pg4eb4bda5, sy1te73u91, n6liyrhotq], derived: the whole object as it is after the change }
+  - { id: mn6ao5mn2o, name: data.previous_attributes, type: json, nullable: true, derived: changed fields with their old values }
+  - { id: qce9hns75f, name: pending_webhooks, type: int }
+  - { id: d3ghlfmsjh, name: request.id, type: string, nullable: true }
+  - { id: hkg6zicpbe, name: request.idempotency_key, type: string, nullable: true }
+  - { id: wqrb0170p8, name: livemode, type: bool }
+  - { id: ijgoakz9iz, name: created, type: timestamp, required: true, constraints: ["kept 30 days"] }
+indexes:
+  - { id: sxx5cs5xzp, name: ix_event_type_created, fields: [lvyi6pkmm4, ijgoakz9iz] }

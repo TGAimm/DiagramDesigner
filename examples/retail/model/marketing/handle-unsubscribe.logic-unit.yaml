@@ -1,0 +1,25 @@
+id: w5g19ddsnp
+parent: x27wyx0r8h
+name: handleUnsubscribe
+handles: [lszlprou4t]
+inputs:
+  - { id: twl5x15gj1, name: email, type: string, required: true }
+  - { id: n546bkfib9, name: method, type: string, required: true, description: "API, UNSUBSCRIBE_LINK, PREFERENCE_PAGE or SPAM_COMPLAINT" }
+  - { id: ezkssnfrsw, name: listId, type: string, nullable: true }
+outputs: []
+steps:
+  - { read: twxat301yi, with: email, gets: profile }
+  - if: no profile
+    then:
+      - { note: nothing to do }
+    else:
+      - if: listId given
+        then:
+          - { write: oulxlftdo7, note: remove from that list only }
+        else:
+          - { write: bcagv4gekq, note: "UNSUBSCRIBED, with method and timestamp" }
+          - { write: oulxlftdo7, note: remove from all email lists }
+      - if: spam complaint
+        then:
+          - { write: zbnj2a5nmb, note: SPAM_COMPLAINT }
+      - { write: g4j7b6f21o, note: "Unsubscribed event; Integration polls these (GET /api/events) for CRM consent" }

@@ -1,0 +1,11 @@
+id: ylvrtxfjqt
+parent: r3utcx4a06
+name: Save an address
+method: POST
+path: /api/account/addresses
+auth: session cookie fj_sid
+request: { model: b8rzoiyo20 }
+responses:
+  - { status: 201, model: cu38cv7e7h }
+  - { status: 400, description: invalid postal code for the country }
+  - { status: 401, description: not signed in }

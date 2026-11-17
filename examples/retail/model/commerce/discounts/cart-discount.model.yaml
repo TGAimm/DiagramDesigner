@@ -1,0 +1,22 @@
+id: v6w0nfv7cd
+ownedBy: mb9l2suvi6
+storedIn: rrg5e7natg
+name: Cart Discount
+fields:
+  - { id: uh7frpe0lz, name: id, type: uuid, pk: true }
+  - { id: si8keobox2, name: version, type: long, required: true }
+  - { id: ponxdf652v, name: key, type: string, nullable: true }
+  - { id: x0x67zk1yh, name: name, type: LocalizedString, required: true }
+  - { id: fk794axcua, name: cartPredicate, type: string, required: true, constraints: ["e.g. totalPrice >= \"500.00 DKK\" and customer.customerGroup.key = \"club-member\""] }
+  - { id: eeo8qaf081, name: value, type: "{type: relative | absolute | fixed | giftLineItem, permyriad | money[]}", required: true }
+  - { id: f2rzze20vv, name: target, type: "{type: lineItems | shipping | totalPrice, predicate}", nullable: true }
+  - { id: t7ivipnrtu, name: sortOrder, type: string, required: true, constraints: [decimal between 0 and 1 as text; unique; higher applies first] }
+  - { id: c8is3l9nuq, name: isActive, type: bool, required: true }
+  - { id: e7awv95qnr, name: validFrom, type: datetime, nullable: true }
+  - { id: jusaxbuqmy, name: validUntil, type: datetime, nullable: true }
+  - { id: ztar018bpk, name: requiresDiscountCode, type: bool, required: true }
+  - { id: frwbqutdpa, name: stackingMode, type: string, required: true, constraints: ["one of: Stacking, StopAfterThisDiscount"] }  # GAP: enum
+  - { id: kh9u97tgsz, name: stores, type: string, many: true, ref: vomy6kr4nq, constraints: [empty = all stores] }
+indexes:
+  - { id: du4kmg6828, name: ux_cart_discount_sort_order, fields: [t7ivipnrtu], unique: true }
+  - { id: qz2vpljo5x, name: ux_cart_discount_key, fields: [ponxdf652v], unique: true }

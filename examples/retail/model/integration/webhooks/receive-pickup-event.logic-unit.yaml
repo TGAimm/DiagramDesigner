@@ -1,0 +1,30 @@
+id: us4s6tbsfw
+parent: ft040pevh9
+name: receivePickupEvent
+handles: [i7wwl5qj48]
+inputs:
+  - { id: bhcpeymyc1, name: pickupOrder, model: n7gkyqvsz0, required: true }
+outputs: []
+fails:
+  - { name: unknownOrder, description: no click & collect order with this number (404) }
+steps:
+  - { read: n8ujyi0o8a, with: pickupOrder.orderNumber, gets: ids }
+  - if: no ids or ids.collectStoreNo is null
+    then:
+      - { fail: unknownOrder }
+  - { call: v2gmil25dl, with: ids.commerceOrderId, gets: order }
+  - if: status is ready
+    then:
+      - { call: xdgvgxhc6p, with: "version, changeShipmentState Ready, setCustomField pickupCode / pickupExpiresAt", gets: order }
+      - { call: na6iutswge, with: "metric Ready For Pickup: store name and address, pickupCode, expiresAt; unique_id <order number>-ready" }
+  - if: status is collected
+    then:
+      - { call: hooked7xsj, with: "orderNumber = ids.erpSalesOrderNo, shippingAgentCode PICKUP, packageTrackingNumber = <storeNo>-<pickupCode>, lines picked", gets: shipment }
+      - if: 400 from ERP
+        then:
+          - { write: wlmvgl2qp8, note: "e.g. no stock at the store location; retryable false: store-ops fixes the transfer" }
+          - { call: wrbtf9xjcp, with: "this event, attempt 1" }
+        else:
+          - { call: kiohe6iu60, with: "OrderShippedEvent: source store, shippedAt = collectedAt, lines from the pickup order, erpShipmentNo" }
+          - { write: n8ujyi0o8a, note: "status shipped" }
+  - { write: yguluhbf6w, note: "processed, sourceSystem pos, businessKey order number" }

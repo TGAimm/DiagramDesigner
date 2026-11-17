@@ -1,0 +1,12 @@
+id: duhy39eipd
+parent: wyb51ibopv
+name: Get sales invoice
+method: GET
+path: /api/v2.0/companies({companyId})/salesInvoices({id})
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: gzm58liora, name: companyId, in: path, type: guid }
+  - { id: ch35nl0qkh, name: id, in: path, type: guid }
+responses:
+  - { status: 200, model: y4izto0ijr }
+  - { status: 404, description: no invoice with this id }

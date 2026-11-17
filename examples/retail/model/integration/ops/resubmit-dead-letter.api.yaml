@@ -1,0 +1,12 @@
+id: upwd9cv0k6
+parent: y5739ri6l0
+name: Resubmit dead letter
+method: POST
+path: /ops/dead-letters/{messageId}/resubmit
+auth: "bearer (Entra ID, app role Integration.Operator)"
+params:
+  - { id: rnysffswev, name: messageId, in: path, type: string }
+responses:
+  - { status: 202, description: Sent back to its original channel with attempt 1 }
+  - { status: 403, description: Missing app role }
+  - { status: 404, description: No such message on the dead-letter queue }

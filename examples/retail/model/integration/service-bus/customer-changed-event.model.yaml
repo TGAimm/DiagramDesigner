@@ -1,0 +1,17 @@
+id: bbh3e6of1d
+ownedBy: g55sb0eqd6
+name: CustomerChangedEvent
+fields:
+  - { id: lc3793npj5, name: customerId, type: uuid, required: true, from: [zhf6a5r56z] }
+  - { id: hh3k1twkcf, name: version, type: long, required: true, from: [t2o3kvzaxn], constraints: [subscribers skip a version older than the one they hold] }
+  - { id: hknpo95ur6, name: customerNumber, type: string, nullable: true, from: [odn7tdqw8z] }
+  - { id: g0imp4by1b, name: identityUserId, type: string, nullable: true, from: [c558p8igta] }
+  - { id: iin853se04, name: email, type: string, required: true, from: [ehf2zs4sc2] }
+  - { id: dnw21d6sno, name: firstName, type: string, nullable: true, from: [t3mf7j2rez] }
+  - { id: xh48sj3zzv, name: lastName, type: string, nullable: true, from: [q0hnw17jwj] }
+  - { id: zxjujlnbe6, name: locale, type: string, nullable: true, from: [rtt1jqp5f3] }
+  - { id: grygzr61to, name: country, type: string, nullable: true, from: [czbauzymbt], derived: country of the default shipping address }
+  - { id: apqk81ijfv, name: marketingConsent, type: bool, required: true, from: [trfu6d5wom], derived: "the newsletter opt-in given at sign-up or checkout" }
+  # GAP: enum
+  - { id: ihuexy1ihh, name: change, type: string, required: true, from: [lukju8s2k9], constraints: ["one of: created, updated, deleted"] }
+  - { id: ijt1mcb3qe, name: occurredAt, type: datetime, required: true, from: [xdshokk9u9] }

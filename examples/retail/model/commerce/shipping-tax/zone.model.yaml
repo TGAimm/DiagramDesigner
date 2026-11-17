@@ -1,0 +1,12 @@
+id: eh519ecwam
+ownedBy: d2rl6i7zpf
+storedIn: rrg5e7natg
+name: Zone
+fields:
+  - { id: lmho1c8o3r, name: id, type: uuid, pk: true }
+  - { id: ky18dfm74b, name: version, type: long, required: true }
+  - { id: o2fkh4565n, name: key, type: string, nullable: true, constraints: ["one of: dk, se, no, de"] }
+  - { id: dw9cxtsh6o, name: name, type: string, required: true }
+  - { id: xchgvsf1l1, name: locations, type: "{country, state}", many: true }
+indexes:
+  - { id: vtv8sxyvlj, name: ux_zone_key, fields: [o2fkh4565n], unique: true }

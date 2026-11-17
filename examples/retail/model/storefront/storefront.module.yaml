@@ -1,0 +1,9 @@
+id: xu1hb6iufu
+name: Storefront
+tags: [b2c]
+meta: { kind: own-built, owner: commerce-team, stack: "Next.js 14 (App Router, TypeScript) on Azure Container Apps", domains: "fjeld.dk, fjeld.se, fjeld.no, fjeld.de" }
+links:
+  - { label: Next.js route handlers, url: "https://nextjs.org/docs/app/building-your-application/routing/route-handlers" }
+  - { label: Stripe Payment Element, url: "https://docs.stripe.com/payments/payment-element" }
+  - { label: commercetools external OAuth, url: "https://docs.commercetools.com/api/authorization#requesting-an-access-token-using-an-external-oauth-server" }
+  - { label: Algolia InstantSearch, url: "https://www.algolia.com/doc/guides/building-search-ui/what-is-instantsearch/react/" }

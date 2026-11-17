@@ -1,0 +1,18 @@
+# Published on return-created by receiveReturnEvent (portal) and createStoreReturn (a webshop order returned in a store).
+id: ybi20fgqqc
+ownedBy: g55sb0eqd6
+name: ReturnCreatedEvent
+fields:
+  - { id: co64539uup, name: returnId, type: uuid, required: true, from: [x773wm1yhr] }
+  - { id: oxkce35es6, name: rmaNumber, type: string, required: true, from: [hrk1dbsomu] }
+  - { id: kazwvmlrrm, name: orderNumber, type: string, required: true, from: [twmqcvgacf] }
+  - { id: cnxphh4nv0, name: commerceOrderId, type: uuid, required: true, from: [xmnn7zyg3w] }
+  - { id: rs36qz7lxe, name: email, type: string, required: true, from: [vm8fhaf7i8] }
+  - { id: nsu8wcizba, name: country, type: string, required: true, from: [c0c39f8sy6] }
+  - { id: mn2b4oo8fi, name: currency, type: string, required: true, from: [j0rkt10jr3] }
+  - { id: x6e0nc3yga, name: refundMethod, type: string, required: true, from: [p3hb1kuqk6] }
+  # GAP: enum
+  - { id: epavpgor7j, name: channel, type: string, required: true, constraints: ["one of: portal, store"] }
+  - { id: rofmyenj5k, name: storeNo, type: string, nullable: true, from: [ta0yzi1b46] }
+  - { id: y625nchc15, name: items, model: bej5xqj7kg, many: true, required: true }
+  - { id: vgbb9yu6yj, name: createdAt, type: datetime, required: true, from: [jj2p49hi29] }

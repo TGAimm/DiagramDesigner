@@ -1,0 +1,18 @@
+id: u2alh1f0hd
+ownedBy: r3utcx4a06
+name: Order Summary
+tags: [pii]
+fields:
+  - { id: cr0djd5cr7, name: orderId, type: uuid, required: true, from: [qazi456zfm] }
+  - { id: rpjcdl8bb2, name: orderNumber, type: string, required: true, from: [lulkapcaa0] }
+  - { id: shvmefmf96, name: createdAt, type: datetime, required: true, from: [ifyxx7dooz] }
+  - { id: rrgz41j51n, name: status, type: string, required: true, from: [eg3umbi5el, r29wqfepvb, b0edsryzw7], derived: "shown as Received, Paid, Shipped, Delivered or Cancelled" }
+  - { id: kamgmg3tqe, name: lines, model: ibfl3qyi7j, many: true, from: [icsoh6axm7] }
+  - { id: x34foydbl5, name: total, model: nmsbq15351, required: true, from: [pxcdgn4yd5] }
+  - { id: ntfzd5dxd8, name: vat, model: nmsbq15351, nullable: true, from: [o7bjoxmffq] }
+  - { id: a08xamr9wr, name: shippingAddress, model: b8rzoiyo20, nullable: true, from: [sr3l239ybl] }
+  - { id: r3xmd8n5xl, name: shippingMethod, type: string, nullable: true, from: [pxrwtg5dmg] }
+  - { id: dgpu6mnqd5, name: email, type: string, nullable: true, from: [b5ftkjr0y9] }
+  - { id: ut37lqd6tp, name: tracking, type: "{carrier, trackingId}", many: true, from: [elj18pyzam, r075zqcsse] }
+  - { id: vkaepesn0g, name: canStartReturn, type: bool, required: true, from: [r29wqfepvb, cqbmiwr5ee], derived: "Shipped or Delivered, and completed less than 30 days ago" }
+  - { id: mfnhxinruh, name: returnUrl, type: string, nullable: true, from: [lulkapcaa0, b5ftkjr0y9], derived: "returns portal link with orderNumber and email" }

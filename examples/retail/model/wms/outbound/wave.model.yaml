@@ -1,0 +1,18 @@
+id: du7403qqrh
+ownedBy: yvrhh8zk8f
+storedIn: ka6mzbfc7x
+name: Wave
+fields:
+  - { id: h9ef9s3j6n, name: id, type: int, pk: true }
+  - { id: kfqn1p0k5t, name: waveNo, type: string, required: true, constraints: ["W-<yyMMdd>-<seq>"] }
+  # GAP: enum
+  - { id: emon33xg03, name: status, type: string, required: true, constraints: ["one of: planned, released, picking, completed"] }
+  - { id: t8aplyuc1d, name: carrierCode, type: string, nullable: true, constraints: [one carrier per wave, to meet its truck] }
+  - { id: zbmrc17z41, name: cutoffAt, type: datetime, required: true, constraints: [the carrier's collection time] }
+  - { id: bnbckaj9h2, name: orderCount, type: int, stored: false, from: [oof9lhoizu], derived: count of orders in the wave }
+  - { id: ov5j8za2rl, name: createdAt, type: datetime, required: true }
+  - { id: hd9dm167hr, name: releasedAt, type: datetime, nullable: true }
+  - { id: j2jnpczvbf, name: completedAt, type: datetime, nullable: true }
+indexes:
+  - { id: c8i7cy8e0s, name: ux_wave_no, fields: [kfqn1p0k5t], unique: true }
+  - { id: rcfrglmecn, name: ix_wave_status_cutoff, fields: [emon33xg03, zbmrc17z41] }

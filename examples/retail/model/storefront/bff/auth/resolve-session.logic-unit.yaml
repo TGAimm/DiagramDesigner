@@ -1,0 +1,25 @@
+# Middleware every route handler runs first.
+id: cylyc9xl5m
+parent: vkdx3tfwhz
+name: resolveSession
+inputs:
+  - { id: fjxawp1rfq, name: sessionId, type: string, nullable: true, description: the fj_sid cookie }
+  - { id: cbsvzhro7a, name: host, type: string, required: true, description: "fjeld.dk ... picks country, locale, store and currency" }
+outputs:
+  - { id: rsbir29ma2, name: session, model: ffqq3wfhpp }
+steps:
+  - { read: ffqq3wfhpp, with: sessionId, gets: session }
+  - if: no session
+    then:
+      - { call: hrc9ssxjvw, with: "client_credentials, manage_my_orders create_anonymous_token", gets: anonymousToken }
+      - { write: ffqq3wfhpp, note: "new: country, locale, storeKey, currency from host; anonymousId and anonymous tokens" }
+  - if: signed in and accessTokenExpiresAt is within 2 minutes
+    then:
+      - { call: tekcdjdubg, with: "refresh_token grant, the BFF's client secret", gets: tokens }
+      - if: the refresh is refused (400 invalid_grant)
+        then:
+          - { write: ffqq3wfhpp, note: "sign out: clear the Identity tokens and customer fields, keep the cart id" }
+        else:
+          - { write: ffqq3wfhpp, note: "new accessToken, refreshToken, accessTokenExpiresAt" }
+  - { write: ffqq3wfhpp, note: "lastSeenAt; extends the 30-day TTL" }
+  - { return: session }

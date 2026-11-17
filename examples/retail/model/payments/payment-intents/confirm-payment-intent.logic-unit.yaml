@@ -1,0 +1,51 @@
+id: q6gv2g3fyb
+parent: pfvgbz7fey
+name: confirmPaymentIntent
+handles: [k3slo13dhk]
+inputs:
+  - { id: zj0x0yu5r8, name: intent, type: string, required: true }
+  - { id: yfd22xnxt4, name: payment_method, type: string }
+  - { id: mwuqzi2ydg, name: return_url, type: string }
+outputs:
+  - { id: vnpqrjq3ip, name: intent, model: g8pq0m68jp }
+fails:
+  - { name: unexpectedState, description: the intent is not waiting for confirmation }
+  - { name: cardDeclined, description: the issuer declined the authorization }
+steps:
+  - { read: g8pq0m68jp, with: intent, gets: intent }
+  - if: status not in requires_payment_method, requires_confirmation, requires_action
+    then:
+      - { fail: unexpectedState }
+  - { read: lr73v0q0h8, with: payment_method, gets: method }
+  - if: method.type is klarna or mobilepay
+    then:
+      - { write: lk4odbwav7, note: "redirect_to_url with the Klarna / MobilePay page and return_url" }
+      - { write: dmfyebtj3a, note: requires_action }
+      - { call: knbcqp1ram, with: "payment_intent.requires_action, intent" }
+      - { return: intent }
+  - { note: "Radar risk check, then authorize with the card network (amount_capturable = amount when manual)" }
+  - if: issuer asks for 3D Secure (SCA in the EEA)
+    then:
+      - { write: lk4odbwav7, note: "use_stripe_sdk / redirect_to_url to the 3DS challenge" }
+      - { write: dmfyebtj3a, note: requires_action }
+      - { call: knbcqp1ram, with: "payment_intent.requires_action, intent" }
+      - { note: "the shopper finishes the challenge in Stripe.js; Stripe re-runs the authorization and continues below" }
+  - if: authorization declined
+    then:
+      - { write: lto0xhpsrl, note: "insert, status failed, failure_code" }
+      - { write: ri7hzp6tsy, note: "card_error, decline_code" }
+      - { write: dmfyebtj3a, note: requires_payment_method }
+      - { call: knbcqp1ram, with: "payment_intent.payment_failed, intent" }
+      - { fail: cardDeclined }
+  - { write: lto0xhpsrl, note: "insert, status succeeded, captured = capture_method is automatic" }
+  - { write: n0yzkt6fgb }
+  - if: capture_method is manual
+    then:
+      - { write: fxa7uwf74j, note: = amount }
+      - { write: dmfyebtj3a, note: requires_capture }
+      - { call: knbcqp1ram, with: "payment_intent.amount_capturable_updated, intent" }
+    else:
+      - { write: te75334qto, note: "type charge, fee, available_on = today + payout delay" }
+      - { write: dmfyebtj3a, note: succeeded }
+      - { call: knbcqp1ram, with: "payment_intent.succeeded, intent" }
+  - { return: intent }

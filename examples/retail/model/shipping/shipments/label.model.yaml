@@ -1,0 +1,12 @@
+id: punlk0tvcx
+ownedBy: d8hyu4qiq7
+storedIn: t99y8h5mfb
+name: Label
+fields:
+  - { id: fav1wq8vjd, name: id, type: int, pk: true }
+  - { id: c76ahwre84, name: shipment_id, type: int, required: true, ref: o96th79s8y }
+  - { id: v2f78xt7n6, name: label_format, type: string, required: true, constraints: ["one of: a4_pdf, 10x19_pdf, zpl; the 3PL prints 10x19 ZPL"] }   # GAP: enum
+  - { id: igjh7asrs6, name: base64, type: string, required: true, constraints: ["the label file, base64"] }
+  - { id: ec3gl6z5vb, name: created_at, type: datetime, required: true }
+indexes:
+  - { id: d776rltbo0, name: ix_label_shipment, fields: [c76ahwre84, v2f78xt7n6] }

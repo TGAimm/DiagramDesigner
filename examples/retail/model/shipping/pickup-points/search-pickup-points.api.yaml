@@ -1,0 +1,17 @@
+id: vvr7att2ml
+parent: cm3gbbx2sq
+name: Search pickup points
+method: GET
+path: /api/public/v3/pickup_points
+auth: basic (API user + key)
+params:
+  - { id: p2gp6pwcsq, name: carrier_code, in: query, type: string, required: true }
+  - { id: pdr00q5hih, name: country_code, in: query, type: string, required: true }
+  - { id: tsuzkn3l7c, name: zipcode, in: query, type: string, required: true }
+  - { id: olwva4az7u, name: address, in: query, type: string, required: false, description: "street, for nearest first" }
+  - { id: fps5e0zs6f, name: city, in: query, type: string, required: false }
+  - { id: w6oda27jo5, name: quantity, in: query, type: int, required: false, description: "default 10" }
+responses:
+  - { status: 200, model: y9waosuibq, many: true, omit: [a9k79m4oz9] }
+  - { status: 422, description: Unknown zipcode for the country }
+  - { status: 502, description: The carrier's lookup is down }

@@ -1,0 +1,24 @@
+id: j09kgaxudj
+parent: z4a8fcfwai
+name: Authorize (sign-in / sign-up page)
+method: GET
+path: /{tenant}/oauth2/v2.0/authorize
+auth: none (browser redirect)
+params:
+  - { id: z0893xl3qe, name: tenant, in: path, type: string, description: "fjeldid.onmicrosoft.com or the tenant id" }
+  - { id: ko0iy77zx2, name: client_id, in: query, type: string, required: true }
+  - { id: oi3bq3ul3k, name: response_type, in: query, type: string, required: true, description: code }
+  - { id: xpc8z400ia, name: redirect_uri, in: query, type: string, required: true }
+  - { id: bih8griq0u, name: scope, in: query, type: string, required: true, description: "openid profile offline_access api://fjeld-commerce-api/checkout" }
+  - { id: sh7797r2sn, name: state, in: query, type: string, required: true }
+  - { id: anu00d4cnf, name: nonce, in: query, type: string, required: true }
+  - { id: ilhom4ovw8, name: code_challenge, in: query, type: string, required: true }
+  - { id: bz4t6k9g5n, name: code_challenge_method, in: query, type: string, required: true, description: S256 }
+  - { id: ovp28wtjdg, name: prompt, in: query, type: string, required: false, description: "login, or create to open sign-up" }
+  - { id: drp655wcre, name: ui_locales, in: query, type: string, required: false, description: "da, sv, nb, de" }
+  - { id: jregpmbcmr, name: login_hint, in: query, type: string, required: false }
+responses:
+  # GAP: a browser redirect carrying its result in the Location query (code, state, or error): a 302 without a body says none of it
+  - { status: 302, description: "to redirect_uri?code=...&state=... ; or ?error=access_denied" }
+  - { status: 200, contentType: text/html, description: the sign-in or sign-up page }
+  - { status: 400, contentType: text/html, description: "AADSTS50011 redirect_uri mismatch, AADSTS700016 unknown client_id" }

@@ -1,0 +1,35 @@
+# GAP: work after the answer - Algolia answers with taskID at once and applies the operations
+# asynchronously; the steps are one sequence ending in return, so the writes are listed before it.
+id: hs23db1ivm
+parent: ktxxdlpyeb
+name: applyBatch
+handles: [kn0ruulrv9]
+inputs:
+  - { id: q5i3sosc1o, name: indexName, type: string, required: true }
+  - { id: tgieh59ldo, name: requests, model: mu2wqd926l, many: true, required: true }
+outputs:
+  - { id: ratm4lysqt, name: task, model: uy48nlidqz }
+fails:
+  - { name: recordTooBig, description: "a record over 10 KB: the whole batch is refused" }
+steps:
+  - if: any body is over 10 KB
+    then:
+      - { fail: recordTooBig }
+  - { write: uy48nlidqz, note: "new task, status notPublished" }
+  - each: operation in requests
+    do:
+      - if: action is addObject or updateObject
+        then:
+          - { write: s08z88xp3c, note: "replace the whole record (addObject makes an objectID when none is given)" }
+      - if: action is partialUpdateObject or partialUpdateObjectNoCreate
+        then:
+          - { write: s08z88xp3c, note: "set only the attributes given; create the record when missing, unless NoCreate" }
+      - if: action is deleteObject
+        then:
+          - { write: s08z88xp3c, note: delete by objectID }
+  - { read: wtqn6ejr7o, with: indexName, gets: replicas }
+  - each: replica in replicas
+    do:
+      - { write: s08z88xp3c, note: "copy the same changes into the replica, kept in its own ranking order" }
+  - { write: uy48nlidqz, note: status published }
+  - { return: task }

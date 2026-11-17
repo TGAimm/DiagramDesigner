@@ -1,0 +1,10 @@
+id: yar30cdvas
+parent: vkdx3tfwhz
+name: Sign-up hook (Identity custom extension)
+method: POST
+path: /api/identity/attribute-collection-submit
+auth: "bearer (token Entra issues to the hook: aud = BFF app id, azp = the Authentication Events app)"
+request: { model: q0ovpwyphr }
+responses:
+  - { status: 200, model: a4jb89tn3s, description: "modifyAttributeValues with commerceCustomerId; or showValidationError" }
+  - { status: 401, description: missing or invalid token }

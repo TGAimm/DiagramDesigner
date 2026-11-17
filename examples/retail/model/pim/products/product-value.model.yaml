@@ -1,0 +1,14 @@
+# One attribute value: Akeneo's {locale, scope, data} under an attribute code.
+# GAP: embedded JSON column - lives inside raw_values of Product / Product Model; the schema can
+# only draw a held model as its own table, so it has no storedIn.
+id: st851mrt6f
+ownedBy: tuvm3c6m5l
+name: Product Value
+fields:
+  - { id: ymt19shyk9, name: attribute, type: string, required: true, ref: z66zy4j2n8 }
+  - { id: oam7xf44d2, name: locale, type: string, nullable: true, ref: pjdrglpirc, constraints: [null unless the attribute is localizable] }
+  - { id: jerii494jn, name: scope, type: string, nullable: true, ref: k4nfak5v5g, constraints: [null unless the attribute is scopable] }
+  # GAP: union type - data is a string, number, bool, date, option code(s), {amount, unit},
+  # [{amount, currency}] or asset codes, depending on the attribute's type.
+  - { id: ak4lwfuxfc, name: data, type: json, required: true, nullable: true }
+  - { id: k8hfszo1pf, name: linked_data, type: json, nullable: true, stored: false, from: [k81itv2t6e], derived: "option labels, only with with_attribute_options=true" }

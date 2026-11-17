@@ -1,0 +1,13 @@
+id: eap9orpsna
+ownedBy: egb813hfbr
+storedIn: sox2v1ykga
+name: WebhookEndpoint
+fields:
+  - { id: rpatqufll0, name: id, type: string, pk: true, constraints: ["prefix we_"] }
+  - { id: nacld92z4a, name: url, type: string, required: true, constraints: ["Fjeld: Integration /stripe/webhook"] }
+  - { id: qxmqtauo2h, name: enabled_events, type: string, many: true, required: true }
+  - { id: yplo9xhd6t, name: status, type: string, constraints: ["one of: enabled, disabled"] }   # GAP: enum
+  - { id: ed7nfi8b58, name: api_version, type: string, nullable: true }
+  - { id: ytyyxsi3lj, name: secret, type: string, constraints: ["whsec_, returned only on create; signs Stripe-Signature"] }
+  - { id: x9r1eamkwx, name: description, type: string, nullable: true }
+  - { id: x6e6146o6r, name: created, type: timestamp, required: true }

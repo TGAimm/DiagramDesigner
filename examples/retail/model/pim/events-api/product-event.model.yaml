@@ -1,0 +1,16 @@
+# One event of the batch body {"events": [...]}.
+# GAP: batch envelope - the request body is {"events": [Product Event, ...]}; not modelled.
+id: d7xcs4r6vp
+ownedBy: cr6m9caoey
+name: Product Event
+fields:
+  - { id: bbgd6grq0d, name: event_id, type: uuid, required: true }
+  # GAP: enum
+  - { id: b3zc3zn050, name: type, type: string, required: true, constraints: ["one of: com.akeneo.pim.v1.product.created, com.akeneo.pim.v1.product.updated, com.akeneo.pim.v1.product.removed"] }
+  - { id: n3souttruc, name: event_datetime, type: datetime, required: true }
+  - { id: dkljos92at, name: author, type: string, required: true, constraints: [username, or the Connection code] }
+  # GAP: enum
+  - { id: zzhwi7nczi, name: author_type, type: string, required: true, constraints: ["one of: ui, api"] }
+  - { id: sekjwtyeiq, name: pim_source, type: string, required: true, constraints: ["https://fjeld.cloud.akeneo.com"] }
+  - { id: a3ahi9xtp3, name: subject, type: uuid, required: true, from: [gziztcdf03] }
+  - { id: ghuxz4bz67, name: resource, model: qitb6ezis6, nullable: true, constraints: ["data.resource: the product in standard format; on removed only uuid and identifier"] }

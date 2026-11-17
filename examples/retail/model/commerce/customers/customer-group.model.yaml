@@ -1,0 +1,12 @@
+id: ayb1imonn7
+ownedBy: oumwpbl70c
+storedIn: rrg5e7natg
+name: Customer Group
+fields:
+  - { id: dosb9gjm5q, name: id, type: uuid, pk: true }
+  - { id: zy6lto3faq, name: version, type: long, required: true }
+  - { id: hgd7riwvzc, name: key, type: string, nullable: true, constraints: ["one of: club-member, staff"] }
+  - { id: m4x9xdfoxh, name: name, type: string, required: true }
+  - { id: yw44a21oqr, name: createdAt, type: datetime, required: true }
+indexes:
+  - { id: wzxlr572uo, name: ux_customer_group_key, fields: [hgd7riwvzc], unique: true }

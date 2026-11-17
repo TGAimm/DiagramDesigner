@@ -1,0 +1,11 @@
+# Table 6 Customer Price Group: one per country and channel (B2C-DK, B2C-SE, B2C-NO, B2C-DE, STORE).
+id: aqzwg2ju0r
+ownedBy: g65jav6xwo
+storedIn: q43aprn5l0
+name: Customer Price Group
+fields:
+  - { id: tk6f474iqi, name: code, type: string, pk: true, constraints: [max 10] }
+  - { id: s19trredfw, name: description, type: string }
+  - { id: zhc8euogt0, name: priceIncludesVat, type: bool }
+  - { id: ndxclydabi, name: vatBusPostingGrPrice, type: string, ref: z5j4u9tg8x, constraints: ["VAT group the prices include"] }
+  - { id: jpvp1sd93p, name: allowLineDisc, type: bool }

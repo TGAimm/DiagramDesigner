@@ -1,0 +1,25 @@
+id: srngby2fkx
+ownedBy: sd8724jaqj
+storedIn: hykg6pt8u2
+name: Z report
+fields:
+  - { id: lwo76a5biw, name: id, type: uuid, pk: true }
+  - { id: rmleixbd5s, name: zNo, type: int, required: true, constraints: [gapless per register; fiscal requirement] }
+  - { id: xanzoxcglq, name: storeId, type: int, required: true, ref: h3qlberi23 }
+  - { id: v0gky53rr3, name: registerId, type: int, required: true, ref: srsxqwlqvb }
+  - { id: fsi64r70ld, name: businessDay, type: date, required: true, from: [lz87p5mqnv] }
+  - { id: oegmujjbn1, name: currency, type: string, required: true, from: [ainz12ukbb] }
+  - { id: r1fwqv8ch1, name: receiptCount, type: int, required: true, from: [i459bnqelo], derived: count of the day's receipts }
+  - { id: uzm4k9ukrt, name: salesTotal, type: decimal, required: true, from: [dl9feil8c3, dk261gmfj3], derived: sum of sale receipts }
+  - { id: byuzykotlq, name: returnsTotal, type: decimal, required: true, from: [dl9feil8c3, dk261gmfj3], derived: sum of return receipts }
+  - { id: lgu5gma6hh, name: discountTotal, type: decimal, required: true, from: [o5iiw5y19m], derived: sum }
+  - { id: mpzsdhfw55, name: vatTotal, type: decimal, required: true, from: [r4ggzd30uj], derived: sum }
+  - { id: u9drr09fp5, name: tenders, model: f3i1y2sael, many: true, required: true }
+  - { id: lxz00da2q4, name: cashExpected, type: decimal, required: true, from: [mgj1x4iwi7, plorfj8nr7], derived: opening float + cash payments }
+  - { id: pes5y053n3, name: cashCounted, type: decimal, required: true }
+  - { id: w986a4w6l2, name: cashDifference, type: decimal, required: true, from: [pes5y053n3, lxz00da2q4], derived: counted - expected }
+  - { id: ol2ugw2g8x, name: closedBy, type: int, required: true, ref: l5j11fszfp }
+  - { id: lzhjd1h1p9, name: closedAt, type: datetime, required: true }
+indexes:
+  - { id: lgn3h5rj7o, name: ux_z_register_no, fields: [v0gky53rr3, rmleixbd5s], unique: true }
+  - { id: wiu8movja2, name: ix_z_day_store, fields: [fsi64r70ld, xanzoxcglq] }

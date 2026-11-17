@@ -1,0 +1,24 @@
+id: dihqzxsjgl
+ownedBy: d0jfpet25d
+storedIn: d0jfpet25d
+name: dim_product
+fields:
+  - { id: jqish8v510, name: product_sk, type: bigint, pk: true, from: [q4y9arjklg], derived: "-1 Unknown member (sku not in ERP)" }
+  - { id: tx898qausm, name: sku, type: string, required: true, from: [kf11spfg9l] }
+  - { id: thmnsrn2yn, name: gtin, type: string, nullable: true, from: [i3zvo7uypi] }
+  - { id: d8sczxawwu, name: name, type: string, required: true, from: [i0ild05ojd] }
+  - { id: al7bb3nxr6, name: brand, type: string, nullable: true, from: [hrs3azcfr5] }
+  - { id: ll1ycu9up5, name: family, type: string, nullable: true, from: [ap69o59wqg] }
+  - { id: g7xo7fodgq, name: category, type: string, nullable: true, from: [be4sfdwtvt] }
+  - { id: vsf8ry4cko, name: style_code, type: string, nullable: true, from: [wainbr6dsl] }
+  - { id: fejwlibosf, name: colour, type: string, nullable: true, from: [e04zkqz0th] }
+  - { id: ks5ifkhygy, name: size, type: string, nullable: true, from: [vgaix7ax46] }
+  - { id: on8vitwcxd, name: material, type: string, nullable: true, from: [s3wsjp32gv] }
+  - { id: b8h12cohdv, name: unit_price_dkk, type: decimal, nullable: true, from: [o9tle8ngtv] }
+  - { id: ezm64seyq2, name: unit_cost_dkk, type: decimal, nullable: true, from: [lk24le8261] }
+  - { id: d3k3h77fpi, name: enabled_online, type: bool, required: true, from: [wbm3uomale] }
+  - { id: r91vbltkz1, name: valid_from, type: datetime, required: true, from: [mvnvr29wuf] }
+  - { id: uhjdwtppni, name: valid_to, type: datetime, required: true, from: [yigezw6v1q], derived: "9999-12-31 while current" }
+  - { id: wdp6d3fkmj, name: is_current, type: bool, required: true, from: [pwm9vykeqa] }
+indexes:
+  - { id: kp9b3pt7bw, name: ix_dim_product_sku, fields: [tx898qausm, r91vbltkz1] }

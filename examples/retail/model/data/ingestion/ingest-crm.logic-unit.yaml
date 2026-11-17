@@ -1,0 +1,14 @@
+# GAP: scheduled trigger
+id: vbgshw3cxn
+parent: oyqmyb5nc3
+name: ingestCrm
+meta: { schedule: "20 * * * *", pipeline: pl_ingest_crm }
+inputs: []
+outputs: []
+steps:
+  - { read: qhfxfz0h8j, with: "source_system = crm", gets: watermarks }
+  - { call: yppg1azax1, with: "$filter=modifiedon gt watermark, $select the bronze columns, Prefer: odata.maxpagesize=5000, follow @odata.nextLink", gets: contacts }
+  - { write: s2uz0852i0, note: "MERGE on contactid; merged and inactive contacts are kept so silver can follow masterid" }
+  - { call: va98mmfa68, with: "$filter=modifiedon gt watermark", gets: loyalty members }
+  - { write: atzgowyr84, note: MERGE on fjeld_loyaltymemberid }
+  - { write: axtovqyj39, note: max modifiedon }

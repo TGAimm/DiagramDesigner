@@ -1,0 +1,22 @@
+# GAP: triggered by subscription sync-retry (queue)
+id: gnqit61atk
+parent: g55sb0eqd6
+name: processRetryQueue
+inputs:
+  - { id: e29seeq9bz, name: envelope, model: vxed7chciz, required: true }
+outputs: []
+steps:
+  - { note: "queue sync-retry; a message only arrives at its ScheduledEnqueueTimeUtc" }
+  - { read: wlmvgl2qp8, with: envelope.correlationId, gets: open error }
+  - if: the error was resolved meanwhile (resubmitted or ignored by ops)
+    then:
+      - { note: drop }
+    else:
+      - if: envelope.attempt > 6
+        then:
+          - { call: gxh7trguok, with: envelope }
+          - { write: yguluhbf6w, note: dead_lettered }
+        else:
+          - { note: "send envelope.body back to envelope.originalChannel with the same MessageId and attempt + 1 as a user property (one forward rule per channel)" }
+          - { write: wlmvgl2qp8, note: "nextRetryAt of the next backoff step" }
+          - { write: yguluhbf6w, note: retry_scheduled }

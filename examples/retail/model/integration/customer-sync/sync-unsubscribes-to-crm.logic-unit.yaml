@@ -1,0 +1,21 @@
+# GAP: scheduled trigger
+# Marketing has no webhook Fjeld can use for unsubscribes, so Integration polls its events.
+id: rizpxqbxwk
+parent: mwg6alxci7
+name: syncUnsubscribesToCrm
+meta: { schedule: "*/15 * * * *" }
+inputs: []
+outputs: []
+steps:
+  - { read: nanvethhnv, with: marketing / unsubscribed-events, gets: cursor }
+  - { call: whp14ffgmn, with: "filter equals(metric_id, <Unsubscribed from Email Marketing>), greater-than(datetime, cursor); include profile; sort datetime", gets: events }
+  - each: event in events
+    do:
+      - { call: yppg1azax1, with: "$filter emailaddress1 eq '<profile email>' and statecode eq 0", gets: contacts }
+      - if: no contact
+        then:
+          - { note: "a list-only subscriber without a webshop account: skip" }
+        else:
+          - { call: nbplo7huaq, with: "contact point value = email, type Email, purpose Commercial, value Opted out, source Marketing unsubscribe, reason = method, consentedon = event time, fjeld_contactid@odata.bind", gets: consent }
+          - { call: us5h4sj9fc, with: "donotbulkemail true", gets: contact }
+  - { write: nanvethhnv, note: "newest event datetime" }

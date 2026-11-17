@@ -1,0 +1,12 @@
+id: e2ngitd1kf
+parent: ntfj7i0o5t
+name: Create pickup order
+method: POST
+path: /v2/pickup-orders
+auth: bearer (API key per integration user)
+request: { model: n7gkyqvsz0, pick: [lqil8hi4vu, qfwhq6lxf4, mbocbn5b8k, xxv57vr2p9, s02hr1en2a, lfju634958, fwoa7zws96, gc4pk8wgd0] }
+responses:
+  - { status: 201, model: n7gkyqvsz0, description: "Created, status new" }
+  - { status: 401, description: Bad API key }
+  - { status: 409, description: orderNumber exists }
+  - { status: 422, description: "Unknown store or sku, or the store does not do click & collect" }

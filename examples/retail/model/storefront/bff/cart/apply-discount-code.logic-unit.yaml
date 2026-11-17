@@ -1,0 +1,21 @@
+id: by4px9n988
+parent: jzcljy1080
+name: applyDiscountCode
+handles: [i468v09qbd]
+inputs:
+  - { id: nymgf5jp4h, name: code, type: string, required: true }
+outputs:
+  - { id: z9bbz2gyrg, name: cart, model: lq4foj9308 }
+fails:
+  - { name: invalidCode, description: "400" }
+steps:
+  - { call: vhts24past, gets: cart }
+  - { call: r8uoh3ve5d, with: "version, addDiscountCode code", gets: cart }
+  - if: 400 DiscountCodeNonApplicable
+    then:
+      - { fail: invalidCode }
+  - if: the code's state isn't MatchesCart
+    then:
+      - { call: r8uoh3ve5d, with: "removeDiscountCode (keep the cart clean)", gets: cart }
+      - { fail: invalidCode }
+  - { return: cart }

@@ -1,0 +1,18 @@
+id: nliulbw7pi
+parent: lzm2qjgaov
+name: Query inventory
+method: GET
+path: /{projectKey}/inventory
+auth: "bearer (view_products)"
+params:
+  - { id: jsl7f29bbu, name: projectKey, in: path, type: string, description: fjeld-prod }
+  - { id: t2qd79qe0a, name: where, in: query, type: string, required: false, description: "predicate, e.g. sku in (\"10023-BLK-M\") and supplyChannel(id=\"...\")" }
+  - { id: z7mqo62ty7, name: limit, in: query, type: int, required: false, description: "default 20, max 500" }
+  - { id: mpb1gg542q, name: offset, in: query, type: int, required: false }
+  - { id: uw63iio31n, name: withTotal, in: query, type: bool, required: false }
+responses:
+  - status: 200
+    fields:
+      - { id: fugo2y0vs5, name: results, model: fsdygpvm9i, many: true }
+      - { id: v6ugihpms6, name: total, type: int, nullable: true, from: [manbwnp2uv], derived: count of matches when withTotal }
+  - { status: 400, description: InvalidInput (bad predicate) }

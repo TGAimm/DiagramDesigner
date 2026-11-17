@@ -1,0 +1,5 @@
+id: rrg5e7natg
+parent: ygmbkn58fj
+name: Project data
+tags: [database]
+# commercetools stores every resource as one versioned JSON document; nested objects live inside it.

@@ -1,0 +1,20 @@
+# Entra External ID has no token introspection endpoint, but commercetools External OAuth
+# needs one: the BFF answers it (RFC 7662), and is the URL configured on the Commerce project.
+id: cuzp9gjcp9
+parent: vkdx3tfwhz
+name: Token introspection (Commerce External OAuth)
+method: POST
+path: /api/identity/introspect
+auth: "basic (the secret configured as authorizationHeader on the Commerce project)"
+request:
+  contentType: application/x-www-form-urlencoded
+  fields:
+    - { id: dov6d9ene8, name: token, type: string, required: true, to: [rw84nc8l0q], description: "the Entra access token the shopper sent to Commerce; checked, not stored" }
+responses:
+  - status: 200
+    fields:
+      - { id: bkpkx4b193, name: active, type: bool, from: [miztsw278p, izrhexfa6a], derived: "signature verifies, iss is the tenant and exp is in the future" }
+      - { id: ccx0wvslex, name: scope, type: string, from: [dv6x5txny9], derived: "manage_my_orders:fjeld-prod manage_my_profile:fjeld-prod customer_id:<commerce_customer_id>" }
+      - { id: r8c2shs1lo, name: sub, type: string, from: [ojzx9zupxf], description: the Entra object id; Commerce matches it to Customer.externalId }
+      - { id: nz18mkyeva, name: exp, type: int, from: [miztsw278p] }
+  - { status: 401, description: wrong basic credentials }

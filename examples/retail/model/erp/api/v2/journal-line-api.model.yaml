@@ -1,0 +1,19 @@
+# API page 30049 APIV2 - JournalLines (entity journalLine)
+id: j4svsv33uk
+ownedBy: wyb51ibopv
+name: journalLine (API)
+fields:
+  - { id: yy24vimz70, name: id, type: guid, from: [jqbs60jcbg] }
+  - { id: irgkj7j6ux, name: journalId, type: guid, from: [p1axpv28kv, h0aq5u46iu], derived: "systemId of the batch" }
+  - { id: w3193xqqjv, name: journalDisplayName, type: string, from: [p1axpv28kv] }
+  - { id: qw6hght4f6, name: lineNumber, type: int, from: [f47n15g19x] }
+  - { id: nkaj3rhi2k, name: accountType, type: string, from: [kq80zi3px3] }
+  - { id: r6fexjikqf, name: accountNumber, type: string, from: [kmr5d4pbu4] }
+  - { id: v8bdc2dg7f, name: postingDate, type: date, from: [mhgh88rpxh] }
+  - { id: lz5ny64nht, name: documentNumber, type: string, from: [rkp1lahodw] }
+  - { id: qyiwsestde, name: externalDocumentNumber, type: string, from: [x22q1mqx7f] }
+  - { id: pfgzikuht8, name: amount, type: decimal, from: [mnaa7od0i8] }
+  - { id: sv81r8yfio, name: description, type: string, from: [id1sz0bkpr] }
+  - { id: g0g0pc1rgr, name: balanceAccountType, type: string, from: [nwl8xbx2n2] }
+  - { id: vso526nd8u, name: balancingAccountNumber, type: string, from: [rj9vz5h4uv] }
+  - { id: vg2a57yrci, name: lastModifiedDateTime, type: datetime, from: [zwfodpnmyr] }

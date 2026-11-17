@@ -1,0 +1,5 @@
+id: njh4jh7e64
+name: POS
+meta: { vendor: Nordic cloud POS vendor, product: "Cloud POS (store app + REST API v2), Sitoo-style", kind: saas, owner: store-ops, account: fjeld, stores: "12 (DK 5, SE 3, NO 3, DE 1)" }
+links:
+  - { label: Sitoo developer docs (the API this is modelled on), url: https://developer.sitoo.com/ }

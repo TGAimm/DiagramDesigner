@@ -1,0 +1,21 @@
+id: uzfenyzyi8
+ownedBy: vuo50id8ln
+storedIn: sox2v1ykga
+name: Payout
+fields:
+  - { id: n6liyrhotq, name: id, type: string, pk: true, constraints: ["prefix po_"] }
+  - { id: q8qe9p2acw, name: amount, type: int, required: true, from: [kw8he4reox], derived: sum of net of the available transactions swept }
+  - { id: pjam9rytz1, name: currency, type: string, required: true }
+  - { id: dvmx85wcau, name: arrival_date, type: timestamp, required: true }
+  - { id: tddsscgbhz, name: status, type: string, required: true, constraints: ["one of: paid, pending, in_transit, canceled, failed"] }   # GAP: enum
+  - { id: o4rkjmdk2j, name: automatic, type: bool, constraints: ["Fjeld: daily automatic payouts"] }
+  - { id: ldidzgrlxq, name: method, type: string, constraints: ["one of: standard, instant"] }   # GAP: enum
+  - { id: ihvtcyjwz5, name: type, type: string, constraints: ["one of: bank_account, card"] }   # GAP: enum
+  - { id: r06peo9d6q, name: destination, type: string, constraints: ["ba_ id of Fjeld's Danske Bank account"] }
+  - { id: hs0ln9ib71, name: balance_transaction, type: string, ref: te75334qto }
+  - { id: t7zsm0h5hj, name: failure_code, type: string, nullable: true }
+  - { id: mpao1zuz04, name: statement_descriptor, type: string, nullable: true }
+  - { id: ea9cm3m223, name: reconciliation_status, type: string, constraints: ["one of: not_applicable, in_progress, completed"] }   # GAP: enum
+  - { id: uiexcznhwr, name: created, type: timestamp, required: true }
+indexes:
+  - { id: ti7az8x376, name: ix_payout_arrival, fields: [dvmx85wcau] }

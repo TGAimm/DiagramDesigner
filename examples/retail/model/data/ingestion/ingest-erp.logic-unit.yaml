@@ -1,0 +1,26 @@
+# GAP: scheduled trigger
+id: mlbcnzxhs3
+parent: oyqmyb5nc3
+name: ingestErp
+meta: { schedule: "5 * * * *", pipeline: pl_ingest_erp, note: "hourly; inventory and exchange rates once a day on the 02:05 run" }
+inputs: []
+outputs: []
+fails:
+  - { name: sourceUnavailable, description: "ERP answers 429 or 5xx after 3 retries with back-off" }
+steps:
+  - { read: qhfxfz0h8j, with: "source_system = erp", gets: watermarks }
+  - { call: q2t4rbs6gu, with: "$filter=lastModifiedDateTime gt (items watermark - overlap), $top=20000, follow @odata.nextLink", gets: items }
+  - { write: xkovmskr8u, note: MERGE on id }
+  - { call: l3fnnvgsvg, with: "$filter=lastModifiedDateTime gt (customers watermark - overlap)", gets: customers }
+  - { write: zs1qghnwpx, note: MERGE on id }
+  - if: the 02:05 run
+    then:
+      - { call: h11w5t51c7, with: "full read, Prefer: odata.maxpagesize=5000", gets: inventory }
+      - { write: bikx1km3c2, note: "append, _snapshot_date = today" }
+      - { call: n4ry6z443i, with: "$filter=startingDate ge watermark", gets: rates }
+      - { write: fv80k9knt1, note: MERGE on currencyCode and startingDate }
+  - if: a call failed after retries
+    then:
+      - { write: qhfxfz0h8j, note: "status failed for that object; the watermark stays, the next run re-reads" }
+      - { fail: sourceUnavailable }
+  - { write: axtovqyj39, note: "max lastModifiedDateTime per object; status succeeded" }

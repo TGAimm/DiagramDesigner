@@ -1,0 +1,19 @@
+id: p0tngi23im
+parent: wyb51ibopv
+name: List journals
+method: GET
+path: /api/v2.0/companies({companyId})/journals
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: y8wbvaodm2, name: companyId, in: path, type: guid }
+  - { id: kbs42e504l, name: $filter, in: query, type: string, required: false, description: "code eq 'STRIPE'" }
+responses:
+  - status: 200
+    many: true
+    fields:
+      - { id: ecgpgw05iy, name: id, type: guid, from: [h0aq5u46iu] }
+      - { id: gxhserxrv3, name: code, type: string, from: [ab6lrt7ekn] }
+      - { id: bcqxm4w8jj, name: displayName, type: string, from: [yw2xlspqa3] }
+      - { id: kk43szuzj5, name: balancingAccountNumber, type: string, from: [afr56tgvr4] }
+      - { id: zlt6e4exyz, name: lastModifiedDateTime, type: datetime, from: [hu0do0pqnc] }
+  - { status: 401, description: Unauthorized }

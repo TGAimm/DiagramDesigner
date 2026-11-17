@@ -1,0 +1,7 @@
+# Events API: per Connection, Akeneo POSTs batches of events (max 10 per request) to the
+# subscriber's URL, signed with X-Akeneo-Request-Signature (HMAC SHA256 of timestamp.body).
+id: cr6m9caoey
+parent: x72oqgh6of
+name: Events API
+links:
+  - { label: Events API, url: https://api.akeneo.com/events-documentation/overview.html }

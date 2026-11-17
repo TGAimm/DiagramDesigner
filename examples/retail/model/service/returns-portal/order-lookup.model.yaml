@@ -1,0 +1,15 @@
+# The order as Commerce returns it to the portal's lookup, trimmed to what a return needs. Not stored.
+id: bdri29g04e
+ownedBy: t6al4kcu16
+name: Order lookup
+fields:
+  - { id: wel6u264d3, name: order_number, type: string, required: true, from: [lulkapcaa0] }
+  - { id: avuni8vnwe, name: commerce_order_id, type: string, required: true, from: [qazi456zfm], derived: uuid as text }
+  - { id: yn6om4p9fm, name: email, type: string, required: true, from: [b5ftkjr0y9] }
+  - { id: zdngrgphyp, name: customer_id, type: string, nullable: true, from: [zs9b3f85u9], derived: uuid as text }
+  - { id: s9qhgn6o6r, name: country, type: string, required: true, from: [e5lts0g7ke] }
+  - { id: ufb4khg0vb, name: currency, type: string, required: true, from: [n8mwhpvdh9], derived: "order totalPrice currency" }
+  - { id: uv5n8ub8yz, name: payment_method, type: string, required: true, from: [cqr391r34s,ywcl4gj6l7], derived: "method of the order's payment: card, klarna or mobilepay" }
+  - { id: wt78v7jp8a, name: shipped_at, type: datetime, nullable: true, from: [zss6mp6153], derived: "createdAt of the first delivery" }
+  - { id: vzjfqxd743, name: outbound_shipment_id, type: int, nullable: true, from: [xac9b2igw1], derived: "read off the first parcel's trackingData.providerTransaction, where Integration keeps the Shipping shipment id" }
+  - { id: ijj5wwu33s, name: lines, model: iyn2rbznpf, many: true }

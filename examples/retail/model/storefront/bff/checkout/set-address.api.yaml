@@ -1,0 +1,16 @@
+id: epg9zhnhqn
+parent: a2x6k1ux7z
+name: Set email and addresses
+method: PUT
+path: /api/checkout/address
+auth: session cookie fj_sid
+request:
+  fields:
+    - { id: vv7ws1y18q, name: email, type: string, required: true, to: [at8hnfzn8v] }
+    - { id: fkio5merir, name: shippingAddress, model: b8rzoiyo20, required: true }
+    - { id: nuf1aaqv32, name: billingAddress, model: b8rzoiyo20, nullable: true, description: null = same as shipping }
+    - { id: nq683z2ehi, name: newsletterOptIn, type: bool, to: [hp3khxqvp9] }
+responses:
+  - { status: 200, model: c5wtilu6sm }
+  - { status: 400, description: "invalid email or postal code, or a country the shop doesn't sell to" }
+  - { status: 409, description: the cart is empty }

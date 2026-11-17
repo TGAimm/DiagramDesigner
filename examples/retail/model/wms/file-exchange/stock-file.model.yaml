@@ -1,0 +1,12 @@
+# GAP: file interface (outbound STOCK_<ts>.csv: nightly snapshot, one row per item, read by Integration to adjust ERP inventory)
+id: k8fmicwjqb
+ownedBy: tn4azsu06u
+storedIn: tn4azsu06u
+name: STOCK_<ts>.csv
+fields:
+  - { id: en5qykrql4, name: item_no, type: string, pk: true, from: [yfuhon49xq] }
+  - { id: qw8unyfn98, name: snapshot_at, type: datetime, required: true, constraints: [same for every row of a file] }
+  - { id: uxf918aiu2, name: qty_on_hand, type: int, required: true, from: [hg3gzb58bw], derived: sum over all bins and lots }
+  - { id: r8br3sf5ze, name: qty_allocated, type: int, required: true, from: [d0v5nns9ar], derived: sum over all bins }
+  - { id: hwclv2vcf1, name: qty_blocked, type: int, required: true, from: [hg3gzb58bw, e3yqtbydvw], derived: "sum of qtyOnHand where status is qc, damaged or blocked" }
+  - { id: mar2ts1fhj, name: qty_available, type: int, required: true, from: [hg3gzb58bw, d0v5nns9ar, e3yqtbydvw], derived: on hand - allocated - blocked }

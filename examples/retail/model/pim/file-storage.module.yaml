@@ -1,0 +1,5 @@
+# Object storage (Google Cloud Storage in Akeneo SaaS) for media file binaries.
+id: r7oqtpbqfa
+parent: x72oqgh6of
+name: File Storage
+meta: { engine: Google Cloud Storage }

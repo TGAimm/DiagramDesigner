@@ -1,0 +1,17 @@
+id: ng7u4eyv23
+parent: y5739ri6l0
+name: Get message trail
+method: GET
+path: /ops/messages
+auth: "bearer (Entra ID, app role Integration.Operator)"
+params:
+  - { id: s2f7a8v6kw, name: correlationId, in: query, type: string, required: false }
+  - { id: jf1xt84lxs, name: businessKey, in: query, type: string, required: false, description: "order number, sku, RMA or payout id" }
+  - { id: gc6r88pi6i, name: since, in: query, type: datetime, required: false, description: default 7 days back }
+responses:
+  - status: 200
+    fields:
+      - { id: tz9czsp5vk, name: messages, model: yguluhbf6w, many: true }
+      - { id: g59id7hrtr, name: errors, model: wlmvgl2qp8, many: true }
+  - { status: 400, description: neither correlationId nor businessKey }
+  - { status: 403, description: Missing app role }

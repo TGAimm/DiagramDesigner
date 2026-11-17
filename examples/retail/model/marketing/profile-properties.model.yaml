@@ -1,0 +1,13 @@
+# Fjeld's custom profile properties (Integration sets them from CRM and Commerce).
+id: xup7zenrv4
+ownedBy: x27wyx0r8h
+name: Profile properties
+fields:
+  - { id: x1gnvv9lrs, name: loyalty_tier, type: string, nullable: true, from: [g6wd5evlsf], derived: via Integration on loyalty-tier-changed }
+  - { id: ixbsmemdcd, name: lifetime_value, type: decimal, nullable: true, from: [zfzskiajiw], derived: nightly via Integration }
+  - { id: dwj3pwx7vc, name: order_count, type: int, nullable: true, from: [haxlloxail] }
+  - { id: hjmv8174mk, name: crm_contact_id, type: string, nullable: true, from: [gp3y3t4d1d] }
+  # GAP: enum
+  - { id: sf2z6eaue9, name: shop_country, type: string, nullable: true, constraints: ["one of: DK, SE, NO, DE"] }
+  - { id: a7sncw1byb, name: preferred_store, type: string, nullable: true, from: [hvpe1ot6lm], derived: "the store where the customer signed up" }
+  - { id: vkup74bshl, name: b2b_account, type: bool, nullable: true }

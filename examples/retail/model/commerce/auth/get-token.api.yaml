@@ -1,0 +1,15 @@
+id: ekgirua9an
+parent: pg4yiapkrt
+name: Get token (client credentials)
+method: POST
+path: /oauth/token
+auth: "basic (clientId:clientSecret)"
+request:
+  contentType: application/x-www-form-urlencoded
+  fields:
+    - { id: xa94qrcyy9, name: grant_type, type: string, required: true, description: client_credentials, to: [ox78v3euaz] }
+    - { id: ikxcyzxn7i, name: scope, type: string, description: defaults to all scopes of the API client, to: [x2n39n0nd4] }
+responses:
+  - { status: 200, model: okef4sk2jd, pick: [trqt1u7pdx, l11l8bit91, ln19171ns9, x2n39n0nd4] }
+  - { status: 400, description: "invalid_scope" }
+  - { status: 401, description: "invalid_client" }

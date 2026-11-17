@@ -1,0 +1,57 @@
+id: mdu2ybg3w2
+parent: f6x7dhgzlz
+name: applyOrderUpdateActions
+handles: [xdgvgxhc6p]
+inputs:
+  - { id: ddh3v6f62h, name: orderId, type: uuid, required: true }
+  - { id: zvxro4rhcx, name: version, type: long, required: true }
+  - { id: zrv6b568qb, name: actions, model: qn0y1hkw8b, many: true, required: true }
+outputs:
+  - { id: ttack4n5bo, name: order, model: g5tcad7xx0 }
+fails:
+  - { name: notFound, description: ResourceNotFound (404) }
+  - { name: concurrentModification, description: version is stale (409) }
+  - { name: invalidOperation, description: "an action names a lineItemId, deliveryId, parcelId or returnItemId the order lacks (400)" }
+steps:
+  - { read: g5tcad7xx0, with: orderId, gets: order }
+  - if: order not found
+    then:
+      - { fail: notFound }
+  - if: order.version != version
+    then:
+      - { fail: concurrentModification }
+  - each: action in actions (all or nothing)
+    do:
+      - if: action names an id the order lacks
+        then:
+          - { fail: invalidOperation }
+      - if: action is changeOrderState
+        then:
+          - { write: eg3umbi5el, note: "any state to any state; no state machine" }
+          - { call: lg4db2fxip, with: "Order, OrderStateChanged, orderState + oldOrderState", gets: message }
+      - if: action is changeShipmentState
+        then:
+          - { write: r29wqfepvb }
+          - { call: lg4db2fxip, with: "Order, OrderShipmentStateChanged, shipmentState + oldShipmentState", gets: message }
+      - if: action is changePaymentState
+        then:
+          - { write: b0edsryzw7, note: "not derived from payments; Integration sets it" }
+      - if: action is addDelivery, addParcelToDelivery or setParcelTrackingData
+        then:
+          - { write: jk30p6swt9, note: "emits DeliveryAdded / ParcelAddedToDelivery / ParcelTrackingDataUpdated (not subscribed)" }
+      - if: action is addReturnInfo
+        then:
+          - { write: t33kdymlz1, note: "items with shipmentState Advised, paymentState Initial" }
+          - { call: lg4db2fxip, with: "Order, ReturnInfoAdded, returnInfo", gets: message }
+      - if: action is setReturnShipmentState or setReturnPaymentState
+        then:
+          - { write: g11vzl4rwo, note: or paymentState }
+      - if: action is setCustomField
+        then:
+          - { write: m73mrjedkn, note: "e.g. erpOrderNo, wmsOrderRef" }
+      - if: action is addPayment
+        then:
+          - { write: cqr391r34s }
+  - { write: bmzyt48cy8, note: +1 }
+  - { write: tqzli8reqt }
+  - { return: order }

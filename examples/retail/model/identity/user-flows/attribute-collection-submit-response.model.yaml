@@ -1,0 +1,10 @@
+id: a4jb89tn3s
+ownedBy: dsa7av53v5
+name: AttributeCollectionSubmitResponse
+fields:
+  - { id: hgv93q1ynq, name: "data.@odata.type", type: string, required: true, constraints: ["microsoft.graph.onAttributeCollectionSubmitResponseData"] }
+  # GAP: actions is a list of polymorphic objects (by @odata.type); Fjeld returns exactly one, written flat
+  - { id: adn8and5ea, name: "data.actions[0].@odata.type", type: string, required: true, constraints: ["one of: microsoft.graph.attributeCollectionSubmit.continueWithDefaultBehavior, .modifyAttributeValues, .showValidationError, .showBlockPage"] }   # GAP: enum
+  - { id: ggx7mf72mt, name: "data.actions[0].message", type: string, nullable: true, constraints: ["showValidationError, showBlockPage: shown to the shopper"] }
+  - { id: oe334g5gni, name: "data.actions[0].attributeErrors", type: json, nullable: true, constraints: ["showValidationError: { attributeName: message }"] }
+  - { id: xhkian2h8n, name: "data.actions[0].attributes.extension_{extAppId}_commerceCustomerId", type: string, nullable: true, from: [zhf6a5r56z], derived: uuid as text, constraints: ["modifyAttributeValues"] }

@@ -1,0 +1,33 @@
+id: rwa5gagacs
+parent: lzm2qjgaov
+name: applyInventoryUpdateActions
+handles: [vusnhpweka]
+inputs:
+  - { id: vjj6zjw0if, name: entryId, type: uuid, required: true }
+  - { id: gnll6iegat, name: version, type: long, required: true }
+  - { id: tm0ngprhsl, name: actions, type: "UpdateAction {action, ...}", many: true, required: true }
+outputs:
+  - { id: pola1bfi9q, name: entry, model: fsdygpvm9i }
+fails:
+  - { name: notFound, description: ResourceNotFound (404) }
+  - { name: concurrentModification, description: version is stale (409) }
+steps:
+  - { read: fsdygpvm9i, with: entryId, gets: entry }
+  - if: entry not found
+    then:
+      - { fail: notFound }
+  - if: entry.version != version
+    then:
+      - { fail: concurrentModification }
+  - each: action in actions
+    do:
+      - if: action is addQuantity, removeQuantity or changeQuantity
+        then:
+          - { write: az9eabg78b }
+          - { write: z6tv7i6g31, note: shifted by the same delta; reservations kept }
+          - { call: lg4db2fxip, with: "InventoryEntry, InventoryEntryQuantitySet, old/new quantityOnStock and availableQuantity", gets: message }
+        else:
+          - { write: fsdygpvm9i, note: "restockableInDays or expectedDelivery" }
+  - { write: hu3pb2kbi4, note: +1 }
+  - { write: mr1cjxh8rk, note: "availability of the variant with this sku, per channel" }
+  - { return: entry }

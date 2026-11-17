@@ -1,0 +1,10 @@
+# Table 330 Currency Exchange Rate: updated daily by the exchange rate service.
+id: t8kiqpp0i5
+ownedBy: gob5rrh7wh
+storedIn: q43aprn5l0
+name: Currency Exchange Rate
+fields:
+  - { id: jd5if5dj9b, name: currencyCode, type: string, pk: true, ref: nirn4ae2ma }
+  - { id: unblu2xqaa, name: startingDate, type: date, pk: true }
+  - { id: eruo2aalsf, name: exchangeRateAmount, type: decimal, required: true }
+  - { id: wg7z8gi5to, name: relationalExchRateAmount, type: decimal, required: true }

@@ -1,0 +1,24 @@
+id: cc4xwm61gz
+parent: x27wyx0r8h
+name: Update profile
+method: PATCH
+path: /api/profiles/{id}
+auth: "Klaviyo-API-Key private key (scope profiles:write)"
+params:
+  - { id: rs5mqtrwbr, name: id, in: path, type: string }
+  - { id: i4go61kxuf, name: revision, in: header, type: string, required: true }
+request:
+  contentType: application/vnd.api+json
+  fields:
+    - { id: n85eglnxuf, name: data.id, type: string, required: true, to: [c6lytpwzen] }
+    - { id: zvxkkllafa, name: data.attributes.email, type: string, to: [twxat301yi] }
+    - { id: yelu4xrqxv, name: data.attributes.phone_number, type: string, to: [wpaulnuzqr] }
+    - { id: qadp3039fs, name: data.attributes.first_name, type: string, to: [grqe6j9ww3] }
+    - { id: f6pj0s0qwx, name: data.attributes.last_name, type: string, to: [e1sejzfw72] }
+    - { id: r7jncf3g8e, name: data.attributes.properties, model: xup7zenrv4 }
+    - { id: hbgch5arcs, name: meta.patch_properties.unset, type: string, many: true, to: [adaxjos65n], description: property keys to remove }
+responses:
+  - { status: 200, model: apj02aeekt }
+  - { status: 400, model: s4w1d8x1z4 }
+  - { status: 404, model: s4w1d8x1z4 }
+  - { status: 409, model: s4w1d8x1z4, description: the new e-mail or phone belongs to another profile }

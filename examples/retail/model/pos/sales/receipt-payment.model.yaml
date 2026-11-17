@@ -1,0 +1,21 @@
+id: aq2g2gtebf
+ownedBy: cael6ntd06
+storedIn: hykg6pt8u2
+name: Receipt payment
+fields:
+  - { id: sgrkoq3p1r, name: id, type: uuid, pk: true }
+  - { id: a1d0egdbd4, name: receiptId, type: uuid, required: true, ref: uvat8do1ib }
+  # GAP: enum
+  - { id: h7yzmy536d, name: method, type: string, required: true, constraints: ["one of: card, cash, mobilepay, swish, vipps, gift_card, store_credit"] }
+  - { id: plorfj8nr7, name: amount, type: decimal, required: true, constraints: [negative for a refund] }
+  - { id: f9pwkwu43j, name: currency, type: string, required: true, from: [xwf28n2bqx] }
+  - { id: m1ovmbiicr, name: cardScheme, type: string, nullable: true, constraints: ["Dankort, Visa, Mastercard, Amex"] }
+  - { id: rer4cr57mg, name: maskedPan, type: string, nullable: true, constraints: ["last 4 digits only"] }
+  - { id: bb0yolc8pe, name: terminalTransactionId, type: string, nullable: true, constraints: [the card acquirer's reference] }
+  - { id: hlhah2epl5, name: walletTransactionId, type: string, nullable: true, constraints: [MobilePay / Swish / Vipps payment id] }
+  - { id: lwoaxv6zr2, name: giftCardNo, type: string, nullable: true }
+  - { id: kgnww43rba, name: cashTendered, type: decimal, nullable: true }
+  - { id: evhrva16bz, name: changeGiven, type: decimal, nullable: true, from: [kgnww43rba, plorfj8nr7], derived: tendered - amount }
+indexes:
+  - { id: dfsbtzfj7l, name: ix_payment_receipt, fields: [a1d0egdbd4] }
+  - { id: yv59ob35ft, name: ix_payment_method, fields: [h7yzmy536d] }

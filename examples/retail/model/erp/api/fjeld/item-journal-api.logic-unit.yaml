@@ -1,0 +1,36 @@
+# Pages 50104 FJ Item Journal Lines (insert) and its post action
+id: tytzmdmm6i
+parent: efcxalw7mu
+name: itemJournalApi
+handles: [ql8hoi10k9, xlwthxt8yk]
+inputs:
+  - { id: kjfaog6ike, name: journalBatchName, type: string, required: true }
+  - { id: sy2tdz877q, name: lines, model: uztvmo5gqa, many: true }
+outputs:
+  - { id: gwyqkz2kw6, name: created, model: uztvmo5gqa, many: true }
+fails:
+  - { name: unknownItem, description: "unknown item, variant or location" }
+  - { name: postingFailed, description: a line fails posting; the whole batch rolls back }
+steps:
+  - if: Microsoft.NAV.post
+    then:
+      - { read: uztvmo5gqa, with: "template ITEM, journalBatchName", gets: lines }
+      # GAP: transaction boundary: the whole batch posts or nothing does
+      - each: line in lines
+        do:
+          - { call: dfac9bllv7, with: "entryType, item, variant, location, quantity (negative for Negative Adjmt.), documentNo", gets: itemLedgerEntryNo }
+          - if: posting fails
+            then:
+              - { fail: postingFailed }
+      - { write: uztvmo5gqa, note: "delete the posted lines" }
+    else:
+      - each: line in lines
+        do:
+          - { read: edi8izn1qa, with: itemNumber, gets: item }
+          - { read: qokf6rurzg, with: "itemNumber, variantCode", gets: variant }
+          - { read: tpjqrdofb4, with: locationCode, gets: location }
+          - if: any missing
+            then:
+              - { fail: unknownItem }
+          - { write: uztvmo5gqa, note: "insert; next line no.; unit cost from item" }
+      - { return: created }

@@ -1,0 +1,5 @@
+# Backend for frontend: Next.js route handlers under /api. Holds every secret (Commerce API
+# client, Stripe secret key, Algolia keys stay server-side except the search-only key).
+id: ikoz19x2kp
+parent: xu1hb6iufu
+name: BFF

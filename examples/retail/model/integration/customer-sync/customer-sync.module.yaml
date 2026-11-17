@@ -1,0 +1,4 @@
+id: mwg6alxci7
+parent: mleccno0ev
+name: Customer sync
+meta: { functionApp: func-fjeld-customers, runtime: ".NET 8 isolated", plan: Flex Consumption }

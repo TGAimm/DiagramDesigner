@@ -1,0 +1,39 @@
+id: ph853kpdvs
+parent: woc2py521s
+name: applyProductUpdateActions
+handles: [id3wj2m0zi]
+inputs:
+  - { id: ifku8l6wzf, name: productId, type: uuid, required: true }
+  - { id: ponpsla1t0, name: version, type: long, required: true }
+  - { id: z9tzei8mcb, name: actions, type: "UpdateAction {action, ...}", many: true, required: true }
+outputs:
+  - { id: uu3x5xnlgd, name: product, model: w1g1lt9yyv }
+fails:
+  - { name: notFound, description: ResourceNotFound (404) }
+  - { name: concurrentModification, description: version is stale (409) }
+  - { name: duplicateSku, description: DuplicateField sku (400) }
+steps:
+  - { read: w1g1lt9yyv, with: productId, gets: product }
+  - if: product not found
+    then:
+      - { fail: notFound }
+  - if: product.version != version
+    then:
+      - { fail: concurrentModification }
+  - each: action in actions
+    do:
+      - if: action is setAttribute, changeName, setDescription, addToCategory, addExternalImage or a price action
+        then:
+          - { write: a5faw68iwv, note: "to current as well when staged: false" }
+          - { write: kj8xtiktza, note: "true when staged now differs from current" }
+      - if: action is addVariant and its sku exists on another product
+        then:
+          - { fail: duplicateSku }
+      - if: action is publish
+        then:
+          - { write: bhkkpvg1xc, note: copy staged over current }
+          - { write: s4wl996ngt, note: "true" }
+          - { call: lg4db2fxip, with: "Product, ProductPublished, productProjection, scope All", gets: message }
+  - { write: el6553deun, note: +1 }
+  - { write: mr1cjxh8rk, note: "reindex current and staged projections (eventually consistent, seconds)" }
+  - { return: product }

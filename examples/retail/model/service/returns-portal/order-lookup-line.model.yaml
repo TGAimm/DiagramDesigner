@@ -1,0 +1,11 @@
+id: iyn2rbznpf
+ownedBy: t6al4kcu16
+name: Order lookup line
+fields:
+  - { id: yha9wl5n3c, name: line_item_id, type: string, required: true, from: [c9xmzjnpp8], derived: uuid as text }
+  - { id: mxkqe0lxhq, name: sku, type: string, required: true, from: [c1uzjurwuu] }
+  - { id: qbuikf09c8, name: name, type: string, required: true, from: [tzgfqq0q8b], derived: "value in the order's locale" }
+  - { id: bc8mx3msst, name: quantity, type: int, required: true, from: [ae7tr09nmb] }
+  - { id: m2ya0p2ubn, name: returnable_quantity, type: int, required: true, from: [bc8mx3msst, l4k8q2lav3], derived: quantity minus quantities on earlier returns not rejected or cancelled }
+  - { id: ta25exrvzs, name: unit_price, type: decimal, required: true, from: [dkwiht0i2z,ae7tr09nmb], derived: "taxedPrice.totalGross.centAmount / quantity / 100" }
+  - { id: m3f3bo4qlm, name: category, type: string, nullable: true, from: [b5zlg7995z], derived: "value of the variant's category attribute" }

@@ -1,0 +1,23 @@
+# Table 39 Purchase Line
+id: jr1sw83gnm
+ownedBy: si82yvapze
+storedIn: q43aprn5l0
+name: Purchase Line
+fields:
+  - { id: xoj6sty861, name: documentType, type: string, pk: true, ref: a5wk49os6n }
+  - { id: xqnwy2d30w, name: documentNo, type: string, pk: true, ref: d1cqu9qwzq }
+  - { id: v0tyzhmt2l, name: lineNo, type: int, pk: true }
+  - { id: sokc7ifj1p, name: type, type: string, constraints: ["one of: ' ', G/L Account, Item, Fixed Asset, Charge (Item)"] }   # GAP: enum
+  - { id: rzz8g2t7wf, name: no, type: string, required: true, ref: yu6wdxgb8q }
+  - { id: owi8p3zos1, name: variantCode, type: string, ref: u2mbyuw427 }
+  - { id: l9to8ir38h, name: description, type: string, from: [hu1yuj53fb] }
+  - { id: wbi6j1zmnf, name: locationCode, type: string, ref: gsrr00mc9x, from: [nio9aggiw3] }
+  - { id: duschq4yp4, name: unitOfMeasureCode, type: string, ref: oqoid63vr5 }
+  - { id: tz8v7h887h, name: quantity, type: decimal, required: true }
+  - { id: cdmb4nqt1j, name: outstandingQuantity, type: decimal, from: [tz8v7h887h, gq7kaou8x3], derived: "quantity - quantity received" }
+  - { id: ukm84eux6z, name: qtyToReceive, type: decimal, from: [tz8v7h887h], derived: "defaults to outstanding quantity" }
+  - { id: gq7kaou8x3, name: quantityReceived, type: decimal, from: [dckvvcw6kn], derived: "sum of posted receipt lines" }
+  - { id: wmy8kt0iah, name: directUnitCost, type: decimal, required: true, from: [ytq7la5syd], derived: "last direct cost unless the buyer types one" }
+  - { id: ufq7fbvcat, name: lineDiscountPct, type: decimal }
+  - { id: m9nal3mxe8, name: amount, type: decimal, from: [tz8v7h887h, wmy8kt0iah, ufq7fbvcat], derived: "quantity * directUnitCost less discount" }
+  - { id: dof8ngnnzi, name: expectedReceiptDate, type: date, from: [yaoe5eghpc] }

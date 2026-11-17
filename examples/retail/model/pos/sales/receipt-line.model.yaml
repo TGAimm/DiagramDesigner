@@ -1,0 +1,23 @@
+id: mcg64yx3kn
+ownedBy: cael6ntd06
+storedIn: hykg6pt8u2
+name: Receipt line
+fields:
+  - { id: wd5tvyecqo, name: id, type: uuid, pk: true }
+  - { id: x5ezismojm, name: receiptId, type: uuid, required: true, ref: uvat8do1ib }
+  - { id: gfl3wp2uwr, name: lineNo, type: int, required: true }
+  - { id: spogg3guvr, name: sku, type: string, required: true, ref: jw2rr761o3 }
+  - { id: x31qe2g2oq, name: ean, type: string, nullable: true, from: [c3vfix037y] }
+  - { id: l4sjvxskk0, name: description, type: string, required: true, from: [ep6vpmyi5p, a89n2k5bjj], derived: name + variant at the time of sale }
+  - { id: jnw4tryjno, name: quantity, type: int, required: true, constraints: [negative on a return] }
+  - { id: ryfe5kxqtl, name: unitPrice, type: decimal, required: true, from: [lf6esutrro], constraints: [incl. VAT] }
+  - { id: kzmhww5hax, name: discountAmount, type: decimal, required: true, constraints: [min 0] }
+  # GAP: enum
+  - { id: pcc396e6e1, name: discountReason, type: string, nullable: true, constraints: ["one of: member, staff, damaged, price_match, manual"] }
+  - { id: hcgava4jct, name: vatRate, type: decimal, required: true, from: [jdl3f1uku5] }
+  - { id: x871oi7nj9, name: lineTotal, type: decimal, required: true, from: [jnw4tryjno, ryfe5kxqtl, kzmhww5hax], derived: quantity * unitPrice - discount }
+  - { id: zp1hr9xak1, name: returnReason, type: string, nullable: true, constraints: ["on a return: wrong_size, defective, changed_mind, other"] }
+  - { id: hp2pgmn7fi, name: originalLineId, type: uuid, nullable: true, ref: mcg64yx3kn, constraints: [the sale line a return line refers to] }
+indexes:
+  - { id: gvarzhhp0o, name: ix_line_receipt, fields: [x5ezismojm] }
+  - { id: muf5yu9qul, name: ix_line_sku, fields: [spogg3guvr] }

@@ -1,0 +1,19 @@
+# Table 5741 Transfer Line
+id: fvxkpcz0al
+ownedBy: x2x0s3utl1
+storedIn: q43aprn5l0
+name: Transfer Line
+fields:
+  - { id: hxrvt1o5oz, name: documentNo, type: string, pk: true, ref: ljlh12h9yw }
+  - { id: x6m29o0owd, name: lineNo, type: int, pk: true, constraints: ["steps of 10000"] }
+  - { id: zn2crq3ocz, name: itemNo, type: string, required: true, ref: yu6wdxgb8q }
+  - { id: qdrd865c7d, name: variantCode, type: string, nullable: true }
+  - { id: zxzujxk43t, name: description, type: string, from: [hu1yuj53fb] }
+  - { id: kifbq1ifw8, name: unitOfMeasureCode, type: string, required: true, ref: oqoid63vr5 }
+  - { id: zwwpd0o895, name: quantity, type: decimal, required: true, constraints: [positive] }
+  - { id: y6iwxb6vju, name: qtyToShip, type: decimal }
+  - { id: zkq6j8101o, name: quantityShipped, type: decimal, constraints: [posted by the transfer shipment once the 3PL's SHIPCONF arrives] }
+  - { id: g4qp23d6zq, name: qtyToReceive, type: decimal }
+  - { id: juz2f1msry, name: quantityReceived, type: decimal }
+indexes:
+  - { id: qx951bih64, name: ix_transfer_line_item, fields: [zn2crq3ocz, qdrd865c7d] }

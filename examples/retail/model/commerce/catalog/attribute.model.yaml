@@ -1,0 +1,6 @@
+id: ncoa49ftik
+ownedBy: woc2py521s
+name: Attribute
+fields:
+  - { id: rv5v4pxlnd, name: name, type: string, required: true, ref: a85spht54s, constraints: ["e.g. brand, colour, size, gender, material, weight-g, waterproof-mm"] }
+  - { id: b5zlg7995z, name: value, type: json, required: true, constraints: [shape set by the attribute definition's type] }

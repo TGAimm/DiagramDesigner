@@ -1,0 +1,36 @@
+id: qgzdg5go58
+parent: x1aigxm73q
+name: createReturnShipment
+handles: [migmlq45fv]
+inputs:
+  - { id: txg2pn6tfq, name: original_shipment_id, type: int, nullable: true }
+  - { id: ekq8bpng96, name: product_code, type: string, required: true }
+  - { id: c9z14r59u4, name: reference, type: string, required: true }
+outputs:
+  - { id: ly8h7fajn8, name: returnShipment, model: plxrorvafg }
+fails:
+  - { name: notFound, description: original shipment unknown }
+  - { name: invalidProduct, description: not a return product for this country }
+  - { name: carrierRejected }
+steps:
+  - if: original_shipment_id given
+    then:
+      - { read: o96th79s8y, with: original_shipment_id, gets: "original, for sender, receiver, order_id" }
+      - if: not found
+        then:
+          - { fail: notFound }
+  - { read: kpmp1cr4lc, with: product_code, gets: product }
+  - if: not product.return_product
+    then:
+      - { fail: invalidProduct }
+  - { write: plxrorvafg, note: "insert, status created" }
+  # GAP: external API with no system in the design (the carriers' return booking APIs)
+  - { note: book the return with the carrier; get pkg_no and QR code }
+  - if: carrier refuses
+    then:
+      - { fail: carrierRejected }
+  - { write: plxrorvafg, note: "pkg_no, qr_code" }
+  - if: label_delivery is pdf
+    then:
+      - { write: punlk0tvcx, note: a4_pdf }
+  - { return: returnShipment }

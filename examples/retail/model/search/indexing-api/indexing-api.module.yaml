@@ -1,0 +1,6 @@
+id: ktxxdlpyeb
+parent: qj04e3k5z2
+name: Indexing API
+links:
+  - { label: Batch write operations, url: "https://www.algolia.com/doc/rest-api/search/#tag/Records/operation/batch" }
+  - { label: Set settings, url: "https://www.algolia.com/doc/rest-api/search/#tag/Indices/operation/setSettings" }

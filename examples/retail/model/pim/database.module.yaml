@@ -1,0 +1,6 @@
+# MySQL catalog database. Products are also indexed in Elasticsearch
+# (product_and_product_model index), which serves list/search; not modelled as its own store.
+id: r1xvgi7bie
+parent: x72oqgh6of
+name: Catalog Database
+meta: { engine: MySQL 8 }

@@ -1,0 +1,6 @@
+id: mb9l2suvi6
+parent: ygmbkn58fj
+name: Discounts
+links:
+  - { label: Cart Discounts, url: "https://docs.commercetools.com/api/projects/cartDiscounts" }
+  - { label: Discount Codes, url: "https://docs.commercetools.com/api/projects/discountCodes" }

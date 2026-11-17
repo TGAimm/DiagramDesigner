@@ -1,0 +1,13 @@
+# WebhookEndpoint url in Stripe (enabled_events: payment_intent.*, charge.refunded, charge.dispute.created, payout.paid, payout.failed).
+id: d34nzrvicc
+parent: ft040pevh9
+name: Receive Stripe event
+method: POST
+path: /webhooks/stripe
+auth: "Stripe-Signature: t, v1 = HMAC-SHA256(t.payload, whsec_ endpoint secret); tolerance 5 min"
+params:
+  - { id: cli0xrdwpr, name: Stripe-Signature, in: header, type: string, required: true }
+request: { model: mumhsnhnkb }
+responses:
+  - { status: 200, description: "Received (also for a duplicate evt id, and for event types Fjeld ignores)" }
+  - { status: 400, description: "Signature fails or timestamp outside tolerance: Stripe retries for 3 days" }

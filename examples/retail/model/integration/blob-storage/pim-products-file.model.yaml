@@ -1,0 +1,28 @@
+# GAP: file interface (PIM's nightly Tailored Export, uploaded over SFTP to pim/products/<yyyyMMdd>.csv; read by nightlyFullProductSync)
+id: z5lpcdc7h9
+ownedBy: gd7b9xmakj
+storedIn: gd7b9xmakj
+name: pim/products/<yyyyMMdd>.csv
+fields:
+  - { id: ea4ojm7zz9, name: uuid, type: uuid, pk: true, from: [gzcx4y8gil] }
+  - { id: umn8sn0th9, name: locale, type: string, pk: true, from: [vz5omggq2b] }
+  - { id: t9n72fi01e, name: sku, type: string, required: true, from: [p8wyfcgywb] }
+  - { id: rpz85sa4ui, name: ean, type: string, nullable: true, from: [bb00vuqu9d] }
+  - { id: dvtpx62dyg, name: styleCode, type: string, nullable: true, from: [jvygu2no09] }
+  - { id: ypzmbgtc9y, name: colourModelCode, type: string, nullable: true, from: [f9cml31utd] }
+  - { id: aep9cs7pox, name: family, type: string, from: [s96jko0qis] }
+  - { id: zdavuyg41x, name: name, type: string, required: true, from: [o5j7ow8nvb] }
+  - { id: gpqlcx5cch, name: description, type: html, nullable: true, from: [vll2yirzi6] }
+  - { id: zpkucfcp1h, name: brand, type: string, nullable: true, from: [goat59440e] }
+  - { id: v0p2cxteqe, name: colour, type: string, nullable: true, from: [ev5p820zff] }
+  - { id: zjoh17fvy2, name: colourCode, type: string, nullable: true, from: [ga5utkrbow] }
+  - { id: kn89fonqyl, name: size, type: string, nullable: true, from: [woa27ss468] }
+  - { id: fa5xl61h8n, name: material, type: string, nullable: true, from: [h9udjhssww] }
+  - { id: va7diw8s8r, name: weightGrams, type: int, nullable: true, from: [xo3tz19vqh] }
+  - { id: zvcura8ydq, name: categories, type: string, from: [cu90qctfbq], constraints: ["'|'-joined codes"] }
+  - { id: sp1txumz54, name: imageUrls, type: string, from: [b3ps761mof], constraints: ["'|'-joined URLs"] }
+  - { id: bqf3d3vur5, name: sizeGuideUrl, type: string, nullable: true, from: [d19p3av0sh] }
+  - { id: laudw9sf3k, name: crossSellSkus, type: string, nullable: true, from: [qtqt5dphji] }
+  - { id: de80i5somo, name: enabled, type: bool, required: true, from: [unll6arb9z] }
+  - { id: x7lea8hr59, name: completeness, type: int, from: [bjrqvl73qi] }
+  - { id: grf6lk2vlx, name: updated, type: datetime, required: true, from: [ui0em7awxz] }

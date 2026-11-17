@@ -1,0 +1,13 @@
+id: tx6zv4knuz
+parent: d0jfpet25d
+name: buildAggregates
+meta: { notebook: nb_gold_aggregates }
+inputs: []
+outputs: []
+steps:
+  - { read: jogoyx9y7y, with: "all time, grouped by the customer key of customer_sk", gets: sales per customer }
+  - { read: tb9l4es1im, gets: returns per customer }
+  - { write: nr0aq1hjrv, note: "overwrite; RFM quintiles give the segment" }
+  - { write: uggvoe2hm1, note: "type 1 update on every version of the customer" }
+  - { read: zbqliu1qyj, with: "Mondays and Sundays of the last 8 weeks", gets: begin and end stock }
+  - { write: g6f9axlg7k, note: "replace the last 8 weeks" }

@@ -1,0 +1,16 @@
+id: se76htodri
+ownedBy: i3cjkl2kdw
+storedIn: lhfbozuhuf
+name: Return policy
+fields:
+  # GAP: enum
+  - { id: j0yaku171y, name: country, type: string, pk: true, constraints: ["one of: DK, SE, NO, DE"] }
+  - { id: sb0a8wqwxg, name: return_window_days, type: int, required: true, constraints: ["30; DE 30 plus the 14-day legal withdrawal"] }
+  - { id: ngh1z6bh2g, name: extended_window_days_by_tier, type: json, nullable: true, constraints: ["e.g. Summit: 100"] }
+  - { id: qr6wldb6qp, name: free_return, type: bool, required: true }
+  - { id: ahbcn2o13t, name: return_fee, type: decimal, required: true, constraints: [deducted from the refund unless the reason is a fault] }
+  - { id: g4r2k6q7b3, name: currency, type: string, required: true }
+  - { id: wv97xwyrap, name: carrier_product_code, type: string, required: true, ref: kpmp1cr4lc, constraints: ["the Shipping return product, e.g. PDK_RETURN, POSTNORD_SE_RETURN, BRING_NO_RETURN, DHL_DE_RETOURE"] }
+  - { id: iofbkumb1s, name: label_delivery, type: string, required: true, constraints: ["one of: pdf, qr_code"] }
+  - { id: qqrofhmulz, name: exchange_allowed, type: bool, required: true }
+  - { id: rkp0fesocp, name: non_returnable_categories, type: string, many: true, constraints: ["e.g. underwear, gas canisters, personalised items"] }

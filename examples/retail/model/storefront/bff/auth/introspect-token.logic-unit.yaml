@@ -1,0 +1,22 @@
+id: hdo1y1vr44
+parent: vkdx3tfwhz
+name: introspectToken
+handles: [cuzp9gjcp9]
+inputs:
+  - { id: c9se1tzrmd, name: token, type: string, required: true }
+outputs:
+  - { id: pkbirry48g, name: introspection, type: "{active, scope, sub, exp}" }
+fails:
+  - { name: unauthorized, description: "401: the caller isn't Commerce" }
+steps:
+  - if: basic credentials aren't Commerce's
+    then:
+      - { fail: unauthorized }
+  - { call: gqgvy92yr4, with: "tenant (cached 24 h)", gets: keys }
+  - { note: "verify the token: signature by kid, iss = the tenant, aud = the Commerce API app id, exp" }
+  - if: the token doesn't verify or has no commerce_customer_id claim
+    then:
+      - { note: "answer active false" }
+      - { return: introspection }
+  - { note: "answer active true, sub = oid, scope with customer_id:<commerce_customer_id>" }
+  - { return: introspection }

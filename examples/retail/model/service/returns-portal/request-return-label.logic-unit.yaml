@@ -1,0 +1,29 @@
+id: innsknfmv6
+parent: jzdz677osb
+name: requestReturnLabel
+handles: [q97o3dq69n]
+inputs:
+  - { id: aywiz23sij, name: returnId, type: string, required: true }
+outputs:
+  - { id: wn1xeslkb9, name: label, model: al96kyiny7 }
+fails:
+  - { name: notApproved, description: status is not approved }
+  - { name: alreadyHasLabel, description: a label exists and has not expired }
+  - { name: carrierRefused, description: Shipping answered 404 or 422 }
+steps:
+  - { read: dntnqyedil, with: returnId, gets: return }
+  - if: status is not approved
+    then:
+      - { fail: notApproved }
+  - { read: sfnc8syj3s, with: returnId, gets: existing label }
+  - if: existing label not expired
+    then:
+      - { fail: alreadyHasLabel }
+  - { read: se76htodri, with: return.country, gets: "carrier_product_code, label_delivery" }
+  - { call: migmlq45fv, with: "original shipment id, product code, customer as sender, RMA number as reference, label_delivery", gets: "id, pkg_no, qr_code or label PDF" }
+  - if: Shipping answered 404 or 422
+    then:
+      - { fail: carrierRefused }
+  - { write: al96kyiny7 }
+  - { call: luw97r71xx, with: "return, label_created" }
+  - { return: label }

@@ -1,0 +1,13 @@
+id: ctuxygbaj9
+ownedBy: dsa7av53v5
+storedIn: ji6igng4bi
+name: UserFlow
+fields:
+  - { id: emwgec25zs, name: id, type: uuid, pk: true }
+  - { id: ky1czpwuxp, name: displayName, type: string, required: true, constraints: ["Fjeld: SignUpSignIn-Webshop"] }
+  - { id: twys2wflly, name: conditions.applications, type: string, many: true, ref: yrqt9pcc7g, constraints: ["appIds the flow runs for"] }
+  - { id: ngfpczdgmg, name: onAuthenticationMethodLoadStart.identityProviders, type: string, many: true, constraints: ["Fjeld: EmailPassword, Google, Facebook, Apple"] }
+  - { id: nxsvp3ye98, name: onAttributeCollection.attributes, type: string, many: true, constraints: ["Fjeld: email, displayName, givenName, surname, country, marketingConsent (checkbox)"] }
+  - { id: xtewyu6xol, name: onAttributeCollectionSubmit.customExtension, type: uuid, nullable: true, ref: s9lv74uj34 }
+  - { id: h36t8183d8, name: onUserCreateStart.userTypeToCreate, type: string, constraints: ["member"] }
+  - { id: wp5q735wzd, name: companyBranding.locale, type: string, many: true, constraints: ["da, sv, nb, de, en"] }

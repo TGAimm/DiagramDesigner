@@ -1,0 +1,20 @@
+# API page 30009 APIV2 - Customers (entity customer)
+id: ocn983ouak
+ownedBy: wyb51ibopv
+name: customer (API)
+tags: [pii]
+fields:
+  - { id: lpk7mmqx3k, name: id, type: guid, from: [ixdytd8nrf] }
+  - { id: owbo5jn4ru, name: number, type: string, from: [iloktksmbd] }
+  - { id: hs38b34z61, name: displayName, type: string, from: [sil52iby8z] }
+  - { id: hvqgzjo28z, name: addressLine1, type: string, from: [vumlhqqhmd] }
+  - { id: xpthszwcsg, name: addressLine2, type: string, from: [u5zt4c9pw1] }
+  - { id: x7mjfnnp9r, name: city, type: string, from: [lcn2pfd4nj] }
+  - { id: kvfjtnmhve, name: country, type: string, from: [vks4fix0cl] }
+  - { id: hvj8wc9ett, name: postalCode, type: string, from: [dziaf0m5gk] }
+  - { id: qqszy48xvs, name: phoneNumber, type: string, from: [tzmq359hks] }
+  - { id: iaweh258mk, name: email, type: string, from: [nxz9rh19e0] }
+  - { id: vmc62aulq6, name: currencyCode, type: string, from: [xtslnk70p9] }
+  - { id: eso7cc5832, name: blocked, type: string, from: [uq9808b8co], derived: "blank shown as _x0020_" }
+  - { id: rtafxvxam0, name: balance, type: decimal, from: [kijl19kaai] }
+  - { id: vyggsd0z5t, name: lastModifiedDateTime, type: datetime, from: [e2z19qwxvq] }

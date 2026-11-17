@@ -1,0 +1,23 @@
+id: cct721hbb2
+parent: vsn79avah8
+name: upsertProducts
+handles: [zcadzbnpxd]
+inputs:
+  - { id: fq4kl12wml, name: lines, model: qitb6ezis6, many: true, required: true, description: one JSON product per line }
+outputs:
+  - { id: dawd3cyiec, name: results, model: i47cwqndtt, many: true }
+fails:
+  - { name: tooMany, description: "413: more than 100 lines" }
+steps:
+  - if: more than 100 lines
+    then:
+      - { fail: tooMany }
+  - each: line
+    do:
+      - if: line is not valid JSON or has no uuid
+        then:
+          - { note: "result line: status_code 400 or 422, message; continue" }
+        else:
+          - { call: bgobns4lsq, with: "uuid, line", gets: "product, created, or the validation error" }
+          - { note: "result line: 201 if created, 204 if updated, 422 with errors if refused" }
+  - { return: results }

@@ -1,0 +1,23 @@
+# Reads the 3PL's files from the SFTP archive folder after Integration has processed them.
+# GAP: scheduled trigger
+id: id1dol4lut
+parent: oyqmyb5nc3
+name: ingestWmsFiles
+meta: { schedule: "30 2 * * *", pipeline: pl_ingest_wms_files, folder: "sftp.nordlager.dk /fjeld/archive" }
+inputs: []
+outputs: []
+fails:
+  - { name: stockFileMissing, description: "no STOCK file for today by 02:30; inventory facts keep yesterday's snapshot" }
+steps:
+  - { read: qhfxfz0h8j, with: "source_system = wms", gets: last file names }
+  - each: SHIPCONF file newer than the watermark
+    do:
+      - { read: rr62mqt1v6, gets: rows }
+      - { write: uh4r6n0g75, note: "MERGE on order_no, erp_line_no, parcel_no; _file_name" }
+  - if: no STOCK file for today
+    then:
+      - { write: qhfxfz0h8j, note: "status failed for STOCK" }
+      - { fail: stockFileMissing }
+  - { read: k8fmicwjqb, with: today's STOCK file, gets: rows }
+  - { write: ftd3ia9zdg, note: "append; pk item_no, snapshot_at" }
+  - { write: axtovqyj39, note: last file name per kind }

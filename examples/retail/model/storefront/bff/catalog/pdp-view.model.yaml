@@ -1,0 +1,28 @@
+# Cached in Redis under pdp:<locale>:<slug> for 5 minutes; stock is fetched fresh per size.
+# GAP: expiry - a cached copy of Commerce data; storage can't say it's a cache with a TTL, so
+# the impact engine sees it as a second source of truth.
+# GAP: embedded sub-object of a stored record - variants, prices and breadcrumbs live inside
+# the cached JSON; the stored view loses them.
+id: gel7vz7th1
+ownedBy: lnizoffy7m
+storedIn: p85ojgt4ve
+name: PDP View
+fields:
+  - { id: as81hfjqvy, name: cacheKey, type: string, pk: true, constraints: ["pdp:<locale>:<slug>"] }
+  - { id: fcb4opx33l, name: productId, type: uuid, required: true, from: [aa7p2zmxzw] }
+  - { id: yjxq2v8d37, name: productKey, type: string, nullable: true, from: [uqaqpknqg8], constraints: [PIM root model code] }
+  - { id: r38bl4ow0x, name: slug, type: string, required: true, from: [h079linx9w], derived: in the locale }
+  - { id: qyertactmp, name: url, type: string, required: true, from: [h079linx9w], derived: "https://fjeld.<tld>/p/<slug in the locale>" }
+  - { id: feh0lf795a, name: name, type: string, required: true, from: [ez2hw75s1w], derived: in the locale }
+  - { id: wo6q8ix0uc, name: description, type: html, nullable: true, from: [mkdgmqqqdq] }
+  - { id: n7yur1x9ai, name: metaTitle, type: string, nullable: true, from: [ib9bt37z4w] }
+  - { id: lmwl8kjd4v, name: brand, type: string, nullable: true, from: [b5zlg7995z, rv5v4pxlnd], derived: "master variant attribute brand" }
+  - { id: grk4uh2cln, name: specs, type: "{label, value}", many: true, from: [b5zlg7995z, rv5v4pxlnd], derived: "attributes material, weight-g and waterproof-mm with translated labels" }
+  - { id: v8ugahruka, name: sizeGuideUrl, type: string, nullable: true, from: [b5zlg7995z], derived: "attribute size-guide-url" }
+  - { id: olgcy3kdfr, name: breadcrumbs, model: dfdbfcgwae, many: true }
+  - { id: fofkt7c1tx, name: images, type: string, many: true, from: [aun8w1fli3], derived: "master variant images, then each colour's first" }
+  - { id: ird0uamouw, name: variants, model: mh5pz3frd5, many: true, from: [vt2sbeysn0, mj8t14b7my] }
+  - { id: negtrr4ypn, name: price, model: nmsbq15351, required: true, from: [o4853v7a28], derived: "the master variant's scoped price" }
+  - { id: uutfqt2ao8, name: salePrice, model: nmsbq15351, nullable: true, from: [a6o71cl4m7] }
+  - { id: srlzdi5ho4, name: similar, model: sy8kzriu6h, many: true, from: [gofg7di4ji], derived: "8 hits from the same lvl2 category, this style excluded" }
+  - { id: tb985pk9u8, name: cachedAt, type: datetime, required: true }

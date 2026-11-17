@@ -1,0 +1,6 @@
+id: b1ptklldw3
+parent: ygmbkn58fj
+name: Carts
+links:
+  - { label: Carts, url: "https://docs.commercetools.com/api/projects/carts" }
+  - { label: My Carts, url: "https://docs.commercetools.com/api/projects/me-carts" }

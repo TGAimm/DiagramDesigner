@@ -1,0 +1,8 @@
+id: a4ypghsn5d
+ownedBy: lnizoffy7m
+name: Product Rail
+fields:
+  - { id: pa8l69l8rf, name: key, type: string, required: true, constraints: ["one of: featured, new, sale"] }  # GAP: enum
+  - { id: adpln9afpg, name: title, type: string, required: true, constraints: [translated in code] }
+  - { id: nham03l285, name: products, model: sy8kzriu6h, many: true, from: [gofg7di4ji], derived: "12 hits of the rail's rule context (home-featured, home-new, home-sale)" }
+  - { id: u6l9eke49i, name: seeAllUrl, type: string, required: true }

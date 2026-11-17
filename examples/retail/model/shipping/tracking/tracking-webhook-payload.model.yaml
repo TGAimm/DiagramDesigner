@@ -1,0 +1,14 @@
+id: auv8rnp3yb
+ownedBy: vssqq48tt7
+name: TrackingWebhookPayload
+fields:
+  - { id: tp5fgmo30g, name: action, type: string, required: true, from: [esz0b5d0hi] }
+  - { id: b1rkocjirm, name: shipment_id, type: int, required: true, from: [d1ozd34280] }
+  - { id: osmjwjl41o, name: reference, type: string, required: true, from: [iee7vq5ryt] }
+  - { id: g1a1s47055, name: order_id, type: string, nullable: true, from: [zerukfefcp] }
+  - { id: oi9ruq2ksf, name: carrier_code, type: string, required: true, from: [n3rzlh5yny] }
+  - { id: vjegeedee1, name: pkg_no, type: string, required: true, from: [bq0e1j92yw] }
+  - { id: cg8ql2q304, name: status, type: string, required: true, from: [l1e8c9ti93] }
+  - { id: yqaox6k6ms, name: description, type: string, nullable: true, from: [phkiebzbqu] }
+  - { id: m9isrmk6zt, name: occurred_at, type: datetime, required: true, from: [uooii5rqo6] }
+  - { id: o0kc4dyovj, name: tracking_url, type: string, from: [namh6tyb85] }

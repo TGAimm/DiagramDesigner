@@ -1,0 +1,22 @@
+# Table 7000 Price List Header: one sales price list per price group and currency, plus
+# campaign lists with start and end dates.
+id: go4v61dp2i
+ownedBy: g65jav6xwo
+storedIn: q43aprn5l0
+name: Price List Header
+fields:
+  - { id: vafvzw52g1, name: code, type: string, pk: true, constraints: ["e.g. S-B2C-SE-2026, S-SALE-BF26"] }
+  - { id: mfqgy1263m, name: systemId, type: guid, required: true }
+  - { id: xarpnqdm8q, name: description, type: string }
+  - { id: suvh7hx2ew, name: sourceType, type: string, required: true, constraints: ["one of: All Customers, Customer, Customer Price Group, Customer Disc. Group, Campaign"] }   # GAP: enum
+  - { id: wijskhecd6, name: sourceNo, type: string, nullable: true, ref: tk6f474iqi }
+  - { id: i7o75328sn, name: currencyCode, type: string, ref: nirn4ae2ma }
+  - { id: k7ksuyncq5, name: priceType, type: string, constraints: ["one of: Sale, Purchase"] }   # GAP: enum
+  - { id: aacd4wqv07, name: amountType, type: string, constraints: ["one of: Price, Discount, Any"] }   # GAP: enum
+  - { id: s2uqop9oj0, name: status, type: string, required: true, constraints: ["one of: Draft, Active, Inactive"] }   # GAP: enum
+  - { id: lw8xage4ob, name: startingDate, type: date, nullable: true }
+  - { id: hvn53ds9hz, name: endingDate, type: date, nullable: true }
+  - { id: bhfa0m18wt, name: priceIncludesVat, type: bool, from: [zhc8euogt0] }
+  - { id: i3yl2l0icw, name: allowLineDisc, type: bool }
+  - { id: uxuxai6hdv, name: lines, model: zk2ozptnx5, many: true }
+  - { id: up1ucmirvq, name: systemModifiedAt, type: datetime, required: true }

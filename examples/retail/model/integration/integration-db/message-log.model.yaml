@@ -1,0 +1,24 @@
+id: yguluhbf6w
+ownedBy: v38tj7w8bg
+storedIn: v38tj7w8bg
+name: log.Messages
+fields:
+  - { id: lo9njndldl, name: id, type: bigint, pk: true, constraints: [identity] }
+  - { id: floqkfenec, name: correlationId, type: string, required: true, constraints: ["the first message's id; carried on every message it causes (Service Bus CorrelationId)"] }
+  - { id: dviz03d47f, name: messageId, type: string, required: true, constraints: [Service Bus MessageId, Stripe evt id, PIM event_id or file name] }
+  - { id: iu1eyod76e, name: channel, type: string, required: true, constraints: ["topic/subscription, queue, webhook path, or sftp:<file>"] }
+  # GAP: enum
+  - { id: u81waunj4z, name: sourceSystem, type: string, required: true, constraints: ["one of: commerce, erp, pim, payments, shipping, service, crm, marketing, pos, wms, integration"] }
+  - { id: jcanhzxjzt, name: targetSystem, type: string, nullable: true }
+  - { id: zaignuj1gj, name: businessKey, type: string, nullable: true, constraints: ["order number, sku, rma number, payout id"] }
+  # GAP: enum
+  - { id: kffiaual2j, name: status, type: string, required: true, constraints: ["one of: received, processed, skipped_duplicate, skipped_stale, failed, retry_scheduled, dead_lettered, resubmitted"] }
+  - { id: li28mpq44c, name: attempt, type: int, required: true, constraints: [min 1] }
+  - { id: ypoz3cml9h, name: durationMs, type: int, nullable: true }
+  - { id: z9glbtvuma, name: payloadPath, type: string, nullable: true, ref: ihzgplaat2, constraints: ["payloads/<yyyy>/<MM>/<dd>/<messageId>.json"] }
+  - { id: d5wmy12yll, name: receivedAt, type: datetime, required: true }
+  - { id: fc7duykoxf, name: processedAt, type: datetime, nullable: true }
+indexes:
+  - { id: xslc6e7d76, name: ix_messages_correlation, fields: [floqkfenec] }
+  - { id: j2lvgjr16w, name: ix_messages_business_key, fields: [zaignuj1gj, d5wmy12yll] }
+  - { id: sp23sq9tz7, name: ix_messages_status, fields: [kffiaual2j, d5wmy12yll] }

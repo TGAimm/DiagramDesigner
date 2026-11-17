@@ -1,0 +1,60 @@
+# Table 36 Sales Header: one table for every open sales document; Document Type tells a sales
+# order from a return order.
+# GAP: one table holding several document kinds (Order, Return Order); apis are filtered views of it
+id: ejg622chhy
+ownedBy: vss7pk1oh5
+storedIn: q43aprn5l0
+name: Sales Header
+tags: [pii]
+fields:
+  - { id: estckbpmdg, name: documentType, type: string, pk: true, constraints: ["one of: Quote, Order, Invoice, Credit Memo, Blanket Order, Return Order"] }   # GAP: enum
+  - { id: rgkzrhf9cx, name: no, type: string, pk: true, constraints: [max 20, "No. Series SO / SRO"] }
+  - { id: u8gwdhud9r, name: systemId, type: guid, required: true }
+  - { id: jxi66gwzsa, name: sellToCustomerNo, type: string, required: true, ref: iloktksmbd }
+  - { id: kcchmko5aq, name: sellToCustomerName, type: string, from: [sil52iby8z], derived: "copied on validate of sellToCustomerNo, may be overwritten" }
+  - { id: qdwhwtkg5g, name: billToCustomerNo, type: string, required: true, ref: iloktksmbd, from: [jxi66gwzsa], derived: "defaults to sell-to customer" }
+  - { id: z47zeh2gvk, name: sellToAddress, type: string, from: [vumlhqqhmd], derived: "default from customer, may be overwritten" }
+  - { id: gd70gu5shw, name: sellToAddress2, type: string, from: [u5zt4c9pw1] }
+  - { id: c08f83zc1u, name: sellToCity, type: string, from: [lcn2pfd4nj] }
+  - { id: rh47r7gl2d, name: sellToPostCode, type: string, from: [dziaf0m5gk] }
+  - { id: buozwdkaid, name: sellToCountryRegionCode, type: string, from: [vks4fix0cl] }
+  - { id: mkmn56v2yg, name: sellToEMail, type: string, from: [nxz9rh19e0] }
+  - { id: o5hf9ar6tl, name: shipToName, type: string }
+  - { id: v7bki5knvj, name: shipToAddress, type: string }
+  - { id: zmzp6oahq8, name: shipToAddress2, type: string, nullable: true }
+  - { id: is2lk0iyzn, name: shipToCity, type: string }
+  - { id: w7szlebf82, name: shipToPostCode, type: string }
+  - { id: vu6570igtt, name: shipToCountryRegionCode, type: string }
+  - { id: x5qo178kay, name: shipToPhoneNo, type: string, nullable: true }
+  - { id: gyuqizl9h5, name: orderDate, type: date, required: true }
+  - { id: mybwo4yymx, name: postingDate, type: date, required: true }
+  - { id: l2gb7p6lt9, name: requestedDeliveryDate, type: date, nullable: true }
+  - { id: ogicbd970k, name: externalDocumentNo, type: string, from: [lulkapcaa0], derived: "Commerce order number for orders; RMA number for return orders", constraints: [max 35, "Commerce order number or returns-portal RMA number"] }
+  - { id: j23trmmk7p, name: currencyCode, type: string, ref: nirn4ae2ma, from: [xtslnk70p9], derived: "default from customer; blank = DKK" }
+  - { id: nzfwy4abep, name: currencyFactor, type: decimal, from: [eruo2aalsf, wg7z8gi5to], derived: "exchange rate on posting date" }
+  - { id: kfm0c9x19t, name: pricesIncludingVat, type: bool, from: [zhc8euogt0], derived: "true for B2C price groups" }
+  - { id: c4eylr2x9n, name: customerPriceGroup, type: string, ref: tk6f474iqi, from: [qx2hsuh5rl] }
+  - { id: g1imih5see, name: genBusPostingGroup, type: string, from: [qrd3ijhh3s] }
+  - { id: qvpskc016y, name: vatBusPostingGroup, type: string, from: [jc8db77dpe], derived: "OSS group of the ship-to country for SE and DE" }
+  - { id: xn764vj10c, name: locationCode, type: string, ref: gsrr00mc9x, constraints: ["CENTRAL for web orders, the store for click and collect"] }
+  - { id: j3vwm01ky9, name: shippingAgentCode, type: string, nullable: true }
+  - { id: ww9fdjtelm, name: shippingAgentServiceCode, type: string, nullable: true, constraints: ["e.g. PRIVATE, PARCELSHOP, EXPRESS"] }
+  - { id: k7i112vh72, name: fjeldPickupPointId, type: string, nullable: true, constraints: ["table extension field; the parcel shop chosen at checkout"] }
+  - { id: py17kpp1a0, name: packageTrackingNo, type: string, nullable: true }
+  - { id: y56d4h96g1, name: paymentMethodCode, type: string, from: [s13wtip7nb] }
+  - { id: xalurnbl6g, name: status, type: string, required: true, constraints: ["one of: Open, Released, Pending Approval, Pending Prepayment"] }   # GAP: enum
+  - { id: uivc2hle8y, name: shortcutDimension1Code, type: string, ref: fogake3ysr, constraints: ["CHANNEL: WEB, STORE, CC"] }
+  - { id: g7fx1y9yoa, name: shortcutDimension2Code, type: string, ref: fogake3ysr, constraints: ["STORE: S01..S12, blank for web"] }
+  - { id: n6cluwp3lk, name: dimensionSetId, type: int, ref: nbwnn1hmri, from: [uivc2hle8y, g7fx1y9yoa, buozwdkaid], derived: "set of CHANNEL, STORE and COUNTRY values" }
+  - { id: pqepl2cr9g, name: returnReasonCode, type: string, nullable: true, constraints: ["return orders only"] }
+  - { id: v54boby13i, name: appliesToDocNo, type: string, nullable: true, ref: p4ya5jzozb, constraints: ["return orders: the invoice being credited"] }
+  - { id: ikqiixdkzh, name: lines, model: i09cr44p1c, many: true }
+  - { id: irn986hlj9, name: amount, type: decimal, stored: false, from: [khhoq2yeax], derived: "FlowField: sum of lines" }
+  - { id: tkj9ud9mkt, name: amountIncludingVat, type: decimal, stored: false, from: [qv93sjzupk], derived: "FlowField: sum of lines" }
+  - { id: dp6jhozgnk, name: systemModifiedAt, type: datetime, required: true }
+indexes:
+  - { id: bssekwarsg, name: ux_sales_header_systemid, fields: [u8gwdhud9r], unique: true }
+  - { id: iqo29oh60k, name: ix_sales_header_customer, fields: [estckbpmdg, jxi66gwzsa] }
+  - { id: c6qzhmcg0u, name: ix_sales_header_external_doc, fields: [estckbpmdg, ogicbd970k] }
+  - { id: c3bdnb1f9q, name: ix_sales_header_status, fields: [estckbpmdg, xalurnbl6g, xn764vj10c] }
+  - { id: vu895wgfh3, name: ix_sales_header_modified, fields: [dp6jhozgnk] }

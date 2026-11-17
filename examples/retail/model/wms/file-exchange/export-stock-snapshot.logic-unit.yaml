@@ -1,0 +1,12 @@
+# GAP: scheduled trigger
+id: hzju80acci
+parent: c636znasve
+name: exportStockSnapshot
+meta: { schedule: "0 2 * * *" }
+inputs: []
+outputs: []
+steps:
+  - { note: "runs after the evening shift; no picking between 23 and 5, so the snapshot is quiet" }
+  - { read: ixjus3gqio, with: status active or with stock, gets: items }
+  - { read: cyvap5gucu, with: all bins, gets: balances }
+  - { write: k8fmicwjqb, note: "one row per item, zero rows included so the client can zero ERP stock" }

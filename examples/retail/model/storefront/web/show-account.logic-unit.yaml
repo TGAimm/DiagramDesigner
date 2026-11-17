@@ -1,0 +1,14 @@
+id: co93qhayum
+parent: ffmcq3ieun
+name: showAccount
+inputs: []
+outputs:
+  - { id: ubndm6xuwb, name: profile, model: cu38cv7e7h }
+steps:
+  - { call: kj2e67wd0e, gets: profile }
+  - if: "401"
+    then:
+      - { call: n3lmxrely7, with: "returnTo /account", gets: authorizeUrl }
+      - { call: j09kgaxudj, with: "the browser follows the redirect to the sign-in page" }
+  - { call: mc8t8ucb9l, with: page 1, gets: orders }
+  - { return: profile }

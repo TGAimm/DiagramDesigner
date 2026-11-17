@@ -1,0 +1,17 @@
+# GAP: file interface (inbound RETURNS_EXPECTED_<ts>.csv: returns announced by the returns portal, one row per line)
+id: pxxc0fdfed
+ownedBy: tn4azsu06u
+storedIn: tn4azsu06u
+name: RETURNS_EXPECTED_<ts>.csv
+tags: [pii]
+fields:
+  - { id: fkvauhvioc, name: return_no, type: string, pk: true, from: [rgkzrhf9cx], derived: "Sales Header with document type Return Order", constraints: ["ERP sales return order no., e.g. SRO-3021"] }
+  - { id: nhvh5ysu87, name: line_no, type: int, pk: true }
+  - { id: jiwg9ee61k, name: rma_number, type: string, required: true, from: [hrk1dbsomu], constraints: [printed on the return label; what the warehouse scans] }
+  - { id: omm28lq7dk, name: order_ref, type: string, required: true, from: [twmqcvgacf], constraints: [webshop order number] }
+  - { id: upwnnfjnhs, name: customer_email, type: string, nullable: true, from: [vm8fhaf7i8] }
+  - { id: gztbvg6oyj, name: expected_date, type: date, nullable: true, from: [jj2p49hi29], derived: "return created + 5 days (carrier transit)" }
+  - { id: q51zzts0jb, name: item_no, type: string, required: true, from: [hirmes5nzi] }
+  - { id: adjzjxwanh, name: qty, type: int, required: true, from: [l4k8q2lav3] }
+  - { id: gmlhzgidej, name: reason_code, type: string, required: true, from: [bdvb269494] }
+  - { id: rk58hdfhva, name: customer_condition, type: string, nullable: true, from: [hlel772m6u], constraints: [what the customer said; the warehouse grades it itself] }

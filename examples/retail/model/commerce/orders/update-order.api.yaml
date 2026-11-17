@@ -1,0 +1,18 @@
+id: xdgvgxhc6p
+parent: f6x7dhgzlz
+name: Update order
+method: POST
+path: /{projectKey}/orders/{id}
+auth: "bearer (manage_orders)"
+params:
+  - { id: ks0jow200o, name: projectKey, in: path, type: string, description: fjeld-prod }
+  - { id: ea2cn3qi73, name: id, in: path, type: uuid }
+request:
+  fields:
+    - { id: ly4asrjwgz, name: version, type: long, required: true, to: [bmzyt48cy8] }
+    - { id: cvp04gc5gh, name: actions, model: qn0y1hkw8b, many: true, required: true }
+responses:
+  - { status: 200, model: g5tcad7xx0 }
+  - { status: 400, description: "InvalidOperation (unknown lineItemId, deliveryId or returnItemId), InvalidField" }
+  - { status: 404, description: ResourceNotFound }
+  - { status: 409, description: ConcurrentModification }

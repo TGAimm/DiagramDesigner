@@ -1,0 +1,25 @@
+# GAP: scheduled trigger
+# New and changed ERP items reach the 3PL before their first order or ASN.
+id: ddwd70cgah
+parent: myr8ju3xsr
+name: pushItemsToWms
+meta: { schedule: "50 * * * *" }
+inputs: []
+outputs: []
+steps:
+  - { read: nanvethhnv, with: erp / items, gets: cursor }
+  - { call: q2t4rbs6gu, with: "$filter lastModifiedDateTime gt cursor and type eq 'Inventory'", gets: items }
+  - each: item
+    do:
+      - { call: bszf4fnonm, with: item.id, gets: variants }
+  - flag: exafkh0xzs
+    on:
+      - each: item variant
+        do:
+          - { call: i5fc414eaf, with: "itemNo = '<no>-<variant>', description, ean (gtin), uom, weight, dimensions, category, blocked", gets: item }
+    off:
+      - if: any items
+        then:
+          - { write: gs2ja6jjb6, note: "ITEMS_<ts>.csv to /fjeld/in, one row per item variant" }
+          - { write: cc1v719mlz, note: "archive/wms-in/…/ITEMS_<ts>.csv" }
+  - { write: nanvethhnv, note: "highest lastModifiedDateTime, ok, items" }

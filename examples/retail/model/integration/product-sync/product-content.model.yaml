@@ -1,0 +1,25 @@
+# The PIM product mapped once, the same way for both entry points (event: PIM REST API;
+# nightly: the export file), then written to a Commerce product variant and Search records.
+# Commerce product key = styleCode; variant sku = PIM identifier.
+id: bm7mip2xw1
+ownedBy: w032iyqws6
+name: ProductContent
+fields:
+  - { id: ziqhap9bfe, name: pimUuid, type: uuid, required: true, from: [gziztcdf03, ea4ojm7zz9] }
+  - { id: w437aziz7y, name: sku, type: string, required: true, from: [caehs975j2, t9n72fi01e] }
+  - { id: fyg4fug865, name: styleCode, type: string, required: true, from: [xseslrjvdv, jutcmn2c3j, dvtpx62dyg], derived: "root product model code; the sku itself for a product without models" }
+  - { id: s8e889ti4e, name: ean, type: string, nullable: true, from: [qpq2ypchjp, rpz85sa4ui], derived: value of attribute ean }
+  - { id: l8c9qdr0i2, name: family, type: string, required: true, from: [a81eusllga, aep9cs7pox], derived: "picks the Commerce product type (jacket, footwear, tent, …)" }
+  - { id: yaqlws3v6v, name: name, type: "map<locale, string>", required: true, from: [qpq2ypchjp, ph7r1qdz35, zdavuyg41x], derived: "attribute name per locale, inherited from the root model; da_DK → da-DK" }
+  - { id: uwfgvbex2u, name: description, type: "map<locale, html>", nullable: true, from: [qpq2ypchjp, ph7r1qdz35, gpqlcx5cch], derived: "description, scope ecommerce" }
+  - { id: lk2zshusva, name: brand, type: string, nullable: true, from: [qpq2ypchjp, zpkucfcp1h], derived: option label }
+  - { id: t6owhoapm5, name: colour, type: "map<locale, string>", nullable: true, from: [qpq2ypchjp, v0p2cxteqe], derived: option label per locale }
+  - { id: ljpgznhvzw, name: colourCode, type: string, nullable: true, from: [qpq2ypchjp, zjoh17fvy2] }
+  - { id: n69fehd02m, name: size, type: string, nullable: true, from: [qpq2ypchjp, kn89fonqyl] }
+  - { id: n4xwozxiv0, name: material, type: "map<locale, string>", nullable: true, from: [qpq2ypchjp, fa5xl61h8n] }
+  - { id: zuamn7q2q3, name: weightGrams, type: int, nullable: true, from: [qpq2ypchjp, va7diw8s8r], derived: converted to GRAM }
+  - { id: cxwo80mec2, name: categories, type: string, many: true, from: [jxmckttq6i, evst4siuh2, zvcura8ydq], derived: "codes in tree fjeld_web = Commerce category keys" }
+  - { id: cthu6gdr3j, name: imageUrls, type: string, many: true, from: [qpq2ypchjp, sp1txumz54], derived: "product_images asset codes > CDN URL of the web rendition" }
+  - { id: yfgun8lsbs, name: enabled, type: bool, required: true, from: [pvp2s2tzpq, de80i5somo] }
+  - { id: tnrjyzkl3z, name: complete, type: bool, required: true, from: [zvcn8bc68d, x7lea8hr59], derived: "100 % for channel ecommerce in every shop locale; incomplete products are not published" }
+  - { id: w1resg1hz1, name: updated, type: datetime, required: true, from: [jgbpew18pm, grf6lk2vlx] }

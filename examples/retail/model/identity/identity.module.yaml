@@ -1,0 +1,8 @@
+id: v3mahi44mt
+name: Identity
+meta: { vendor: Microsoft, product: "Entra External ID (external tenant, customers)", kind: saas, owner: commerce-team, tenant: fjeldid.ciamlogin.com }
+links:
+  - { label: External ID overview, url: https://learn.microsoft.com/entra/external-id/customers/overview-customers-ciam }
+  - { label: OIDC on the Microsoft identity platform, url: https://learn.microsoft.com/entra/identity-platform/v2-protocols-oidc }
+  - { label: Graph user resource, url: https://learn.microsoft.com/graph/api/resources/user }
+  - { label: Custom authentication extensions (attribute collection submit), url: https://learn.microsoft.com/entra/identity-platform/custom-extension-onattributecollectionsubmit-retrieve-return-data }

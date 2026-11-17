@@ -1,0 +1,37 @@
+# GAP: scheduled trigger
+# Flow 3: WMS shipment confirmation file > ERP posts the shipment (invoice by ERP job queue) > order-shipped.
+id: ehadqyob9i
+parent: myr8ju3xsr
+name: processShipmentConfirmations
+meta: { schedule: "10,40 * * * *" }
+inputs: []
+outputs: []
+steps:
+  - { note: "list /fjeld/out for SHIPCONF_*.csv, oldest first (the 3PL writes at :05 and :35)" }
+  - each: file
+    do:
+      - { read: rr62mqt1v6, gets: rows }
+      - { read: cc1v719mlz, with: sha256, gets: seen before }
+      - if: seen before
+        then:
+          - { note: "move to /fjeld/archive; next file" }
+        else:
+          - { write: cc1v719mlz, note: "archive/wms-out/…/SHIPCONF_<ts>.csv, received" }
+          - each: confirmation in rows grouped by order_no and parcel_no (map to ShipmentConfirmation)
+            do:
+              - { read: n8ujyi0o8a, with: "erpSalesOrderNo = order_no", gets: ids }
+              - { call: hooked7xsj, with: "orderNumber, shipmentDate, shippingAgentCode, packageTrackingNumber, lines", gets: shipment }
+              - if: 200 (replay of a tracking number already posted)
+                then:
+                  - { note: "already done: no new order-shipped" }
+              - if: 400 or 404
+                then:
+                  - { write: wlmvgl2qp8, note: "retryable false: erp-team (quantity over outstanding, no inventory)" }
+                  - { call: gxh7trguok, with: "the confirmation" }
+              - if: 201
+                then:
+                  - { call: u1dn6w0tne, with: ids.erpSalesOrderId, gets: "salesOrder (fullyShipped)" }
+                  - { call: kiohe6iu60, with: "OrderShippedEvent: source wms, parcel, tracking, lines with Commerce line item ids from the order, orderComplete = fullyShipped; MessageId = <order no>-<parcel no>" }
+                  - { write: n8ujyi0o8a, note: "status shipped or partly_shipped" }
+          - { write: cc1v719mlz, note: "processed or partly_failed" }
+          - { note: "move the file to /fjeld/archive on the 3PL SFTP" }

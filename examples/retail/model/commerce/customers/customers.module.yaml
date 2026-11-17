@@ -1,0 +1,5 @@
+id: oumwpbl70c
+parent: ygmbkn58fj
+name: Customers
+links:
+  - { label: Customers, url: "https://docs.commercetools.com/api/projects/customers" }

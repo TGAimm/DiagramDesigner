@@ -1,0 +1,5 @@
+id: dsa7av53v5
+parent: v3mahi44mt
+name: User flows
+links:
+  - { label: Sign-up and sign-in user flows, url: https://learn.microsoft.com/entra/external-id/customers/how-to-user-flow-sign-up-sign-in-customers }

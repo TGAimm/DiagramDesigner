@@ -1,0 +1,18 @@
+id: slboeel66i
+ownedBy: oqu3crot7j
+storedIn: ka6mzbfc7x
+name: Stock adjustment
+fields:
+  - { id: noxy335ip0, name: id, type: int, pk: true }
+  - { id: ii4momrkkz, name: itemId, type: int, required: true, ref: ixjus3gqio }
+  - { id: hmuv83y0pd, name: locationId, type: int, required: true, ref: emtjsw8emx }
+  - { id: g7klmcrqdp, name: lotNo, type: string, nullable: true }
+  - { id: ac6mob384g, name: qtyChange, type: int, required: true, constraints: ["signed; not 0"] }
+  # GAP: enum
+  - { id: e9demj0qoc, name: reasonCode, type: string, required: true, constraints: ["one of: receipt, return_restock, shortpick, count, damage, found, scrap"] }
+  - { id: azn7d7o68h, name: referenceNo, type: string, nullable: true, constraints: [ASN, return or pick task the change came from] }
+  - { id: f66dpcsl3k, name: adjustedBy, type: string, required: true, constraints: [warehouse user or system] }
+  - { id: afd5kkz46v, name: adjustedAt, type: datetime, required: true }
+indexes:
+  - { id: rwpix03cy0, name: ix_adjustment_item_time, fields: [ii4momrkkz, afd5kkz46v] }
+  - { id: p98fnvx7pg, name: ix_adjustment_reason_time, fields: [e9demj0qoc, afd5kkz46v] }

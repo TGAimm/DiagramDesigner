@@ -1,0 +1,26 @@
+# Two views on the SQL analytics endpoint, behind the export apis.
+id: cqgtr0vxcz
+parent: flpant1ni7
+name: serveExports
+handles: [s25px5lyo8, yrgqfvk5ci]
+inputs:
+  - { id: se13u2lqsb, name: export, type: string, required: true, description: "customer-segments or sell-through" }
+  - { id: da03ds0b89, name: filters, type: string, required: false, description: "the query params, as a WHERE clause" }
+outputs:
+  - { id: rmu01tf7am, name: segments, model: ds642k1483, many: true }
+  - { id: roq0tqndsn, name: sellThrough, type: json, many: true }
+fails:
+  - { name: badFilter, description: a param does not parse }
+steps:
+  - if: a param does not parse
+    then:
+      - { fail: badFilter }
+  - if: export is customer-segments
+    then:
+      - { read: nr0aq1hjrv, with: "segment, calculated_at > changedSince", gets: scores }
+      - { read: bd62nmz25d, with: "customer_key, is_current", gets: "email, CRM and Klaviyo ids" }
+      - { return: segments }
+    else:
+      - { read: g6f9axlg7k, with: week_start_key, gets: weeks }
+      - { read: dihqzxsjgl, with: "product_sk, category", gets: products }
+      - { return: sellThrough }

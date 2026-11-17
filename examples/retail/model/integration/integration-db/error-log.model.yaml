@@ -1,0 +1,21 @@
+id: wlmvgl2qp8
+ownedBy: v38tj7w8bg
+storedIn: v38tj7w8bg
+name: log.Errors
+fields:
+  - { id: vxiygfxh4t, name: id, type: bigint, pk: true, constraints: [identity] }
+  - { id: cld0ztu16l, name: messageLogId, type: bigint, required: true, ref: lo9njndldl }
+  - { id: isyoqijv6r, name: correlationId, type: string, required: true, from: [floqkfenec] }
+  - { id: y4oklrb8d3, name: function, type: string, required: true, constraints: ["the unit, e.g. onOrderCreated"] }
+  - { id: zhpt0vnexu, name: targetSystem, type: string, nullable: true }
+  - { id: xx7u80ollv, name: httpStatus, type: int, nullable: true }
+  - { id: xnbcf2a0w6, name: errorCode, type: string, nullable: true, constraints: ["the target's code: BadRequest_NotFound, ConcurrentModification, card_declined"] }
+  - { id: nq1jv3r1mr, name: message, type: string, required: true }
+  - { id: a8wo5gj12k, name: retryable, type: bool, required: true, constraints: ["429, 5xx, timeouts and 409 version conflicts are; 400 and 404 are not"] }
+  - { id: zj5gun4fcb, name: nextRetryAt, type: datetime, nullable: true }
+  - { id: wlyejyqmaq, name: resolvedAt, type: datetime, nullable: true }
+  - { id: aub0vsd0n3, name: resolvedBy, type: string, nullable: true, constraints: ["retry, resubmit by <user>, or ignored by <user>"] }
+  - { id: id2wg5deqb, name: createdAt, type: datetime, required: true }
+indexes:
+  - { id: khz9azrqbj, name: ix_errors_open, fields: [wlyejyqmaq, id2wg5deqb] }
+  - { id: jk18b8h6tz, name: ix_errors_correlation, fields: [isyoqijv6r] }

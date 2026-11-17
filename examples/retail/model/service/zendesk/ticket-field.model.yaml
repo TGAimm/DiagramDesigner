@@ -1,0 +1,15 @@
+# GAP: configuration records (Fjeld's ticket fields are rows: Order number, Return id, Contact reason, Shop country)
+id: k3dvavecw5
+ownedBy: dodjtgoau2
+storedIn: kulzyfespz
+name: Ticket field
+fields:
+  - { id: mtzm4u4h1k, name: id, type: int, pk: true, constraints: ["e.g. 360001234567 = Order number"] }
+  - { id: bocpoc3vfw, name: title, type: string, required: true }
+  # GAP: enum
+  - { id: sza7ltt3il, name: type, type: string, required: true, constraints: ["one of: text, textarea, integer, decimal, date, checkbox, tagger, multiselect, regexp"] }
+  - { id: kczttv1cj6, name: custom_field_options, type: json, nullable: true, constraints: ["for tagger: [{name, value}], e.g. contact reason delivery_question, return, complaint, product_question"] }
+  - { id: nscfl7k5c4, name: regexp_for_validation, type: string, nullable: true, constraints: ["Order number: ^FJ-[0-9]{6,}$"] }
+  - { id: oirp1yj0an, name: required_in_portal, type: bool, required: true }
+  - { id: evi6jzpgny, name: active, type: bool, required: true }
+  - { id: fwps9bqcgg, name: position, type: int, required: true }

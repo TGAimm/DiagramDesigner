@@ -1,0 +1,17 @@
+id: uiwnq3pcel
+parent: ntfj7i0o5t
+name: Update pickup order status
+method: PATCH
+path: /v2/pickup-orders/{id}
+auth: bearer (API key, or the store app's staff session)
+params:
+  - { id: h1rz7ukdkj, name: id, in: path, type: uuid }
+request:
+  fields:
+    - { id: rl2q1s98s6, name: status, type: string, required: true, to: [m7rbanwl2c], description: "picking, ready, collected or cancelled" }
+    - { id: y1hmagnie2, name: staffId, type: int, nullable: true, to: [rmc9l3g7xn] }
+responses:
+  - { status: 200, model: n7gkyqvsz0 }
+  - { status: 401, description: Bad API key or session }
+  - { status: 404, description: Not found }
+  - { status: 409, description: "Move not allowed from the current status (e.g. collected → ready)" }

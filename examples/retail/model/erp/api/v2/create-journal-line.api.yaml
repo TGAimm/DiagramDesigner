@@ -1,0 +1,24 @@
+id: dduwg38kcl
+parent: wyb51ibopv
+name: Create journal line
+method: POST
+path: /api/v2.0/companies({companyId})/journals({id})/journalLines
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: g6tz7bgkkx, name: companyId, in: path, type: guid }
+  - { id: dkwm26l4tb, name: id, in: path, type: guid, description: the journal batch's id }
+request:
+  fields:
+    - { id: slei85g1ej, name: accountType, type: string, required: true, to: [kq80zi3px3], description: "G/L Account or Customer" }
+    - { id: p4ae4trvl7, name: accountNumber, type: string, required: true, to: [kmr5d4pbu4] }
+    - { id: ktnikhmi9e, name: postingDate, type: date, required: true, to: [mhgh88rpxh] }
+    - { id: xuyvgwj0hl, name: documentNumber, type: string, required: true, to: [rkp1lahodw], description: "the Stripe payout id, so a payout balances on its own" }
+    - { id: m57pojukjx, name: externalDocumentNumber, type: string, to: [x22q1mqx7f] }
+    - { id: djmxjcd5aa, name: amount, type: decimal, required: true, to: [mnaa7od0i8] }
+    - { id: b9euyc3msp, name: description, type: string, to: [id1sz0bkpr] }
+    - { id: ogomtplrq4, name: balanceAccountType, type: string, to: [nwl8xbx2n2] }
+    - { id: s6p6puevvt, name: balancingAccountNumber, type: string, to: [rj9vz5h4uv] }
+responses:
+  - { status: 201, model: j4svsv33uk, description: Created }
+  - { status: 400, description: "BadRequest: unknown account, blocked account" }
+  - { status: 404, description: no journal with this id }

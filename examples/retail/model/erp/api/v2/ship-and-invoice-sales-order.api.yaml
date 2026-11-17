@@ -1,0 +1,13 @@
+id: x4csr5f2bm
+parent: wyb51ibopv
+name: Ship and invoice sales order
+method: POST
+path: /api/v2.0/companies({companyId})/salesOrders({id})/Microsoft.NAV.shipAndInvoice
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: it5t85yxz9, name: companyId, in: path, type: guid }
+  - { id: st4p4upiea, name: id, in: path, type: guid }
+responses:
+  - { status: 204, description: "Posted: a shipment and an invoice; the order is gone when complete" }
+  - { status: 400, description: "BadRequest: posting error (not released, insufficient inventory, posting date)" }
+  - { status: 404, description: no order with this id }

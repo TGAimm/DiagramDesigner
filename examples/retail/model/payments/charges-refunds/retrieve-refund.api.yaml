@@ -1,0 +1,11 @@
+id: g0m42i4j79
+parent: eaiyhlljnw
+name: Retrieve a refund
+method: GET
+path: /v1/refunds/{refund}
+auth: bearer (secret key)
+params:
+  - { id: fbnk36d2zt, name: refund, in: path, type: string }
+responses:
+  - { status: 200, model: caitj9aczq }
+  - { status: 404, model: pwpsr0fyli, description: resource_missing }

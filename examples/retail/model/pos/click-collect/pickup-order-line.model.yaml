@@ -1,0 +1,14 @@
+id: hk7nkjcw5d
+ownedBy: ntfj7i0o5t
+storedIn: hykg6pt8u2
+name: Pickup order line
+fields:
+  - { id: rgd407xc9f, name: id, type: uuid, pk: true }
+  - { id: locrsual12, name: pickupOrderId, type: uuid, required: true, ref: n7gkyqvsz0 }
+  - { id: z52cudq7xl, name: externalLineId, type: string, required: true, from: [c9xmzjnpp8], constraints: [Commerce line item id] }
+  - { id: w272hp8w14, name: sku, type: string, required: true, ref: jw2rr761o3, from: [c1uzjurwuu] }
+  - { id: a56t20nn5g, name: name, type: string, required: true, from: [tzgfqq0q8b], derived: "the order's locale" }
+  - { id: nocb5xvs7l, name: quantity, type: int, required: true, from: [ae7tr09nmb] }
+  - { id: sy54d9d8w3, name: qtyPicked, type: int, nullable: true }
+indexes:
+  - { id: s7h4ujbiev, name: ix_pickup_line_order, fields: [locrsual12] }

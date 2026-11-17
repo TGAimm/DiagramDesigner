@@ -1,0 +1,15 @@
+id: r4kyemycbn
+parent: jzcljy1080
+name: Change quantity
+method: PATCH
+path: /api/cart/lines/{lineItemId}
+auth: session cookie fj_sid
+params:
+  - { id: jg5owbrlsw, name: lineItemId, in: path, type: uuid }
+request:
+  fields:
+    - { id: s7w2z18ch4, name: quantity, type: int, required: true, to: [tskdp4f0x6] }
+responses:
+  - { status: 200, model: lq4foj9308 }
+  - { status: 404, description: no such line in the session's cart }
+  - { status: 409, description: not enough stock }

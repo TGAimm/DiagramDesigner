@@ -1,0 +1,12 @@
+id: n1lyrjthok
+parent: fdjbxyzftg
+name: showProduct
+inputs:
+  - { id: w8cy92loie, name: slug, type: string, required: true }
+  - { id: j45ggjhvoq, name: sku, type: string, nullable: true, description: "?sku= from a card: preselect its colour" }
+outputs:
+  - { id: w7ncloe9tl, name: view, model: gel7vz7th1 }
+steps:
+  - { call: bu92uq53ka, with: slug, gets: view }
+  - { note: "select the colour of sku (or the first in stock); render gallery, sizes, price, specs, similar" }
+  - { return: view }

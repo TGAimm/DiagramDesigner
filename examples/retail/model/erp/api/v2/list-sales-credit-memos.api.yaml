@@ -1,0 +1,25 @@
+id: ssysvkxgsk
+parent: wyb51ibopv
+name: List sales credit memos
+method: GET
+path: /api/v2.0/companies({companyId})/salesCreditMemos
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: pm6ln9negd, name: companyId, in: path, type: guid }
+  - { id: l228qa054a, name: $filter, in: query, type: string, required: false, description: "e.g. externalDocumentNumber eq 'RMA-20431'" }
+responses:
+  - status: 200
+    many: true
+    fields:
+      - { id: v3r7qdo2vk, name: id, type: guid, from: [k34lw0n0rm] }
+      - { id: yqm6i2c5qa, name: number, type: string, from: [ld3h1958zh] }
+      - { id: srs5flfkqs, name: externalDocumentNumber, type: string, from: [mzhrawosv7] }
+      - { id: kuqoc6qioz, name: creditMemoDate, type: date, from: [defdmw4dvs] }
+      - { id: f1yj868tv2, name: customerNumber, type: string, from: [dgw38e5zz3] }
+      - { id: ct7nw3hfal, name: customerName, type: string, from: [mfu6z90bdy] }
+      - { id: ih8sfuzd6r, name: invoiceNumber, type: string, from: [l3zonhcith] }
+      - { id: rl8o4r75v7, name: currencyCode, type: string, from: [n6hxv76ict] }
+      - { id: xv8x246otf, name: totalAmountExcludingTax, type: decimal, from: [q5860qcjzf] }
+      - { id: m5f4xts4s3, name: totalAmountIncludingTax, type: decimal, from: [qhc5urannw] }
+      - { id: ctt7y8b4en, name: lastModifiedDateTime, type: datetime, from: [sh51f9no12] }
+  - { status: 401, description: Unauthorized }

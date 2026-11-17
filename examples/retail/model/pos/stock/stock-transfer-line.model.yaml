@@ -1,0 +1,12 @@
+id: rc311dl3kq
+ownedBy: vgv4575wz1
+storedIn: hykg6pt8u2
+name: Stock transfer line
+fields:
+  - { id: bec2krissn, name: id, type: uuid, pk: true }
+  - { id: h97mtcy3ns, name: transferId, type: uuid, required: true, ref: g9fn1pbjcw }
+  - { id: slvy3bx4hz, name: sku, type: string, required: true, ref: jw2rr761o3 }
+  - { id: fbh3fm0h36, name: qtyShipped, type: int, required: true, from: [zkq6j8101o], derived: "decimal to whole units" }
+  - { id: lpclp1z8zh, name: qtyReceived, type: int, nullable: true, constraints: [counted in the store] }
+indexes:
+  - { id: jwy5zn1z2h, name: ix_transfer_line, fields: [h97mtcy3ns] }

@@ -1,0 +1,4 @@
+id: mwsgna90tw
+parent: mleccno0ev
+name: Payments reconciliation
+meta: { functionApp: func-fjeld-payments, runtime: ".NET 8 isolated", plan: Flex Consumption }

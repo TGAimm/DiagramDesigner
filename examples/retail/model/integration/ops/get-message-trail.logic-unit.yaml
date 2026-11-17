@@ -1,0 +1,13 @@
+id: uuzwx4w757
+parent: y5739ri6l0
+name: getMessageTrail
+handles: [ng7u4eyv23]
+inputs:
+  - { id: mb6h0z8qyr, name: correlationId, type: string, nullable: true }
+  - { id: cyb494ce2p, name: businessKey, type: string, nullable: true }
+outputs:
+  - { id: u45jhagse0, name: messages, model: yguluhbf6w, many: true }
+steps:
+  - { read: yguluhbf6w, with: "correlationId, or businessKey (then every correlationId found)", gets: messages }
+  - { read: wlmvgl2qp8, with: those correlationIds, gets: errors }
+  - { return: messages }

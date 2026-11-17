@@ -1,0 +1,19 @@
+id: ns9g2d6exx
+parent: ybylhi4dg2
+name: Create payment
+method: POST
+path: /{projectKey}/payments
+auth: "bearer (manage_payments)"
+params:
+  - { id: q61rka4b1o, name: projectKey, in: path, type: string, description: fjeld-prod }
+request:
+  fields:
+    - { id: ikrpfavxr7, name: key, type: string, to: [wfg70fhyrr] }
+    - { id: roofavwghf, name: customer, type: "ResourceIdentifier {id}", to: [vvyj8qqsim] }
+    - { id: z4qp502ety, name: amountPlanned, model: ik7usc5zp1, required: true }
+    - { id: sw5hf1x86r, name: paymentMethodInfo, model: ie4ybkea6i }
+    - { id: heucxgfkoc, name: interfaceId, type: string, description: Stripe PaymentIntent id, to: [xhwkjtoolk] }
+    - { id: vwx3wkwp9t, name: transactions, model: xfiqw13cdi, many: true }
+responses:
+  - { status: 201, model: ucmgflrykd }
+  - { status: 400, description: "InvalidField, DuplicateField (key)" }

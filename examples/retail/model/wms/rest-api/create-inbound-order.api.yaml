@@ -1,0 +1,13 @@
+id: akfhnx820f
+parent: m149ml603p
+name: Create inbound order (ASN)
+method: POST
+path: /v1/inbound-orders
+auth: bearer (OAuth 2.0 client credentials)
+when: { flag: j5jo9lc089, is: on }
+request: { model: rqh29xdiae, pick: [isvzap7pqa, pdhigx7vv4, vvadjomsii, ltdi2nlxro, go59i7d3zc, i4o8ihl200] }
+responses:
+  - { status: 201, model: rqh29xdiae, pick: [iijmlls7re, isvzap7pqa, dghg7wytkh], description: Expected }
+  - { status: 401, description: Missing or expired token }
+  - { status: 409, description: asnNo already open }
+  - { status: 422, description: Unknown item no. }

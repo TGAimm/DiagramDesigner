@@ -1,0 +1,17 @@
+id: at1dw8zx8n
+ownedBy: d2rl6i7zpf
+storedIn: rrg5e7natg
+name: Shipping Method
+fields:
+  - { id: o9qqaz63dc, name: id, type: uuid, pk: true }
+  - { id: vs3q05fpsk, name: version, type: long, required: true }
+  - { id: awjj84gc3m, name: key, type: string, nullable: true, constraints: ["e.g. postnord-home, pickup-point, click-collect, express"] }
+  - { id: w2u7m66odj, name: name, type: string, required: true }
+  - { id: a3h08jfxxd, name: localizedDescription, type: LocalizedString, nullable: true }
+  - { id: q52gwr2xww, name: taxCategory, type: uuid, required: true, ref: yzii05r372 }
+  - { id: b2avgpulx9, name: zoneRates, model: opgo6nklq7, many: true }
+  - { id: pstblqun4i, name: isDefault, type: bool, required: true }
+  - { id: es9nzssp6i, name: active, type: bool, required: true }
+  - { id: m5x9anv635, name: predicate, type: string, nullable: true, constraints: ["cart predicate, e.g. lineItemExists(supplyChannel.key starts with \"store-\")"] }
+indexes:
+  - { id: zasiscuoxd, name: ux_shipping_method_key, fields: [awjj84gc3m], unique: true }

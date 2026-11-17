@@ -1,0 +1,18 @@
+id: w3qkiyzpy8
+parent: ktxxdlpyeb
+name: Save rules
+method: POST
+path: /1/indexes/{indexName}/rules/batch
+auth: "X-Algolia-Application-Id + X-Algolia-API-Key (admin key: editSettings ACL; merchandisers use the dashboard)"
+params:
+  - { id: lmcyir5b60, name: indexName, in: path, type: string }
+  - { id: v3bc685luf, name: forwardToReplicas, in: query, type: bool, required: false }
+  - { id: zgrahk8nxq, name: clearExistingRules, in: query, type: bool, required: false }
+request: { model: u2jtnahx4h, many: true, omit: [ia3kdwmnnv] }
+responses:
+  - status: 200
+    fields:
+      - { id: nmg144fb13, name: taskID, type: long, from: [s7s7oe1bfu] }
+      - { id: w5cxfpyjal, name: updatedAt, type: datetime, from: [nk02opnv10] }
+  - { status: 400, description: "a condition without pattern or context, or an invalid consequence" }
+  - { status: 403, description: missing editSettings ACL }

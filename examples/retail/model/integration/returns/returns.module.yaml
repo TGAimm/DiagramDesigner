@@ -1,0 +1,4 @@
+id: sicmj00m5m
+parent: mleccno0ev
+name: Returns
+meta: { functionApp: func-fjeld-returns, runtime: ".NET 8 isolated", plan: Flex Consumption }

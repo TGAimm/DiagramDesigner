@@ -1,0 +1,15 @@
+id: vmk7bauqh2
+parent: vkdx3tfwhz
+name: startSignIn
+handles: [n3lmxrely7]
+inputs:
+  - { id: eluuwafxii, name: returnTo, type: string, nullable: true }
+  - { id: m5vw7ffcf7, name: signUp, type: bool, nullable: true }
+outputs:
+  - { id: zxktfer02k, name: authorizeUrl, type: string }
+steps:
+  - { call: cylyc9xl5m, gets: session }
+  - { note: "make state, nonce and a PKCE code_verifier (S256 challenge)" }
+  - { write: wnpwug2h0c, note: "state, nonce, codeVerifier, returnTo" }
+  - { note: "build the Identity authorize URL: scope openid profile offline_access api://fjeld-commerce-api/checkout; prompt=create when signUp; ui_locales from the session" }
+  - { return: authorizeUrl }

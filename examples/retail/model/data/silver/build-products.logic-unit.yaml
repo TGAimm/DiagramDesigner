@@ -1,0 +1,18 @@
+id: arrz7orblm
+parent: c9pk2gmf7l
+name: buildProducts
+meta: { notebook: nb_silver_product }
+inputs: []
+outputs: []
+steps:
+  - { read: xkovmskr8u, with: "_loaded_at since the last run", gets: items }
+  - { read: h8xg9se4b5, with: "_loaded_at since the last run, locale en_GB", gets: pim rows }
+  - { note: "full outer join on number = sku; PIM-only skus (not yet in ERP) are skipped" }
+  - each: changed sku
+    do:
+      - { read: ukqbycykfj, with: "sku, is_current", gets: current version }
+      - if: no current version or row_hash differs
+        then:
+          - { write: yigezw6v1q, note: close the current version }
+          - { write: pwm9vykeqa, note: false on the closed version }
+          - { write: ukqbycykfj, note: insert the new version }

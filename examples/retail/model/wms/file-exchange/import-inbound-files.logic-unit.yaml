@@ -1,0 +1,43 @@
+# GAP: scheduled trigger
+id: iataau2vkk
+parent: c636znasve
+name: importInboundFiles
+meta: { schedule: "*/10 * * * *" }
+inputs: []
+outputs: []
+steps:
+  - { note: "list /fjeld/in, oldest first; ITEMS before ORDERS so new items exist when their orders arrive" }
+  - each: file in /fjeld/in
+    do:
+      - flag: j5jo9lc089
+        off:
+          - if: ITEMS_<ts>.csv
+            then:
+              - { read: gs2ja6jjb6, gets: rows }
+              - each: row
+                do:
+                  - { call: s0d2zn1y3u, with: row as item, gets: item }
+          - if: ORDERS_<ts>.csv
+            then:
+              - { read: l03dfm19e0, gets: rows }
+              - each: order in rows grouped by order_no
+                do:
+                  - { call: pke0ptch5c, with: "header + lines, source file", gets: order }
+      - if: ASN_<ts>.csv
+        then:
+          - { read: jbnnepejhg, gets: rows }
+          - each: asn in rows grouped by asn_no
+            do:
+              - { call: ht59axq4l9, with: header + lines, gets: inbound order }
+      - flag: j5jo9lc089
+        off:
+          - if: RETURNS_EXPECTED_<ts>.csv
+            then:
+              - { read: pxxc0fdfed, gets: rows }
+              - each: return in rows grouped by return_no
+                do:
+                  - { call: i9820gfcwk, with: header + lines, gets: return order }
+      - if: any order, ASN or return failed
+        then:
+          - { note: "write ERR_<file>.csv to /fjeld/out with the failed rows and the reason; the good ones stay imported" }
+      - { note: "move the file to /fjeld/archive" }

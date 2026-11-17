@@ -1,0 +1,25 @@
+id: ht59axq4l9
+parent: p6h0yiqcjm
+name: createInboundOrder
+handles: [akfhnx820f]
+inputs:
+  - { id: x811chdfnr, name: inboundOrder, model: rqh29xdiae, required: true }
+outputs:
+  - { id: fdjnr8whkw, name: inboundOrder, model: rqh29xdiae }
+fails:
+  - { name: duplicateAsn, description: asnNo already open (409) }
+  - { name: unknownItem, description: a line's item is not in the item master (422) }
+steps:
+  - { read: isvzap7pqa, with: asnNo, gets: existing }
+  - if: existing and not closed
+    then:
+      - { fail: duplicateAsn }
+  - each: line in lines
+    do:
+      - { read: yfuhon49xq, with: line item no., gets: item }
+      - if: no item
+        then:
+          - { fail: unknownItem }
+  - { write: rqh29xdiae, note: "insert, status expected" }
+  - { write: zdgllbeptr, note: "insert each line, qtyReceived 0" }
+  - { return: inboundOrder }

@@ -1,0 +1,10 @@
+id: oulxlftdo7
+ownedBy: znpte2ol9p
+storedIn: mm9tmyhvey
+name: List membership
+fields:
+  - { id: z5js8uj1t1, name: list_id, type: string, pk: true, ref: cgx25dzwjy }
+  - { id: og592xxgb8, name: profile_id, type: string, pk: true, ref: apj02aeekt }
+  - { id: bybkz03n8n, name: joined_group_at, type: datetime, required: true }
+indexes:
+  - { id: obyj48fduz, name: ix_lm_profile, fields: [og592xxgb8] }

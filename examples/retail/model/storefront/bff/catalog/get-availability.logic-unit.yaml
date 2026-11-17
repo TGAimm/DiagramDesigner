@@ -1,0 +1,19 @@
+id: dyilkqz79v
+parent: lnizoffy7m
+name: getAvailability
+handles: [troq0apfr4]
+inputs:
+  - { id: zn6lu86grn, name: sku, type: string, required: true }
+  - { id: uykwy6gh59, name: near, type: string, nullable: true }
+outputs:
+  - { id: qo7m805wcz, name: stores, model: r5c8x8etbs, many: true }
+fails:
+  - { name: unknownSku, description: "404" }
+steps:
+  - { call: nliulbw7pi, with: "sku = sku (the webshop entry and every store channel), never cached", gets: entries }
+  - if: no entries
+    then:
+      - { fail: unknownSku }
+  - { call: zyvdhbdmff, with: "near, sku", gets: stores }
+  - { note: "online = availableQuantity of the entry without supply channel (the 3PL)" }
+  - { return: stores }

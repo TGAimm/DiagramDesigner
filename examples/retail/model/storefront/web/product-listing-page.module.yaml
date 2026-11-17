@@ -1,0 +1,4 @@
+id: mbno02j577
+parent: pk9bqr5frw
+name: Product listing page
+meta: { route: "/c/[...slug] and /search" }

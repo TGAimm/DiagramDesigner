@@ -1,0 +1,28 @@
+id: x17b80t6tq
+parent: oumwpbl70c
+name: Create customer (sign up)
+method: POST
+path: /{projectKey}/customers
+auth: "bearer (manage_customers)"
+params:
+  - { id: a0a4a163og, name: projectKey, in: path, type: string, description: fjeld-prod }
+request:
+  fields:
+    - { id: jh86kl8d11, name: email, type: string, required: true, to: [ehf2zs4sc2] }
+    - { id: nx3f8t7y7k, name: externalId, type: string, description: Identity user object id, to: [c558p8igta] }
+    - { id: s8m8w9fdws, name: authenticationMode, type: string, description: ExternalAuth (no password), to: [qo386yhe4z] }
+    - { id: v032wr28jg, name: firstName, type: string, to: [t3mf7j2rez] }
+    - { id: tfgslf5jy0, name: lastName, type: string, to: [q0hnw17jwj] }
+    - { id: kw9wlh5qbn, name: isEmailVerified, type: bool, description: verified by Identity, to: [zfwig3x4mh] }
+    - { id: ghl44h96gx, name: locale, type: string, to: [rtt1jqp5f3] }
+    - { id: juieybksos, name: stores, type: "KeyReference {key}", many: true, to: [z295ttgha6] }
+    - { id: xrkkmnj4x4, name: customerGroup, type: "ResourceIdentifier {key}", to: [wzod3l5teg] }
+    - { id: p7b4cv8j0v, name: addresses, model: mrllytyew7, many: true }
+    - { id: qmol5akmpp, name: anonymousId, type: string, description: merge the guest's carts and orders, to: [t7o0kf74is] }
+responses:
+  - status: 201
+    description: CustomerSignInResult
+    fields:
+      - { id: xaknovnwv8, name: customer, model: nrnhibse1t }
+      - { id: uref5x1wkl, name: cart, model: w4i82sypi6, nullable: true }
+  - { status: 400, description: "DuplicateField (email)" }

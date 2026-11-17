@@ -1,0 +1,20 @@
+# GAP: polymorphic update action union: one model with the union of all payload fields, each action uses a few
+id: hbavag5dcj
+ownedBy: b1ptklldw3
+name: Cart Update Action
+fields:
+  - { id: xk02xi65b4, name: action, type: string, required: true, constraints: ["one of: addLineItem, removeLineItem, changeLineItemQuantity, setShippingAddress, setBillingAddress, setShippingMethod, addDiscountCode, removeDiscountCode, setCustomerEmail, setCustomerId, setCountry, addPayment, recalculate"] }  # GAP: enum
+  - { id: zcx8k2l411, name: productId, type: uuid, nullable: true, ref: zchid5zayi }
+  - { id: pqllg00gz1, name: variantId, type: int, nullable: true }
+  - { id: i4ltmge5r7, name: sku, type: string, nullable: true, ref: c1uzjurwuu }
+  - { id: cnndpvq6pl, name: lineItemId, type: uuid, nullable: true, ref: c9xmzjnpp8 }
+  - { id: tskdp4f0x6, name: quantity, type: int, nullable: true, constraints: [0 removes the line] }
+  - { id: okzymaoiob, name: supplyChannel, type: uuid, nullable: true, ref: yi0uf2c9tg }
+  - { id: yo8q4xn1sq, name: address, model: mrllytyew7, nullable: true }
+  - { id: twlinw3u9c, name: shippingMethod, type: uuid, nullable: true, ref: o9qqaz63dc }
+  - { id: hnm2w7w63y, name: code, type: string, nullable: true, ref: o7rh76kw30 }
+  - { id: at8hnfzn8v, name: email, type: string, nullable: true }
+  - { id: nbq97ycjhh, name: customerId, type: uuid, nullable: true, ref: zhf6a5r56z }
+  - { id: rr7xwig3tu, name: country, type: string, nullable: true }
+  - { id: aqbpmsocs5, name: payment, type: uuid, nullable: true, ref: qqf0oorxab }
+  - { id: ez7nubkxac, name: updateProductData, type: bool, nullable: true, constraints: [recalculate only] }

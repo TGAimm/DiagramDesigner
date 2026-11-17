@@ -1,0 +1,8 @@
+id: akgk330vio
+ownedBy: woc2py521s
+name: Product Variant Availability
+fields:
+  - { id: txl9q5ewps, name: isOnStock, type: bool, from: [z6tv7i6g31], derived: "availableQuantity > 0 on the entry without supply channel" }
+  - { id: jgqtz2z8ba, name: restockableInDays, type: int, nullable: true, from: [ws2iqpk3rv] }
+  - { id: iwv4fn8ceg, name: availableQuantity, type: long, nullable: true, from: [z6tv7i6g31] }
+  - { id: er80zen2vb, name: channels, type: "map<channelId, {isOnStock, availableQuantity, restockableInDays}>", nullable: true, from: [jpfyutcqja, z6tv7i6g31], derived: one entry per supply channel (3PL warehouse and each store) }

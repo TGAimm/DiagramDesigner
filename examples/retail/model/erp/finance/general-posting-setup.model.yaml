@@ -1,0 +1,14 @@
+# Table 252 General Posting Setup: which G/L accounts a sale, credit memo or stock movement
+# posts to.
+id: wz926i6uhd
+ownedBy: gob5rrh7wh
+storedIn: q43aprn5l0
+name: General Posting Setup
+fields:
+  - { id: tjvxys2n13, name: genBusPostingGroup, type: string, pk: true, constraints: ["one of: DOMESTIC, EU, EXPORT, STORE"] }   # GAP: enum
+  - { id: qjo9nlj1of, name: genProdPostingGroup, type: string, pk: true, constraints: ["one of: RETAIL, SHIPPING"] }   # GAP: enum
+  - { id: gcttezdgrv, name: salesAccount, type: string, required: true, ref: ro270d71oh }
+  - { id: k7jrqth83j, name: salesCreditMemoAccount, type: string, required: true, ref: ro270d71oh }
+  - { id: kgne88y7dd, name: salesLineDiscAccount, type: string, ref: ro270d71oh }
+  - { id: jchlv7zeq1, name: cogsAccount, type: string, required: true, ref: ro270d71oh }
+  - { id: dwznh5q637, name: inventoryAdjmtAccount, type: string, required: true, ref: ro270d71oh }

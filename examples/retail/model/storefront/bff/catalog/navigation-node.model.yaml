@@ -1,0 +1,18 @@
+# The category menu, cached per locale (key nav:<locale>).
+# GAP: expiry - a copy refreshed from Commerce every 10 minutes (TTL 1 h); storage can't say it's a cache.
+id: gwviq03kq6
+ownedBy: lnizoffy7m
+storedIn: p85ojgt4ve
+name: Navigation Node
+fields:
+  - { id: sle2i7zl55, name: locale, type: string, pk: true }
+  - { id: cloiw900a6, name: categoryKey, type: string, pk: true, from: [ctu59t9nlv] }
+  - { id: b5fnle68c8, name: name, type: string, required: true, from: [fvgx6wpgyf], derived: in the locale }
+  - { id: hf955kjn1a, name: slug, type: string, required: true, from: [rzb5426w90], derived: in the locale }
+  - { id: ybaeyew9dz, name: url, type: string, required: true, from: [rzb5426w90, wjgggt5chj], derived: "/c/<ancestor slugs>/<slug>" }
+  - { id: diwa53w4qv, name: parentKey, type: string, nullable: true, ref: cloiw900a6, from: [tajoem5geq], derived: "the parent's key" }
+  - { id: jt3mpp9v9b, name: depth, type: int, required: true, from: [wjgggt5chj], derived: number of ancestors }
+  - { id: camjwgxa4n, name: orderHint, type: string, required: true, from: [vtcsoa5f1p] }
+  - { id: pqodn0ejd9, name: cachedAt, type: datetime, required: true }
+indexes:
+  - { id: h40ri26faw, name: ix_nav_parent, fields: [sle2i7zl55, diwa53w4qv] }

@@ -1,0 +1,11 @@
+id: vff2640otj
+ownedBy: a2x6k1ux7z
+name: Shipping Option
+fields:
+  - { id: whcfu7suhm, name: id, type: uuid, required: true, from: [o9qqaz63dc] }
+  - { id: rawkjfd2fe, name: key, type: string, required: true, from: [awjj84gc3m] }
+  - { id: yhvfqaazrn, name: name, type: string, required: true, from: [w2u7m66odj, a3h08jfxxd], derived: "localized description, else name" }
+  - { id: xivici0k04, name: price, model: nmsbq15351, required: true, from: [pxe9c1gsek, n05x4zxsy9, k3nskt5l62], derived: "0 once the cart reaches freeAbove" }
+  - { id: d4ft3tu90b, name: needsPickupPoint, type: bool, required: true, from: [awjj84gc3m], derived: "key pickup-point" }
+  - { id: upt3r4tvqb, name: carrierCode, type: string, nullable: true, ref: vy1t0d26e3, from: [awjj84gc3m], derived: "carrier part of the key: postnord, gls, bring, dhl" }
+  - { id: i8da5nl35g, name: deliveryEstimate, type: string, nullable: true, constraints: ["per key in code: 1-3 days, next day, collect in 2 h"] }

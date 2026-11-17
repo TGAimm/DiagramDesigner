@@ -1,0 +1,21 @@
+# GAP: paging envelope - query, params, page and hitsPerPage echo the request, which a model
+# field cannot name in from.
+id: kvwb8tpsfj
+ownedBy: w84no1i22u
+name: Search Response
+fields:
+  - { id: gofg7di4ji, name: hits, model: djlyk8w84b, many: true }
+  - { id: gff96acykq, name: nbHits, type: int, required: true, from: [kfdn4jaxfq], derived: records matching the query and filters }
+  - { id: zhphd71abf, name: page, type: int, required: true }
+  - { id: blbnf3usqk, name: nbPages, type: int, required: true, from: [kfdn4jaxfq], derived: "ceil(nbHits / hitsPerPage), capped by paginationLimitedTo" }
+  - { id: or44jgrnd6, name: hitsPerPage, type: int, required: true }
+  # GAP: keyed map - facets is {attribute: {value: count}}
+  - { id: k2a7o9ojdw, name: facets, type: "map<attribute, map<value, int>>", nullable: true, from: [pnt2qzakc1, no1c4i3mx9, xpd602u5jh, cemc2bgkwg, fvs4gll05v, dkp753e0j6, rl8dsmbon0], derived: "count of matching records per value, top maxValuesPerFacet" }
+  - { id: smcw5ufiqr, name: facets_stats, type: "map<attribute, {min, max, avg, sum}>", nullable: true, from: [rl8dsmbon0], derived: over the matches }
+  - { id: vfqngf2odm, name: exhaustiveNbHits, type: bool, required: true }
+  - { id: o7h15lqnnp, name: query, type: string, required: true }
+  - { id: p5ubla42ji, name: params, type: string, required: true, constraints: [the request as a query string] }
+  - { id: vewg50erqy, name: index, type: string, nullable: true, from: [fwm01mcigb], constraints: [multiple queries only] }
+  - { id: brq7rcl5jh, name: queryID, type: string, nullable: true, constraints: [with clickAnalytics; sent back with Insights click and conversion events] }
+  - { id: aiulg5bkro, name: userData, type: json, many: true, nullable: true, from: [oxn5ftpt58], derived: userData of every rule that applied }
+  - { id: scd9mtz7az, name: processingTimeMS, type: int, required: true }

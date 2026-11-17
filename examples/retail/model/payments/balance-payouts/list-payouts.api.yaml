@@ -1,0 +1,14 @@
+id: d9rqhzexn0
+parent: vuo50id8ln
+name: List all payouts
+method: GET
+path: /v1/payouts
+auth: bearer (secret key)
+params:
+  - { id: k2jjngirvd, name: "arrival_date[gte]", in: query, type: timestamp, required: false }
+  - { id: b88qwi2s18, name: status, in: query, type: string, required: false }
+  - { id: ds0ib2dox6, name: limit, in: query, type: int, required: false }
+  - { id: sy58vf7s1f, name: starting_after, in: query, type: string, required: false }
+responses:
+  # GAP: list envelope ({ object: list, data, has_more, url }) and cursor pagination: written as many of the model
+  - { status: 200, model: uzfenyzyi8, many: true }

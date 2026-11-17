@@ -1,0 +1,12 @@
+# GAP: triggered by subscription order-shipped/marketing
+id: goes1x17q2
+parent: w8lrzinusw
+name: sendShippedEventToMarketing
+inputs:
+  - { id: pvmov8f0di, name: event, model: hzf00evl4i, required: true }
+outputs: []
+steps:
+  - { note: "subscription order-shipped/marketing (filter source = 'wms': a collected order gets no shipped mail)" }
+  - { read: n8ujyi0o8a, with: event.orderNumber, gets: ids }
+  - { call: v2gmil25dl, with: ids.commerceOrderId, gets: "order (email, locale)" }
+  - { call: na6iutswge, with: "metric Shipped Order: profile email, value, properties (order number, carrier, tracking number and URL, items in this parcel), unique_id = <order number>-<parcelNo>" }

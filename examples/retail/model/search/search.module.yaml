@@ -1,0 +1,10 @@
+id: qj04e3k5z2
+name: Search
+tags: [b2c]
+meta: { vendor: Algolia, product: Algolia Search, kind: saas, owner: commerce-team, appId: FJELD0SRCH, region: eu (Frankfurt) }
+links:
+  - { label: Search API reference, url: "https://www.algolia.com/doc/rest-api/search/" }
+  - { label: Index settings, url: "https://www.algolia.com/doc/api-reference/settings-api-parameters/" }
+  - { label: Search parameters, url: "https://www.algolia.com/doc/api-reference/search-api-parameters/" }
+  - { label: Rules, url: "https://www.algolia.com/doc/guides/managing-results/rules/rules-overview/" }
+  - { label: Replicas (sorting), url: "https://www.algolia.com/doc/guides/managing-results/refine-results/sorting/" }

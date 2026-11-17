@@ -1,0 +1,24 @@
+# GAP: scheduled trigger
+# Safety net for lost PIM events: the export lands at ~02:20, this reads it at 03:00.
+id: i9xb6o7pl3
+parent: w032iyqws6
+name: nightlyFullProductSync
+meta: { schedule: "0 3 * * *" }
+inputs: []
+outputs: []
+fails:
+  - { name: noFile, description: "tonight's file is missing: alert, and nothing is unpublished" }
+steps:
+  - { read: z5lpcdc7h9, with: "pim/products/<today>.csv", gets: rows }
+  - if: no file, or under 80 % of last night's row count
+    then:
+      - { write: wlmvgl2qp8, note: "targetSystem pim, retryable false" }
+      - { fail: noFile }
+  - { write: cc1v719mlz, note: "archive/pim/<yyyy>/<MM>/<dd>/products.csv" }
+  - each: product (rows grouped by uuid, all locales)
+    do:
+      - { call: rfy1tmtp0f, with: "ProductChangedEvent pimUuid, sku, action updated, trigger nightly-full, the rows as body properties" }
+  - { read: yd9iwthx32, with: "removed false, lastSeenInExport < today", gets: missing products }
+  - each: missing product
+    do:
+      - { call: iqqdoy991b, with: "action removed, trigger nightly-full" }

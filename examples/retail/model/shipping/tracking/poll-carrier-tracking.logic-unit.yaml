@@ -1,0 +1,21 @@
+# GAP: scheduled trigger
+id: vpruczzecm
+parent: vssqq48tt7
+name: pollCarrierTracking
+meta: { schedule: "*/15 * * * *" }
+inputs: []
+outputs: []
+steps:
+  - { read: x8ugoms0sh, with: "booked, tracking_status not delivered or returned_to_sender, younger than 30 days", gets: open parcels }
+  - each: carrier in open parcels by carrier
+    do:
+      # GAP: external API with no system in the design (the carriers' tracking APIs)
+      - { note: "ask the carrier's tracking API for events since last poll, in batches of pkg_no" }
+      - each: event not seen before (ux_tracking_dedupe)
+        do:
+          - { note: "normalise carrier_event_code to status" }
+          - { write: e2ken4rl8u, note: insert }
+          - if: status differs from parcel.tracking_status
+            then:
+              - { write: cflo3epoya }
+              - { call: sg4tkrnvm7, with: event }

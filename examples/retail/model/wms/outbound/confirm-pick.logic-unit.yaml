@@ -1,0 +1,42 @@
+# Started by a picker's scan on the RF handheld (the WMS's own app, no api in between).
+id: f376k81phm
+parent: yvrhh8zk8f
+name: confirmPick
+inputs:
+  - { id: mql9hl1rw7, name: pickTaskId, type: int, required: true }
+  - { id: hsriuvy3xa, name: scannedLocation, type: string, required: true, description: bin barcode }
+  - { id: irwr36o4a2, name: scannedEan, type: string, required: true }
+  - { id: pktjwilbhq, name: qtyPicked, type: int, required: true }
+  - { id: joq58anmvl, name: pickerId, type: string, required: true }
+outputs:
+  - { id: gkqtttc7kq, name: task, model: h8jsrfryjc }
+fails:
+  - { name: wrongLocation, description: scanned bin is not the task's bin }
+  - { name: wrongItem, description: scanned EAN is not the task's item }
+  - { name: alreadyConfirmed, description: task is done or short }
+steps:
+  - { read: h8jsrfryjc, with: pickTaskId, gets: task }
+  - if: task.status is done or short
+    then:
+      - { fail: alreadyConfirmed }
+  - { read: n47u7wwlh1, with: task.fromLocationId, gets: bin }
+  - if: scannedLocation != bin.code
+    then:
+      - { fail: wrongLocation }
+  - { read: qn8wrhmtu1, with: task.itemId, gets: ean }
+  - if: scannedEan != ean
+    then:
+      - { fail: wrongItem }
+  - { write: cyvap5gucu, note: "qtyOnHand - qtyPicked, qtyAllocated - qtyToPick" }
+  - if: qtyPicked < task.qtyToPick
+    then:
+      - { write: h8jsrfryjc, note: "status short" }
+      - { write: slboeel66i, note: "reasonCode shortpick: the bin is counted empty, the missing quantity written off" }
+      - { write: hg3gzb58bw, note: "0 for this bin; a count task follows" }
+    else:
+      - { write: h8jsrfryjc, note: "status done, confirmedAt" }
+  - { write: dujuwqrmkr, note: "+ qtyPicked" }
+  - if: every task of the order done or short
+    then:
+      - { write: gfhtt2sknp, note: picked }
+  - { return: task }

@@ -1,0 +1,13 @@
+id: mw8krecq3e
+ownedBy: woc2py521s
+name: Price
+fields:
+  - { id: jo9o42wafl, name: id, type: uuid, required: true }
+  - { id: zcw0t2ipvp, name: key, type: string, nullable: true, constraints: ["= ERP price list code + currency, e.g. RETAIL-DKK"] }
+  - { id: o4853v7a28, name: value, model: ik7usc5zp1, required: true }
+  - { id: y45wgfaxfe, name: country, type: string, nullable: true, constraints: ["one of: DK, SE, NO, DE"] }  # GAP: enum
+  - { id: f548hthtkr, name: customerGroup, type: uuid, nullable: true, ref: dosb9gjm5q }
+  - { id: rhrjn22iuo, name: channel, type: uuid, nullable: true, ref: yi0uf2c9tg }
+  - { id: rf3rftt13r, name: validFrom, type: datetime, nullable: true }
+  - { id: bxu1wv8v2t, name: validUntil, type: datetime, nullable: true }
+  - { id: a6o71cl4m7, name: discounted, type: "{value: Money, discount: ProductDiscount ref}", nullable: true, stored: false }

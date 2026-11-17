@@ -1,0 +1,12 @@
+id: oe3j1takyu
+parent: wyb51ibopv
+name: Get item
+method: GET
+path: /api/v2.0/companies({companyId})/items({id})
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: fhbj6r1xac, name: companyId, in: path, type: guid }
+  - { id: h0eifb8t4w, name: id, in: path, type: guid }
+responses:
+  - { status: 200, model: ohyqr35cc1 }
+  - { status: 404, description: no item with this id }

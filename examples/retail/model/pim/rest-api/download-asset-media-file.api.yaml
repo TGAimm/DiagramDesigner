@@ -1,0 +1,15 @@
+id: sr9dy1jh8v
+parent: vsn79avah8
+name: Download asset media file
+method: GET
+path: /api/rest/v1/asset-media-files/{file_code}
+auth: bearer
+params:
+  - { id: w4pekqlory, name: file_code, in: path, type: string, description: "the media_file value's data, URL-encoded" }
+responses:
+  - status: 200
+    contentType: "the file's mime type, e.g. image/jpeg"
+    fields:
+      - { id: jdugom9u8b, name: content, type: binary, from: [i27izaq2x9] }
+  - { status: 401, description: Missing or expired token }
+  - { status: 404, description: No media file with this code }

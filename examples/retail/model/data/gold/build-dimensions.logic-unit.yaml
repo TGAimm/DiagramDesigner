@@ -1,0 +1,22 @@
+id: lad06v9zq5
+parent: d0jfpet25d
+name: buildDimensions
+meta: { notebook: nb_gold_dimensions }
+inputs: []
+outputs: []
+fails:
+  - { name: unknownChannel, description: silver has a channel code dim_channel does not list }
+steps:
+  - { read: bd62nmz25d, with: versions changed since the last run, gets: customer versions }
+  - { write: yv9c2ik117, note: "MERGE on customer_sk; segment kept from the last aggregate run" }
+  - { read: ukqbycykfj, with: versions changed since the last run, gets: product versions }
+  - { write: dihqzxsjgl, note: MERGE on product_sk }
+  - { read: j9aznog0dp, gets: stores }
+  - { write: j7u638ho8v, note: "overwrite, keeping store_sk per store_key; -1 = no store" }
+  - { read: jyonhj34gj, with: distinct, gets: channel codes }
+  - if: a code is not in dim_channel
+    then:
+      - { fail: unknownChannel }
+  - { read: l9wari4ncs, with: "distinct country, postal area", gets: geographies }
+  - { write: no7a3ieq3i, note: insert new countries and postal areas }
+  - { note: "dim_date is generated once to 2035 and not touched here" }

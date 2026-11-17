@@ -1,0 +1,4 @@
+id: bpgo7ehinh
+parent: v3mahi44mt
+name: Tenant & App registrations
+links: [{ label: Graph application resource, url: https://learn.microsoft.com/graph/api/resources/application }]

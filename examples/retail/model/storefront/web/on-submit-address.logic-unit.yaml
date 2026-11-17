@@ -1,0 +1,12 @@
+id: ywocf6crvx
+parent: ogmj497j15
+name: onSubmitAddress
+inputs:
+  - { id: n9dua8gs8j, name: email, type: string, required: true }
+  - { id: uww360p9eg, name: shippingAddress, model: b8rzoiyo20, required: true }
+  - { id: p5dwqwimpz, name: billingAddress, model: b8rzoiyo20, nullable: true }
+  - { id: cjp14abvb7, name: newsletterOptIn, type: bool, required: true }
+outputs: []
+steps:
+  - { call: epg9zhnhqn, with: "email, shippingAddress, billingAddress, newsletterOptIn", gets: summary }
+  - { note: "on 400 mark the fields; else open the delivery step with summary.shippingOptions" }

@@ -1,0 +1,23 @@
+# Table 5802 Value Entry: the cost and sales amounts of item ledger entries; adjust cost adds
+# correction entries.
+id: qq1p83ss5p
+ownedBy: x2x0s3utl1
+storedIn: q43aprn5l0
+name: Value Entry
+fields:
+  - { id: bpmjvfz1p7, name: entryNo, type: int, pk: true }
+  - { id: evz11z8t90, name: itemLedgerEntryNo, type: int, required: true, ref: u0qtahb835 }
+  - { id: tvlyg1n1n1, name: itemNo, type: string, ref: yu6wdxgb8q }
+  - { id: f1sorn0u2y, name: postingDate, type: date, required: true }
+  - { id: rcc6sy109j, name: itemLedgerEntryType, type: string, from: [l3rn7c1drd] }
+  - { id: gox77fkoyy, name: documentNo, type: string }
+  - { id: gm6dp0xywv, name: locationCode, type: string, ref: gsrr00mc9x }
+  - { id: meczv6mjzl, name: valuedQuantity, type: decimal }
+  - { id: p18extlk0n, name: costAmountActual, type: decimal }
+  - { id: oboj1lf74o, name: costAmountExpected, type: decimal }
+  - { id: thngce3c4i, name: salesAmountActual, type: decimal }
+  - { id: vw7mo97qu5, name: costPostedToGL, type: decimal }
+  - { id: iwgk5c7bpx, name: adjustment, type: bool }
+indexes:
+  - { id: kenry29ycf, name: ix_value_entry_ile, fields: [evz11z8t90] }
+  - { id: ct102cuc7u, name: ix_value_entry_not_posted, fields: [tvlyg1n1n1, vw7mo97qu5] }

@@ -1,0 +1,16 @@
+id: x77t8lupv4
+ownedBy: g249oo5ag4
+storedIn: rrg5e7natg
+name: Channel
+fields:
+  - { id: yi0uf2c9tg, name: id, type: uuid, pk: true }
+  - { id: hshokmduox, name: version, type: long, required: true }
+  - { id: lscs8u8axo, name: key, type: string, required: true, constraints: ["wh-3pl for the 3PL warehouse, store-<POS store no> for each of the 12 stores, e.g. store-cph-01"] }
+  - { id: g4v9qu62uy, name: roles, type: string, many: true, constraints: ["one of: InventorySupply, ProductDistribution, OrderExport, OrderImport, Primary"] }  # GAP: enum
+  - { id: jollvxxg7w, name: name, type: LocalizedString, required: true }
+  - { id: henii5ym0b, name: description, type: LocalizedString, nullable: true }
+  - { id: l0gdv8482u, name: address, model: mrllytyew7, nullable: true }
+  - { id: au796qgf3t, name: geoLocation, type: "GeoJSON Point {coordinates: [lng, lat]}", nullable: true, constraints: [used to find the nearest click & collect store] }
+  - { id: b6omsy27uu, name: createdAt, type: datetime, required: true }
+indexes:
+  - { id: jlcc1z9pja, name: ux_channel_key, fields: [lscs8u8axo], unique: true }

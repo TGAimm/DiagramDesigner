@@ -1,0 +1,18 @@
+id: vusnhpweka
+parent: lzm2qjgaov
+name: Update inventory entry
+method: POST
+path: /{projectKey}/inventory/{id}
+auth: "bearer (manage_products)"
+params:
+  - { id: vywlebt1im, name: projectKey, in: path, type: string, description: fjeld-prod }
+  - { id: q3bpyqx51i, name: id, in: path, type: uuid }
+request:
+  fields:
+    - { id: hx0wy6wpth, name: version, type: long, required: true, to: [hu3pb2kbi4] }
+    # GAP: polymorphic update action union (addQuantity, removeQuantity, changeQuantity, setRestockableInDays, setExpectedDelivery)
+    - { id: a59no4rg8z, name: actions, type: "UpdateAction {action, quantity | restockableInDays | expectedDelivery}", many: true, required: true, to: [az9eabg78b, ws2iqpk3rv, ox57jp7kkm] }
+responses:
+  - { status: 200, model: fsdygpvm9i }
+  - { status: 404, description: ResourceNotFound }
+  - { status: 409, description: ConcurrentModification }

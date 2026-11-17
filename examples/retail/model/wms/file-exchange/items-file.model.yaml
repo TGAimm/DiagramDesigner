@@ -1,0 +1,20 @@
+# GAP: file interface (inbound ITEMS_<ts>.csv: changed items, written by Integration, read by importInboundFiles)
+id: gs2ja6jjb6
+ownedBy: tn4azsu06u
+storedIn: tn4azsu06u
+name: ITEMS_<ts>.csv
+fields:
+  - { id: tfkxcqyj4r, name: item_no, type: string, pk: true, from: [yu6wdxgb8q] }
+  - { id: ik10kssmaa, name: description, type: string, required: true, from: [hu1yuj53fb] }
+  - { id: yg0jtdq4tz, name: ean, type: string, nullable: true, from: [kxtlmorg2h], constraints: ["EAN-13"] }
+  - { id: o9vvjqnf6e, name: uom, type: string, required: true, from: [s6l1z5i5rc], constraints: ["PCS, PAIR, SET"] }
+  - { id: f7z2bnikwh, name: weight_g, type: int, required: true, from: [wcxdbwptf4], derived: "kg x 1000, rounded", constraints: [grams] }
+  - { id: xeoawf07uc, name: length_cm, type: int, nullable: true, from: [dfegcmpruh], derived: "base unit of measure's, rounded" }
+  - { id: zjgnqfmqps, name: width_cm, type: int, nullable: true, from: [tkurmtv57k], derived: "base unit of measure's, rounded" }
+  - { id: djprjnecrx, name: height_cm, type: int, nullable: true, from: [blnifv4jg3], derived: "base unit of measure's, rounded" }
+  - { id: ceg4iytirm, name: category, type: string, nullable: true, from: [u7ggrrukee] }
+  - { id: wmfmjlc1kd, name: lot_tracked, type: bool, required: true, from: [g03kcyrlbb], derived: "Y when a lot-specific tracking code is set", constraints: [Y/N in the file] }
+  - { id: jvb80jabau, name: hazardous, type: bool, required: true, from: [a6slwq674z], derived: "Y/N", constraints: [Y/N in the file] }
+  - { id: ery1oscjdb, name: country_of_origin, type: string, nullable: true, from: [ae7jaj0bua] }
+  - { id: blgk08ev0r, name: tariff_no, type: string, nullable: true, from: [fikgeby52d] }
+  - { id: ni0grlff65, name: blocked, type: bool, required: true, from: [lut5pnjkad], derived: "Y/N", constraints: [Y/N in the file] }

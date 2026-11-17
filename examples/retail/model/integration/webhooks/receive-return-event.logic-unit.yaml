@@ -1,0 +1,31 @@
+id: i7iol7wugu
+parent: ft040pevh9
+name: receiveReturnEvent
+handles: [cab3aj0v8b]
+inputs:
+  - { id: qd8bj12w0a, name: return, model: dntnqyedil, required: true }
+  - { id: g69qocz3b9, name: event, type: string, required: true }
+outputs: []
+fails:
+  - { name: badSignature, description: X-Fjeld-Signature does not match (401) }
+  - { name: stale, description: "updated_at is older than the last status seen (409)" }
+steps:
+  - if: signature wrong
+    then:
+      - { fail: badSignature }
+  - { read: nmk8vxeclz, with: "service:<return.id>:<status>", gets: key }
+  - if: key exists
+    then:
+      - { note: "answer 202" }
+    else:
+      - { write: nmk8vxeclz, note: done }
+      - if: event is return.created
+        then:
+          - { call: qgcqi7t2ku, with: "ReturnCreatedEvent from the return and its items, channel portal" }
+        else:
+          - { read: r1iwd1t2bt, with: return.rma_number, gets: "ids, last updatedAt" }
+          - if: return.updated_at older than the row
+            then:
+              - { fail: stale }
+          - { call: qejqh05qy8, with: return }
+      - { write: yguluhbf6w, note: "processed, sourceSystem service, businessKey rma number" }

@@ -1,0 +1,9 @@
+# One association type of a product or product model: X_SELL, UPSELL, SUBSTITUTION.
+id: yaxzl3embi
+ownedBy: tuvm3c6m5l
+name: Product Association
+fields:
+  - { id: j2mscfhv1w, name: associationType, type: string, required: true, ref: lbon5jq95g }
+  - { id: v46qtfxg2z, name: products, type: uuid, many: true, ref: gziztcdf03 }
+  - { id: kmntfez71w, name: product_models, type: string, many: true, ref: bjqn3xm3lr }
+  - { id: yim47g6biu, name: groups, type: string, many: true }

@@ -1,0 +1,14 @@
+id: i71o1m31tr
+parent: t6al4kcu16
+name: notifyReturnStatus
+inputs:
+  - { id: w82s1u5t2v, name: return, model: dntnqyedil, required: true }
+outputs: []
+steps:
+  - if: "status is label_created, received or refunded"
+    then:
+      - { note: "e-mail the customer in the order's locale (label attached; parcel received; refund on its way)" }
+  - if: zendesk_ticket_id is set
+    then:
+      - { call: lnhwwacvj0, with: "internal comment with the new status; status solved when refunded or rejected" }
+  - { call: cab3aj0v8b, with: "the return, X-Fjeld-Event return.status_changed (Integration: on inspected, ERP credit memo and Stripe refund; CRM order history return status)" }

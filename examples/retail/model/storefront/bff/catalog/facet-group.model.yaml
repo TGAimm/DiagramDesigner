@@ -1,0 +1,10 @@
+id: jcf2mhioag
+ownedBy: lnizoffy7m
+name: Facet Group
+fields:
+  - { id: v28kwzrwdr, name: attribute, type: string, required: true, from: [k2a7o9ojdw], derived: one group per asked facet }
+  - { id: lmp31c20aq, name: label, type: string, required: true, constraints: ["translated: Brand, Colour, Size, Category, Price"] }
+  - { id: c3dlangmys, name: kind, type: string, required: true, constraints: ["one of: list, hierarchy, range"] }  # GAP: enum
+  - { id: qhm7zefyw0, name: values, model: szsrjoq7ot, many: true }
+  - { id: ajo0u12nz6, name: min, type: decimal, nullable: true, from: [smcw5ufiqr], derived: range only }
+  - { id: x9zh9gclhs, name: max, type: decimal, nullable: true, from: [smcw5ufiqr], derived: range only }

@@ -1,0 +1,24 @@
+id: txgwjmimse
+parent: myr8ju3xsr
+name: sendOrderToWms
+inputs:
+  - { id: de2w7k6rod, name: salesOrder, model: j4uwq30pr1, required: true }
+outputs: []
+fails:
+  - { name: rejectedByWms, description: "422 from the WMS API: unknown item or an address the 3PL cannot ship to" }
+steps:
+  - { note: "map to WmsOrderDraft: only Item lines at location CENTRAL" }
+  - flag: exafkh0xzs
+    on:
+      - { call: r11ikjpjzs, with: "WmsOrderDraft as the outbound order; orderNumber = ERP order no.", gets: outbound order }
+      - if: 409 orderNumber already received
+        then:
+          - { note: "a resend: fine" }
+      - if: 422
+        then:
+          - { write: wlmvgl2qp8, note: "targetSystem wms, retryable false" }
+          - { fail: rejectedByWms }
+      - { write: n8ujyi0o8a, note: "wmsOrderId, status sent_to_wms" }
+    off:
+      - { call: fcigjldhh4, with: "WmsOrderDraft; MessageId = ERP order no." }
+      - { write: n8ujyi0o8a, note: "status sent_to_wms (in the next ORDERS file)" }

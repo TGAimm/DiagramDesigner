@@ -1,0 +1,11 @@
+id: tl3daivhbw
+parent: pbv5f8a0tz
+name: Retrieve a Checkout Session
+method: GET
+path: /v1/checkout/sessions/{session}
+auth: bearer (secret key)
+params:
+  - { id: bbwx0z4fte, name: session, in: path, type: string }
+responses:
+  - { status: 200, model: jlokrbulgw }
+  - { status: 404, model: pwpsr0fyli, description: resource_missing }

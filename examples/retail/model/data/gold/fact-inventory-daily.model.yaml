@@ -1,0 +1,18 @@
+# Grain: one row per day, product and location (periodic snapshot; semi-additive over time).
+# GAP: semi-additive measure - on hand sums across products and locations but not across days;
+# the column cannot say so, only the measure that reads it.
+id: zbqliu1qyj
+ownedBy: d0jfpet25d
+storedIn: d0jfpet25d
+name: fact_inventory_daily
+fields:
+  - { id: ep4sogb1b5, name: date_key, type: int, pk: true, ref: bgzdmszmqm, from: [ik8j05vo2m] }
+  - { id: nvrkh5l4y9, name: product_sk, type: bigint, pk: true, ref: jqish8v510, from: [m81agd62a1, ik8j05vo2m, jqish8v510, r91vbltkz1, uhjdwtppni], derived: version valid on the day }
+  - { id: ivbhqemhrc, name: location_code, type: string, pk: true, from: [yrbcff3ejc] }
+  - { id: y783zih9el, name: store_sk, type: int, required: true, ref: b9k4oabttz, from: [kw8mp35uyx, b9k4oabttz], derived: "-1 for the 3PL warehouse" }
+  - { id: tcl0ezbkg6, name: qty_on_hand, type: decimal, required: true, from: [nbt6jzvjtw] }
+  - { id: iolgciibqg, name: qty_available, type: decimal, required: true, from: [kv3z05120s] }
+  - { id: c6mxi60qzr, name: qty_allocated, type: decimal, required: true, from: [rsx524spss] }
+  - { id: bghc54j9yq, name: qty_blocked, type: decimal, required: true, from: [c6rkg2bddq] }
+  - { id: alkuatmg6f, name: stock_value_dkk, type: decimal, required: true, from: [nbt6jzvjtw, ezm64seyq2], derived: on hand * unit cost of the day's version }
+  - { id: r2e6tfq1k1, name: erp_variance_qty, type: decimal, nullable: true, from: [nbt6jzvjtw, bxp75qhwyv], derived: "WMS - ERP (warehouse rows only)" }

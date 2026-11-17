@@ -1,0 +1,11 @@
+id: hnssihbdth
+parent: a2x6k1ux7z
+name: Start payment (Payment Element)
+method: POST
+path: /api/checkout/payment-intent
+auth: session cookie fj_sid
+when: { flag: p9sg006xy9, is: on }
+responses:
+  - { status: 200, model: m9jojz23qq }
+  - { status: 409, description: "the checkout isn't complete, or the cart changed" }
+  - { status: 502, description: Stripe did not answer }

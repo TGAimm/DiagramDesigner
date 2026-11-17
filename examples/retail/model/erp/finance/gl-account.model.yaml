@@ -1,0 +1,16 @@
+# Table 15 G/L Account
+id: bilssu6sxi
+ownedBy: gob5rrh7wh
+storedIn: q43aprn5l0
+name: G/L Account
+fields:
+  - { id: ro270d71oh, name: no, type: string, pk: true, constraints: ["e.g. 1010 Webshop sales DK, 5620 Stripe clearing, 7710 Stripe fees"] }
+  - { id: vhnctde002, name: systemId, type: guid, required: true }
+  - { id: oqqlofe1ax, name: name, type: string, required: true }
+  - { id: akytw2n6h6, name: accountType, type: string, constraints: ["one of: Posting, Heading, Total, Begin-Total, End-Total"] }   # GAP: enum
+  - { id: y5226a8og7, name: incomeBalance, type: string, constraints: ["one of: Income Statement, Balance Sheet"] }   # GAP: enum
+  - { id: nr3p95kxfi, name: accountCategory, type: string, constraints: ["one of: Assets, Liabilities, Equity, Income, Cost of Goods Sold, Expense"] }   # GAP: enum
+  - { id: bce03c221y, name: directPosting, type: bool }
+  - { id: qtj1fhv3xx, name: blocked, type: bool }
+  - { id: zlnl4rpop9, name: balance, type: decimal, stored: false, from: [gqbwwthvko], derived: "FlowField: sum of G/L entries within Date Filter" }
+  - { id: gib92o5bw4, name: systemModifiedAt, type: datetime, required: true }

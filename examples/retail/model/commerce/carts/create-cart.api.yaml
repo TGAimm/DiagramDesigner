@@ -1,0 +1,23 @@
+id: q4cr80vwtm
+parent: b1ptklldw3
+name: Create cart
+method: POST
+path: /{projectKey}/carts
+auth: "bearer (manage_orders)"
+params:
+  - { id: yaxul39dju, name: projectKey, in: path, type: string, description: fjeld-prod }
+request:
+  fields:
+    - { id: i2m0xleia4, name: currency, type: string, required: true, description: "DKK, SEK, NOK or EUR", to: [n8mwhpvdh9] }
+    - { id: n6hw0bp2nw, name: country, type: string, to: [q352ftjm2k] }
+    - { id: h7oa37mc7j, name: store, type: "KeyReference {key}", to: [vkpb2ika6w] }
+    - { id: lfxeyimkex, name: customerId, type: uuid, to: [t7o0kf74is] }
+    - { id: hlv9q5d27e, name: customerEmail, type: string, to: [gci0aev7hj] }
+    - { id: ot3h9oeoge, name: anonymousId, type: string, to: [t5ctabsu6j] }
+    - { id: cl39sojqy8, name: locale, type: string, to: [qeov4vu4az] }
+    - { id: o8dqzmave9, name: inventoryMode, type: string, description: Fjeld sends ReserveOnOrder, to: [qay8apurvi] }
+    - { id: tl5q3zo9s6, name: lineItems, type: "{sku, quantity, supplyChannel}", many: true, to: [mfm2nwfwft, ae7tr09nmb, k1q2bof4we] }
+    - { id: tgswbgvupl, name: shippingAddress, model: mrllytyew7 }
+responses:
+  - { status: 201, model: w4i82sypi6 }
+  - { status: 400, description: "InvalidField, MatchingPriceNotFound, ReferencedResourceNotFound" }

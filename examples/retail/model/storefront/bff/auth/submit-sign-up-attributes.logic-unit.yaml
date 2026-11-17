@@ -1,0 +1,34 @@
+# Identity calls this while a shopper signs up, before the user is created: the BFF makes (or
+# finds) the Commerce customer so the user is born with extension_commerceCustomerId.
+id: vw1fvdxk6d
+parent: vkdx3tfwhz
+name: submitSignUpAttributes
+handles: [yar30cdvas]
+inputs:
+  - { id: abrbn8xq9b, name: request, model: q0ovpwyphr, required: true }
+outputs:
+  - { id: iz3y6av8cd, name: response, model: a4jb89tn3s }
+fails:
+  - { name: unauthorized, description: "401: the bearer token isn't from the tenant's Authentication Events app" }
+steps:
+  - { call: gqgvy92yr4, with: "tenant (cached 24 h)", gets: keys }
+  - { note: "verify the bearer token: signature, iss = the tenant, aud = BFF app id, azp = 99045fe1-7639-4a75-9d4a-577b6ca3810f" }
+  - if: the token doesn't verify
+    then:
+      - { fail: unauthorized }
+  - if: the email domain is on the disposable-email list
+    then:
+      - { note: "answer showValidationError on email" }
+      - { return: response }
+  - { call: ekgirua9an, with: "client_credentials of the BFF API client (cached)", gets: serverToken }
+  - { call: gthq1faetp, with: "where lowercaseEmail = the email", gets: existing }
+  - if: existing customer
+    then:
+      - { note: "reuse it (a store or loyalty customer signing up online)" }
+    else:
+      - { call: x17b80t6tq, with: "email, firstName, lastName, authenticationMode ExternalAuth, isEmailVerified true, locale from client.locale, stores [the country store]", gets: customer }
+      - if: 400 DuplicateField (a parallel sign-up)
+        then:
+          - { call: gthq1faetp, with: "where lowercaseEmail = the email", gets: existing }
+  - { note: "answer modifyAttributeValues: extension_commerceCustomerId = customer.id" }
+  - { return: response }

@@ -1,0 +1,15 @@
+id: qejqh05qy8
+parent: sicmj00m5m
+name: onReturnStatusChanged
+inputs:
+  - { id: oq82pu7jm8, name: return, model: dntnqyedil, required: true }
+outputs: []
+steps:
+  - if: return.status is inspected
+    then:
+      - { call: sl6980o0s2, with: "rmaNumber; items whose inspection_result is not rejected" }
+  - if: return.status is rejected
+    then:
+      - { read: r1iwd1t2bt, with: return.rma_number, gets: ids }
+      - { call: xdgvgxhc6p, with: "version, setReturnPaymentState NotRefunded per item (the 3PL sends rejected goods back to the customer)", gets: order }
+  - { call: rni3b5uac0, with: "fjeld_ordernumber = return.order_number; fjeld_returnstatus = return.status", gets: order history }

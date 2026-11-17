@@ -1,0 +1,23 @@
+# GAP: polymorphic update action union: one model with the union of all payload fields, each action uses a few
+id: qn0y1hkw8b
+ownedBy: f6x7dhgzlz
+name: Order Update Action
+fields:
+  - { id: cs6mlitkng, name: action, type: string, required: true, constraints: ["one of: changeOrderState, changeShipmentState, changePaymentState, addDelivery, addParcelToDelivery, setParcelTrackingData, addReturnInfo, setReturnShipmentState, setReturnPaymentState, setCustomField, addPayment, setOrderNumber"] }  # GAP: enum
+  - { id: g77sqa5whq, name: orderState, type: string, nullable: true, constraints: [changeOrderState] }
+  - { id: f1cdh61fqc, name: shipmentState, type: string, nullable: true, constraints: [changeShipmentState, setReturnShipmentState] }
+  - { id: f62qh8wnbu, name: paymentState, type: string, nullable: true, constraints: [changePaymentState, setReturnPaymentState] }
+  - { id: u5x57bab0e, name: deliveryId, type: uuid, nullable: true, ref: ic7xjch277 }
+  - { id: l1vcdpcq03, name: deliveryKey, type: string, nullable: true }
+  - { id: p4jc3poy6u, name: items, type: "{id: lineItemId, quantity}", many: true }
+  - { id: jo4mvqubx3, name: parcels, model: fdebp4wyz9, many: true }
+  - { id: glmjrvbiuc, name: parcelId, type: uuid, nullable: true, ref: f8s4zumgy1 }
+  - { id: pwqieeg5fo, name: trackingData, model: en5fzkz9lg, nullable: true }
+  - { id: z6x3ynbyfz, name: returnItems, model: hxgepxoakp, many: true }
+  - { id: iwjti4oxcg, name: returnTrackingId, type: string, nullable: true }
+  - { id: z5bum55bh7, name: returnDate, type: datetime, nullable: true }
+  - { id: dgaoasb0rq, name: returnItemId, type: uuid, nullable: true, ref: xwv3uj0wub }
+  - { id: eq8roijk6y, name: name, type: string, nullable: true, constraints: ["setCustomField: e.g. erpOrderNo"] }
+  - { id: e9bx9j9lwz, name: value, type: json, nullable: true }
+  - { id: bzwn63h54i, name: payment, type: uuid, nullable: true, ref: qqf0oorxab }
+  - { id: a7crlytlzv, name: orderNumber, type: string, nullable: true }

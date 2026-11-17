@@ -1,0 +1,11 @@
+id: bgted01bpg
+parent: egb813hfbr
+name: Retrieve an event
+method: GET
+path: /v1/events/{id}
+auth: bearer (secret key)
+params:
+  - { id: y2baqbqdpu, name: id, in: path, type: string }
+responses:
+  - { status: 200, model: mumhsnhnkb }
+  - { status: 404, model: pwpsr0fyli, description: "resource_missing (older than 30 days)" }

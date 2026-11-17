@@ -1,0 +1,13 @@
+# GAP: pagination envelope.
+id: aga94r3dpu
+parent: vsn79avah8
+name: List channels
+method: GET
+path: /api/rest/v1/channels
+auth: bearer
+params:
+  - { id: rcwpkmomw3, name: page, in: query, type: int, required: false }
+  - { id: qrp52dtkop, name: limit, in: query, type: int, required: false }
+responses:
+  - { status: 200, model: wnhy05z81c, many: true }
+  - { status: 401, description: Missing or expired token }

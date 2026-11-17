@@ -1,0 +1,40 @@
+# Started at goods-in when the receiver closes a delivery on the RF handheld.
+id: fqizmw355g
+parent: p6h0yiqcjm
+name: receiveInbound
+inputs:
+  - { id: b09iqyv7kc, name: asnNo, type: string, required: true }
+  - { id: l0j6xbiy3f, name: lines, type: "{ean, qty, qtyDamaged, lotNo}", many: true, required: true, description: one per item counted }
+  - { id: jbkpypnx6s, name: receiverId, type: string, required: true }
+outputs:
+  - { id: smh87r2obi, name: receipts, model: t3mridx182, many: true }
+fails:
+  - { name: unknownAsn, description: no open ASN with this number }
+  - { name: lotRequired, description: lot-tracked item counted without a lot no. }
+steps:
+  - { read: rqh29xdiae, with: asnNo, gets: asn }
+  - if: no asn, or asn closed
+    then:
+      - { fail: unknownAsn }
+  - each: counted line
+    do:
+      - { read: qn8wrhmtu1, with: ean, gets: item }
+      - if: item.lotTracked and no lotNo
+        then:
+          - { fail: lotRequired }
+      - { read: zdgllbeptr, with: "asn, item", gets: asn line }
+      - if: no asn line
+        then:
+          - { note: "unannounced item: received to the qc zone, flagged for the client" }
+      - { read: emtjsw8emx, with: "item's pick bin, else first free reserve bin (hazmat zone for hazardous items)", gets: putaway bin }
+      - { write: t3mridx182, note: insert }
+      - { write: cyvap5gucu, note: "qtyOnHand + (qty - qtyDamaged) in the putaway bin, status available" }
+      - if: qtyDamaged > 0
+        then:
+          - { write: cyvap5gucu, note: "qtyOnHand + qtyDamaged in a qc bin, status damaged" }
+      - { write: slboeel66i, note: "reasonCode receipt, referenceNo asnNo" }
+      - { write: lzsuhmdvcx }
+  - { write: dghg7wytkh, note: "received when every line has qtyReceived >= qtyExpected, else receiving" }
+  - { write: mvm4amf1a2, note: "one row per receipt, file RECEIPT_<ts>.csv in /out" }
+  - { write: guesxrzda9 }
+  - { return: receipts }

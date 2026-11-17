@@ -1,0 +1,6 @@
+id: vuo50id8ln
+parent: v4gnz1sgts
+name: Balance & Payouts
+links:
+  - { label: Balance transactions API, url: https://docs.stripe.com/api/balance_transactions }
+  - { label: Payouts API, url: https://docs.stripe.com/api/payouts }

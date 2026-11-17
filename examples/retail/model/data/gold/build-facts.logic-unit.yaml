@@ -1,0 +1,22 @@
+id: p1h61k7lab
+parent: d0jfpet25d
+name: buildFacts
+meta: { notebook: nb_gold_facts }
+inputs: []
+outputs: []
+steps:
+  - { read: g8hvlajkgw, with: "orders changed in the last 35 days", gets: lines }
+  - { read: l9wari4ncs, with: those orders, gets: orders }
+  - { read: yv9c2ik117, with: "customer_key, valid_from <= ordered_at < valid_to", gets: customer_sk }
+  - { read: dihqzxsjgl, with: "sku, valid at ordered_at", gets: product_sk }
+  - { read: fv80k9knt1, with: "currency, latest startingDate <= order date", gets: rate }
+  - { write: jogoyx9y7y, note: "replace the partitions (by date_key) the changed orders fall in" }
+  - { read: lf52toylkg, with: changed since the last run, gets: returns }
+  - { write: tb9l4es1im, note: MERGE on return_key }
+  - { read: mh10ze19ky, with: changed since the last run, gets: payments }
+  - { write: hpko1dlz2s, note: MERGE on payment_key }
+  - { read: zqwb4ovyun, with: today, gets: stock }
+  - { write: zbqliu1qyj, note: "append today's partition" }
+  - { read: htkt4tsw3g, with: "_loaded_at since the last run", gets: events }
+  - { read: i0coshp5wa, with: "source_system klaviyo", gets: customer keys }
+  - { write: jfxjfy6y2t, note: MERGE on event_id }

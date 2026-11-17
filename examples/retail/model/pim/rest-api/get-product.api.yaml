@@ -1,0 +1,14 @@
+id: apypxitd32
+parent: vsn79avah8
+name: Get product
+method: GET
+path: /api/rest/v1/products-uuid/{uuid}
+auth: bearer
+params:
+  - { id: h369v9t66v, name: uuid, in: path, type: uuid }
+  - { id: qnuq1vkn41, name: with_attribute_options, in: query, type: bool, required: false }
+  - { id: fmj4a2dwgi, name: with_completenesses, in: query, type: bool, required: false }
+responses:
+  - { status: 200, model: qitb6ezis6 }
+  - { status: 401, description: Missing or expired token }
+  - { status: 404, description: No product with this uuid }

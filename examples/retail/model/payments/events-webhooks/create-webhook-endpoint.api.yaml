@@ -1,0 +1,16 @@
+id: gv3n39wb9d
+parent: egb813hfbr
+name: Create a webhook endpoint
+method: POST
+path: /v1/webhook_endpoints
+auth: bearer (secret key)
+request:
+  contentType: application/x-www-form-urlencoded
+  fields:
+    - { id: dk28zzefv4, name: url, type: string, required: true, to: [nacld92z4a] }
+    - { id: bo3s2qcc2u, name: "enabled_events[]", type: string, many: true, required: true, to: [qxmqtauo2h] }
+    - { id: q6snm03e8a, name: api_version, type: string, to: [ed7nfi8b58] }
+    - { id: nvs44new7w, name: description, type: string, to: [x9r1eamkwx] }
+responses:
+  - { status: 200, model: eap9orpsna, description: Created; the only response carrying secret }
+  - { status: 400, model: pwpsr0fyli, description: "url_invalid, too many endpoints (16)" }

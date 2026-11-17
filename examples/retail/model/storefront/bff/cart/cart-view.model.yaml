@@ -1,0 +1,16 @@
+id: lq4foj9308
+ownedBy: jzcljy1080
+name: Cart View
+fields:
+  - { id: s5b38jhz1s, name: id, type: uuid, required: true, from: [zin8vxu1v5] }
+  - { id: z3we3t5e2y, name: version, type: long, required: true, from: [q4kzs22wi1] }
+  - { id: jcdefgtmb3, name: lines, model: ibfl3qyi7j, many: true, from: [q63yvujwgi] }
+  - { id: x6o80nea5r, name: itemCount, type: int, required: true, from: [ae7tr09nmb], derived: sum of quantities }
+  - { id: z25ufmasbx, name: subtotal, model: nmsbq15351, required: true, from: [mh5uizwxp4], derived: sum of line totals }
+  - { id: hone8mu1ig, name: shipping, model: nmsbq15351, nullable: true, from: [j6aeqj954u] }
+  - { id: ofqtadefrq, name: freeShippingRemaining, model: nmsbq15351, nullable: true, from: [k3nskt5l62, n05x4zxsy9], derived: "freeAbove of the default method minus the total; null once reached" }
+  - { id: tvv527kja6, name: discountCodes, type: "{code, state}", many: true, from: [dj7i20mwas, ct25r6vwlx], derived: "code text looked up by id" }
+  - { id: js0gywcjn2, name: total, model: nmsbq15351, required: true, from: [k3nskt5l62] }
+  - { id: a60bjmlxh2, name: vat, model: nmsbq15351, nullable: true, from: [o7bjoxmffq] }
+  - { id: ildj28g45l, name: country, type: string, required: true, from: [q352ftjm2k] }
+  - { id: tdxry2atq5, name: hasClickAndCollect, type: bool, required: true, from: [k1q2bof4we], derived: "a line's supply channel is a store" }

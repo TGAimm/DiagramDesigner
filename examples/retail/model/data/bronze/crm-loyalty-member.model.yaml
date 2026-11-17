@@ -1,0 +1,18 @@
+id: atzgowyr84
+ownedBy: ar9pfoadj7
+storedIn: ar9pfoadj7
+name: crm_loyalty_member
+fields:
+  - { id: aqbi7cbuyi, name: fjeld_loyaltymemberid, type: uuid, pk: true, from: [iv8kumnam6] }
+  - { id: m5k8j4nzpj, name: fjeld_membernumber, type: string, from: [kphnsa6zxo] }
+  - { id: klcxf6ik13, name: fjeld_contactid, type: uuid, ref: noqzl76io3, from: [lts0cl73lp] }
+  - { id: lawxatnw2z, name: fjeld_tier, type: string, from: [a5mmzwangy] }
+  - { id: sh6w7l07oi, name: fjeld_pointsbalance, type: int, from: [l2dfuhplmo] }
+  - { id: eka5mvpw2o, name: fjeld_joinedon, type: date, from: [pfswupmin7] }
+  - { id: jlmwrs1g6c, name: statecode, type: string, from: [x1kxrmgl7g] }
+  - { id: ud4xhh47xp, name: modifiedon, type: datetime, from: [ctmdvbgrc7] }
+  - { id: urpfhsmc79, name: _loaded_at, type: datetime, required: true }
+  - { id: rpvmg2hn87, name: _source, type: string, required: true, constraints: ["crm/fjeld_loyaltymembers"] }
+  - { id: kgrzmho196, name: _batch_id, type: string, required: true }
+indexes:
+  - { id: lc2nb9clfp, name: ux_loyalty_member_number, fields: [m5k8j4nzpj], unique: true }

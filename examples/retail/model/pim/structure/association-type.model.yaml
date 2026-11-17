@@ -1,0 +1,10 @@
+# Fjeld: X_SELL, UPSELL, SUBSTITUTION, PACK (quantified, for bundles).
+id: f5u84l584x
+ownedBy: mt2wjcx7nj
+storedIn: r1xvgi7bie
+name: Association Type
+fields:
+  - { id: lbon5jq95g, name: code, type: string, pk: true, required: true }
+  - { id: r5p7abz2ph, name: is_quantified, type: bool, constraints: [immutable] }
+  - { id: h9jaibcgcz, name: is_two_way, type: bool, constraints: [immutable] }
+  - { id: ip0jq6rmtc, name: labels, type: "map<locale, string>" }

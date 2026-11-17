@@ -1,0 +1,25 @@
+id: d0gklh222h
+ownedBy: ar9pfoadj7
+storedIn: ar9pfoadj7
+name: commerce_customer
+tags: [pii]
+fields:
+  - { id: nseajx30tk, name: id, type: uuid, pk: true, from: [zhf6a5r56z] }
+  - { id: f1emnopkg4, name: customerNumber, type: string, nullable: true, from: [odn7tdqw8z] }
+  - { id: wr4ol72kbo, name: externalId, type: string, nullable: true, from: [c558p8igta] } # Entra External ID object id
+  - { id: v0i6r8ufpb, name: email, type: string, from: [ehf2zs4sc2] }
+  - { id: zijmnd3eto, name: firstName, type: string, nullable: true, from: [t3mf7j2rez] }
+  - { id: zo3ze58fq7, name: lastName, type: string, nullable: true, from: [q0hnw17jwj] }
+  - { id: xjnbp4u1ms, name: dateOfBirth, type: date, nullable: true, from: [x7n98o1bcz] }
+  - { id: wwf3pizmoe, name: customerGroup, type: uuid, nullable: true, from: [wzod3l5teg] }
+  - { id: p876r0jvqg, name: isEmailVerified, type: bool, from: [zfwig3x4mh] }
+  - { id: iiyws1qibr, name: locale, type: string, nullable: true, from: [rtt1jqp5f3] }
+  - { id: cn8zxum2xw, name: default_country, type: string, nullable: true, from: [y7vf6ytrw2, il17i6fjed, czbauzymbt], derived: "country of the address whose id is defaultShippingAddressId" }
+  - { id: ftq48zst6b, name: default_postal_code, type: string, nullable: true, from: [y7vf6ytrw2, il17i6fjed, qromjahmgy], derived: "postalCode of the default shipping address" }
+  - { id: s88r25uj26, name: createdAt, type: datetime, from: [bsxztnetv1] }
+  - { id: wnmd56q6tz, name: lastModifiedAt, type: datetime, from: [bi199ydzlj] }
+  - { id: e65hb5njib, name: _loaded_at, type: datetime, required: true }
+  - { id: s3rcqmi7ce, name: _source, type: string, required: true, constraints: ["commerce/customers"] }
+  - { id: uy1sh3zhb7, name: _batch_id, type: string, required: true }
+indexes:
+  - { id: tffsb99o14, name: ix_commerce_customer_email, fields: [v0i6r8ufpb] }

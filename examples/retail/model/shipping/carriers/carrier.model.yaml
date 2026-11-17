@@ -1,0 +1,13 @@
+id: vy1t0d26e3
+ownedBy: ztyvug6ivb
+storedIn: t99y8h5mfb
+name: Carrier
+fields:
+  - { id: vkxfyqy373, name: code, type: string, pk: true, constraints: ["one of: postnord, gls, bring, dao, dhl_express"] }   # GAP: enum
+  - { id: gfra1o7foi, name: name, type: string, required: true }
+  - { id: botmcj0f5g, name: countries, type: string, many: true, constraints: ["ISO 3166-1 alpha-2 it delivers from"] }
+  - { id: xk7vemgwnh, name: supports_pickup_points, type: bool }
+  - { id: bba0f3zk8u, name: supports_returns, type: bool }
+  - { id: bp5o0wx0y6, name: own_agreement, type: bool, constraints: ["Fjeld books on its own PostNord and GLS customer numbers"] }
+  - { id: su1t67164d, name: customer_number, type: string, nullable: true }
+  - { id: yz2uyvpmhl, name: active, type: bool }

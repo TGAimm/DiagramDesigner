@@ -1,0 +1,17 @@
+# GAP: triggered by subscription price-stock-changed/pos
+# Flow 7: ERP stock per store location > POS store stock; store price changes during the day.
+id: jnmhn809ys
+parent: nlc4zljjz8
+name: applyPriceStockToPos
+inputs:
+  - { id: c5w6vpji0u, name: event, model: j3qk5xyr4i, required: true }
+outputs: []
+steps:
+  - { note: "subscription price-stock-changed/pos (filter locationCode LIKE 'S%' OR priceListCode LIKE 'STORE-%')" }
+  - if: event.kind is stock
+    then:
+      - { call: eyk06ixi2l, with: "cached 1 h: store by erpLocationCode", gets: store }
+      - { call: xkx47o5yrw, with: "storeId, sku, qtyOnHand = inventory (ERP is the truth for a store's stock after transfers and counts)", gets: stock }
+    else:
+      - { call: xscci9evvo, with: "sku with the changed price (removed: back to the list price)", gets: result }
+  - { write: yguluhbf6w, note: "processed, targetSystem pos" }

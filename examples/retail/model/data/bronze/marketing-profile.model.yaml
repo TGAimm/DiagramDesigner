@@ -1,0 +1,20 @@
+id: v82y2iuse8
+ownedBy: ar9pfoadj7
+storedIn: ar9pfoadj7
+name: marketing_profile
+tags: [pii]
+fields:
+  - { id: ncwzh853ks, name: id, type: string, pk: true, from: [c6lytpwzen] }
+  - { id: vkzle93mhm, name: email, type: string, nullable: true, from: [twxat301yi] }
+  - { id: i2cbnqcv9d, name: external_id, type: string, nullable: true, from: [zctmivg3ti] } # Commerce customer id when Integration created the profile
+  - { id: joa51snyc5, name: first_name, type: string, nullable: true, from: [grqe6j9ww3] }
+  - { id: nha886v0o1, name: last_name, type: string, nullable: true, from: [e1sejzfw72] }
+  - { id: e3t4inz9t4, name: locale, type: string, nullable: true, from: [wcudflqpqm] }
+  - { id: mg3zeuqcku, name: location_country, type: string, nullable: true, from: [ogeygk4p0a] }
+  - { id: umnqqmep3u, name: email_marketing_consent, type: string, nullable: true, from: [xvgd87jdtj, bcagv4gekq], derived: subscriptions.email.marketing.consent }
+  - { id: kc0vd7gggv, name: created, type: datetime, from: [r8b3k8jugd] }
+  - { id: mlfz7w3cce, name: updated, type: datetime, from: [owhhwgk0g8] }
+  - { id: tz117pyxoh, name: last_event_date, type: datetime, nullable: true, from: [zeulbm1dyr] }
+  - { id: l62dtj8s79, name: _loaded_at, type: datetime, required: true }
+  - { id: ezsbawf41b, name: _source, type: string, required: true, constraints: ["marketing/profiles"] }
+  - { id: zzfhm5pn6i, name: _batch_id, type: string, required: true }

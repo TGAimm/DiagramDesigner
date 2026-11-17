@@ -1,0 +1,20 @@
+id: q0ovpwyphr
+ownedBy: dsa7av53v5
+name: AttributeCollectionSubmitRequest
+tags: [pii]
+fields:
+  - { id: efu7l8hs4z, name: type, type: string, required: true, constraints: ["microsoft.graph.authenticationEvent.attributeCollectionSubmit"] }
+  - { id: v3mbpm39u3, name: data.tenantId, type: uuid, required: true, from: [rknpht5c6k] }
+  - { id: ph12xw37d9, name: data.customAuthenticationExtensionId, type: uuid, required: true, from: [hrhb3m8hil] }
+  - { id: s2rcbuim4e, name: data.authenticationContext.correlationId, type: uuid, required: true }
+  - { id: g1clegzhbn, name: data.authenticationContext.clientServicePrincipal.appId, type: string, required: true, from: [rii92gdhxd] }
+  - { id: ozbc727hkp, name: data.authenticationContext.client.locale, type: string, nullable: true }
+  - { id: kq2k5onoyc, name: data.authenticationContext.client.ip, type: string, nullable: true }
+  # GAP: attributes come as a map of { value, attributeType } keyed by attribute name: written as one dotted field per attribute Fjeld collects
+  - { id: eoh1y4b8yr, name: data.userSignUpInfo.attributes.email.value, type: string, required: true }
+  - { id: x542jk2379, name: data.userSignUpInfo.attributes.displayName.value, type: string, nullable: true }
+  - { id: a1zgv3xohr, name: data.userSignUpInfo.attributes.givenName.value, type: string, nullable: true }
+  - { id: xz77cdx8oq, name: data.userSignUpInfo.attributes.surname.value, type: string, nullable: true }
+  - { id: xjcs2gbxf7, name: data.userSignUpInfo.attributes.country.value, type: string, nullable: true }
+  - { id: u7ehl2wg9z, name: "data.userSignUpInfo.attributes.extension_{extAppId}_marketingConsent.value", type: bool, nullable: true }
+  - { id: enftxnlczj, name: data.userSignUpInfo.identities, model: u24xst6unw, many: true, required: true }

@@ -1,0 +1,13 @@
+id: u2sm9s43t6
+ownedBy: wh40r2i41o
+storedIn: kqjludw0r4
+name: duplicaterulecondition
+fields:
+  - { id: jknclyzhqo, name: duplicateruleconditionid, type: uuid, pk: true }
+  - { id: s6pg9il6sq, name: regardingobjectid, type: uuid, required: true, ref: ebqcdh4t1d }
+  - { id: irl0t8mlwd, name: baseattributename, type: string, required: true }
+  - { id: av2nzencws, name: matchingattributename, type: string, required: true }
+  # GAP: enum
+  - { id: jv5wo567np, name: operatorcode, type: string, required: true, constraints: ["one of: ExactMatch, SameFirstCharacters, SameLastCharacters, SameDate, SameDateAndTime"] }
+  - { id: caw8mv9yxd, name: operatorparam, type: int, nullable: true }
+  - { id: y2xhy91b3b, name: ignoreblankvalues, type: bool, required: true }

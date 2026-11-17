@@ -1,0 +1,23 @@
+id: b07aw12lvy
+parent: woc2py521s
+name: Create product
+method: POST
+path: /{projectKey}/products
+auth: "bearer (manage_products)"
+params:
+  - { id: pgg0i4834t, name: projectKey, in: path, type: string, description: fjeld-prod }
+request:
+  fields:
+    - { id: ny9px06cgm, name: key, type: string, to: [y0vgavtgc6] }
+    - { id: izwcux1w95, name: productType, type: "ResourceIdentifier {key}", required: true, to: [wp8uvw4o9v] }
+    - { id: neuuzrnil7, name: name, type: LocalizedString, required: true, to: [huyilro2b9] }
+    - { id: cmwowzl8gb, name: slug, type: LocalizedString, required: true, to: [gw8rv1dzbo] }
+    - { id: yshe4f0i6e, name: description, type: LocalizedString, to: [v6uo25nnmi] }
+    - { id: v091jiye9j, name: categories, type: "ResourceIdentifier {key}", many: true, to: [jk1nv0r5mp] }
+    - { id: d9yk7g4286, name: masterVariant, model: zey11c3zfk }
+    - { id: rb2ad8trv5, name: variants, model: zey11c3zfk, many: true }
+    - { id: arbi7uefsc, name: taxCategory, type: "ResourceIdentifier {key}", to: [hfjcbtj15y] }
+    - { id: dv21mkub9h, name: publish, type: bool, description: "publish at once (default false)", to: [s4wl996ngt] }
+responses:
+  - { status: 201, model: w1g1lt9yyv }
+  - { status: 400, description: "InvalidField, DuplicateField (key, slug or sku), ReferencedResourceNotFound" }

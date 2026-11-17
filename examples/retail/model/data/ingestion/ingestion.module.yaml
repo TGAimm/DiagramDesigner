@@ -1,0 +1,5 @@
+# Data Factory pipelines: one per source, each an incremental copy driven by the watermark table.
+id: oyqmyb5nc3
+parent: qubihx15dl
+name: Ingestion
+meta: { tool: Data Factory pipelines, connection: "per-source service principals and API keys in Key Vault kv-fjeld-data" }

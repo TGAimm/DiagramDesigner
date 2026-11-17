@@ -1,0 +1,23 @@
+# Table 23 Vendor: gear brands and the 3PL.
+id: s9w6vface7
+ownedBy: si82yvapze
+storedIn: q43aprn5l0
+name: Vendor
+fields:
+  - { id: bu20ykl7b9, name: no, type: string, pk: true, constraints: [max 20] }
+  - { id: bqcc333maq, name: systemId, type: guid, required: true }
+  - { id: mud12mv428, name: name, type: string, required: true, constraints: [max 100] }
+  - { id: hvaoltuur8, name: address, type: string }
+  - { id: kqsx4onl9n, name: city, type: string }
+  - { id: f19q2k4as8, name: postCode, type: string }
+  - { id: stlxn8xb15, name: countryRegionCode, type: string }
+  - { id: atxu6ouw0v, name: vatRegistrationNo, type: string, constraints: [max 20] }
+  - { id: gwy34kf9y9, name: currencyCode, type: string, ref: nirn4ae2ma }
+  - { id: tt6ys0dxgx, name: vendorPostingGroup, type: string, required: true }
+  - { id: omx5t2tqxx, name: genBusPostingGroup, type: string, required: true, ref: tjvxys2n13 }
+  - { id: jwwu8dhgis, name: vatBusPostingGroup, type: string, required: true, ref: z5j4u9tg8x }
+  - { id: fcj3zas4rq, name: paymentTermsCode, type: string }
+  - { id: qrkq4vz6yv, name: blocked, type: string, constraints: ["one of: ' ', Payment, All"] }   # GAP: enum
+  - { id: q6v5gnrfmy, name: systemModifiedAt, type: datetime, required: true }
+indexes:
+  - { id: rgioaersef, name: ux_vendor_systemid, fields: [bqcc333maq], unique: true }

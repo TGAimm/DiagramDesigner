@@ -1,0 +1,20 @@
+id: ihj8sds5vg
+parent: y5739ri6l0
+name: triggerSync
+handles: [r30cerwybo]
+inputs:
+  - { id: jbsb86v67z, name: job, type: string, required: true }
+  - { id: ontd3i8chy, name: key, type: string, nullable: true }
+outputs: []
+fails:
+  - { name: running, description: the job's cursor is locked (409) }
+steps:
+  - if: job is product
+    then:
+      - { call: iqqdoy991b, with: "pimUuid = key, action updated, trigger manual" }
+    else:
+      - { read: nanvethhnv, with: the job's source and entity, gets: cursor }
+      - if: cursor.lockedUntil in the future
+        then:
+          - { fail: running }
+      - { note: "start the timer function now through the Functions admin endpoint (POST /admin/functions/<name>)" }

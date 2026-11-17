@@ -1,0 +1,41 @@
+# Codeunit 80 Sales-Post on a return order with Receive and Invoice: puts stock back and posts
+# a credit memo applied to the original invoice.
+id: a1s8fyvt2r
+parent: vss7pk1oh5
+name: postReturnOrder
+inputs:
+  - { id: okoq27h0kk, name: returnOrderNo, type: string, required: true }
+outputs:
+  - { id: xxnt5xv9su, name: creditMemo, model: p5w0ghuarm }
+fails:
+  - { name: nothingToReceive, description: no line has a return qty. to receive }
+  - { name: invoiceNotFound, description: the applies-to invoice does not exist }
+  - { name: alreadyCredited, description: the invoice's ledger entry is already closed by another credit memo }
+steps:
+  - { read: ejg622chhy, with: "Return Order, returnOrderNo", gets: header }
+  - { read: i09cr44p1c, with: "Return Order, returnOrderNo, returnQtyToReceive > 0", gets: lines }
+  - if: lines is empty
+    then:
+      - { fail: nothingToReceive }
+  - { read: v9er9w3t9v, with: header.appliesToDocNo, gets: invoice }
+  - if: invoice not found
+    then:
+      - { fail: invoiceNotFound }
+  - { read: eij6j7uhhb, with: invoice.custLedgerEntryNo, gets: invoice entry }
+  - if: invoice entry is closed
+    then:
+      - { fail: alreadyCredited }
+  # GAP: transaction boundary: stock, credit memo, customer ledger and G/L commit together
+  - each: line in lines
+    do:
+      - { call: dfac9bllv7, with: "Sale, +returnQtyToReceive, location of the return (CENTRAL or the store), applies-from the sale's item ledger entry", gets: itemLedgerEntryNo }
+      - { write: be4ogjpbfh, note: "add returnQtyToReceive" }
+  - { write: p5w0ghuarm, note: "insert, no. from series SCRM, appliesToDocNo = the invoice" }
+  - each: line in lines
+    do:
+      - { write: ev3z8sxglr, note: "insert with applFromItemEntry" }
+  - { call: g7nfkzjdkj, with: "Customer line: -amount incl. VAT, document type Credit Memo, applies-to the invoice", gets: custLedgerEntryNo }
+  - { call: g7nfkzjdkj, with: "per posting group combination: sales credit memo account (debit), VAT account (debit)" }
+  - { write: ng4ozjb2np, note: custLedgerEntryNo }
+  - { write: ejg622chhy, note: "delete the return order and its lines" }
+  - { return: creditMemo }

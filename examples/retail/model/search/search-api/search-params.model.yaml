@@ -1,0 +1,23 @@
+# GAP: fields named by string - facets, filters and attributesToRetrieve name Product Record
+# attributes by wire name.
+id: hvgl8g3qr7
+ownedBy: w84no1i22u
+name: Search Params
+fields:
+  - { id: cathexlmat, name: indexName, type: string, nullable: true, constraints: [multiple queries only; the path names it otherwise] }
+  - { id: xvkulw8538, name: query, type: string, required: true, constraints: ["empty string browses (listing pages)"] }
+  - { id: wt6h1v3k6f, name: filters, type: string, nullable: true, constraints: ["e.g. categoryKeys:men-jackets AND inStock:true"] }
+  - { id: ym232oz4sh, name: facetFilters, type: json, nullable: true, constraints: ["e.g. [[\"colour:Red\",\"colour:Blue\"],[\"sizesAvailable:M\"]] (OR inside, AND between)"] }
+  - { id: l6of4ykwm2, name: numericFilters, type: string, many: true, constraints: ["e.g. price>=500"] }
+  - { id: x8z1xa2d8d, name: facets, type: string, many: true, constraints: ["brand, colour, sizesAvailable, hierarchicalCategories.lvl0..2, price"] }
+  - { id: ch69mggzp9, name: maxValuesPerFacet, type: int, nullable: true }
+  - { id: ep0kr8feqf, name: hitsPerPage, type: int, nullable: true }
+  - { id: mihy3ctiv7, name: page, type: int, nullable: true, constraints: [0-based] }
+  - { id: st0o88p3uq, name: attributesToRetrieve, type: string, many: true }
+  - { id: myjdcx8grz, name: attributesToHighlight, type: string, many: true }
+  - { id: gahwpsa07r, name: ruleContexts, type: string, many: true }
+  - { id: utnjjb360h, name: removeWordsIfNoResults, type: string, nullable: true, constraints: ["one of: none, lastWords, firstWords, allOptional"] }  # GAP: enum
+  - { id: x4jof75tcc, name: analyticsTags, type: string, many: true, constraints: ["country, device"] }
+  - { id: ur72kwd3hd, name: clickAnalytics, type: bool, nullable: true }
+  - { id: mmv86j0zao, name: userToken, type: string, nullable: true, constraints: [Storefront session id, hashed] }
+  - { id: h70sxcbxkw, name: getRankingInfo, type: bool, nullable: true }

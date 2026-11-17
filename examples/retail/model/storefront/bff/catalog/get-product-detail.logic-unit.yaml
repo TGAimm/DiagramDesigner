@@ -1,0 +1,25 @@
+id: eacea3b2w8
+parent: lnizoffy7m
+name: getProductDetail
+handles: [bu92uq53ka]
+inputs:
+  - { id: bgzmyle1e3, name: slug, type: string, required: true }
+outputs:
+  - { id: iubbje7e9j, name: view, model: gel7vz7th1 }
+fails:
+  - { name: notFound, description: "404" }
+steps:
+  - { call: cylyc9xl5m, gets: session }
+  - { read: gel7vz7th1, with: "pdp:<locale>:<slug>", gets: cached }
+  - if: cached
+    then:
+      - { return: view }
+  - { call: o8fu6yl41y, with: "filter.query slug.<locale>=slug, staged false, priceCurrency, priceCountry, storeProjection, localeProjection", gets: projection }
+  - if: no result
+    then:
+      - { fail: notFound }
+  - { call: nliulbw7pi, with: "sku in the projection's SKUs, every supply channel", gets: entries }
+  - { call: pmxvaacmcg, gets: nodes }
+  - { call: rlbt46vo3u, with: "filters hierarchicalCategories.lvl2 of this product AND NOT styleCode:<key>, hitsPerPage 8", gets: similar }
+  - { write: gel7vz7th1, note: "TTL 5 min; purged by key when Integration updates the product" }
+  - { return: view }

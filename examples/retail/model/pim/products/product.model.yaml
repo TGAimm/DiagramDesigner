@@ -1,0 +1,30 @@
+# Akeneo product, standard format. Fjeld: one product per sellable variant (SKU),
+# e.g. FJ-JKT-1042-RED-M under the product models FJ-JKT-1042 (root) > FJ-JKT-1042-RED (colour).
+id: qitb6ezis6
+ownedBy: tuvm3c6m5l
+storedIn: r1xvgi7bie
+name: Product
+fields:
+  - { id: gziztcdf03, name: uuid, type: uuid, pk: true, required: true }
+  - { id: caehs975j2, name: identifier, type: string, nullable: true, constraints: [unique, max 255, "value of the pim_catalog_identifier attribute sku"] }
+  - { id: pvp2s2tzpq, name: enabled, type: bool, required: true }
+  - { id: a81eusllga, name: family, type: string, nullable: true, ref: up92jqcxxf }
+  - { id: xseslrjvdv, name: parent, type: string, nullable: true, ref: bjqn3xm3lr, constraints: [a product model at the last variant level of its family variant] }
+  - { id: jxmckttq6i, name: categories, type: string, many: true, ref: o2peddxqos }
+  - { id: inyrxaoe0b, name: groups, type: string, many: true }
+  # GAP: keyed map - on the wire values is a JSON object keyed by attribute code, each an array of
+  # {locale, scope, data}; written as a list of Product Value carrying the key in its attribute field.
+  # GAP: embedded JSON column - stored as pim_catalog_product.raw_values (JSON), not as a table.
+  - { id: qpq2ypchjp, name: values, model: st851mrt6f, many: true }
+  # GAP: keyed map - associations is keyed by association type code.
+  - { id: magzs8fa9n, name: associations, model: yaxzl3embi, many: true }
+  # GAP: keyed map - quantified_associations is keyed by association type code.
+  - { id: aqesk4r1z7, name: quantified_associations, model: qa6jdf6hzp, many: true }
+  - { id: zvcn8bc68d, name: completenesses, model: y3n2a1xjts, many: true }
+  - { id: m812a2j24z, name: created, type: datetime, required: true }
+  - { id: jgbpew18pm, name: updated, type: datetime, required: true }
+indexes:
+  - { id: w7klblfc2y, name: ux_product_identifier, fields: [caehs975j2], unique: true }
+  - { id: pd29rzaa3c, name: ix_product_family, fields: [a81eusllga], unique: false }
+  - { id: ypdubohmof, name: ix_product_parent, fields: [xseslrjvdv], unique: false }
+  - { id: nrx2jq4hs8, name: ix_product_updated, fields: [jgbpew18pm], unique: false }

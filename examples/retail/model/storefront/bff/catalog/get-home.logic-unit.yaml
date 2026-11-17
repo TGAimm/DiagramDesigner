@@ -1,0 +1,12 @@
+id: pc7nl05f89
+parent: lnizoffy7m
+name: getHome
+handles: [kuucfn97xp]
+inputs: []
+outputs:
+  - { id: f0xpi47e7f, name: rails, model: a4ypghsn5d, many: true }
+steps:
+  - { call: cylyc9xl5m, gets: session }
+  - { call: iitkxe2e1o, with: "three queries on products_<locale>: query '', ruleContexts home-featured, home-new, home-sale; hitsPerPage 12; filters inStock:true", gets: results }
+  - { note: "map hits to Product Cards; a rail with no hits is left out" }
+  - { return: rails }

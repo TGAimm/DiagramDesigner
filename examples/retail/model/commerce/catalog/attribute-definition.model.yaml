@@ -1,0 +1,11 @@
+id: j6sb5rcvta
+ownedBy: woc2py521s
+name: Attribute Definition
+fields:
+  - { id: a85spht54s, name: name, type: string, required: true, constraints: [unique across product types when types differ] }
+  - { id: wb8cx1i40j, name: label, type: LocalizedString, required: true }
+  - { id: foa1roct9n, name: type, type: string, required: true, constraints: ["one of: boolean, text, ltext, enum, lenum, number, money, date, reference, set"] }  # GAP: enum
+  - { id: eodb7ffo0j, name: isRequired, type: bool, required: true }
+  - { id: mkf0z7ksby, name: attributeConstraint, type: string, required: true, constraints: ["one of: None, Unique, CombinationUnique, SameForAll"] }  # GAP: enum
+  - { id: ob5fjtt6ur, name: isSearchable, type: bool, required: true }
+  - { id: yhhl8r0k09, name: inputHint, type: string, constraints: ["one of: SingleLine, MultiLine"] }  # GAP: enum

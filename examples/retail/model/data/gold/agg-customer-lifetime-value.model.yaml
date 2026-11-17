@@ -1,0 +1,22 @@
+# Grain: one row per customer (current). Rebuilt nightly from fact_sales and fact_returns.
+# GAP: aggregation lineage - every column is a group-by over another table; `from` names the
+# summed column but not the grouping (customer_key) or the filter (not is_return).
+id: nr0aq1hjrv
+ownedBy: d0jfpet25d
+storedIn: d0jfpet25d
+name: agg_customer_lifetime_value
+fields:
+  - { id: derhub8di9, name: customer_key, type: string, pk: true, from: [n3au7ckomv, nqorc93yfb], derived: "group by the customer key of the sale's dim version" }
+  - { id: yv1mhd7ajd, name: first_order_date, type: date, required: true, from: [ljedf5umlv], derived: min }
+  - { id: aacbwgudsd, name: last_order_date, type: date, required: true, from: [ljedf5umlv], derived: max }
+  - { id: he0lyb9gun, name: order_count, type: int, required: true, from: [dywz3qk1xj, xhxnw1g6qm], derived: "distinct orders, return receipts excluded" }
+  - { id: bgxsr3x3v2, name: net_sales_dkk, type: decimal, required: true, from: [wl2al8x21l, xhxnw1g6qm], derived: "sum where not is_return" }
+  - { id: tns8zt9bbp, name: returns_dkk, type: decimal, required: true, from: [oeekfgoe2f], derived: "sum, ex VAT" }
+  - { id: cmb1rrqqdu, name: gross_margin_dkk, type: decimal, required: true, from: [il8xc1ku9m], derived: sum }
+  - { id: cma6yjlw5h, name: lifetime_value_dkk, type: decimal, required: true, from: [bgxsr3x3v2, tns8zt9bbp], derived: "net sales - returns, all channels, all time" }
+  - { id: uf3qhuan79, name: avg_order_value_dkk, type: decimal, required: true, from: [bgxsr3x3v2, he0lyb9gun] }
+  - { id: b2087718te, name: recency_days, type: int, required: true, from: [aacbwgudsd], derived: days since last order }
+  - { id: jcw4m97rq6, name: segment, type: string, required: true, from: [b2087718te, he0lyb9gun, cma6yjlw5h], derived: "RFM quintiles: champions, loyal, promising, new, at_risk, lapsed" }
+  - { id: j0bf5itvrp, name: calculated_at, type: datetime, required: true }
+indexes:
+  - { id: z3kgzfw3p4, name: ix_clv_calculated_at, fields: [j0bf5itvrp] }

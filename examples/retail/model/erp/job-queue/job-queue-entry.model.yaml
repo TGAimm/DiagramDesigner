@@ -1,0 +1,25 @@
+# Table 472 Job Queue Entry: what the job queue runs and when. The scheduled units in this
+# module are three of its rows.
+id: bypufjoq3o
+ownedBy: zn7j7787p7
+storedIn: q43aprn5l0
+name: Job Queue Entry
+fields:
+  - { id: jobxg39o42, name: id, type: guid, pk: true }
+  - { id: osit83zmoc, name: objectTypeToRun, type: string, required: true, constraints: ["one of: Report, Codeunit"] }   # GAP: enum
+  - { id: te6b5udw5p, name: objectIdToRun, type: int, required: true, constraints: ["795 Adjust Cost, 297 Batch Post Sales Orders, 50110 FJ Release Web Orders"] }
+  - { id: dv224l0t5v, name: objectCaptionToRun, type: string, from: [te6b5udw5p] }
+  - { id: yy2s4c4opy, name: parameterString, type: string, nullable: true }
+  - { id: wppdb42cs8, name: jobQueueCategoryCode, type: string, constraints: ["one of: SALESPOST, COST, INTEGR"] }   # GAP: enum
+  - { id: d5i6z2qgdh, name: status, type: string, required: true, constraints: ["one of: Ready, In Process, Error, On Hold, Finished, On Hold with Inactivity Timeout, Waiting"] }   # GAP: enum
+  - { id: ftjwkdo0gj, name: recurringJob, type: bool }
+  - { id: safkogh441, name: noOfMinutesBetweenRuns, type: int, nullable: true }
+  - { id: n6r78srnd0, name: runOnDays, type: string, constraints: ["Mon..Sun flags, one bool field per day in BC"] }
+  - { id: trwd9p81dx, name: startingTime, type: time, nullable: true }
+  - { id: dd8d17pcxo, name: endingTime, type: time, nullable: true }
+  - { id: t3nuau81zt, name: earliestStartDateTime, type: datetime }
+  - { id: c4xu7dvucf, name: maxNoOfAttemptsToRun, type: int }
+  - { id: ytrlcufvzc, name: errorMessage, type: string, nullable: true }
+  - { id: auggmssoq6, name: userId, type: string, constraints: ["the job queue user JOBQUEUE"] }
+indexes:
+  - { id: y8j0dkbwaa, name: ix_job_queue_entry_due, fields: [d5i6z2qgdh, t3nuau81zt] }

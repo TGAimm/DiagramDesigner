@@ -1,0 +1,9 @@
+id: usfaesrwyh
+ownedBy: vsn79avah8
+name: Token Request
+fields:
+  # GAP: enum
+  - { id: lobttqbpn8, name: grant_type, type: string, required: true, constraints: ["one of: password, refresh_token"] }
+  - { id: mtrwrrsnt5, name: username, type: string, nullable: true, constraints: [grant_type password] }
+  - { id: wqoqc8zdu3, name: password, type: string, nullable: true, constraints: [grant_type password] }
+  - { id: ptdn5z70w5, name: refresh_token, type: string, nullable: true, constraints: [grant_type refresh_token] }

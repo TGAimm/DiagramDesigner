@@ -1,0 +1,18 @@
+id: emtjsw8emx
+ownedBy: oqu3crot7j
+storedIn: ka6mzbfc7x
+name: Location
+fields:
+  - { id: w241jnt0u2, name: id, type: int, pk: true }
+  - { id: n47u7wwlh1, name: code, type: string, required: true, constraints: ["aisle-rack-level-bin, e.g. A-12-03-B"] }
+  # GAP: enum
+  - { id: sh6xk17fz9, name: zone, type: string, required: true, constraints: ["one of: pick, reserve, hazmat, inbound, returns, qc, dispatch"] }
+  # GAP: enum
+  - { id: x50nevq0r4, name: type, type: string, required: true, constraints: ["one of: shelf, pallet, floor, cage"] }
+  - { id: b3fcylyoni, name: pickSequence, type: int, nullable: true, constraints: [walking order on the pick path] }
+  - { id: vg9l61z2h2, name: maxWeightKg, type: int, nullable: true }
+  - { id: zbvi2m7o4d, name: mixedItems, type: bool, required: true, constraints: ["false: one item per bin"] }
+  - { id: hhzqt52xs7, name: blocked, type: bool, required: true }
+indexes:
+  - { id: r800p6qnab, name: ux_location_code, fields: [n47u7wwlh1], unique: true }
+  - { id: koqz54yvzb, name: ix_location_zone_seq, fields: [sh6xk17fz9, b3fcylyoni] }

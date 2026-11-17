@@ -1,0 +1,11 @@
+id: rn75rdis3r
+parent: oumwpbl70c
+name: Get my customer
+method: GET
+path: /{projectKey}/me
+auth: "bearer (customer token, view_my_profile)"
+params:
+  - { id: jub7m0zaze, name: projectKey, in: path, type: string, description: fjeld-prod }
+responses:
+  - { status: 200, model: nrnhibse1t }
+  - { status: 403, description: insufficient_scope (anonymous token) }

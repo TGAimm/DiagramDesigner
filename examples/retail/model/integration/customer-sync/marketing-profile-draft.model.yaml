@@ -1,0 +1,15 @@
+id: x2aia590ub
+ownedBy: mwg6alxci7
+name: MarketingProfileDraft
+tags: [pii]
+fields:
+  - { id: b8ckwtb8p5, name: email, type: string, required: true, from: [iin853se04] }
+  - { id: l09caj90q1, name: external_id, type: string, required: true, from: [lc3793npj5] }
+  - { id: x2n8jn3xz1, name: first_name, type: string, nullable: true, from: [dnw21d6sno] }
+  - { id: q9h61pghsg, name: last_name, type: string, nullable: true, from: [xh48sj3zzv] }
+  - { id: j06xdgprin, name: phone_number, type: string, nullable: true, from: [n8i6mdsagq], derived: E.164 }
+  - { id: me6k1cy35o, name: locale, type: string, nullable: true, from: [zxjujlnbe6] }
+  - { id: supyc04kkk, name: location.country, type: string, nullable: true, from: [grygzr61to] }
+  - { id: dg16ib3m09, name: properties.shop_country, type: string, nullable: true, from: [grygzr61to] }
+  - { id: tmqjmf1t18, name: properties.crm_contact_id, type: string, nullable: true, from: [gp3y3t4d1d] }
+  - { id: vsnxu149fe, name: properties.loyalty_tier, type: string, nullable: true, from: [g6wd5evlsf, bhrxhpjxf7] }

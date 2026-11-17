@@ -1,0 +1,9 @@
+# GAP: two bought products in one system (Zendesk Support and the returns portal); the root's vendor meta
+# names Zendesk, and the portal's module carries its own vendor meta.
+id: y0w8820v7y
+name: Customer Service
+meta: { vendor: Zendesk, product: Zendesk Support, kind: saas, owner: cx-team }
+links:
+  - { label: Support API, url: https://developer.zendesk.com/api-reference/ticketing/introduction/ }
+  - { label: Tickets, url: https://developer.zendesk.com/api-reference/ticketing/tickets/tickets/ }
+  - { label: Triggers, url: https://developer.zendesk.com/api-reference/ticketing/business-rules/triggers/ }

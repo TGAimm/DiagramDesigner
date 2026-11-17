@@ -1,0 +1,9 @@
+# Fjeld: DKK, SEK, NOK, EUR enabled.
+id: d7jxh4yoa2
+ownedBy: c654efbgqw
+storedIn: r1xvgi7bie
+name: Currency
+fields:
+  - { id: s290ixwdog, name: code, type: string, pk: true, required: true, constraints: [ISO 4217] }
+  - { id: uxxjljgile, name: enabled, type: bool, required: true }
+  - { id: wg1i1fjr2i, name: label, type: string }

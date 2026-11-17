@@ -1,0 +1,15 @@
+id: q2t4rbs6gu
+parent: wyb51ibopv
+name: List items
+method: GET
+path: /api/v2.0/companies({companyId})/items
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: mtb14xrum3, name: companyId, in: path, type: guid }
+  - { id: bspmor52je, name: $filter, in: query, type: string, required: false, description: "delta: lastModifiedDateTime gt <last run>" }
+  - { id: iunt2u5d0v, name: $top, in: query, type: int, required: false }
+  - { id: tg9vyy0m68, name: $skip, in: query, type: int, required: false }
+responses:
+  # GAP: OData collection envelope { value: [...], @odata.nextLink } written as many: true
+  - { status: 200, model: ohyqr35cc1, many: true }
+  - { status: 401, description: Unauthorized }

@@ -1,0 +1,6 @@
+id: scelhoohob
+parent: ygmbkn58fj
+name: Subscriptions and messages
+links:
+  - { label: Subscriptions, url: "https://docs.commercetools.com/api/projects/subscriptions" }
+  - { label: Message types, url: "https://docs.commercetools.com/api/message-types" }

@@ -1,0 +1,21 @@
+# Table 14 Location: CENTRAL (the 3PL warehouse) and the stores S01..S12.
+id: tpjqrdofb4
+ownedBy: x2x0s3utl1
+storedIn: q43aprn5l0
+name: Location
+fields:
+  - { id: gsrr00mc9x, name: code, type: string, pk: true, constraints: [max 10, "CENTRAL, S01..S12"] }
+  - { id: pd9j849qnx, name: systemId, type: guid, required: true }
+  - { id: utd9or8y4n, name: name, type: string, required: true }
+  - { id: wsfc77eo6j, name: address, type: string }
+  - { id: j0e8klshmp, name: city, type: string }
+  - { id: fvdmimqldg, name: postCode, type: string }
+  - { id: xslo5wvxl9, name: countryRegionCode, type: string }
+  - { id: nm9aqfmm93, name: useAsInTransit, type: bool }
+  - { id: wnl9r10v5b, name: requireShipment, type: bool, constraints: ["false: the 3PL does the warehouse work"] }
+  - { id: t3bw4i1ylv, name: fjeldLocationType, type: string, required: true, constraints: ["one of: 3PL, Store, Transit", "table extension field"] }   # GAP: enum
+  - { id: tul2ll4xq3, name: fjeldPosStoreId, type: string, nullable: true, constraints: ["table extension field; the POS store id"] }
+  - { id: o8zc9laqgs, name: fjeldClickAndCollect, type: bool, constraints: ["table extension field"] }
+  - { id: vpk58thnjr, name: systemModifiedAt, type: datetime, required: true }
+indexes:
+  - { id: k1y5g5661d, name: ux_location_systemid, fields: [pd9j849qnx], unique: true }

@@ -1,0 +1,7 @@
+# Pairs with WMS's flag of the same key: the 3PL turns its REST API on for FJELD, Integration
+# stops writing ORDERS / RETURNS_EXPECTED / ITEMS files and calls the API instead.
+id: exafkh0xzs
+parent: mleccno0ev
+name: wmsApi
+key: wms-api
+default: off

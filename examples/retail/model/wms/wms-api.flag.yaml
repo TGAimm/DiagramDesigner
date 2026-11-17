@@ -1,0 +1,6 @@
+# The 3PL's new REST API is being rolled out client by client; files stay the contract until it is switched on for FJELD.
+id: j5jo9lc089
+parent: rtydt8mkge
+name: wmsApi
+key: wms-api
+default: off

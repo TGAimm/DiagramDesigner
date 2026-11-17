@@ -1,0 +1,27 @@
+id: o96th79s8y
+ownedBy: d8hyu4qiq7
+storedIn: t99y8h5mfb
+name: Shipment
+fields:
+  - { id: xac9b2igw1, name: id, type: int, pk: true }
+  - { id: de5w2ko0g2, name: product_code, type: string, required: true, ref: kpmp1cr4lc }
+  - { id: hq2wq6hpea, name: carrier_code, type: string, required: true, ref: vy1t0d26e3, from: [de3hu1abxh] }
+  - { id: yazmggpnwx, name: service_codes, type: string, many: true, constraints: ["subset of the product's available_services"] }
+  # GAP: embedded sub-object of a stored record: the held model has no table, so the stored view loses it
+  - { id: f4ujj1cp9p, name: sender, model: grcw7cakmk, required: true }
+  - { id: plqrbg3gk7, name: receiver, model: grcw7cakmk, required: true, from: [sr3l239ybl], derived: "via the ERP sales order ship-to and the WMS outbound order" }
+  - { id: sqqno92jyr, name: pickup_point_id, type: string, nullable: true, ref: y9waosuibq }
+  - { id: ptfrmg72cr, name: parcels, model: x8ugoms0sh, many: true, required: true }
+  - { id: iee7vq5ryt, name: reference, type: string, required: true, from: [epw5zsq6wa], constraints: ["WMS outbound order number; printed on the label"] }
+  - { id: zerukfefcp, name: order_id, type: string, nullable: true, from: [lulkapcaa0], constraints: ["the webshop order number the customer knows"] }
+  - { id: he6cl2hve1, name: contents, type: string, nullable: true, constraints: ["needed by DHL Express outside the EU (NO)"] }
+  - { id: dsfx8xs8om, name: status, type: string, required: true, constraints: ["one of: pending, booked, error, cancelled"] }   # GAP: enum
+  - { id: yronk6iccs, name: booking_error, type: string, nullable: true }
+  - { id: ab7uvphbdv, name: price, type: decimal, nullable: true, constraints: ["agreed carrier price, DKK excl. VAT"] }
+  - { id: vwxydfa3n7, name: test_mode, type: bool }
+  - { id: klme6htk2y, name: created_at, type: datetime, required: true }
+  - { id: uzculi9e38, name: updated_at, type: datetime, required: true }
+indexes:
+  - { id: o3e748odcq, name: ix_shipment_reference, fields: [iee7vq5ryt] }
+  - { id: ixvmauq7bu, name: ix_shipment_order_id, fields: [zerukfefcp] }
+  - { id: t05o6ur9lf, name: ix_shipment_status_created, fields: [dsfx8xs8om, klme6htk2y] }

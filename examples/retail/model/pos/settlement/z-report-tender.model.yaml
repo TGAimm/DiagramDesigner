@@ -1,0 +1,13 @@
+id: f3i1y2sael
+ownedBy: sd8724jaqj
+storedIn: hykg6pt8u2
+name: Z report tender
+fields:
+  - { id: oi8bhezbpu, name: id, type: uuid, pk: true }
+  - { id: ohxswy87ny, name: zReportId, type: uuid, required: true, ref: srngby2fkx }
+  - { id: oxr44zx1u8, name: method, type: string, required: true, from: [h7yzmy536d] }
+  - { id: h5gc15mgjq, name: cardScheme, type: string, nullable: true, from: [m1ovmbiicr] }
+  - { id: t49ntlsq86, name: count, type: int, required: true, from: [sgrkoq3p1r], derived: count per method and scheme }
+  - { id: f4qdiarspm, name: amount, type: decimal, required: true, from: [plorfj8nr7], derived: "sum per method and scheme, refunds netted" }
+indexes:
+  - { id: u6vi6kttx3, name: ix_tender_z, fields: [ohxswy87ny] }

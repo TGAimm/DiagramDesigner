@@ -1,0 +1,19 @@
+id: y9waosuibq
+ownedBy: cm3gbbx2sq
+storedIn: t99y8h5mfb
+name: PickupPoint
+fields:
+  - { id: zpxk2h0vb2, name: id, type: string, pk: true, constraints: ["the carrier's service point number"] }
+  - { id: fbluj4mfnj, name: carrier_code, type: string, pk: true, ref: vy1t0d26e3 }
+  - { id: ttt4sah84p, name: name, type: string, required: true, constraints: ["e.g. Netto Nørrebrogade"] }
+  - { id: lmp8u42sfx, name: address, type: string, required: true }
+  - { id: lhor5l7yzv, name: zipcode, type: string, required: true }
+  - { id: bar4ux49ar, name: city, type: string, required: true }
+  - { id: wzhruhyg3j, name: country, type: string, required: true }
+  - { id: n7lr1tqlqf, name: latitude, type: decimal, required: true }
+  - { id: h498ooxjcp, name: longitude, type: decimal, required: true }
+  - { id: x6zinfqru7, name: opening_hours, type: string, many: true, constraints: ["e.g. Mon-Fri 08:00-21:00"] }
+  - { id: tw2mbotx5v, name: distance, type: int, stored: false, from: [n7lr1tqlqf, h498ooxjcp], derived: metres from the searched address }
+  - { id: a9k79m4oz9, name: fetched_at, type: datetime, constraints: ["cache refreshed after 24 h"] }
+indexes:
+  - { id: lys6y7tdo4, name: ix_pickup_point_zip, fields: [fbluj4mfnj, wzhruhyg3j, lhor5l7yzv] }

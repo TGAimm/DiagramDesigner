@@ -1,0 +1,15 @@
+# Control table: one row per source object, the high-water mark the next incremental load starts from.
+id: qhfxfz0h8j
+ownedBy: oyqmyb5nc3
+storedIn: ar9pfoadj7
+name: watermark
+fields:
+  - { id: myk48uiq5j, name: source_system, type: string, pk: true, constraints: ["one of: erp, commerce, stripe, crm, marketing, pos, wms, pim, reverse_etl"] } # GAP: enum
+  - { id: h67jndi2mt, name: source_object, type: string, pk: true, constraints: ["e.g. items, orders, balance_transactions, STOCK"] }
+  - { id: nkvb0w2322, name: watermark_column, type: string, required: true, constraints: ["e.g. lastModifiedDateTime, created, businessDay, file name"] }
+  - { id: axtovqyj39, name: last_value, type: string, nullable: true, constraints: [ISO timestamp, epoch seconds or file name, as the source compares it] }
+  - { id: q23a4c8uh1, name: overlap_minutes, type: int, required: true, constraints: [min 0] } # re-read window for late commits
+  - { id: k4eoyf67jn, name: last_run_id, type: string, nullable: true }
+  - { id: dgce4m074k, name: last_run_at, type: datetime, nullable: true }
+  - { id: wr0hb19kls, name: rows_loaded, type: int, nullable: true }
+  - { id: k0q6zmem4b, name: status, type: string, required: true, constraints: ["one of: succeeded, failed, running"] } # GAP: enum

@@ -1,0 +1,19 @@
+id: yrqt9pcc7g
+ownedBy: bpgo7ehinh
+storedIn: ji6igng4bi
+name: AppRegistration
+fields:
+  - { id: ipknubde63, name: id, type: uuid, pk: true, constraints: ["object id"] }
+  - { id: rii92gdhxd, name: appId, type: string, required: true, constraints: ["the client_id"] }
+  - { id: yxpcz0e6x9, name: displayName, type: string, required: true, constraints: ["Fjeld Storefront BFF, Fjeld Commerce API, Fjeld Service portal"] }
+  - { id: kwwxm8iluo, name: signInAudience, type: string, constraints: ["AzureADMyOrg"] }
+  - { id: bm9p06cpwp, name: identifierUris, type: string, many: true, constraints: ["api://fjeld-commerce-api, for apps exposing scopes"] }
+  - { id: g3sb0ejkn7, name: api.oauth2PermissionScopes, type: string, many: true, constraints: ["customer.read, orders.read, checkout"] }
+  - { id: ww8ybc5k3u, name: web.redirectUris, type: string, many: true, constraints: ["https://fjeld.dk/api/auth/callback, .se, .no, .de"] }
+  - { id: qdmhhtmkys, name: web.logoutUrl, type: string, nullable: true }
+  - { id: fjp1o62ru6, name: passwordCredentials.hint, type: string, nullable: true, constraints: ["first 3 chars of the secret"] }
+  - { id: ynxdmu0fn9, name: passwordCredentials.endDateTime, type: datetime, nullable: true, constraints: ["Fjeld rotates every 12 months"] }
+  - { id: d5uimkpv18, name: optionalClaims.idToken, type: string, many: true, constraints: ["email, ctry, plus the mapped extension claims"] }
+  - { id: xqfzpoev2d, name: requiredResourceAccess, type: string, many: true, constraints: ["scopes this app asks of other apps"] }
+indexes:
+  - { id: m3zf2xv0o3, name: ux_app_appid, fields: [rii92gdhxd], unique: true }

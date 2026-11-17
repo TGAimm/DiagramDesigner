@@ -1,0 +1,28 @@
+# GAP: triggered by subscription order-created/click-collect
+# Flow 7: a click & collect order is picked from the store's own stock.
+id: b7o4ukkch4
+parent: nlc4zljjz8
+name: routeClickAndCollect
+inputs:
+  - { id: vr4vcvzrf2, name: event, model: lf76fuj5g0, required: true }
+outputs: []
+steps:
+  - { note: "subscription order-created/click-collect (filter collectStoreKey IS NOT NULL)" }
+  - { read: n8ujyi0o8a, with: event.orderNumber, gets: ids }
+  - if: ids.posPickupOrderId is set
+    then:
+      - { note: "sent before: skip" }
+    else:
+      - { call: v2gmil25dl, with: event.orderId, gets: order }
+      - { call: eyk06ixi2l, with: "cached 1 h", gets: stores }
+      - { note: "map to PickupOrderDraft: store by storeNo = collectStoreKey" }
+      - { call: e2ngitd1kf, with: the draft, gets: pickup order }
+      - if: 409 (orderNumber exists)
+        then:
+          - { call: f7lv0e4cp6, with: "orderNumber", gets: pickup order }
+      - if: 422 (the store has no click & collect, or too little stock)
+        then:
+          - { write: wlmvgl2qp8, note: "retryable false: store-ops calls the customer" }
+          - { call: xdgvgxhc6p, with: "version, transitionState fjeld-order-state on-hold", gets: order }
+        else:
+          - { write: n8ujyi0o8a, note: "posPickupOrderId, status sent_to_store" }

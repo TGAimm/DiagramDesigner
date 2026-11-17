@@ -1,0 +1,10 @@
+id: w0jpoakgg2
+ownedBy: pnvbx85509
+storedIn: kqjludw0r4
+name: fjeld_loyaltytier
+fields:
+  - { id: ifauxno2n4, name: fjeld_loyaltytierid, type: uuid, pk: true }
+  - { id: vdt4atysqj, name: fjeld_name, type: string, required: true, constraints: [unique] }
+  - { id: gmzl3f33lt, name: fjeld_rank, type: int, required: true }
+  - { id: eolfedbj25, name: fjeld_threshold, type: int, required: true, constraints: [points earned in 12 months, min 0] }
+  - { id: ek0gr5kqvv, name: fjeld_earnrate, type: decimal, required: true, constraints: [points per DKK] }

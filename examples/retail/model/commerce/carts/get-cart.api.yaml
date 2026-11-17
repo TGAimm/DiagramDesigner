@@ -1,0 +1,12 @@
+id: f5plx7ovh9
+parent: b1ptklldw3
+name: Get cart
+method: GET
+path: /{projectKey}/carts/{id}
+auth: "bearer (view_orders)"
+params:
+  - { id: oqhzhhrlwj, name: projectKey, in: path, type: string, description: fjeld-prod }
+  - { id: pjbfvlb0z8, name: id, in: path, type: uuid }
+responses:
+  - { status: 200, model: w4i82sypi6 }
+  - { status: 404, description: ResourceNotFound }

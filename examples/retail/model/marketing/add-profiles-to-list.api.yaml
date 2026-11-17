@@ -1,0 +1,16 @@
+id: m3z4af533c
+parent: znpte2ol9p
+name: Add profiles to list
+method: POST
+path: /api/lists/{id}/relationships/profiles
+auth: "Klaviyo-API-Key private key (scope lists:write)"
+params:
+  - { id: odgxor9p4q, name: id, in: path, type: string, description: list id }
+  - { id: a47su9vpff, name: revision, in: header, type: string, required: true }
+request:
+  contentType: application/vnd.api+json
+  fields:
+    - { id: jbvqi98zwp, name: "data[].id", type: string, many: true, required: true, to: [og592xxgb8], description: "{ type: profile, id }, up to 1000" }
+responses:
+  - { status: 204, description: Added (no consent change) }
+  - { status: 404, model: s4w1d8x1z4, description: no such list }

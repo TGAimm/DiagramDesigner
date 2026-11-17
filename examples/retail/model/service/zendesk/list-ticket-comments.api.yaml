@@ -1,0 +1,15 @@
+id: xu66zbt2gd
+parent: dodjtgoau2
+name: List comments
+method: GET
+path: /api/v2/tickets/{ticket_id}/comments
+auth: "basic (agent e-mail/token + API token) or OAuth bearer"
+params:
+  - { id: mq8r55vjen, name: ticket_id, in: path, type: int }
+  - { id: jnbkk0h8pc, name: sort_order, in: query, type: string, required: false, description: "asc or desc" }
+  - { id: valot4dks4, name: "page[size]", in: query, type: int, required: false }
+responses:
+  - status: 200
+    fields:
+      - { id: dawm4pqbd6, name: comments, model: h86i7pw1zl, many: true }
+  - { status: 404, model: zkkh7sjnsz }

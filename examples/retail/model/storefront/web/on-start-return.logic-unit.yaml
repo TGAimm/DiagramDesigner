@@ -1,0 +1,9 @@
+id: tqt09vj8ep
+parent: ffmcq3ieun
+name: onStartReturn
+inputs:
+  - { id: cj5poic7yw, name: order, model: u2alh1f0hd, required: true }
+outputs: []
+steps:
+  - { note: "shown only when order.canStartReturn; opens order.returnUrl in the returns portal" }
+  - { call: noq9nb6lng, with: "orderNumber and email, prefilled from the link: the portal looks the order up and opens its return step" }

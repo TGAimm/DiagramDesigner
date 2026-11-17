@@ -1,0 +1,16 @@
+id: lg4db2fxip
+parent: scelhoohob
+name: emitMessage
+inputs:
+  - { id: mty397djm6, name: resourceTypeId, type: string, required: true, description: "order, payment, customer, product, inventory-entry" }
+  - { id: jr0bv072s9, name: resourceId, type: uuid, required: true }
+  - { id: iwozokgjmz, name: resourceVersion, type: long, required: true }
+  - { id: d6whqqte2t, name: type, type: string, required: true }
+  - { id: abn8xit6y8, name: payload, type: json, required: true }
+outputs:
+  - { id: w6lrbh56pk, name: message, model: r36jmkzojw }
+steps:
+  - { read: xqoafpdsbg, with: "resourceId, highest", gets: last }
+  - { write: r36jmkzojw, note: "sequenceNumber last + 1; written in the same transaction as the change; kept 15 days" }
+  - { call: mex5ba8puo, with: message }
+  - { return: message }

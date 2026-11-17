@@ -1,0 +1,17 @@
+id: ffxbfylqhk
+parent: izc0a89lge
+name: Create contact
+method: POST
+path: /api/data/v9.2/contacts
+auth: OAuth 2.0 bearer (Entra ID app registration)
+params:
+  - { id: ow4d5lg73u, name: MSCRM.SuppressDuplicateDetection, in: header, type: bool, required: false, description: "false runs duplicate detection rules" }
+  - { id: ogd65rjre5, name: Prefer, in: header, type: string, required: false, description: "return=representation to get the record back" }
+request:
+  model: vw2khd7qyi
+  pick: [if2mlrvh1r, b590a1yfa4, uunwqf9kfu, rvejr5t3yj, dk1mji9tc5, mqnnlwxrj2, owdahbbxyv, kf7fvju1z1, bxs264j33o, r4139fb0f4, ih7y93cbv2]
+responses:
+  - { status: 201, model: vw2khd7qyi, description: "Created (Prefer: return=representation)" }
+  - { status: 204, description: Created; OData-EntityId header holds the new id }
+  - { status: 400, model: blqvorzt9x }
+  - { status: 412, model: blqvorzt9x, description: "0x80040333: duplicate found by a published duplicate rule" }

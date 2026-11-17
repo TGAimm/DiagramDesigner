@@ -1,0 +1,14 @@
+id: rlbt46vo3u
+parent: w84no1i22u
+name: Search an index
+method: POST
+path: /1/indexes/{indexName}/query
+auth: "X-Algolia-Application-Id + X-Algolia-API-Key (search-only key; Storefront's is restricted to products_*)"
+params:
+  - { id: nv3iz7qq2g, name: indexName, in: path, type: string, description: "products_<locale> or a sort replica" }
+request: { model: hvgl8g3qr7, omit: [cathexlmat] }
+responses:
+  - { status: 200, model: kvwb8tpsfj, omit: [vewg50erqy] }
+  - { status: 400, description: "invalid filters, or a facet that isn't in attributesForFaceting" }
+  - { status: 403, description: "invalid API key, or the key may not query this index" }
+  - { status: 404, description: index does not exist }

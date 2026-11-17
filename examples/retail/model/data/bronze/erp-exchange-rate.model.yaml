@@ -1,0 +1,12 @@
+id: fv80k9knt1
+ownedBy: ar9pfoadj7
+storedIn: ar9pfoadj7
+name: erp_currency_exchange_rate
+fields:
+  - { id: zhdet7nkav, name: currencyCode, type: string, pk: true, from: [jd5if5dj9b] }
+  - { id: kdm9zptz16, name: startingDate, type: date, pk: true, from: [unblu2xqaa] }
+  - { id: qyyts7sko5, name: exchangeRateAmount, type: decimal, from: [eruo2aalsf] }
+  - { id: l5lly03zg0, name: relationalExchRateAmount, type: decimal, from: [wg7z8gi5to] } # DKK per exchangeRateAmount units
+  - { id: pq2gvht6ow, name: _loaded_at, type: datetime, required: true }
+  - { id: fwqy6g3iex, name: _source, type: string, required: true, constraints: ["erp/currencyExchangeRates"] }
+  - { id: gglury3mil, name: _batch_id, type: string, required: true }

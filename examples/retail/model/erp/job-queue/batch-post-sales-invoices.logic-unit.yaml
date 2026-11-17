@@ -1,0 +1,18 @@
+# Report 297 Batch Post Sales Orders, Invoice only, filtered to orders shipped not invoiced.
+# GAP: scheduled trigger
+id: wvnrh6o28r
+parent: zn7j7787p7
+name: batchPostSalesInvoices
+meta: { schedule: "0 * * * *", jobQueueCategory: SALESPOST, object: "Report 297" }
+inputs: []
+outputs:
+  - { id: ldyf4ureqb, name: postedCount, type: int }
+steps:
+  - { read: ejg622chhy, with: "Order, status Released, has lines shipped not invoiced", gets: orders }
+  - each: order in orders
+    do:
+      - { call: phjm212yw2, with: order.no, gets: invoice }
+      - if: posting fails
+        then:
+          - { write: ytrlcufvzc, note: "last error kept; the order is skipped and retried next run" }
+  - { return: postedCount }

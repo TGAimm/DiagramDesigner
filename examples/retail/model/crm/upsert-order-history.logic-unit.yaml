@@ -1,0 +1,17 @@
+id: tmj1hjpl5u
+parent: crcmvfmp2d
+name: upsertOrderHistory
+handles: [rni3b5uac0]
+inputs:
+  - { id: uacbk1xgim, name: orderNumber, type: string, required: true }
+  - { id: qireimqkzj, name: order, model: w8v3bf1ojm, required: true }
+outputs: []
+steps:
+  - { read: bxs264j33o, with: order.fjeld_commercecustomerid, gets: contact }
+  - if: no contact (guest checkout)
+    then:
+      - { note: leave fjeld_contactid empty; the nightly job links it when the guest signs up }
+  - { write: w8v3bf1ojm, note: "upsert by fjeld_ordernumber; fjeld_totalamount_base by the platform" }
+  - each: order line
+    do:
+      - { write: pw2v0ksnhu, note: replace the lines }

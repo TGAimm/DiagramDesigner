@@ -1,0 +1,13 @@
+# GAP: pagination envelope.
+id: n0hp4coi0s
+parent: vsn79avah8
+name: List currencies
+method: GET
+path: /api/rest/v1/currencies
+auth: bearer
+params:
+  - { id: xw24l1abaz, name: search, in: query, type: json, required: false, description: enabled filter }
+  - { id: vx5ujnbrpe, name: page, in: query, type: int, required: false }
+responses:
+  - { status: 200, model: d7jxh4yoa2, many: true }
+  - { status: 401, description: Missing or expired token }

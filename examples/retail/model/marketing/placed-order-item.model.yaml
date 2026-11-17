@@ -1,0 +1,12 @@
+id: v0zoqpfd4q
+ownedBy: dtgcjgjtna
+name: Placed Order item
+fields:
+  - { id: svbjbxw3fp, name: ProductID, type: string, required: true, from: [elpd9r0dut], derived: the SKU's catalog item }
+  - { id: xo8m1wwn3n, name: SKU, type: string, required: true, from: [c1uzjurwuu] }
+  - { id: uj4kp889zz, name: ProductName, type: string, required: true, from: [tzgfqq0q8b], derived: "value in the order's locale" }
+  - { id: hm8dpotr2k, name: Quantity, type: int, required: true, from: [ae7tr09nmb] }
+  - { id: yx6qj15ntd, name: ItemPrice, type: decimal, required: true, from: [oylo8sfbus], derived: "line item price value / 100" }
+  - { id: lnhy014jj9, name: RowTotal, type: decimal, required: true, from: [hm8dpotr2k, yx6qj15ntd], derived: Quantity * ItemPrice }
+  - { id: a4743g9d4x, name: ProductURL, type: string, required: true, from: [enc3yjqm6q] }
+  - { id: mmzjk5muos, name: ImageURL, type: string, nullable: true, from: [esswql30n5] }

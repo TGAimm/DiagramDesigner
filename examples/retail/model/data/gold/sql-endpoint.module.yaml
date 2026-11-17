@@ -1,0 +1,6 @@
+# GAP: SQL analytics endpoint - Fabric exposes gold as a read-only T-SQL (TDS) endpoint, a SQL
+# connection rather than HTTP; the exports Fjeld's other systems read are written as GET apis.
+id: flpant1ni7
+parent: d0jfpet25d
+name: SQL analytics endpoint
+meta: { endpoint: "fjeld-data-prod.datawarehouse.fabric.microsoft.com / lh_gold", views: "exports.customer_segments, exports.sell_through" }

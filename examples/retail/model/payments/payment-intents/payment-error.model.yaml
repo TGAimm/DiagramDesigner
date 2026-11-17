@@ -1,0 +1,11 @@
+id: pwpsr0fyli
+ownedBy: pfvgbz7fey
+name: PaymentError
+fields:
+  # GAP: enum
+  - { id: ep1affjtv2, name: type, type: string, required: true, constraints: ["one of: api_error, card_error, idempotency_error, invalid_request_error"] }
+  - { id: z7iwk5k5x3, name: code, type: string, nullable: true, constraints: ["e.g. card_declined, expired_card, authentication_required, payment_intent_unexpected_state"] }
+  - { id: m1yqhlvgjm, name: decline_code, type: string, nullable: true, constraints: ["e.g. insufficient_funds, do_not_honor"] }
+  - { id: iaimyeyrd9, name: message, type: string, nullable: true }
+  - { id: kphbm0157o, name: param, type: string, nullable: true }
+  - { id: kzaku7almo, name: doc_url, type: string, nullable: true }

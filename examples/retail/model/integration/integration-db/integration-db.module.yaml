@@ -1,0 +1,4 @@
+id: v38tj7w8bg
+parent: mleccno0ev
+name: Integration DB
+meta: { engine: Azure SQL Database, database: sqldb-fjeld-integration, tier: "General Purpose, serverless", schemas: "xref, sync, log" }

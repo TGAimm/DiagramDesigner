@@ -1,0 +1,13 @@
+id: h5a5sscvht
+ownedBy: nlc4zljjz8
+name: PickupOrderDraft
+tags: [pii]
+fields:
+  - { id: awc67fxpm9, name: orderNumber, type: string, required: true, from: [lulkapcaa0] }
+  - { id: xftz0i8m4y, name: externalId, type: uuid, required: true, from: [qazi456zfm] }
+  - { id: kaskfobgv8, name: storeId, type: int, required: true, from: [k5u5kiw2fk, hvpe1ot6lm], derived: "collectStoreKey (Commerce store key = storeNo) > POS store id" }
+  - { id: f2mmytvvqu, name: customerName, type: string, required: true, from: [romyz4pfcf, bsp6j20gsl] }
+  - { id: rrf1b9b1ti, name: customerEmail, type: string, required: true, from: [b5ftkjr0y9] }
+  - { id: k49kvinelq, name: customerPhone, type: string, nullable: true, from: [zpxuly18oh, n8i6mdsagq] }
+  - { id: rfa2apnijw, name: prepaid, type: bool, required: true, from: [b0edsryzw7], derived: "always true: the webshop authorises, Integration captures on collection" }
+  - { id: h1vaqos25f, name: lines, type: "{externalLineId, sku, name, quantity}", many: true, required: true, from: [c9xmzjnpp8, c1uzjurwuu, tzgfqq0q8b, ae7tr09nmb] }

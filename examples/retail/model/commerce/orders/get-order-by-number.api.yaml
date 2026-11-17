@@ -1,0 +1,12 @@
+id: fxxz5v03t0
+parent: f6x7dhgzlz
+name: Get order by order number
+method: GET
+path: /{projectKey}/orders/order-number={orderNumber}
+auth: "bearer (view_orders)"
+params:
+  - { id: of903wop92, name: projectKey, in: path, type: string, description: fjeld-prod }
+  - { id: hx2e7qegxb, name: orderNumber, in: path, type: string }
+responses:
+  - { status: 200, model: g5tcad7xx0 }
+  - { status: 404, description: ResourceNotFound }

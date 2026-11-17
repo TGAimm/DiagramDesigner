@@ -1,0 +1,23 @@
+id: xafontaoh4
+parent: xi92dufx8c
+name: Update user
+method: PATCH
+path: /v1.0/users/{id}
+auth: bearer (app-only Graph token, User.ReadWrite.All)
+params:
+  - { id: lwoqpv1z8q, name: id, in: path, type: uuid }
+request:
+  fields:
+    - { id: hlvyiniflv, name: displayName, type: string, to: [z2ki6fbhiv] }
+    - { id: dheebelini, name: givenName, type: string, to: [rg79eelcd5] }
+    - { id: f6xihxftun, name: surname, type: string, to: [gaf9qlyk35] }
+    - { id: bftkqyr2z1, name: country, type: string, to: [mocqzowc3c] }
+    - { id: uypwl7hfi8, name: preferredLanguage, type: string, to: [y5bckyrq1c] }
+    - { id: jfw4ucifij, name: accountEnabled, type: bool, to: [s64kq50zvi] }
+    - { id: f6c0nef2zj, name: "extension_{extAppId}_marketingConsent", type: bool, to: [o0a4plawj8] }
+    - { id: ccv8rqlx4r, name: "extension_{extAppId}_marketingConsentDate", type: datetime, to: [jvv29vdigj] }
+    - { id: umuqcpf1ss, name: "extension_{extAppId}_commerceCustomerId", type: string, to: [x0p9drrvt5] }
+responses:
+  - { status: 204, description: Updated }
+  - { status: 400, description: "Invalid value, or a read-only property" }
+  - { status: 404, description: Request_ResourceNotFound }

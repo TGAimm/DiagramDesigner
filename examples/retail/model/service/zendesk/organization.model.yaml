@@ -1,0 +1,16 @@
+id: mqgsqrl464
+ownedBy: rd06mopkno
+storedIn: kulzyfespz
+name: Organization
+tags: [b2b]
+fields:
+  - { id: yaejcn7w1b, name: id, type: int, pk: true }
+  - { id: jgv6ktlc82, name: name, type: string, required: true, from: [z2gswo0o53], constraints: [unique] }
+  - { id: u7gsqy7na4, name: external_id, type: string, nullable: true, from: [g61w9kgimf], derived: "the CRM account number, via Integration" }
+  - { id: kbre2mww8a, name: domain_names, type: string, many: true, constraints: [users with these e-mail domains join the organization] }
+  - { id: sh6xvokddb, name: group_id, type: int, nullable: true, ref: lck4mzgmuz, constraints: [the B2B group] }
+  - { id: z2lx06o1js, name: tags, type: string, many: true }
+  - { id: ey7ocz8yfz, name: notes, type: string, nullable: true }
+  - { id: dqc6xj65qt, name: created_at, type: datetime, required: true }
+indexes:
+  - { id: ofgi2ak5ta, name: ux_org_external_id, fields: [u7gsqy7na4], unique: true }

@@ -1,0 +1,5 @@
+id: zn7j7787p7
+parent: s7eejjfr7l
+name: Job Queue
+links:
+  - { label: Job queue entries, url: "https://learn.microsoft.com/en-us/dynamics365/business-central/admin-job-queues-schedule-tasks" }

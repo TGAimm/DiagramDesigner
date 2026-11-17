@@ -1,0 +1,32 @@
+# Pages 30008 APIV2 - Items, 30050 Item Variants, 30024 Item Categories, 30060 Locations
+id: nwmp5uwisr
+parent: wyb51ibopv
+name: itemsApi
+handles: [q2t4rbs6gu, oe3j1takyu, bszf4fnonm, v3yydrkiib, iqn1ze0a3p]
+inputs:
+  - { id: ymwwy69fdr, name: id, type: guid, nullable: true }
+  - { id: ov34zoxjb2, name: filter, type: string, nullable: true }
+outputs:
+  - { id: un5ldcrj3o, name: items, model: ohyqr35cc1, many: true }
+fails:
+  - { name: notFound, description: no item with this id }
+steps:
+  - if: itemCategories
+    then:
+      - { read: jhlps3z93h, with: filter, gets: categories }
+  - if: locations
+    then:
+      - { read: tpjqrdofb4, with: filter, gets: locations }
+  - if: itemVariants
+    then:
+      - { read: edi8izn1qa, with: id, gets: item }
+      - if: not found
+        then:
+          - { fail: notFound }
+      - { read: qokf6rurzg, with: item.no, gets: variants }
+  - if: items
+    then:
+      - { read: edi8izn1qa, with: "id or filter", gets: items }
+      - { read: wpvsicailg, with: "each item, no location filter", gets: inventory }
+      - { read: vupcnyiu4i, with: each itemCategoryCode, gets: itemCategoryId }
+      - { return: items }

@@ -1,0 +1,26 @@
+id: hcz30okido
+parent: a9udosegf6
+name: upsertProducts
+handles: [xscci9evvo]
+inputs:
+  - { id: rjlp5p62lm, name: products, model: jw2rr761o3, many: true, required: true }
+outputs:
+  - { id: uc9q8yszh5, name: created, type: int }
+  - { id: qchjaudfei, name: updated, type: int }
+fails:
+  - { name: tooMany, description: over 500 in one call (400) }
+steps:
+  - if: more than 500 products
+    then:
+      - { fail: tooMany }
+  - each: product
+    do:
+      - { read: jw2rr761o3, with: sku, gets: existing }
+      - if: an EAN already on another sku
+        then:
+          - { note: "row rejected into errors; the rest go on" }
+      - { write: jw2rr761o3, note: "insert or replace; updatedAt now" }
+      - { write: olvvff4lp5, note: "replace the sku's price rows per currency" }
+  - { note: "tills pick up changed products within a minute (offline tills at reconnect)" }
+  - { return: created }
+  - { return: updated }

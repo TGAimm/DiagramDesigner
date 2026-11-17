@@ -1,0 +1,25 @@
+# SCD2 dimension: one row per silver customer version. Facts point at the version valid when the
+# sale happened.
+id: yv9c2ik117
+ownedBy: d0jfpet25d
+storedIn: d0jfpet25d
+name: dim_customer
+tags: [pii]
+fields:
+  - { id: asdpx9s4yn, name: customer_sk, type: bigint, pk: true, from: [nzh2rm32fl], derived: "-1 is the Unknown member (anonymous store sales, guests not matched)" }
+  - { id: n3au7ckomv, name: customer_key, type: string, required: true, from: [rjnuk01824] }
+  - { id: n8kyw8325n, name: email_hash, type: string, nullable: true, from: [q4zggny5hi], derived: "sha2-256 of the normalised e-mail; the address itself stays in silver" }
+  - { id: zi5x3ytj44, name: first_name, type: string, nullable: true, from: [i4yj6nieap] }
+  - { id: r6mp3d8zwh, name: last_name, type: string, nullable: true, from: [x0nq6ngd54] }
+  - { id: peerjr4y57, name: age_band, type: string, nullable: true, from: [h3v65bohzk], derived: "18-24, 25-34, ... 65+ as of the load date" }
+  - { id: ffrg0iewz4, name: country, type: string, nullable: true, from: [mwi07f19ww] }
+  - { id: wv9fn3dvc8, name: loyalty_tier, type: string, nullable: true, from: [lymt6d2s4j] }
+  - { id: f2m28ee9kh, name: marketing_consent, type: bool, required: true, from: [tish9s9xmt] }
+  - { id: c46jhrnx15, name: is_member, type: bool, required: true, from: [w65j2hfgdg], derived: has a member number }
+  - { id: uggvoe2hm1, name: segment, type: string, nullable: true, from: [jcw4m97rq6], derived: "current segment, the same on every version (type 1 column on an SCD2 dim)" }
+  - { id: moyshmzj4u, name: first_seen_date, type: date, required: true, from: [t98qerpp73] }
+  - { id: ithouywvhq, name: valid_from, type: datetime, required: true, from: [d6lgzj0p8e] }
+  - { id: vwg77bc7px, name: valid_to, type: datetime, required: true, from: [cbjnasudr1], derived: "9999-12-31 while current (no nulls in a Direct Lake range join)" }
+  - { id: vfeahwool0, name: is_current, type: bool, required: true, from: [eot2g8dqza] }
+indexes:
+  - { id: vg9ghwcie3, name: ix_dim_customer_key, fields: [n3au7ckomv, ithouywvhq] }

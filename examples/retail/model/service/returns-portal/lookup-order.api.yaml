@@ -1,0 +1,18 @@
+id: noq9nb6lng
+parent: t6al4kcu16
+name: Look up order
+method: POST
+path: /orders/lookup
+auth: none (order number + e-mail prove the customer); rate limited per IP
+request:
+  fields:
+    - { id: lsyhcet1p2, name: order_number, type: string, required: true, to: [twmqcvgacf] }
+    - { id: se76jm9z78, name: email, type: string, required: true, to: [vm8fhaf7i8] }
+responses:
+  - status: 200
+    fields:
+      - { id: lu8xrhigek, name: order, model: bdri29g04e }
+      - { id: dntw8jeakz, name: return_by, type: date, from: [wt78v7jp8a, sb0a8wqwxg], derived: shipped_at + return window }
+      - { id: s1ng5c6s9f, name: reasons, model: dqkug7urdt, many: true }
+  - { status: 404, description: no order with that number and e-mail }
+  - { status: 422, description: order not shipped yet }

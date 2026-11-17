@@ -1,0 +1,18 @@
+id: hrc9ssxjvw
+parent: pg4yiapkrt
+name: Get anonymous session token
+method: POST
+path: /oauth/{projectKey}/anonymous/token
+auth: "basic (storefront API client)"
+params:
+  - { id: b1p9yuu021, name: projectKey, in: path, type: string, description: fjeld-prod }
+request:
+  contentType: application/x-www-form-urlencoded
+  fields:
+    - { id: lfkmistyaf, name: grant_type, type: string, required: true, description: client_credentials, to: [ox78v3euaz] }
+    - { id: by43askk01, name: scope, type: string, description: "manage_my_orders, create_anonymous_token", to: [x2n39n0nd4] }
+    - { id: oa9zv2r55j, name: anonymous_id, type: string, description: "optional; generated when left out", to: [dr8rz3asx0] }
+responses:
+  - { status: 200, model: okef4sk2jd, pick: [trqt1u7pdx, l11l8bit91, ln19171ns9, x2n39n0nd4, eo42w89q2h] }
+  - { status: 400, description: "invalid_scope or anonymous_id already in use" }
+  - { status: 401, description: "invalid_client" }

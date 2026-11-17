@@ -1,0 +1,32 @@
+# Codeunit 7002 Price Calculation - V16: picks the lowest active price and the highest line
+# discount that apply to a sales line.
+id: vxudxdo5ae
+parent: g65jav6xwo
+name: findBestPrice
+inputs:
+  - { id: f3nnf5dq6e, name: itemNo, type: string, required: true }
+  - { id: ehaahblihh, name: variantCode, type: string, nullable: true }
+  - { id: eopgfotv2h, name: customerPriceGroup, type: string, required: true }
+  - { id: l5jacb9gik, name: currencyCode, type: string, nullable: true }
+  - { id: uo428k84qd, name: quantity, type: decimal, required: true }
+  - { id: sreafnxaal, name: orderDate, type: date, required: true }
+outputs:
+  - { id: y24xkyh74p, name: unitPrice, type: decimal }
+  - { id: unj0bjj6ig, name: lineDiscountPct, type: decimal }
+fails:
+  - { name: noPrice, description: "no active price and no item unit price (sales of a zero price are refused)" }
+steps:
+  - { read: zk2ozptnx5, with: "item, variant or blank, source = price group or All Customers, currency, date in starting..ending, status Active, minimumQuantity <= quantity", gets: candidates }
+  - if: no price candidate
+    then:
+      - { read: qcfiyg2wwe, with: itemNo, gets: fallback price }
+      - if: fallback price = 0
+        then:
+          - { fail: noPrice }
+  - { note: "lowest price wins; a variant line beats a blank-variant line at the same price" }
+  - { read: jpvp1sd93p, with: customerPriceGroup, gets: discounts allowed }
+  - if: discounts allowed
+    then:
+      - { note: "highest line discount among the discount candidates" }
+  - { return: unitPrice }
+  - { return: lineDiscountPct }

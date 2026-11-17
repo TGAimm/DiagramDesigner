@@ -1,0 +1,8 @@
+id: yybkfivtvd
+ownedBy: myr8ju3xsr
+name: WmsOrderDraftLine
+fields:
+  - { id: wc3dtm021x, name: erpLineNo, type: int, required: true, from: [aswvu34ixo] }
+  - { id: v2xxhrhwkf, name: itemNo, type: string, required: true, from: [gs710hhxzf, yw6rswyq0t], derived: "'<item no.>-<variant code>' (the 3PL's item key)" }
+  - { id: s2r2d295t9, name: description, type: string, nullable: true, from: [q955dn222o] }
+  - { id: wvepirmm6c, name: qty, type: int, required: true, from: [fmmrzvdfda] }

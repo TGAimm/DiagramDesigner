@@ -1,0 +1,12 @@
+id: by4f2wsisq
+parent: pfvgbz7fey
+name: Retrieve a PaymentIntent
+method: GET
+path: /v1/payment_intents/{intent}
+auth: bearer (secret key) or publishable key + client_secret
+params:
+  - { id: o1ulw0gbey, name: intent, in: path, type: string }
+  - { id: pcbo32gh81, name: client_secret, in: query, type: string, required: false, description: required with a publishable key }
+responses:
+  - { status: 200, model: g8pq0m68jp }
+  - { status: 404, model: pwpsr0fyli, description: resource_missing }

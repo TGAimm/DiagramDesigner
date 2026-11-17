@@ -1,0 +1,20 @@
+# Table 5740 Transfer Header: store replenishment from CENTRAL (the 3PL warehouse), and
+# store-to-store moves. Shipped through the in-transit location, received in the store.
+id: q5mvf7cvcr
+ownedBy: x2x0s3utl1
+storedIn: q43aprn5l0
+name: Transfer Header
+fields:
+  - { id: ljlh12h9yw, name: no, type: string, pk: true, constraints: ["e.g. TO-10422"] }
+  - { id: gc436kly1y, name: systemId, type: guid, required: true }
+  - { id: i9r2q9k1g1, name: transferFromCode, type: string, required: true, ref: gsrr00mc9x }
+  - { id: u5m8l8ktuq, name: transferToCode, type: string, required: true, ref: gsrr00mc9x }
+  - { id: bj7ud0r2i4, name: inTransitCode, type: string, required: true, ref: gsrr00mc9x, constraints: [a location with useAsInTransit] }
+  - { id: yomt6m6vuj, name: shipmentDate, type: date }
+  - { id: awfgs1gj4h, name: receiptDate, type: date }
+  - { id: egte8b5gwq, name: status, type: string, required: true, constraints: ["one of: Open, Released"] }   # GAP: enum
+  - { id: rzdjdz19kf, name: externalDocumentNo, type: string, nullable: true, constraints: [the 3PL's outbound order reference] }
+  - { id: h3ymhv3b4f, name: lines, model: fvxkpcz0al, many: true }
+  - { id: u4rcvz6okt, name: systemModifiedAt, type: datetime, required: true }
+indexes:
+  - { id: ia6fxjosp1, name: ux_transfer_header_systemid, fields: [gc436kly1y], unique: true }

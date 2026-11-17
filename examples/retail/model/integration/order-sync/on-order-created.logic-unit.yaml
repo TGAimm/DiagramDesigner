@@ -1,0 +1,42 @@
+# GAP: triggered by subscription order-created/erp
+# Flow 3, step 1: the Commerce order becomes an ERP sales order, then goes to the 3PL or the store.
+id: l8plpyjwuy
+parent: w8lrzinusw
+name: onOrderCreated
+inputs:
+  - { id: zc6saj7z2d, name: event, model: lf76fuj5g0, required: true }
+outputs: []
+fails:
+  - { name: rejectedByErp, description: "400 from ERP (blocked item, unknown variant): dead-lettered, erp-team fixes master data and ops resubmits" }
+steps:
+  - { note: "subscription order-created/erp" }
+  - { read: n8ujyi0o8a, with: event.orderNumber, gets: ids }
+  - if: ids.erpSalesOrderNo is set
+    then:
+      - { write: yguluhbf6w, note: "skipped_duplicate: the ERP order exists" }
+    else:
+      - { write: n8ujyi0o8a, note: "insert: commerceOrderId, orderNumber, country, collectStoreNo, status received" }
+      - { call: ekgirua9an, with: "client_credentials of the integration API client (scopes manage_orders, manage_payments; cached)", gets: commerceToken }
+      - { call: v2gmil25dl, with: "event.orderId, expand paymentInfo.payments[*]", gets: order }
+      - { write: n8ujyi0o8a, note: "stripePaymentIntentId = the payment's interfaceId" }
+      - { call: a1wq3f2ys6, with: order, gets: erpCustomerNo }
+      - { note: "map to ErpSalesOrderDraft and its lines (shipping fee as an Account line)" }
+      - { call: d6cde9w3nb, with: "the draft as a deep insert", gets: salesOrder }
+      - if: 400
+        then:
+          - { write: wlmvgl2qp8, note: "retryable false, the ERP message" }
+          - { call: gxh7trguok, with: "the event, lastError" }
+          - { call: xdgvgxhc6p, with: "version, transitionState fjeld-order-state on-hold", gets: order }
+          - { fail: rejectedByErp }
+      - if: 429 or 5xx
+        then:
+          - { call: wrbtf9xjcp, with: "the event, attempt 1, notBefore + 5 min" }
+        else:
+          - { write: n8ujyi0o8a, note: "erpCustomerNo, erpSalesOrderId, erpSalesOrderNo, status erp_created" }
+          - { call: xdgvgxhc6p, with: "version, setCustomField erpOrderNo and erpCustomerNo, transitionState fjeld-order-state exported", gets: order }
+          - if: event.collectStoreKey is null
+            then:
+              - { call: txgwjmimse, with: salesOrder }
+            else:
+              - { note: "a click & collect order ships from the store's own stock: routeClickAndCollect sends it to the POS" }
+          - { write: yguluhbf6w, note: "processed, targetSystem erp, businessKey order number" }

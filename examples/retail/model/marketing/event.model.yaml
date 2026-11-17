@@ -1,0 +1,18 @@
+id: g4j7b6f21o
+ownedBy: dtgcjgjtna
+storedIn: mm9tmyhvey
+name: Event
+fields:
+  - { id: jvn6w8hd6p, name: id, type: string, pk: true }
+  - { id: fpwvnlgw98, name: metric_id, type: string, required: true, ref: i98v99bkxi }
+  - { id: pqvve1lr0f, name: profile_id, type: string, required: true, ref: apj02aeekt }
+  - { id: n44of8a2wj, name: time, type: datetime, required: true }
+  - { id: mgsgvv7631, name: value, type: decimal, nullable: true, constraints: [order total for order metrics] }
+  - { id: h60zrun8mz, name: value_currency, type: string, nullable: true, constraints: ["one of: DKK, SEK, NOK, EUR"] }
+  - { id: s4ov6l78rp, name: unique_id, type: string, nullable: true, constraints: ["dedupe key: Fjeld sends <metric>-<order number>[-<line>]"] }
+  # GAP: payload by discriminator (properties' shape depends on the metric: Placed Order properties for Placed Order; tracking fields for Shipped)
+  - { id: jjwkf27p31, name: event_properties, model: d1iw1a9cct }
+indexes:
+  - { id: s8p9pfvqdv, name: ix_event_profile_time, fields: [pqvve1lr0f, n44of8a2wj] }
+  - { id: an02zcsmzs, name: ix_event_metric_time, fields: [fpwvnlgw98, n44of8a2wj] }
+  - { id: pzx3i1iyfs, name: ux_event_unique, fields: [fpwvnlgw98, s4ov6l78rp], unique: true }

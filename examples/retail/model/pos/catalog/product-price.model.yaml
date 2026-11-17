@@ -1,0 +1,12 @@
+id: olvvff4lp5
+ownedBy: a9udosegf6
+storedIn: hykg6pt8u2
+name: Product price
+fields:
+  - { id: yqptub5nwf, name: sku, type: string, pk: true, ref: jw2rr761o3 }
+  - { id: juo6oyxlh4, name: currency, type: string, pk: true, constraints: ["one of: DKK, SEK, NOK, EUR"] }  # GAP: enum
+  - { id: ywfms6wgss, name: price, type: decimal, required: true, from: [kqip2xr4t7], derived: "unit price on price list STORE-<currency>, incl. VAT", constraints: [incl. VAT, min 0] }
+  - { id: oj8eb7d1p5, name: campaignPrice, type: decimal, nullable: true, from: [kqip2xr4t7], derived: "unit price on the running campaign price list, incl. VAT" }
+  - { id: a82axp61o4, name: campaignFrom, type: date, nullable: true }
+  - { id: cj1tn5gt72, name: campaignTo, type: date, nullable: true }
+  - { id: lf6esutrro, name: currentPrice, type: decimal, stored: false, from: [ywfms6wgss, oj8eb7d1p5, a82axp61o4, cj1tn5gt72], derived: campaign price while today is in the campaign window }

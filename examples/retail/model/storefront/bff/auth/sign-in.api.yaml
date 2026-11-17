@@ -1,0 +1,12 @@
+id: n3lmxrely7
+parent: vkdx3tfwhz
+name: Sign in or sign up
+method: GET
+path: /api/auth/sign-in
+auth: session cookie fj_sid
+params:
+  - { id: vtrsanwn9j, name: returnTo, in: query, type: string, required: false }
+  - { id: rhrdtbfzjd, name: signUp, in: query, type: bool, required: false, description: "opens the sign-up page (prompt=create)" }
+responses:
+  # GAP: a browser redirect carrying its result in the Location query
+  - { status: 302, description: "to Identity authorize with client_id, PKCE challenge, state, nonce, ui_locales" }

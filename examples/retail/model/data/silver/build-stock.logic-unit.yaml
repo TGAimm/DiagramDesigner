@@ -1,0 +1,14 @@
+id: wmtzxnghvx
+parent: c9pk2gmf7l
+name: buildStock
+meta: { notebook: nb_silver_stock }
+inputs: []
+outputs: []
+steps:
+  - { read: ftd3ia9zdg, with: "snapshot_at today", gets: warehouse stock }
+  - { read: bikx1km3c2, with: "_snapshot_date today", gets: erp stock by location }
+  - { read: j9aznog0dp, gets: store locations }
+  - if: no WMS rows for today
+    then:
+      - { note: "copy yesterday's NORDLAGER rows to today, marked source_system wms; the report shows the file as late" }
+  - { write: zqwb4ovyun, note: "overwrite today's partition: NORDLAGER from WMS with the ERP figure beside it, store locations from ERP" }

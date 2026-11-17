@@ -1,0 +1,16 @@
+id: xi19qutu0h
+ownedBy: vgv4575wz1
+storedIn: hykg6pt8u2
+name: Stock movement
+fields:
+  - { id: yoto1krwhl, name: id, type: uuid, pk: true }
+  - { id: tuf95ggw34, name: storeId, type: int, required: true, ref: h3qlberi23 }
+  - { id: jlf8pm4fix, name: sku, type: string, required: true, ref: jw2rr761o3 }
+  - { id: ta0bljazl0, name: qtyChange, type: int, required: true }
+  # GAP: enum
+  - { id: j5559ak3s8, name: reason, type: string, required: true, constraints: ["one of: sale, return, transfer_in, pickup_collected, count, damaged, set_by_integration"] }
+  - { id: j8j35z9cmn, name: referenceId, type: string, nullable: true, constraints: [receipt, transfer or pickup order] }
+  - { id: iq1nhu7byp, name: staffId, type: int, nullable: true, ref: l5j11fszfp }
+  - { id: x0ku4rasgi, name: createdAt, type: datetime, required: true }
+indexes:
+  - { id: iwmgozmgon, name: ix_movement_store_sku_time, fields: [tuf95ggw34, jlf8pm4fix, x0ku4rasgi] }

@@ -1,0 +1,16 @@
+# Table 121 Purch. Rcpt. Line
+id: qtkzpmml7p
+ownedBy: si82yvapze
+storedIn: q43aprn5l0
+name: Purch. Rcpt. Line
+fields:
+  - { id: mwctodwu40, name: documentNo, type: string, pk: true, ref: u6q2dwzg0w }
+  - { id: d9mdk8r9rf, name: lineNo, type: int, pk: true, from: [v0tyzhmt2l] }
+  - { id: rtzums3j51, name: orderNo, type: string, from: [xqnwy2d30w] }
+  - { id: b4s8jq8u5u, name: orderLineNo, type: int, from: [v0tyzhmt2l] }
+  - { id: vu09s9sd3o, name: no, type: string, ref: yu6wdxgb8q, from: [rzz8g2t7wf] }
+  - { id: euphpcpghi, name: variantCode, type: string, ref: u2mbyuw427, from: [owi8p3zos1] }
+  - { id: pifdvlmy7b, name: locationCode, type: string, ref: gsrr00mc9x, from: [wbi6j1zmnf] }
+  - { id: dckvvcw6kn, name: quantity, type: decimal, from: [ukm84eux6z] }
+  - { id: xa8a28kmbt, name: directUnitCost, type: decimal, from: [wmy8kt0iah] }
+  - { id: gntw0a85eq, name: itemRcptEntryNo, type: int, ref: u0qtahb835 }

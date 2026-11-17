@@ -1,0 +1,17 @@
+id: imqurcgfp9
+parent: pbv5f8a0tz
+name: createCheckoutSession
+handles: [u5jqjvg1hf]
+inputs:
+  - { id: kbvy4p8h5s, name: line_items, type: json, required: true }
+  - { id: uhsuczw4se, name: success_url, type: string, required: true }
+outputs:
+  - { id: ob0s893bp0, name: session, model: jlokrbulgw }
+fails:
+  - { name: invalidRequest, description: missing or bad parameter }
+steps:
+  - if: no line items, or a currency or payment method type not enabled on the account
+    then:
+      - { fail: invalidRequest }
+  - { write: jlokrbulgw, note: "insert, status open, payment_status unpaid, amount_total = sum of line items, url of the hosted page, expires_at" }
+  - { return: session }

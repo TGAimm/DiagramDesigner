@@ -1,0 +1,18 @@
+id: x8ugoms0sh
+ownedBy: d8hyu4qiq7
+storedIn: t99y8h5mfb
+name: Parcel
+fields:
+  - { id: dtlqz5nyj1, name: id, type: int, pk: true }
+  - { id: f76dyth0ip, name: shipment_id, type: int, required: true, ref: o96th79s8y }
+  - { id: nthe0zrkme, name: weight, type: int, required: true, constraints: ["grams", "max product.max_weight"] }
+  - { id: qkdqypdm05, name: length, type: int, nullable: true, constraints: [cm] }
+  - { id: f53j72jzwp, name: width, type: int, nullable: true, constraints: [cm] }
+  - { id: ub4jd4bvjx, name: height, type: int, nullable: true, constraints: [cm] }
+  - { id: tme37cq1gl, name: description, type: string, nullable: true }
+  - { id: bq0e1j92yw, name: pkg_no, type: string, nullable: true, constraints: ["carrier tracking number, set on booking"] }
+  - { id: namh6tyb85, name: tracking_url, type: string, nullable: true, from: [bq0e1j92yw, hq2wq6hpea], derived: "carrier's track page with pkg_no" }
+  - { id: cflo3epoya, name: tracking_status, type: string, nullable: true, from: [l1e8c9ti93], derived: status of the latest tracking event }
+indexes:
+  - { id: o0ig2v7p4s, name: ix_parcel_shipment, fields: [f76dyth0ip] }
+  - { id: rrhuum9412, name: ux_parcel_pkg_no, fields: [bq0e1j92yw], unique: true }

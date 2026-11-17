@@ -1,0 +1,17 @@
+id: e969k13097
+parent: ktxxdlpyeb
+name: getObject
+handles: [tdh6mnjmty]
+inputs:
+  - { id: kadr3u2e2h, name: indexName, type: string, required: true }
+  - { id: bj7v1mn4s7, name: objectID, type: string, required: true }
+outputs:
+  - { id: ctlzgjji7i, name: record, model: s08z88xp3c }
+fails:
+  - { name: notFound, description: "404" }
+steps:
+  - { read: s08z88xp3c, with: "indexName, objectID", gets: record }
+  - if: no record
+    then:
+      - { fail: notFound }
+  - { return: record }

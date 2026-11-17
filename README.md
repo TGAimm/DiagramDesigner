@@ -69,6 +69,7 @@ and the canvas updates on save.
 
 ```
 examples/commerce/ development landscape (ERP, PIM, Webshop); scenarios/ holds pending changes
+examples/retail/   large test landscape: 15 systems, ~1000 entity files, modelled on real products
 docs/schema/       format reference, one cookbook per entity kind
 docs/goals.md      open goals
 tool/              the SvelteKit app and the `sdv` CLI

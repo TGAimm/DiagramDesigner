@@ -1,0 +1,46 @@
+# GAP: triggered by subscription return-created/returns
+# Flow 6: Commerce return info, ERP sales return order, WMS expected return.
+id: b4f1yt0wrg
+parent: sicmj00m5m
+name: onReturnCreated
+inputs:
+  - { id: mukupgwiei, name: event, model: ybi20fgqqc, required: true }
+outputs: []
+fails:
+  - { name: noInvoice, description: "the order has no posted invoice yet (not shipped?): retried for 2 days, then dead-lettered" }
+steps:
+  - { note: "subscription return-created/returns" }
+  - { read: r1iwd1t2bt, with: event.rmaNumber, gets: ids }
+  - if: ids.erpReturnOrderNo is set
+    then:
+      - { write: yguluhbf6w, note: skipped_duplicate }
+    else:
+      - { write: r1iwd1t2bt, note: "insert, status announced" }
+      - { read: n8ujyi0o8a, with: event.orderNumber, gets: order ids }
+      - { call: v2gmil25dl, with: order ids.commerceOrderId, gets: order }
+      - { call: xdgvgxhc6p, with: "version, addReturnInfo (returnTrackingId = RMA, items: lineItemId, quantity, shipmentState Advised, paymentState Initial)", gets: order }
+      - { write: r1iwd1t2bt, note: commerceReturnItemIds }
+      - { call: h3vvganqxl, with: "$filter externalDocumentNumber eq '<order number>'", gets: invoices }
+      - if: no invoices
+        then:
+          - { call: wrbtf9xjcp, with: "attempt + 1, notBefore + 4 h" }
+          - { fail: noInvoice }
+      - { note: "map to ErpReturnOrderDraft" }
+      - { call: fj50ns4hdq, with: the draft, gets: return order }
+      - if: 409 (exists)
+        then:
+          - { note: "a resend after a lost response: read it back by externalDocumentNumber" }
+      - { write: r1iwd1t2bt, note: "erpReturnOrderId, erpReturnOrderNo, status erp_created" }
+      - if: event.channel is store
+        then:
+          - { call: sl6980o0s2, with: "rmaNumber; every item accepted" }
+        else:
+          - flag: exafkh0xzs
+            on:
+              - { call: h14t5yh29l, with: "returnNo = ERP return order no., rmaNumber, orderRef, customerEmail, expectedDate = today + 5, lines", gets: wms return }
+              - { write: r1iwd1t2bt, note: "wmsReturnId, status expected_at_wms" }
+            off:
+              - { write: pxxc0fdfed, note: "RETURNS_EXPECTED_<ts>.csv to /fjeld/in, one row per item" }
+              - { write: cc1v719mlz, note: "archive/wms-in/…" }
+              - { write: r1iwd1t2bt, note: "status expected_at_wms" }
+      - { write: yguluhbf6w, note: "processed, targetSystem commerce+erp+wms, businessKey RMA" }

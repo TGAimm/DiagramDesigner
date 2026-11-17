@@ -1,0 +1,4 @@
+id: f1xy7xguug
+parent: mleccno0ev
+name: Price & stock sync
+meta: { functionApp: func-fjeld-pricestock, runtime: ".NET 8 isolated", plan: Flex Consumption }

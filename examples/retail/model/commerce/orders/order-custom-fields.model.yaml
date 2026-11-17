@@ -1,0 +1,12 @@
+# GAP: custom types: Custom Fields are typed at runtime by a Type resource (key fjeld-order); written as a fixed model
+id: rtvkj5293v
+ownedBy: f6x7dhgzlz
+name: Order Custom Fields
+fields:
+  - { id: ng1gdvqd8q, name: type, type: string, required: true, constraints: ["one of: fjeld-order"] }  # GAP: enum
+  - { id: nppz22af3p, name: erpOrderNo, type: string, nullable: true, from: [aq2v5k54f3] }
+  - { id: qbos8gsecj, name: erpCustomerNo, type: string, nullable: true, from: [rst3ltbxtl] }
+  - { id: k5u5kiw2fk, name: collectStoreKey, type: string, nullable: true, ref: lscs8u8axo, constraints: [click & collect store channel] }
+  - { id: pyjykfb9ti, name: wmsOrderRef, type: string, nullable: true }
+  - { id: rb2r4fwula, name: giftMessage, type: string, nullable: true }
+  - { id: trfu6d5wom, name: marketingConsent, type: bool, nullable: true }

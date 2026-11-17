@@ -1,0 +1,28 @@
+id: s2uz0852i0
+ownedBy: ar9pfoadj7
+storedIn: ar9pfoadj7
+name: crm_contact
+tags: [pii]
+fields:
+  - { id: noqzl76io3, name: contactid, type: uuid, pk: true, from: [gp3y3t4d1d] }
+  - { id: fq7n3lqnuh, name: firstname, type: string, nullable: true, from: [if2mlrvh1r] }
+  - { id: x04vm4862z, name: lastname, type: string, nullable: true, from: [b590a1yfa4] }
+  - { id: kspb7rvuu3, name: emailaddress1, type: string, nullable: true, from: [uunwqf9kfu] }
+  - { id: llq81zpoky, name: mobilephone, type: string, nullable: true, from: [rvejr5t3yj] }
+  - { id: bq413z2pse, name: birthdate, type: date, nullable: true, from: [eou5yzi7ag] }
+  - { id: sq215auc97, name: address1_city, type: string, nullable: true, from: [mqnnlwxrj2] }
+  - { id: sh0eu5ufmf, name: address1_postalcode, type: string, nullable: true, from: [owdahbbxyv] }
+  - { id: td8gm3q61q, name: address1_country, type: string, nullable: true, from: [kf7fvju1z1] }
+  - { id: ht9maw6rtg, name: fjeld_commercecustomerid, type: string, nullable: true, from: [bxs264j33o] }
+  - { id: o5nn6ax3bm, name: fjeld_identityuserid, type: string, nullable: true, from: [r4139fb0f4] }
+  - { id: bbdho91bhe, name: fjeld_loyaltytier, type: string, nullable: true, from: [g6wd5evlsf] }
+  - { id: jickza11ad, name: fjeld_lifetimevalue, type: decimal, nullable: true, from: [zfzskiajiw] } # CRM's own figure (online orders only); gold computes the full one
+  - { id: lg8b544lb4, name: donotbulkemail, type: bool, from: [ih7y93cbv2] }
+  - { id: c62027fyqh, name: statecode, type: string, from: [bsjywpi9m2] }
+  - { id: n284q9jcwk, name: masterid, type: uuid, nullable: true, from: [pj0zs4w4qa] } # survivor when this contact was merged
+  - { id: qehcihpt92, name: merged, type: bool, from: [z2achf3dnk] }
+  - { id: gl03in9m1n, name: createdon, type: datetime, from: [bub9p9vhub] }
+  - { id: wrth15gpqx, name: modifiedon, type: datetime, from: [ea7vpe0hdo] }
+  - { id: s66j8vjy7c, name: _loaded_at, type: datetime, required: true }
+  - { id: h04jtpqxyn, name: _source, type: string, required: true, constraints: ["crm/contacts"] }
+  - { id: o4qn6otd6z, name: _batch_id, type: string, required: true }

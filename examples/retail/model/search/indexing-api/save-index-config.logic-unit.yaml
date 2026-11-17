@@ -1,0 +1,36 @@
+id: hfvdlrji7t
+parent: ktxxdlpyeb
+name: saveIndexConfig
+handles: [gn60whiwfk, k5fwoyuzi6, w3qkiyzpy8]
+inputs:
+  - { id: s63i7d0747, name: indexName, type: string, required: true }
+  - { id: ihpzyf8fw1, name: settings, model: wtqn6ejr7o, nullable: true }
+  - { id: odvwi2y9rj, name: synonyms, model: tzc68qcqx4, many: true }
+  - { id: c099uad027, name: rules, model: u2jtnahx4h, many: true }
+  - { id: c1a2zobsf4, name: forwardToReplicas, type: bool, nullable: true }
+  - { id: ycpo59amq7, name: replaceExisting, type: bool, nullable: true, description: "replaceExistingSynonyms or clearExistingRules" }
+outputs:
+  - { id: r0hkdzch34, name: task, model: uy48nlidqz }
+steps:
+  - { write: uy48nlidqz, note: "new task, status notPublished" }
+  - if: settings given
+    then:
+      - { write: wtqn6ejr7o, note: "merge: attributes left out keep their value" }
+      - if: replicas changed
+        then:
+          - { write: xb9pymmha0, note: "create the new replica indices, unlink the removed ones" }
+  - if: synonyms or rules given
+    then:
+      - if: replaceExisting
+        then:
+          - { write: tzc68qcqx4, note: "delete the index's synonyms (or rules) first" }
+      - { write: tzc68qcqx4, note: upsert by objectID }
+      - { write: u2jtnahx4h, note: upsert by objectID }
+  - if: forwardToReplicas
+    then:
+      - { read: wtqn6ejr7o, with: indexName, gets: replicas }
+      - each: replica in replicas
+        do:
+          - { write: wtqn6ejr7o, note: same change on the replica (its ranking is kept) }
+  - { write: uy48nlidqz, note: status published }
+  - { return: task }

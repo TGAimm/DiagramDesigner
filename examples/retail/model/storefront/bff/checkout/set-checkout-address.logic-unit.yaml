@@ -1,0 +1,30 @@
+id: n197jaa7ob
+parent: a2x6k1ux7z
+name: setCheckoutAddress
+handles: [epg9zhnhqn]
+inputs:
+  - { id: vnx6pl6144, name: email, type: string, required: true }
+  - { id: wcn9mpu59e, name: shippingAddress, model: b8rzoiyo20, required: true }
+  - { id: l83qtvaeol, name: billingAddress, model: b8rzoiyo20, nullable: true }
+  - { id: awl83t7rbq, name: newsletterOptIn, type: bool, nullable: true }
+outputs:
+  - { id: kz9i6670bh, name: summary, model: c5wtilu6sm }
+fails:
+  - { name: invalid, description: "400: email, postal code, or a country other than the shop's" }
+  - { name: emptyCart, description: "409" }
+steps:
+  - if: postal code doesn't fit the country, or country isn't the session's
+    then:
+      - { fail: invalid }
+  - { call: vhts24past, gets: cart }
+  - if: no cart or no lines
+    then:
+      - { fail: emptyCart }
+  - { call: r8uoh3ve5d, with: "version, setCustomerEmail, setShippingAddress, setBillingAddress (shipping when null)", gets: cart }
+  - { write: hp3khxqvp9, note: newsletterOptIn }
+  - if: Started Checkout not yet sent for this cart
+    then:
+      - { call: na6iutswge, with: "metric Started Checkout, profile email, value = total, items (sku, name, quantity, price, url, image), unique_id Started Checkout-<cartId>", note: "abandoned-checkout flow in Marketing" }
+      - { write: fxfgvikwq7, note: cart.id }
+  - { call: citl3oc4ja, with: cart.id, gets: methods }
+  - { return: summary }

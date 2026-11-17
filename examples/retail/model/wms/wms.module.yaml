@@ -1,0 +1,5 @@
+id: rtydt8mkge
+name: WMS
+meta: { vendor: Nordlager Fulfilment (3PL), product: "Ongoing WMS, hosted and run by the 3PL", kind: 3pl, owner: integration-team, clientCode: FJELD, warehouse: "Nordlager Kolding (DK)" }
+links:
+  - { label: Ongoing WMS developer docs (REST API and file integration), url: https://developer.ongoingwarehouse.com/ }

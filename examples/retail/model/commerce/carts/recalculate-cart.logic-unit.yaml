@@ -1,0 +1,52 @@
+id: pgzgs1m2r3
+parent: b1ptklldw3
+name: recalculateCart
+inputs:
+  - { id: qym2likce0, name: cartId, type: uuid, required: true }
+  - { id: t2ge38d263, name: updateProductData, type: bool, required: false, description: refresh name and variant snapshots from current product data }
+outputs:
+  - { id: oo36o8865k, name: cart, model: w4i82sypi6 }
+fails:
+  - { name: matchingPriceNotFound, description: "MatchingPriceNotFound (400): a variant has no price for the cart's currency and country" }
+steps:
+  - { read: w4i82sypi6, with: cartId, gets: cart }
+  - each: lineItem in cart.lineItems
+    do:
+      - { read: f4k1ljvlhl, with: "lineItem.productId, current", gets: productData }
+      - if: updateProductData
+        then:
+          - { write: mfm2nwfwft, note: "and name, slug" }
+      - { read: roy8169338, with: lineItem.variant, gets: prices }
+      - { note: "price selection: currency, then country, customerGroup, channel (distribution), validFrom/validUntil; the most specific match wins" }
+      - if: no price matches
+        then:
+          - { fail: matchingPriceNotFound }
+      - { write: bctto5wq1y }
+  - { read: v6w0nfv7cd, with: "isActive, inside validity, cartPredicate matches, store matches; by sortOrder", gets: cartDiscounts }
+  - { read: b5wltiomiu, with: cart.discountCodes, gets: discountCodes }
+  - each: cartDiscount in cartDiscounts (highest sortOrder first)
+    do:
+      - if: cartDiscount.requiresDiscountCode and none of the cart's codes holds it
+        then:
+          - { note: skip }
+        else:
+          - { write: mh5uizwxp4, note: "apply relative, absolute or fixed value to the target lines; recorded in discountedPricePerQuantity" }
+          - if: cartDiscount.stackingMode is StopAfterThisDiscount
+            then:
+              - { note: stop applying further discounts }
+  - { write: ct25r6vwlx, note: "MatchesCart, DoesNotMatchCart, NotActive, ApplicationStoppedByPreviousDiscount..." }
+  - if: cart.shippingInfo and cart.shippingAddress are set
+    then:
+      - { read: at1dw8zx8n, with: cart.shippingInfo.shippingMethod, gets: method }
+      - { read: eh519ecwam, with: shippingAddress.country, gets: zone }
+      - if: method has no rate for the zone and currency, or its predicate fails
+        then:
+          - { write: f5tnxhbc78, note: DoesNotMatchCart }
+        else:
+          - { write: j6aeqj954u, note: "rate price, or 0 when line totals reach freeAbove" }
+  - { read: qjn7kv5o12, with: "each product's taxCategory + shippingAddress.country (or cart.country)", gets: taxRates }
+  - { write: oab1g1w2xd }
+  - { write: eyflaxa8zc, note: "totalNet, totalGross, taxPortions per rate" }
+  - { write: k3nskt5l62 }
+  - { write: q4kzs22wi1, note: +1 }
+  - { return: cart }

@@ -1,0 +1,66 @@
+# Started by the cashier pressing Pay in the store app (works offline: queued and synced on reconnect).
+id: scvnqygug3
+parent: cael6ntd06
+name: sellAtTill
+inputs:
+  - { id: wuzeuufuua, name: registerId, type: int, required: true }
+  - { id: jrf6lxswei, name: staffId, type: int, required: true }
+  - { id: gn9ru5ojao, name: lines, type: "{ean or sku, quantity, discountAmount, discountReason}", many: true, required: true }
+  - { id: sofypww6uk, name: memberNumber, type: string, nullable: true }
+  - { id: botscdvu6d, name: managerPin, type: string, nullable: true, description: needed for a manual discount over 20 % }
+outputs:
+  - { id: aqwtcwo922, name: receipt, model: uvat8do1ib }
+fails:
+  - { name: registerClosed, description: register not opened today }
+  - { name: unknownProduct, description: scanned EAN not in the POS catalogue }
+  - { name: approvalNeeded, description: manual discount over 20 % without a manager PIN }
+  - { name: paymentDeclined, description: card or wallet payment declined and nothing else tendered }
+steps:
+  - { read: srsxqwlqvb, with: registerId, gets: register }
+  - if: register.status != open
+    then:
+      - { fail: registerClosed }
+  - each: line
+    do:
+      - { read: jw2rr761o3, with: ean or sku, gets: product }
+      - if: no product, or not active
+        then:
+          - { fail: unknownProduct }
+      - { read: olvvff4lp5, with: "sku, store currency", gets: currentPrice }
+      - if: manual discount over 20 %
+        then:
+          - { read: l5j11fszfp, with: managerPin, gets: manager }
+          - if: no store_manager with this PIN
+            then:
+              - { fail: approvalNeeded }
+  - if: memberNumber given
+    then:
+      - { note: "member price: 10 % off full-price lines (not campaign)" }
+  - { note: "totals and VAT per rate; the customer picks how to pay" }
+  - each: tender until the total is paid
+    do:
+      - if: card
+        then:
+          # GAP: external API with no system in the design (card terminal / acquirer, e.g. Nets or Adyen)
+          - { note: "send amount to the paired terminal; wait for approved / declined" }
+      - if: mobilepay, swish or vipps
+        then:
+          # GAP: external API with no system in the design (MobilePay / Swish / Vipps)
+          - { note: "show the payment QR; poll the wallet until paid or 2 min" }
+      - if: gift_card
+        then:
+          # GAP: external API with no system in the design (gift card provider holds the balances)
+          - { note: "redeem from the card's balance" }
+      - if: cash
+        then:
+          - { note: "open the drawer; change = tendered - due" }
+  - if: nothing approved covers the total
+    then:
+      - { fail: paymentDeclined }
+  - { note: "sign the receipt with the register's fiscal control unit (SE) / TSE (DE)" }
+  - { write: uvat8do1ib, note: "insert, type sale, status completed, businessDay = store's local date" }
+  - { write: mcg64yx3kn, note: one per line }
+  - { write: aq2g2gtebf, note: one per tender }
+  - { call: vgcz70cvds, with: receipt, gets: nothing }
+  - { note: "print the receipt, or e-mail it to the member" }
+  - { return: receipt }

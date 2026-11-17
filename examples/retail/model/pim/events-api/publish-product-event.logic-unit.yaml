@@ -1,0 +1,14 @@
+id: g572jw9v7n
+parent: cr6m9caoey
+name: publishProductEvent
+inputs:
+  - { id: ppj0rkvols, name: product, model: qitb6ezis6, required: true }
+  # GAP: enum
+  - { id: pfobuzl2yn, name: action, type: string, required: true, description: "product.created, product.updated or product.removed" }
+  - { id: d8ba760rfz, name: author, type: string, required: true }
+outputs: []
+steps:
+  - { note: "skip events authored by the subscribing Connection itself (no echo of Fjeld's own writes)" }
+  - { note: "build the event: event_id, type com.akeneo.pim.v1.<action>, data.resource = product filtered to the Connection user's permissions" }
+  - { note: "buffer; flush in batches of up to 10 events, at most 4000 events per hour per Connection" }
+  - { call: vbxtu472o3, with: "{events: [Product Event]}, X-Akeneo-Request-Signature and X-Akeneo-Request-Timestamp; 0.5 s timeout, no retry beyond 3 tries" }

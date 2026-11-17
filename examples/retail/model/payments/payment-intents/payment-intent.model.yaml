@@ -1,0 +1,40 @@
+id: g8pq0m68jp
+ownedBy: pfvgbz7fey
+storedIn: sox2v1ykga
+name: PaymentIntent
+fields:
+  - { id: p8benaa0fr, name: id, type: string, pk: true, constraints: ["prefix pi_"] }
+  - { id: rkvxoeiokq, name: amount, type: int, required: true, constraints: ["min 1", "minor units (øre, cent)"] }
+  - { id: fxa7uwf74j, name: amount_capturable, type: int }
+  - { id: p8152nu84z, name: amount_received, type: int }
+  - { id: j431blwzja, name: currency, type: string, required: true, constraints: ["ISO 4217 lowercase", "one of: dkk, sek, nok, eur"] }   # GAP: enum
+  # GAP: enum
+  - { id: dmfyebtj3a, name: status, type: string, required: true, constraints: ["one of: requires_payment_method, requires_confirmation, requires_action, processing, requires_capture, canceled, succeeded"] }
+  # GAP: enum
+  - { id: qn53c9o9kr, name: capture_method, type: string, constraints: ["one of: automatic, automatic_async, manual", "Fjeld: manual, captured on shipment"] }
+  # GAP: enum
+  - { id: dm31l066yh, name: payment_method_types, type: string, many: true, constraints: ["Fjeld: card, klarna, mobilepay"] }
+  - { id: ad09afvurs, name: customer, type: string, nullable: true, ref: b55i3wbaym }
+  - { id: i1gxbia3hg, name: payment_method, type: string, nullable: true, ref: lr73v0q0h8 }
+  - { id: n0yzkt6fgb, name: latest_charge, type: string, nullable: true, ref: lto0xhpsrl }
+  - { id: qdc73j7mei, name: client_secret, type: string, constraints: ["handed to the browser for Stripe.js"] }
+  - { id: grigtzcvar, name: description, type: string, nullable: true }
+  - { id: ek3u4dy03h, name: receipt_email, type: string, nullable: true }
+  - { id: kcs1r0ffy5, name: statement_descriptor_suffix, type: string, nullable: true, constraints: [max 22] }
+  # GAP: free-form key/value map (metadata): written as the fixed keys Fjeld sets, dotted
+  - { id: n0tso6nfsf, name: metadata.commerce_order_id, type: string, from: [qazi456zfm], derived: uuid as text }
+  - { id: suvd0kb1ix, name: metadata.commerce_cart_id, type: string, from: [zin8vxu1v5], derived: uuid as text }
+  - { id: vy3l1rdwsx, name: metadata.order_number, type: string, from: [lulkapcaa0] }
+  - { id: ctyxa8ejk3, name: metadata.store_country, type: string, constraints: ["one of: DK, SE, NO, DE"] }   # GAP: enum
+  # GAP: embedded sub-object of a stored record: the held model has no table, so the stored view loses it
+  - { id: lk4odbwav7, name: next_action, model: wsq1k6kkif, nullable: true }
+  - { id: ri7hzp6tsy, name: last_payment_error, model: pwpsr0fyli, nullable: true }
+  # GAP: enum
+  - { id: v5vgtwqv4y, name: cancellation_reason, type: string, nullable: true, constraints: ["one of: duplicate, fraudulent, requested_by_customer, abandoned, failed_invoice, void_invoice, automatic"] }
+  - { id: qdxqs7uzu9, name: canceled_at, type: timestamp, nullable: true }
+  - { id: ggl6uz474s, name: created, type: timestamp, required: true }
+  - { id: wh7kvhgfo3, name: livemode, type: bool }
+indexes:
+  - { id: sxfoiopywv, name: ix_pi_customer, fields: [ad09afvurs, ggl6uz474s] }
+  - { id: q2e1xen7rw, name: ix_pi_status, fields: [dmfyebtj3a, ggl6uz474s] }
+  - { id: wdyvxdlcxf, name: ix_pi_metadata_order, fields: [n0tso6nfsf] }

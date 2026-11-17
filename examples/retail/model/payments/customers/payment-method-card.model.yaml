@@ -1,0 +1,12 @@
+id: fe9hpbtpqi
+ownedBy: yzg8gfwzwo
+name: PaymentMethodCard
+fields:
+  - { id: kv2l7v6ncc, name: brand, type: string, constraints: ["one of: visa, mastercard, amex, dankort (as visa co-badge), unknown"] }   # GAP: enum
+  - { id: wsh5kxhjxo, name: last4, type: string, constraints: [length 4] }
+  - { id: a29rgqrmy1, name: exp_month, type: int }
+  - { id: aq9koh60nr, name: exp_year, type: int }
+  - { id: tkubgjgkyg, name: country, type: string, nullable: true }
+  - { id: vfxklkyehv, name: funding, type: string, constraints: ["one of: credit, debit, prepaid, unknown"] }   # GAP: enum
+  - { id: y2o6ryynwd, name: fingerprint, type: string, constraints: ["same card, same value"] }
+  - { id: jxjx6wfixj, name: wallet.type, type: string, nullable: true, constraints: ["one of: apple_pay, google_pay, link"] }   # GAP: enum

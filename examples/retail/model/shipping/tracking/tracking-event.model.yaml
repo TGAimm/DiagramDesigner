@@ -1,0 +1,18 @@
+id: e2ken4rl8u
+ownedBy: vssqq48tt7
+storedIn: t99y8h5mfb
+name: TrackingEvent
+fields:
+  - { id: oqj80za5bv, name: id, type: int, pk: true }
+  - { id: l716khnvnu, name: parcel_id, type: int, required: true, ref: x8ugoms0sh }
+  - { id: d1ozd34280, name: shipment_id, type: int, required: true, ref: o96th79s8y }
+  - { id: n3rzlh5yny, name: carrier_code, type: string, required: true, ref: vy1t0d26e3 }
+  - { id: iz6o90g48t, name: carrier_event_code, type: string, required: true, constraints: ["raw code, e.g. PostNord EVENT_DELIVERED, GLS 3.0"] }
+  - { id: l1e8c9ti93, name: status, type: string, required: true, from: [iz6o90g48t], derived: "normalised from carrier_event_code", constraints: ["one of: created, handed_to_carrier, in_transit, out_for_delivery, ready_for_pickup, delivered, delivery_failed, returned_to_sender, exception"] }   # GAP: enum
+  - { id: phkiebzbqu, name: description, type: string, nullable: true, constraints: ["carrier text, local language"] }
+  - { id: yv7cxpbcyq, name: location, type: string, nullable: true }
+  - { id: uooii5rqo6, name: occurred_at, type: datetime, required: true }
+  - { id: r6fbojr97k, name: received_at, type: datetime, required: true }
+indexes:
+  - { id: zl8a6xxf0f, name: ix_tracking_parcel_time, fields: [l716khnvnu, uooii5rqo6] }
+  - { id: y2r4xw8mdx, name: ux_tracking_dedupe, fields: [l716khnvnu, iz6o90g48t, uooii5rqo6], unique: true }

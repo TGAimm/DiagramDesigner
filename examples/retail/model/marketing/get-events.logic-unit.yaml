@@ -1,0 +1,11 @@
+id: bk1i2uos1l
+parent: dtgcjgjtna
+name: getEvents
+handles: [whp14ffgmn]
+inputs:
+  - { id: cp2mbm3v3r, name: filter, type: string, nullable: true }
+outputs:
+  - { id: l9bc5wljxh, name: events, model: g4j7b6f21o, many: true }
+steps:
+  - { read: g4j7b6f21o, with: "filter (metric_id, profile_id, datetime), sort, page cursor", gets: events }
+  - { return: events }

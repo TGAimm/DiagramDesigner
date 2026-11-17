@@ -1,0 +1,13 @@
+id: sj7n00la01
+parent: woc2py521s
+name: Get product
+method: GET
+path: /{projectKey}/products/{id}
+auth: "bearer (view_products)"
+params:
+  - { id: w248uy4hmg, name: projectKey, in: path, type: string, description: fjeld-prod }
+  - { id: e5vtgphuo8, name: id, in: path, type: uuid }
+  - { id: r3n2hj6qs6, name: expand, in: query, type: string, required: false, description: "reference expansion, e.g. productType" }
+responses:
+  - { status: 200, model: w1g1lt9yyv }
+  - { status: 404, description: ResourceNotFound }

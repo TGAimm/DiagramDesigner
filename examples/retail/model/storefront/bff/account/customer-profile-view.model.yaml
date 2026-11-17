@@ -1,0 +1,16 @@
+id: cu38cv7e7h
+ownedBy: r3utcx4a06
+name: Customer Profile View
+tags: [pii]
+fields:
+  - { id: xfc8ejzotl, name: id, type: uuid, required: true, from: [zhf6a5r56z] }
+  - { id: y4mlrwfydu, name: customerNumber, type: string, nullable: true, from: [odn7tdqw8z] }
+  - { id: fhp9uclbyp, name: email, type: string, required: true, from: [ehf2zs4sc2] }
+  - { id: znqlp8s6md, name: firstName, type: string, nullable: true, from: [t3mf7j2rez] }
+  - { id: sdla201r2g, name: lastName, type: string, nullable: true, from: [q0hnw17jwj] }
+  - { id: lkbfs0qmiz, name: dateOfBirth, type: date, nullable: true, from: [x7n98o1bcz] }
+  - { id: vatb8fm3ym, name: locale, type: string, nullable: true, from: [rtt1jqp5f3] }
+  - { id: tx4pn7pprm, name: addresses, model: b8rzoiyo20, many: true, from: [y7vf6ytrw2] }
+  - { id: nt6ecboig6, name: defaultShippingAddressId, type: string, nullable: true, from: [il17i6fjed] }
+  - { id: taejgbrnwd, name: defaultBillingAddressId, type: string, nullable: true, from: [fh8lpd7ms4] }
+  - { id: wyx18aov2l, name: marketingConsent, type: bool, nullable: true, from: [aca0efi9gq] }

@@ -1,0 +1,17 @@
+# A cart or order line as the pages show it (Commerce uses one Line Item for both).
+id: ibfl3qyi7j
+ownedBy: jzcljy1080
+name: Line View
+fields:
+  - { id: h9ks93h3vy, name: lineItemId, type: uuid, required: true, from: [c9xmzjnpp8] }
+  - { id: toxvy2g6zw, name: productId, type: uuid, required: true, from: [amrxr25tzn] }
+  - { id: qchf7r4urq, name: sku, type: string, required: true, from: [c1uzjurwuu], derived: "variant.sku" }
+  - { id: sif615vvyt, name: name, type: string, required: true, from: [tzgfqq0q8b], derived: in the locale }
+  - { id: duq2wpznsn, name: url, type: string, required: true, from: [gcwttkirr6], derived: "/p/<slug>?sku=<sku>" }
+  - { id: si89x21xsa, name: colour, type: string, nullable: true, from: [b5zlg7995z], derived: "variant attribute colour" }
+  - { id: b7eqaig9ls, name: size, type: string, nullable: true, from: [b5zlg7995z], derived: "variant attribute size" }
+  - { id: o3gkb40a7u, name: imageUrl, type: string, nullable: true, from: [aun8w1fli3], derived: "variant's first image, ?w=200" }
+  - { id: q47oi8lib7, name: quantity, type: int, required: true, from: [ae7tr09nmb] }
+  - { id: azwtan4iwa, name: unitPrice, model: nmsbq15351, required: true, from: [bctto5wq1y] }
+  - { id: vtns1m8tkb, name: lineTotal, model: nmsbq15351, required: true, from: [mh5uizwxp4] }
+  - { id: yb40zhmp5o, name: collectAtStore, type: string, nullable: true, from: [k1q2bof4we, lscs8u8axo], derived: "store channel key when the supply channel is a store" }

@@ -1,0 +1,10 @@
+id: m9398u9zcm
+ownedBy: znpte2ol9p
+storedIn: mm9tmyhvey
+name: Segment membership
+fields:
+  - { id: g337kec3mq, name: segment_id, type: string, pk: true, ref: og6ds2tl8y }
+  - { id: g571l4pfub, name: profile_id, type: string, pk: true, ref: apj02aeekt }
+  - { id: gz0yzh6v23, name: joined_group_at, type: datetime, required: true, from: [gjcrayqqot, n44of8a2wj, owhhwgk0g8], derived: when the profile first met the definition }
+indexes:
+  - { id: cfvjvl8zrs, name: ix_sm_profile, fields: [g571l4pfub] }

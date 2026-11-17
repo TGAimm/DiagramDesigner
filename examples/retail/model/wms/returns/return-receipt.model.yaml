@@ -1,0 +1,21 @@
+id: nurgawwrcn
+ownedBy: oidhle7bm8
+storedIn: ka6mzbfc7x
+name: Return receipt
+fields:
+  - { id: d95q195bk6, name: id, type: int, pk: true }
+  - { id: ve3qka5vol, name: returnOrderLineId, type: int, nullable: true, ref: nc62fwb9eg, constraints: [null for an unannounced return] }
+  - { id: hngqnxez3g, name: itemId, type: int, required: true, ref: ixjus3gqio }
+  - { id: wklehm66vf, name: qtyReceived, type: int, required: true, constraints: [min 1] }
+  # GAP: enum
+  - { id: og84gaygsx, name: grade, type: string, required: true, constraints: ["one of: A (as new, restock), B (minor marks, outlet), C (repairable), D (scrap)"] }
+  # GAP: enum
+  - { id: yzgvlm39nw, name: disposition, type: string, required: true, from: [og84gaygsx], derived: "A restock, B outlet, C refurbish, D scrap; a supplier defect (reason defective) is return_to_supplier", constraints: ["one of: restock, outlet, refurbish, scrap, return_to_supplier"] }
+  - { id: tgz2i7s9ym, name: locationId, type: int, required: true, ref: emtjsw8emx }
+  - { id: tpmjqei292, name: inspectorId, type: string, required: true }
+  - { id: z5jmh223ee, name: note, type: string, nullable: true }
+  - { id: kctxzx442o, name: receivedAt, type: datetime, required: true }
+  - { id: rq3fe9rjna, name: exportedAt, type: datetime, nullable: true }
+indexes:
+  - { id: spvr2t9fr0, name: ix_return_receipt_line, fields: [ve3qka5vol] }
+  - { id: f6ix7n8htv, name: ix_return_receipt_export, fields: [rq3fe9rjna] }

@@ -1,0 +1,15 @@
+id: lr73v0q0h8
+ownedBy: yzg8gfwzwo
+storedIn: sox2v1ykga
+name: PaymentMethod
+fields:
+  - { id: vhzm6df00a, name: id, type: string, pk: true, constraints: ["prefix pm_"] }
+  - { id: sig8q2wcur, name: type, type: string, required: true, constraints: ["one of: card, klarna, mobilepay"] }   # GAP: enum
+  - { id: cz1sgm7r3e, name: customer, type: string, nullable: true, ref: b55i3wbaym }
+  # GAP: embedded sub-object of a stored record: the held model has no table, so the stored view loses it
+  - { id: kmo31k1oca, name: billing_details, model: ozpw11jr97 }
+  - { id: zo75s9ddr2, name: card, model: fe9hpbtpqi, nullable: true }
+  - { id: t2uf1qnpib, name: allow_redisplay, type: string, constraints: ["one of: always, limited, unspecified"] }   # GAP: enum
+  - { id: l12yzs7lm9, name: created, type: timestamp, required: true }
+indexes:
+  - { id: pzx85kof8m, name: ix_pm_customer, fields: [cz1sgm7r3e] }

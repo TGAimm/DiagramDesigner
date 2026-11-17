@@ -1,0 +1,12 @@
+id: plo0vltj6b
+parent: cael6ntd06
+name: Get receipt
+method: GET
+path: /v2/receipts/{receiptNo}
+auth: bearer (API key per integration user)
+params:
+  - { id: uaciu2ilqy, name: receiptNo, in: path, type: string }
+responses:
+  - { status: 200, model: uvat8do1ib }
+  - { status: 401, description: Bad API key }
+  - { status: 404, description: Not found }

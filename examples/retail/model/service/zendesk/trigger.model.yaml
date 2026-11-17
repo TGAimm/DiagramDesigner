@@ -1,0 +1,16 @@
+# GAP: configuration records (Fjeld's triggers are rows: "Auto-reply to web and e-mail tickets",
+# "Route contact reason Return to Returns", "Route by shop brand", "Tag tickets from the returns portal")
+id: u5nqof6ei9
+ownedBy: vdvywljuew
+storedIn: kulzyfespz
+name: Trigger
+fields:
+  - { id: bvu8pu46ms, name: id, type: int, pk: true }
+  - { id: ewqolhqhuh, name: title, type: string, required: true }
+  - { id: yz3nq7bcsz, name: active, type: bool, required: true }
+  - { id: d8mhxpd2sg, name: position, type: int, required: true }
+  - { id: ve9bh9b86t, name: category_id, type: string, nullable: true }
+  - { id: rm73sol0he, name: conditions.all, type: json, required: true, constraints: ["[{field, operator, value}], e.g. update_type is Create"] }
+  - { id: lgjrzlwpaf, name: conditions.any, type: json, required: true }
+  - { id: i9rhu93x5o, name: actions, type: json, required: true, constraints: ["[{field, value}], e.g. group_id, notification_user, set_tags"] }
+  - { id: f17vgg5jn7, name: updated_at, type: datetime, required: true }

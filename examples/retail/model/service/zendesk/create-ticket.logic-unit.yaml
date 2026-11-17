@@ -1,0 +1,25 @@
+id: b7987u4gai
+parent: dodjtgoau2
+name: createTicket
+handles: [q6xacaktb8]
+inputs:
+  - { id: rmw5ixn62f, name: ticket, model: cd3t7bjar1, required: true }
+  - { id: c3uj3djmrl, name: requesterEmail, type: string, required: true }
+  - { id: htja22uhh5, name: comment, type: string, required: true }
+outputs:
+  - { id: o3xg8eqwnb, name: ticket, model: cd3t7bjar1 }
+fails:
+  - { name: invalid, description: "422: missing comment, or a custom field fails its regexp" }
+steps:
+  - { read: k3dvavecw5, with: custom field ids, gets: field definitions }
+  - if: a value fails its field's validation
+    then:
+      - { fail: invalid }
+  - { read: fvt97h71xi, with: requesterEmail, gets: requester }
+  - if: no such user
+    then:
+      - { write: ekcor3oja3, note: "end-user, unverified" }
+  - { write: cd3t7bjar1, note: "status new, via api" }
+  - { write: h86i7pw1zl, note: first comment }
+  - { call: nc81lbqc2w, with: "ticket, update_type Create" }
+  - { return: ticket }

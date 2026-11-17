@@ -1,0 +1,5 @@
+# Star schema for reporting: conformed dims (surrogate keys) and facts, plus aggregates.
+id: d0jfpet25d
+parent: qubihx15dl
+name: Gold lakehouse
+meta: { lakehouse: lh_gold, format: Delta (V-Order), notebooks: "nb_gold_*" }

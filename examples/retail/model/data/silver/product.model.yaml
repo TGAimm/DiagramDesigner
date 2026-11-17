@@ -1,0 +1,30 @@
+# ERP item (prices, cost, status) joined with PIM attributes on sku = item number. SCD2 so a
+# sale is costed and categorised as the product was on the day.
+# GAP: row filter in lineage - the PIM columns come from the en_GB row only (bronze has one row
+# per locale); `from` names the column, the filter is only in `derived`.
+id: ukqbycykfj
+ownedBy: c9pk2gmf7l
+storedIn: c9pk2gmf7l
+name: product
+fields:
+  - { id: q4y9arjklg, name: product_sk, type: bigint, pk: true, constraints: [identity, one per version] }
+  - { id: kf11spfg9l, name: sku, type: string, required: true, from: [i4f6l59pqw, tqi6y91p6f], derived: "ERP item number; PIM sku joins on it" }
+  - { id: i3zvo7uypi, name: gtin, type: string, nullable: true, from: [a76c5cr2sg, gpzvibyfkg], derived: ERP gtin else PIM ean }
+  - { id: i0ild05ojd, name: name, type: string, required: true, from: [fz2r1wmu1b, xya2iwedja, avepykpq29], derived: "PIM name where locale = en_GB, else ERP displayName" }
+  - { id: hrs3azcfr5, name: brand, type: string, nullable: true, from: [toxrnvqwzb, xya2iwedja], derived: en_GB row }
+  - { id: ap69o59wqg, name: family, type: string, nullable: true, from: [igprb6rg6c, xya2iwedja], derived: en_GB row }
+  - { id: be4sfdwtvt, name: category, type: string, nullable: true, from: [z653x5z7ql, izn5zdqcca], derived: "first PIM category code under 'master'; ERP item category when PIM has none" }
+  - { id: wainbr6dsl, name: style_code, type: string, nullable: true, from: [ia9p5tynpx] }
+  - { id: e04zkqz0th, name: colour, type: string, nullable: true, from: [qk239w8130, xya2iwedja], derived: en_GB label }
+  - { id: vgaix7ax46, name: size, type: string, nullable: true, from: [snve5c50rv] }
+  - { id: s3wsjp32gv, name: material, type: string, nullable: true, from: [o3vjyv633o, xya2iwedja], derived: en_GB label }
+  - { id: o9tle8ngtv, name: unit_price_dkk, type: decimal, nullable: true, from: [vndx300fr2], derived: "ERP list price, DKK incl. VAT" }
+  - { id: lk24le8261, name: unit_cost_dkk, type: decimal, nullable: true, from: [o44unsbeo4], derived: "ERP unit cost (FIFO average), DKK" }
+  - { id: y7gmhtxil5, name: blocked, type: bool, required: true, from: [i3yixl9wne] }
+  - { id: wbm3uomale, name: enabled_online, type: bool, required: true, from: [v4kx6cxl94], derived: false when no PIM row }
+  - { id: vnuuxwr7y3, name: row_hash, type: string, required: true, from: [i0ild05ojd, be4sfdwtvt, o9tle8ngtv, lk24le8261, y7gmhtxil5], derived: sha2-256 over the SCD2-tracked columns }
+  - { id: mvnvr29wuf, name: valid_from, type: datetime, required: true, from: [utcxifzew4, yrjdbi3mdd], derived: later of the two modification times }
+  - { id: yigezw6v1q, name: valid_to, type: datetime, nullable: true, from: [mvnvr29wuf], derived: "valid_from of the next version; null while current" }
+  - { id: pwm9vykeqa, name: is_current, type: bool, required: true, from: [yigezw6v1q], derived: valid_to is null }
+indexes:
+  - { id: lqifqweif0, name: ux_product_sku_valid_from, fields: [kf11spfg9l, mvnvr29wuf], unique: true }

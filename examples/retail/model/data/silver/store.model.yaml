@@ -1,0 +1,16 @@
+id: j9aznog0dp
+ownedBy: c9pk2gmf7l
+storedIn: c9pk2gmf7l
+name: store
+fields:
+  - { id: d3vg1yf3fk, name: store_key, type: string, pk: true, from: [gvunxbdw4q] }
+  - { id: rbdi2b55ac, name: pos_store_id, type: int, required: true, from: [fuot73ztd4] }
+  - { id: tm5zxi5ukq, name: name, type: string, required: true, from: [dkkjhu7n9e] }
+  - { id: fvr4fq2kkc, name: erp_location_code, type: string, required: true, from: [yh4ox6u2b1] }
+  - { id: upi2kwvs5q, name: city, type: string, required: true, from: [v08nek8w94] }
+  - { id: mtc5ogmmf5, name: postal_code, type: string, required: true, from: [ish2zqlc7d] }
+  - { id: hvyiosb8pv, name: country, type: string, required: true, from: [qhd7ruqsyk] }
+  - { id: x8ja645hr5, name: currency, type: string, required: true, from: [vgxt4yjb1r] }
+  - { id: kisshwvugi, name: timezone, type: string, required: true, from: [k4cwpj23xw] }
+  - { id: un8xhfa2r3, name: click_collect_enabled, type: bool, required: true, from: [f3oso9bu1m] }
+  - { id: mgdf8elxmd, name: is_open, type: bool, required: true, from: [bzfwzcasm5], derived: status = active }

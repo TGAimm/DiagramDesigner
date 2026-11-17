@@ -1,0 +1,21 @@
+id: s0d2zn1y3u
+parent: d3aqew3zk6
+name: upsertItem
+handles: [i5fc414eaf]
+inputs:
+  - { id: pz7teqj33j, name: item, model: ixjus3gqio, required: true }
+outputs:
+  - { id: ixel7e2t4o, name: item, model: ixjus3gqio }
+fails:
+  - { name: invalidItem, description: "no weight, or an EAN already on another item" }
+steps:
+  - if: weightG missing, or ean on another item (ix_item_ean)
+    then:
+      - { fail: invalidItem }
+  - { read: ixjus3gqio, with: itemNo, gets: existing }
+  - if: existing
+    then:
+      - { write: ixjus3gqio, note: "update every column; a changed EAN takes effect at the next scan" }
+    else:
+      - { write: ixjus3gqio, note: "insert, status active; no bin until first receipt" }
+  - { return: item }

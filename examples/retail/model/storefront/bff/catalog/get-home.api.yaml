@@ -1,0 +1,11 @@
+id: kuucfn97xp
+parent: lnizoffy7m
+name: Home page data
+method: GET
+path: /api/home
+auth: session cookie fj_sid
+responses:
+  - status: 200
+    fields:
+      - { id: rbgitba0cu, name: rails, model: a4ypghsn5d, many: true }
+  - { status: 502, description: Search did not answer; the page renders without rails }

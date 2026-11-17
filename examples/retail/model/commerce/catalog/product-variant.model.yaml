@@ -1,0 +1,11 @@
+id: zey11c3zfk
+ownedBy: woc2py521s
+name: Product Variant
+fields:
+  - { id: vu80pdsjme, name: id, type: int, required: true, constraints: [1 = master variant] }
+  - { id: c1uzjurwuu, name: sku, type: string, nullable: true, constraints: [unique in project; = ERP item no.] }
+  - { id: xnn17u6s80, name: key, type: string, nullable: true }
+  - { id: roy8169338, name: prices, model: mw8krecq3e, many: true }
+  - { id: wwmg1j707m, name: attributes, model: ncoa49ftik, many: true }
+  - { id: blm829ha95, name: images, model: soxf9u41at, many: true }
+  - { id: gkngx288ee, name: availability, model: akgk330vio, nullable: true, stored: false }

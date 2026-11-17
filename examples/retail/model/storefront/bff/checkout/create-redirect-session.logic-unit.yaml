@@ -1,0 +1,18 @@
+id: ofs0vphd9k
+parent: a2x6k1ux7z
+name: createRedirectSession
+handles: [x153xmm4du]
+when: { flag: p9sg006xy9, is: off }
+inputs: []
+outputs:
+  - { id: if4p8z6hso, name: redirectUrl, type: string }
+fails:
+  - { name: notReady, description: "409" }
+steps:
+  - { call: oc9reaoski, gets: summary }
+  - if: not summary.canPay
+    then:
+      - { fail: notReady }
+  - { call: u5jqjvg1hf, with: "mode payment, line_items from the cart, customer_email, payment_intent_data capture_method manual and metadata commerce_cart_id, success_url /api/checkout/return?session_id={CHECKOUT_SESSION_ID}, cancel_url /checkout, locale; Idempotency-Key cart id + version", gets: checkoutSession }
+  - { write: mq42e5fkwd, note: the session id }
+  - { return: redirectUrl }

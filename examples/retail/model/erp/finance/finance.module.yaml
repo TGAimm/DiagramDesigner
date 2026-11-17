@@ -1,0 +1,5 @@
+id: gob5rrh7wh
+parent: s7eejjfr7l
+name: Finance
+links:
+  - { label: General ledger, url: "https://learn.microsoft.com/en-us/dynamics365/business-central/finance-general-ledger" }

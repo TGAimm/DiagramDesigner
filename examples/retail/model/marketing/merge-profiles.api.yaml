@@ -1,0 +1,17 @@
+id: mlyjyz8wss
+parent: x27wyx0r8h
+name: Merge profiles
+method: POST
+path: /api/profile-merge
+auth: "Klaviyo-API-Key private key (scope profiles:write)"
+params:
+  - { id: wq1j8ra0hc, name: revision, in: header, type: string, required: true }
+request:
+  contentType: application/vnd.api+json
+  fields:
+    - { id: dy9tslrrew, name: data.id, type: string, required: true, to: [c6lytpwzen], description: the profile that stays }
+    - { id: j6v0ciidsc, name: "data.relationships.profiles.data[0].id", type: string, required: true, to: [c6lytpwzen], description: "the profile merged into it and deleted" }
+responses:
+  - { status: 202, description: "Accepted; merged asynchronously" }
+  - { status: 400, model: s4w1d8x1z4, description: "source and destination are the same, or unknown" }
+  - { status: 429, model: s4w1d8x1z4 }

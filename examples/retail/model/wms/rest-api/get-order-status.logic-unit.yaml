@@ -1,0 +1,19 @@
+id: uvppu3plyw
+parent: m149ml603p
+name: getOrderStatus
+handles: [gqrhpmn4ti]
+when: { flag: j5jo9lc089, is: on }
+inputs:
+  - { id: i3kwckxbg6, name: orderNumber, type: string, required: true }
+outputs:
+  - { id: zcoi10lgr1, name: order, model: zitqiyfbjs }
+fails:
+  - { name: notFound, description: no order with this number (404) }
+steps:
+  - { read: epw5zsq6wa, with: orderNumber, gets: order }
+  - if: no order
+    then:
+      - { fail: notFound }
+  - { read: hh65a8yt9w, with: order, gets: lines }
+  - { read: nz3evtxf52, with: order, gets: shipments with packages }
+  - { return: order }

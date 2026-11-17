@@ -1,0 +1,12 @@
+id: b5bvdjmbcf
+parent: woc2py521s
+name: Get product by key
+method: GET
+path: /{projectKey}/products/key={key}
+auth: "bearer (view_products)"
+params:
+  - { id: c2t7n66dg9, name: projectKey, in: path, type: string, description: fjeld-prod }
+  - { id: x6z1frx1yi, name: key, in: path, type: string, description: PIM product model code }
+responses:
+  - { status: 200, model: w1g1lt9yyv }
+  - { status: 404, description: ResourceNotFound }

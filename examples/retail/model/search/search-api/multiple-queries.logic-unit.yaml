@@ -1,0 +1,17 @@
+id: xut6w8ay2y
+parent: w84no1i22u
+name: multipleQueries
+handles: [iitkxe2e1o]
+inputs:
+  - { id: ocoaqbfnnk, name: requests, model: hvgl8g3qr7, many: true, required: true }
+  - { id: h5lqrby30n, name: strategy, type: string, nullable: true }
+outputs:
+  - { id: f0bcrjahmc, name: results, model: kvwb8tpsfj, many: true }
+steps:
+  - each: request in requests
+    do:
+      - { call: x9wbqv5kob, with: "request.indexName, request", gets: result }
+      - if: strategy is stopIfEnoughMatches and hits so far reach hitsPerPage
+        then:
+          - { note: "answer the remaining requests with empty results" }
+  - { return: results }

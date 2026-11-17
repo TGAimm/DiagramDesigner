@@ -1,0 +1,16 @@
+id: pmxvaacmcg
+parent: lnizoffy7m
+name: getNavigation
+handles: [b8l1c902ne]
+inputs: []
+outputs:
+  - { id: sr49l0aou2, name: nodes, model: gwviq03kq6, many: true }
+steps:
+  - { call: cylyc9xl5m, gets: session }
+  - { read: gwviq03kq6, with: "nav:<locale>", gets: nodes }
+  - if: no nodes (expired)
+    then:
+      - { call: ekgirua9an, with: "client_credentials of the BFF API client (cached)", gets: serverToken }
+      - { call: dx0o22r92a, with: "where ancestors(key = fjeld_web), sort orderHint asc, limit 500", gets: categories }
+      - { write: gwviq03kq6, note: "one node per category under the fjeld_web root, TTL 1 h" }
+  - { return: nodes }

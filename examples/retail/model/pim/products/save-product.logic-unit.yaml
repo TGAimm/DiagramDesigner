@@ -1,0 +1,53 @@
+# Akeneo's product saver behind the UI, REST POST/PATCH and imports.
+id: bgobns4lsq
+parent: tuvm3c6m5l
+name: saveProduct
+handles: [q7rjqx4vwa, lv4qtmmk5w]
+inputs:
+  - { id: mqv76i9duj, name: uuid, type: uuid, nullable: true, description: from the path on PATCH; generated on POST when absent }
+  - { id: k7ppdbx64l, name: changes, model: qitb6ezis6, required: true, description: "standard format, only the keys to change; values merge by attribute, locale and scope" }
+outputs:
+  - { id: a575x7hr7x, name: product, model: qitb6ezis6 }
+  - { id: fq5u5dxh7c, name: created, type: bool }
+fails:
+  - { name: malformed, description: "400: not valid JSON or unknown property" }
+  - { name: invalid, description: "422: violates attribute, family or variant rules" }
+  - { name: duplicateIdentifier, description: "422: identifier already used by another product" }
+steps:
+  - { read: qitb6ezis6, with: uuid, gets: "existing product, or none (create)" }
+  - if: body has an unknown top-level property
+    then:
+      - { fail: malformed }
+  - if: changes.identifier is set
+    then:
+      - { read: caehs975j2, with: identifier, gets: other product with it }
+      - if: another product has the identifier
+        then:
+          - { fail: duplicateIdentifier }
+  - { read: gilsfjyao5, with: changes.family or existing family, gets: family with its attributes }
+  - if: changes.parent is set
+    then:
+      - { read: aukbkxsjc3, with: parent code, gets: parent model and its family variant }
+      - { read: jbem9ddd53, with: "family variant, last level", gets: axes and attributes this level owns }
+      - if: "the axis values (e.g. size) are missing or already used by a sibling"
+        then:
+          - { fail: invalid }
+  - each: value in changes.values
+    do:
+      - { read: hjsj87ps7y, with: value.attribute, gets: "type, localizable, scopable, rules" }
+      - if: "locale/scope don't match localizable/scopable, the locale isn't activated, or data fails the type's rules"
+        then:
+          - { fail: invalid }
+      - if: "attribute belongs to a parent model level (inherited)"
+        then:
+          - { fail: invalid }
+      - if: attribute type is simple or multi select
+        then:
+          - { read: ftmepi2ion, with: option codes, gets: existing options }
+  - { note: "merge values: replace by (attribute, locale, scope), null data removes a value" }
+  - { write: qitb6ezis6, note: "insert or update pim_catalog_product, raw_values JSON, updated = now" }
+  - { call: jbwiro1t6h, with: product uuid, gets: completenesses }
+  - { note: "index the product in Elasticsearch (product_and_product_model)" }
+  - { call: g572jw9v7n, with: "product, created ? product.created : product.updated, author" }
+  - { return: product }
+  - { return: created }

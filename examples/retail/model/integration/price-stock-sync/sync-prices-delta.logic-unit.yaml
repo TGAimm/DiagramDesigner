@@ -1,0 +1,28 @@
+# GAP: scheduled trigger
+id: a3uenpvg33
+parent: f1xy7xguug
+name: syncPricesDelta
+meta: { schedule: "*/5 * * * *" }
+inputs: []
+outputs: []
+steps:
+  - { read: nanvethhnv, with: "erp / priceListLines; take the lock", gets: cursor }
+  - if: locked by a run still going
+    then:
+      - { note: "skip this firing" }
+    else:
+      - { call: re3p0ieali, with: "$filter lastModifiedDateTime gt cursor - 2 min and status eq 'Active' and priceListCode in ('WEB-*', 'CAMPAIGN-*', 'STORE-*'); Prefer odata.maxpagesize=5000; follow nextLink", gets: lines }
+      - if: 429 or 5xx
+        then:
+          - { write: nanvethhnv, note: "lastRunStatus failed, cursor unchanged: the next run reads the same window" }
+        else:
+          - each: line in lines
+            do:
+              - { read: dcsafzlsgm, with: "sku, priceListCode, currency", gets: sent }
+              - if: "unit price, dates and VAT flag equal what was sent"
+                then:
+                  - { note: skip }
+                else:
+                  - { call: khrlg0wtb1, with: "kind price, the line; MessageId = <systemId>-<lastModifiedDateTime>" }
+                  - { write: dcsafzlsgm, note: "upsert; lastSeenRun unchanged (only the full sync sets it)" }
+          - { write: nanvethhnv, note: "highest lastModifiedDateTime of the read, ok, items" }

@@ -1,0 +1,37 @@
+# One Redis hash per visitor, key session:<sessionId>.
+# GAP: expiry - Redis drops the session 30 days after its last use (sliding TTL); a stored model
+# can't say its rows expire.
+id: ffqq3wfhpp
+ownedBy: vkdx3tfwhz
+storedIn: p85ojgt4ve
+name: Session
+tags: [pii, secret]
+fields:
+  - { id: uo8ybj1nfj, name: sessionId, type: string, pk: true, constraints: ["256-bit random, in the fj_sid cookie (HttpOnly, Secure, SameSite=Lax)"] }
+  - { id: rr3snqhxje, name: country, type: string, required: true, constraints: ["one of: DK, SE, NO, DE", "from the domain"] }  # GAP: enum
+  - { id: zslzub7gdg, name: locale, type: string, required: true, constraints: ["one of: da-DK, sv-SE, nb-NO, de-DE"] }  # GAP: enum
+  - { id: gdk67oylpk, name: storeKey, type: string, required: true, ref: vomy6kr4nq }
+  - { id: mlxwavyqwh, name: currency, type: string, required: true, constraints: ["one of: DKK, SEK, NOK, EUR"] }  # GAP: enum
+  - { id: c6ppn56g5z, name: anonymousId, type: string, nullable: true, from: [dr8rz3asx0] }
+  - { id: tlrkcgaky8, name: commerceAnonymousToken, type: string, nullable: true, from: [trqt1u7pdx], constraints: [null once signed in] }
+  - { id: cuv3g3jo6a, name: commerceAnonymousRefreshToken, type: string, nullable: true, from: [eo42w89q2h] }
+  - { id: wnpwug2h0c, name: authRequest, type: "{state, nonce, codeVerifier, returnTo}", nullable: true, constraints: [a sign-in in progress] }
+  - { id: z6kyf06x21, name: identityUserId, type: uuid, nullable: true, from: [bjin99rbt4] }
+  - { id: bp5j9yqils, name: commerceCustomerId, type: uuid, nullable: true, ref: zhf6a5r56z, from: [amummm21bl] }
+  - { id: hyymbywceb, name: accessToken, type: string, nullable: true, from: [rw84nc8l0q], constraints: ["Identity token for api://fjeld-commerce-api; Commerce accepts it through External OAuth for /me calls"] }
+  - { id: v2v77l6hwx, name: refreshToken, type: string, nullable: true, from: [xmxe7cfrjp] }
+  - { id: h65rqe6iga, name: accessTokenExpiresAt, type: datetime, nullable: true, from: [e4zazwg75o], derived: now + expires_in }
+  - { id: ibjawo1qqi, name: email, type: string, nullable: true, from: [aotdzxokwb] }
+  - { id: ffhqqao8fh, name: firstName, type: string, nullable: true, from: [ovhx9mbhg7] }
+  - { id: aca0efi9gq, name: marketingConsent, type: bool, nullable: true, from: [t1qxsuftux] }
+  - { id: r40by5rpuu, name: cartId, type: uuid, nullable: true, ref: zin8vxu1v5 }
+  - { id: jh9i5rb85s, name: pickupPointId, type: string, nullable: true, ref: zpxk2h0vb2, constraints: [chosen at checkout for parcel-shop delivery] }
+  - { id: cj6xff9bmv, name: pickupPointCarrier, type: string, nullable: true, ref: fbluj4mfnj }
+  - { id: hp3khxqvp9, name: newsletterOptIn, type: bool, nullable: true, constraints: [ticked at checkout] }
+  - { id: fxfgvikwq7, name: startedCheckoutCartId, type: uuid, nullable: true, constraints: ["the cart Started Checkout was sent for (once per cart)"] }
+  - { id: mq42e5fkwd, name: legacyCheckoutSessionId, type: string, nullable: true, ref: gu5ykin2q2, constraints: ["cs_..., new-checkout off only"] }
+  - { id: e5eboshz71, name: lastOrderNumber, type: string, nullable: true, from: [lulkapcaa0], constraints: [lets a guest see the confirmation page] }
+  - { id: cyg48nycax, name: createdAt, type: datetime, required: true }
+  - { id: a6sk7m06f2, name: lastSeenAt, type: datetime, required: true }
+indexes:
+  - { id: ojzjjh1mq0, name: ix_session_customer, fields: [bp5j9yqils] }

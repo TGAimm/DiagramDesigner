@@ -1,0 +1,10 @@
+id: fdebp4wyz9
+ownedBy: f6x7dhgzlz
+name: Parcel
+fields:
+  - { id: f8s4zumgy1, name: id, type: uuid, required: true }
+  - { id: u9dc5a7x5e, name: key, type: string, nullable: true }
+  - { id: tbvzr82fr3, name: measurements, type: "{heightInMillimeter, lengthInMillimeter, widthInMillimeter, weightInGram}", nullable: true }
+  - { id: qpedqtdrfm, name: trackingData, model: en5fzkz9lg, nullable: true }
+  - { id: zwztinr3bf, name: items, type: "{id: lineItemId, quantity}", many: true }
+  - { id: vuisyrw7ms, name: createdAt, type: datetime, required: true }

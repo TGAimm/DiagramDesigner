@@ -1,0 +1,41 @@
+# Pages 30016 APIV2 - Journals (+ post), 30049 JournalLines, 30021 General Ledger Entries
+id: h2if09r4g2
+parent: wyb51ibopv
+name: journalsApi
+handles: [p0tngi23im, dduwg38kcl, xris3u29wu, kq1kjmxrvs]
+inputs:
+  - { id: ppq3cbs4hn, name: journalId, type: guid, nullable: true }
+  - { id: yitr192ou1, name: line, model: j4svsv33uk, nullable: true }
+outputs:
+  - { id: knr69dqmri, name: createdLine, model: j4svsv33uk }
+fails:
+  - { name: notFound, description: no journal with this id }
+  - { name: unbalanced, description: "lines of one document no. do not sum to 0 and have no bal. account" }
+  - { name: postingFailed, description: a line fails posting; the whole batch rolls back }
+steps:
+  - if: journals or generalLedgerEntries
+    then:
+      - { read: kdsx0vw44f, with: filter, gets: batches }
+      - { read: tmmsilj09u, with: "$filter on lastModifiedDateTime", gets: entries }
+  - if: journalLines POST
+    then:
+      - { read: kdsx0vw44f, with: journalId, gets: batch }
+      - if: not found
+        then:
+          - { fail: notFound }
+      - { write: czy9o9zg9d, note: "insert; next line no.; bal. account from the batch unless given" }
+      - { return: createdLine }
+  - if: Microsoft.NAV.post
+    then:
+      - { read: czy9o9zg9d, with: batch, gets: lines }
+      - if: a document no. does not balance
+        then:
+          - { fail: unbalanced }
+      # GAP: transaction boundary: the whole batch posts or nothing does
+      - each: line in lines
+        do:
+          - { call: g7nfkzjdkj, with: line, gets: entryNo }
+          - if: posting fails
+            then:
+              - { fail: postingFailed }
+      - { write: czy9o9zg9d, note: "delete the posted lines" }

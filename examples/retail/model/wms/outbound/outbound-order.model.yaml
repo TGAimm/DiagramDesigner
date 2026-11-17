@@ -1,0 +1,38 @@
+id: zitqiyfbjs
+ownedBy: yvrhh8zk8f
+storedIn: ka6mzbfc7x
+name: Outbound order
+tags: [pii]
+fields:
+  - { id: py3wo1s5fb, name: id, type: int, pk: true }
+  - { id: epw5zsq6wa, name: orderNumber, type: string, required: true, from: [rji6sstkw2], constraints: [the client's order number; unique per client] }
+  - { id: atg8uokgh3, name: customerRef, type: string, nullable: true, from: [b6y2caw308] }
+  - { id: zu5j99nvng, name: orderType, type: string, required: true, from: [epojch7o7v] }
+  - { id: dhgldpc5wt, name: orderDate, type: date, required: true, from: [u3ruof2r9n] }
+  - { id: gx13btim1s, name: deliveryDate, type: date, nullable: true, from: [q325ygn3im] }
+  - { id: f9wlmo0i6r, name: priority, type: int, required: true, from: [cs86xvvzf5], derived: "5 when empty" }
+  # GAP: enum
+  # GAP: state machine (received > allocated > picking > picked > packed > shipped; received or allocated > on_hold | cancelled)
+  - { id: gfhtt2sknp, name: status, type: string, required: true, constraints: ["one of: received, on_hold, allocated, picking, picked, packed, shipped, cancelled"] }
+  - { id: ikc8l93lz5, name: holdReason, type: string, nullable: true, constraints: ["e.g. no stock, booking failed, address check"] }
+  - { id: mm4hz3mu7u, name: shipToName, type: string, required: true, from: [kjo3e4gpo0] }
+  - { id: dndnmpszek, name: shipToAddress1, type: string, required: true, from: [jn1nv6ovp8] }
+  - { id: xvl1ezt9h6, name: shipToAddress2, type: string, nullable: true, from: [o88icv4z3n] }
+  - { id: vroqklj2g7, name: shipToZip, type: string, required: true, from: [pimzxpfvze] }
+  - { id: tsyzgx9sro, name: shipToCity, type: string, required: true, from: [hhs5ykjueb] }
+  - { id: k0gs7oc2f0, name: shipToCountry, type: string, required: true, from: [peylz2zi2b] }
+  - { id: yza5f6535i, name: shipToEmail, type: string, nullable: true, from: [r4ih4364pn] }
+  - { id: hhn35ddch6, name: shipToPhone, type: string, nullable: true, from: [i0d6uuvt5a] }
+  - { id: nxlvjtja20, name: carrierProduct, type: string, nullable: true, from: [noiqxq00bf] }
+  - { id: uegn4qt0w2, name: pickupPointId, type: string, nullable: true, from: [ty5xuqq25y] }
+  - { id: b51yvv9ane, name: lines, model: hh65a8yt9w, many: true, required: true }
+  - { id: oof9lhoizu, name: waveId, type: int, nullable: true, ref: du7403qqrh }
+  # GAP: enum
+  - { id: d9amhpvx6m, name: source, type: string, required: true, constraints: ["one of: file, api"] }
+  - { id: g8xr9vk03f, name: sourceFile, type: string, nullable: true, constraints: [ORDERS file name, for support] }
+  - { id: clbh3sex9k, name: createdAt, type: datetime, required: true }
+  - { id: c3ykqmv15w, name: shippedAt, type: datetime, nullable: true }
+indexes:
+  - { id: eg3di1m9yy, name: ux_order_number, fields: [epw5zsq6wa], unique: true }
+  - { id: h3fwezo0m4, name: ix_order_status_priority, fields: [gfhtt2sknp, f9wlmo0i6r, clbh3sex9k] }
+  - { id: u0ntnq3ymk, name: ix_order_wave, fields: [oof9lhoizu] }

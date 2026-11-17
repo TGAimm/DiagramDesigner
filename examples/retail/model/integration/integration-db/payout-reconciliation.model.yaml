@@ -1,0 +1,19 @@
+id: skmw1qynw9
+ownedBy: v38tj7w8bg
+storedIn: v38tj7w8bg
+name: sync.PayoutReconciliation
+fields:
+  - { id: tmleb9kjxi, name: payoutId, type: string, pk: true, from: [n6liyrhotq] }
+  - { id: z7n2nn5bxp, name: arrivalDate, type: date, required: true, from: [dvmx85wcau] }
+  - { id: ijb0z2calv, name: currency, type: string, required: true, from: [pjam9rytz1], derived: upper case }
+  - { id: pmjayd7v0z, name: amount, type: decimal, required: true, from: [q8qe9p2acw], derived: "/ 100" }
+  - { id: o7utbx9zwx, name: transactionCount, type: int, required: true }
+  - { id: up3rjikpbq, name: journalTotal, type: decimal, required: true, from: [s1ybbpv4lg], derived: sum of the journal lines }
+  - { id: ebh33s58hz, name: difference, type: decimal, required: true, from: [pmjayd7v0z, up3rjikpbq], derived: "amount - journalTotal; must be 0 to post" }
+  - { id: a9s8zdi9kt, name: erpJournalBatch, type: string, required: true, constraints: ["STRIPE-<currency>"] }
+  - { id: lzsl0zm5mi, name: erpDocumentNo, type: string, nullable: true, from: [lz5ny64nht] }
+  # GAP: enum
+  - { id: oshwk0fblh, name: status, type: string, required: true, constraints: ["one of: pending, lines_created, posted, difference, failed"] }
+  - { id: tmvi3h7a3m, name: postedAt, type: datetime, nullable: true }
+indexes:
+  - { id: nte1z0lm6d, name: ix_payoutrec_status, fields: [oshwk0fblh, z7n2nn5bxp] }

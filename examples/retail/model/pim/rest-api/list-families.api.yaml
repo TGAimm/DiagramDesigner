@@ -1,0 +1,15 @@
+# GAP: pagination envelope.
+id: as00bwqalf
+parent: vsn79avah8
+name: List families
+method: GET
+path: /api/rest/v1/families
+auth: bearer
+params:
+  - { id: bqe7lerwxa, name: search, in: query, type: json, required: false, description: "e.g. code IN, has_products" }
+  - { id: x0n0zeo8o4, name: page, in: query, type: int, required: false }
+  - { id: l0pih1lw1r, name: limit, in: query, type: int, required: false, description: max 100 }
+  - { id: vspk4py25i, name: with_count, in: query, type: bool, required: false }
+responses:
+  - { status: 200, model: gilsfjyao5, many: true }
+  - { status: 401, description: Missing or expired token }

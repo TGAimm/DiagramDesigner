@@ -1,0 +1,33 @@
+id: d5brhsdbg0
+parent: d8hyu4qiq7
+name: Create shipment
+method: POST
+path: /api/public/v3/shipments
+auth: basic (API user + key)
+request:
+  fields:
+    - { id: ipb9qnqvpt, name: product_code, type: string, to: [de5w2ko0g2], description: "leave out to let the shipping rules pick one" }
+    - { id: cxqsxkbhma, name: service_codes, type: string, many: true, to: [yazmggpnwx] }
+    - { id: abgmlvgq24, name: sender, model: grcw7cakmk, required: true }
+    - { id: p5x8w7xyrn, name: receiver, model: grcw7cakmk, required: true }
+    - { id: zbygvbgoge, name: pickup_point_id, type: string, to: [sqqno92jyr] }
+    - { id: i5bctu4mnc, name: parcels, model: x8ugoms0sh, many: true, required: true }
+    - { id: mg7scjb3ty, name: reference, type: string, required: true, to: [iee7vq5ryt] }
+    - { id: bqhu1wvfv2, name: order_id, type: string, to: [zerukfefcp] }
+    - { id: inswuv5e1g, name: contents, type: string, to: [he6cl2hve1] }
+    - { id: gznlfm8713, name: label_format, type: string, to: [v2f78xt7n6] }
+    - { id: g3fzsk5dxm, name: test_mode, type: bool, to: [vwxydfa3n7] }
+responses:
+  - status: 201
+    description: Booked; labels returned inline
+    fields:
+      - { id: za3w9rk3oz, name: id, type: int, from: [xac9b2igw1] }
+      - { id: v32oa8k4tn, name: status, type: string, from: [dsfx8xs8om] }
+      - { id: hacaj5xemy, name: carrier_code, type: string, from: [hq2wq6hpea] }
+      - { id: buxgp2hc2w, name: product_code, type: string, from: [de5w2ko0g2] }
+      - { id: kvhsziuvfi, name: parcels, model: x8ugoms0sh, many: true }
+      - { id: pbge82d3xb, name: labels, model: punlk0tvcx, many: true }
+      - { id: hmery7vpjs, name: price, type: decimal, from: [ab7uvphbdv] }
+  - { status: 401, description: Wrong API user or key }
+  - { status: 422, description: "Validation failed: missing receiver.mobile for SMS_NT, no pickup point for a pickup product, parcel over max weight" }
+  - { status: 502, description: "Carrier refused the booking (booking_error says why)" }

@@ -1,0 +1,12 @@
+id: u24xst6unw
+ownedBy: xi92dufx8c
+storedIn: ji6igng4bi
+name: ObjectIdentity
+tags: [pii]
+fields:
+  - { id: ym8gmo6wy2, name: userId, type: uuid, pk: true, ref: nozb9f6rc0 }
+  - { id: l8alt2s305, name: signInType, type: string, required: true, constraints: ["one of: emailAddress, federated, userPrincipalName"] }   # GAP: enum
+  - { id: eyjva2j1i9, name: issuer, type: string, pk: true, constraints: ["fjeldid.onmicrosoft.com for email accounts; google.com, facebook.com, appleid.apple.com for social"] }
+  - { id: ddjkgtzzod, name: issuerAssignedId, type: string, pk: true, nullable: false, constraints: ["the email for emailAddress; the provider's subject for federated"] }
+indexes:
+  - { id: emyibdovmc, name: ux_identity_issuer_id, fields: [eyjva2j1i9, ddjkgtzzod], unique: true }

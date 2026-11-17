@@ -1,0 +1,31 @@
+id: uvat8do1ib
+ownedBy: cael6ntd06
+storedIn: hykg6pt8u2
+name: Receipt
+fields:
+  - { id: i459bnqelo, name: id, type: uuid, pk: true }
+  - { id: b9spjarvr6, name: receiptNo, type: string, required: true, constraints: ["<storeNo>-<registerNo>-<seq>, gapless per register (fiscal rule)"] }
+  - { id: nyhfkn9t6c, name: storeId, type: int, required: true, ref: h3qlberi23 }
+  - { id: y1s1o4g2lb, name: registerId, type: int, required: true, ref: srsxqwlqvb }
+  - { id: ghlylcm3to, name: staffId, type: int, required: true, ref: l5j11fszfp }
+  # GAP: enum
+  - { id: dk261gmfj3, name: type, type: string, required: true, constraints: ["one of: sale, return"] }
+  - { id: eri8sgorp3, name: originalReceiptId, type: uuid, nullable: true, ref: uvat8do1ib, constraints: [the sale a return refers to] }
+  - { id: bcojp4v7wd, name: memberNumber, type: string, nullable: true, from: [kphnsa6zxo], derived: "scanned from the member's app QR" }
+  - { id: n31v6p8uw8, name: pickupOrderId, type: uuid, nullable: true, ref: n7gkyqvsz0, constraints: [set when the receipt hands over a click & collect order] }
+  - { id: b5au1vll4e, name: lines, model: mcg64yx3kn, many: true, required: true }
+  - { id: bent15vt6g, name: payments, model: aq2g2gtebf, many: true, required: true }
+  - { id: xwf28n2bqx, name: currency, type: string, required: true, from: [ainz12ukbb] }
+  - { id: o5iiw5y19m, name: discountTotal, type: decimal, required: true, from: [kzmhww5hax], derived: sum of lines }
+  - { id: r4ggzd30uj, name: vatTotal, type: decimal, required: true, from: [x871oi7nj9, hcgava4jct], derived: "sum of lineTotal * rate / (100 + rate)" }
+  - { id: dl9feil8c3, name: total, type: decimal, required: true, from: [x871oi7nj9], derived: "sum of lines, incl. VAT; negative for a return" }
+  # GAP: enum
+  - { id: dqvk762h8w, name: status, type: string, required: true, constraints: ["one of: completed, voided"] }
+  - { id: lz87p5mqnv, name: businessDay, type: date, required: true, constraints: [the store's local date] }
+  - { id: p9dxns1r2g, name: zReportId, type: uuid, nullable: true, ref: srngby2fkx, constraints: [set at end of day] }
+  - { id: yczz035e4k, name: createdAt, type: datetime, required: true }
+indexes:
+  - { id: obzmxbpmwd, name: ux_receipt_no, fields: [b9spjarvr6], unique: true }
+  - { id: blypdmwl93, name: ix_receipt_store_day, fields: [nyhfkn9t6c, lz87p5mqnv] }
+  - { id: vt9cj1pfom, name: ix_receipt_register_z, fields: [y1s1o4g2lb, p9dxns1r2g] }
+  - { id: u8bbf3lebr, name: ix_receipt_member, fields: [bcojp4v7wd] }

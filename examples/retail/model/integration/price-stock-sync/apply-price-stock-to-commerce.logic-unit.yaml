@@ -1,0 +1,34 @@
+# GAP: triggered by subscription price-stock-changed/commerce
+id: u5bhtuch10
+parent: f1xy7xguug
+name: applyPriceStockToCommerce
+inputs:
+  - { id: l3taf90679, name: event, model: j3qk5xyr4i, required: true }
+outputs: []
+steps:
+  - { note: "subscription price-stock-changed/commerce (filter: kind = 'stock' OR priceListCode LIKE 'WEB-%' OR priceListCode LIKE 'CAMPAIGN-%')" }
+  - if: event.kind is stock
+    then:
+      - { call: nliulbw7pi, with: "where sku = event.sku and supplyChannel = channel of event.locationCode (CENTRAL or the store's channel)", gets: entry }
+      - if: no entry
+        then:
+          - { call: emwr7t39bn, with: "sku, supplyChannel, quantityOnStock = availableQty", gets: entry }
+        else:
+          - { call: vusnhpweka, with: "version, changeQuantity quantityOnStock = availableQty (reservations by open carts are Commerce's own)", gets: entry }
+    else:
+      - { read: yd9iwthx32, with: event.sku, gets: "styleCode, commerceProductId" }
+      - if: no product in Commerce yet
+        then:
+          - { call: wrbtf9xjcp, with: "attempt 1, notBefore + 15 min: the product content is on its way" }
+        else:
+          - { call: sj7n00la01, with: commerceProductId, gets: product }
+          - if: event.removed
+            then:
+              - { call: id3wj2m0zi, with: "version, removePrice (the price with country by currency, validFrom = startingDate)", gets: product }
+            else:
+              - { call: id3wj2m0zi, with: "version, setPrices on the variant: country DK/SE/NO/DE by currency, centAmount = unitPrice x 100, validFrom/validUntil; a CAMPAIGN line becomes the discounted value", gets: product }
+          - if: 409 ConcurrentModification
+            then:
+              - { call: wrbtf9xjcp, with: "attempt + 1, notBefore + 1 min" }
+          - { write: dcsafzlsgm, note: commercePriceId }
+  - { write: yguluhbf6w, note: "processed, targetSystem commerce, businessKey sku" }

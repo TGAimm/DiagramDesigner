@@ -1,0 +1,26 @@
+id: t4v3mm26e9
+parent: ft040pevh9
+name: receivePimProductEvents
+handles: [vbxtu472o3]
+inputs:
+  - { id: j9e7n8yzsg, name: events, model: d7xcs4r6vp, many: true, required: true }
+  - { id: fz6c8ryov5, name: signature, type: string, required: true }
+outputs: []
+fails:
+  - { name: badSignature, description: "signature or timestamp check fails (401)" }
+steps:
+  - { note: "HMAC-SHA256 of '<timestamp>.<raw body>' with the Connection secret; constant-time compare" }
+  - if: signature wrong or timestamp older than 5 min
+    then:
+      - { fail: badSignature }
+  - { write: cc1v719mlz, note: "payloads/…/<first event_id>.json" }
+  - each: event in events
+    do:
+      - { read: nmk8vxeclz, with: "pim:<event_id>", gets: key }
+      - if: key exists
+        then:
+          - { note: skip }
+        else:
+          - { write: nmk8vxeclz, note: done }
+          - { call: iqqdoy991b, with: "pimUuid = subject, action, trigger pim-event; MessageId = event_id" }
+          - { write: yguluhbf6w, note: "processed, sourceSystem pim, businessKey identifier" }

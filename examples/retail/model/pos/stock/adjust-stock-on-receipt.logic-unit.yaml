@@ -1,0 +1,14 @@
+id: vgcz70cvds
+parent: vgv4575wz1
+name: adjustStockOnReceipt
+inputs:
+  - { id: hjq4dylpf4, name: receipt, model: uvat8do1ib, required: true }
+outputs: []
+steps:
+  - each: line in receipt.lines (gift cards and non-stock lines skipped)
+    do:
+      - { write: zp69ptx4zg, note: "- quantity (a return line adds back)" }
+      - { write: xi19qutu0h, note: "reason sale or return, referenceId receipt" }
+  - if: receipt.pickupOrderId
+    then:
+      - { note: "stock for a collected order is moved by updatePickupOrderStatus, not here" }

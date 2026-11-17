@@ -1,0 +1,18 @@
+id: tdrg0b7fko
+parent: x27wyx0r8h
+name: mergeProfiles
+handles: [mlyjyz8wss]
+inputs:
+  - { id: frc9l1p8bp, name: destinationId, type: string, required: true }
+  - { id: hq9bnoz8lp, name: sourceId, type: string, required: true }
+outputs: []
+fails:
+  - { name: invalid, description: same or unknown profiles (400) }
+steps:
+  - { read: apj02aeekt, with: "destinationId, sourceId", gets: both }
+  - if: same id or either missing
+    then:
+      - { fail: invalid }
+  - { write: g4j7b6f21o, note: "move the source's events to the destination" }
+  - { write: oulxlftdo7, note: "list memberships: union" }
+  - { write: apj02aeekt, note: "destination keeps its identifiers; empty properties filled from the source; the source is deleted" }

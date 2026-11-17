@@ -1,0 +1,19 @@
+id: n5s9evk4bf
+parent: oumwpbl70c
+name: Update customer
+method: POST
+path: /{projectKey}/customers/{id}
+auth: "bearer (manage_customers)"
+params:
+  - { id: i8ptx0dkmn, name: projectKey, in: path, type: string, description: fjeld-prod }
+  - { id: mj7mk8e4q5, name: id, in: path, type: uuid }
+request:
+  fields:
+    - { id: owzwmlfltr, name: version, type: long, required: true, to: [t2o3kvzaxn] }
+    # GAP: polymorphic update action union (changeEmail, setFirstName, setLastName, addAddress, setDefaultShippingAddress, setCustomerGroup, setCustomerNumber, setExternalId, setLocale)
+    - { id: edl210lfy2, name: actions, type: "UpdateAction {action, ...}", many: true, required: true, to: [ehf2zs4sc2, t3mf7j2rez, q0hnw17jwj, y7vf6ytrw2, wzod3l5teg, odn7tdqw8z, c558p8igta, rtt1jqp5f3, zfwig3x4mh] }
+responses:
+  - { status: 200, model: nrnhibse1t }
+  - { status: 400, description: "DuplicateField (email), InvalidOperation (customerNumber already set)" }
+  - { status: 404, description: ResourceNotFound }
+  - { status: 409, description: ConcurrentModification }

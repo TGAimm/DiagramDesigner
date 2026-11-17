@@ -1,0 +1,5 @@
+id: efcxalw7mu
+parent: itnba1gbhh
+name: Fjeld Integration API v1.0
+tags: [custom]
+meta: { apiPublisher: fjeld, apiGroup: integration, apiVersion: "v1.0", builtBy: "erp-team partner (per-tenant extension)" }

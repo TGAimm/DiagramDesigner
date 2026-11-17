@@ -1,0 +1,11 @@
+id: q60jyms8qr
+parent: vuo50id8ln
+name: Retrieve a payout
+method: GET
+path: /v1/payouts/{payout}
+auth: bearer (secret key)
+params:
+  - { id: kg6c9l1uh7, name: payout, in: path, type: string }
+responses:
+  - { status: 200, model: uzfenyzyi8 }
+  - { status: 404, model: pwpsr0fyli, description: resource_missing }

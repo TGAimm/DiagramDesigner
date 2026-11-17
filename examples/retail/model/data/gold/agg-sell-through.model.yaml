@@ -1,0 +1,13 @@
+# Grain: one row per product (style level is a rollup in the report) and week.
+id: g6f9axlg7k
+ownedBy: d0jfpet25d
+storedIn: d0jfpet25d
+name: agg_sell_through
+fields:
+  - { id: lf1nfghb8x, name: product_sk, type: bigint, pk: true, ref: jqish8v510, from: [we8vfqwwjp, nvrkh5l4y9] }
+  - { id: s11keoifls, name: week_start_key, type: int, pk: true, ref: bgzdmszmqm, from: [ljedf5umlv, i9v62y6dud], derived: Monday of the sale's ISO week }
+  - { id: s8ao2s2fpk, name: units_sold, type: int, required: true, from: [oscm7gep7z, xhxnw1g6qm], derived: "sum where not is_return" }
+  - { id: ehvlx7mi18, name: units_returned, type: int, required: true, from: [yq5ipar1ye], derived: sum }
+  - { id: zh0stwy9gr, name: begin_on_hand, type: decimal, required: true, from: [tcl0ezbkg6, ep4sogb1b5], derived: "all locations, on the Monday" }
+  - { id: rkip2yzy36, name: end_on_hand, type: decimal, required: true, from: [tcl0ezbkg6, ep4sogb1b5], derived: "all locations, on the Sunday" }
+  - { id: tl3x5ue62m, name: units_received, type: decimal, required: true, from: [rkip2yzy36, zh0stwy9gr, s8ao2s2fpk, ehvlx7mi18], derived: "end - begin + sold - returned (receipts are not loaded)" }

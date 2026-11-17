@@ -1,0 +1,16 @@
+# GAP: file interface (the nightly STOCK_<ts>.csv, read from the 3PL SFTP archive folder)
+id: ftd3ia9zdg
+ownedBy: ar9pfoadj7
+storedIn: ar9pfoadj7
+name: wms_stock_file
+fields:
+  - { id: fcf3n4f44b, name: item_no, type: string, pk: true, from: [en5qykrql4] }
+  - { id: s8xcn1woa4, name: snapshot_at, type: datetime, pk: true, from: [qw8unyfn98] }
+  - { id: nqot558vsa, name: qty_on_hand, type: int, from: [uxf918aiu2] }
+  - { id: rbzggxcga2, name: qty_allocated, type: int, from: [r8br3sf5ze] }
+  - { id: jl6rns7d3q, name: qty_blocked, type: int, from: [hwclv2vcf1] }
+  - { id: fh633jq4jj, name: qty_available, type: int, from: [mar2ts1fhj] }
+  - { id: mu5ovu8ckl, name: _file_name, type: string, required: true, constraints: ["STOCK_<yyyyMMddHHmmss>.csv"] }
+  - { id: na7gqkeb8z, name: _loaded_at, type: datetime, required: true }
+  - { id: raeg09v6sm, name: _source, type: string, required: true, constraints: ["wms/STOCK"] }
+  - { id: xcmdv96yxd, name: _batch_id, type: string, required: true }

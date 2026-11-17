@@ -1,0 +1,16 @@
+id: citl3oc4ja
+parent: d2rl6i7zpf
+name: Get shipping methods for cart
+method: GET
+path: /{projectKey}/shipping-methods/matching-cart
+auth: "bearer (view_shipping_methods)"
+params:
+  - { id: d76gxfobk7, name: projectKey, in: path, type: string, description: fjeld-prod }
+  - { id: bb8d6nhg53, name: cartId, in: query, type: uuid, required: true }
+responses:
+  - status: 200
+    fields:
+      - { id: xd3mqrx4io, name: results, model: at1dw8zx8n, many: true, description: zoneRates cut to the cart's zone and currency; isMatching set }
+      - { id: kfynl2bvkx, name: total, type: int, from: [o9qqaz63dc], derived: count of matching methods }
+  - { status: 400, description: cart has no shipping address }
+  - { status: 404, description: ResourceNotFound (cart) }

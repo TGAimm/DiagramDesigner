@@ -1,0 +1,14 @@
+id: va98mmfa68
+parent: pnvbx85509
+name: List loyalty members
+method: GET
+path: /api/data/v9.2/fjeld_loyaltymembers
+auth: OAuth 2.0 bearer (Entra ID app registration)
+params:
+  - { id: i5vc61nor9, name: $filter, in: query, type: string, required: false, description: "e.g. _fjeld_contactid_value eq {id}" }
+  - { id: vyqo0dyk5r, name: $select, in: query, type: string, required: false }
+responses:
+  - status: 200
+    fields:
+      - { id: bvvxkuilkl, name: value, model: vr2vfukamq, many: true }
+  - { status: 400, model: blqvorzt9x }

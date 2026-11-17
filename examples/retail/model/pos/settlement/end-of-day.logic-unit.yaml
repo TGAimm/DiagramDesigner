@@ -1,0 +1,39 @@
+# Started by the store manager closing a register in the store app after counting the drawer.
+id: f80y7angzs
+parent: sd8724jaqj
+name: endOfDay
+inputs:
+  - { id: uxutdrj457, name: registerId, type: int, required: true }
+  - { id: a7exide3km, name: cashCounted, type: decimal, required: true }
+  - { id: ty8spgprfe, name: staffId, type: int, required: true }
+outputs:
+  - { id: varh1doxov, name: zReport, model: srngby2fkx }
+fails:
+  - { name: notManager, description: only a store_manager may close a register }
+  - { name: alreadyClosed, description: register is not open }
+  - { name: offlineReceipts, description: the register still has receipts queued offline }
+steps:
+  - { read: ri4bnolt30, with: staffId, gets: role }
+  - if: role is not store_manager or above
+    then:
+      - { fail: notManager }
+  - { read: srsxqwlqvb, with: registerId, gets: register }
+  - if: register.status != open
+    then:
+      - { fail: alreadyClosed }
+  - if: receipts still queued on the device
+    then:
+      - { fail: offlineReceipts }
+  - { read: uvat8do1ib, with: "register, zReportId null", gets: receipts }
+  - { read: aq2g2gtebf, with: receipts, gets: payments }
+  # GAP: external API with no system in the design (card terminal batch close / acquirer settlement)
+  - { note: "close the terminal's batch; its totals must match the card tenders" }
+  - { write: srngby2fkx, note: "insert, next zNo for the register, totals and cash difference" }
+  - { write: f3i1y2sael, note: one per method and card scheme }
+  - { write: p9dxns1r2g, note: on every receipt of the day }
+  - if: abs(cashDifference) > 50 in the store's currency
+    then:
+      - { note: "the app asks for a comment; area manager sees it on the morning report" }
+  - { write: srsxqwlqvb, note: "status closed" }
+  - { note: "print the Z report; signed by the fiscal control unit (SE) / TSE (DE)" }
+  - { return: zReport }

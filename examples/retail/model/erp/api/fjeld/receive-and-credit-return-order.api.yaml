@@ -1,0 +1,18 @@
+id: o8dld263pp
+parent: efcxalw7mu
+name: Receive and credit return order
+method: POST
+path: /api/fjeld/integration/v1.0/companies({companyId})/salesReturnOrders({id})/Microsoft.NAV.receiveAndCreditMemo
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: zpttwxgr38, name: companyId, in: path, type: guid }
+  - { id: ld7rx5pe59, name: id, in: path, type: guid }
+responses:
+  - status: 200
+    fields:
+      - { id: brovd04t41, name: creditMemoId, type: guid, from: [k34lw0n0rm] }
+      - { id: wq126xh8ac, name: creditMemoNumber, type: string, from: [ld3h1958zh] }
+      - { id: tcpqohlr7p, name: totalAmountIncludingTax, type: decimal, from: [qhc5urannw] }
+      - { id: s9hrp6z4hj, name: currencyCode, type: string, from: [n6hxv76ict] }
+  - { status: 400, description: "BadRequest: posting error (already credited, nothing to receive)" }
+  - { status: 404, description: no return order with this id }

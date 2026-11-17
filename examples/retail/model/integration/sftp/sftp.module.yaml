@@ -1,0 +1,8 @@
+# The 3PL's SFTP folders as Integration sees them: WMS owns the file layouts, Integration's
+# functions put files in /fjeld/in and pick them up from /fjeld/out (SSH key in Key Vault).
+# GAP: file interface (a remote folder of another system, drawn here only as references)
+id: kezfhrq42v
+parent: mleccno0ev
+name: 3PL SFTP
+meta: { host: sftp.nordlager.dk, user: fjeld-integration, put: /fjeld/in, get: /fjeld/out, after: "move to /fjeld/archive, copy to Blob archive" }
+models: [l03dfm19e0, rr62mqt1v6, k8fmicwjqb, pxxc0fdfed, gkqoftgixd, gs2ja6jjb6]

@@ -1,0 +1,13 @@
+id: v5w74hpvpy
+ownedBy: t9ah36fepl
+storedIn: r1xvgi7bie
+name: Asset
+fields:
+  - { id: th4ulkiulp, name: code, type: string, pk: true, required: true }
+  - { id: bud44h3zoy, name: asset_family, type: string, pk: true, ref: b87u64269r }
+  # GAP: keyed map - values is keyed by asset attribute code.
+  - { id: anwx9blp2k, name: values, model: lxx6qjxrva, many: true }
+  - { id: yrusf0eg1m, name: created, type: datetime, required: true }
+  - { id: rov90jfejp, name: updated, type: datetime, required: true }
+indexes:
+  - { id: rbhw9dnik8, name: ix_asset_updated, fields: [rov90jfejp], unique: false }

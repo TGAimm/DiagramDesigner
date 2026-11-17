@@ -1,0 +1,20 @@
+id: c7wk1w8fdj
+parent: pfvgbz7fey
+name: cancelPaymentIntent
+handles: [ry02p86mfk]
+inputs:
+  - { id: qopx3ibvpc, name: intent, type: string, required: true }
+  - { id: ocbye6m1a6, name: cancellation_reason, type: string }
+outputs:
+  - { id: sz3zroksqm, name: intent, model: g8pq0m68jp }
+fails:
+  - { name: unexpectedState, description: already succeeded or canceled }
+steps:
+  - { read: g8pq0m68jp, with: intent, gets: intent }
+  - if: status is succeeded or canceled
+    then:
+      - { fail: unexpectedState }
+  - { note: release any uncaptured authorization }
+  - { write: g8pq0m68jp, note: "status canceled, cancellation_reason, canceled_at" }
+  - { call: knbcqp1ram, with: "payment_intent.canceled, intent" }
+  - { return: intent }

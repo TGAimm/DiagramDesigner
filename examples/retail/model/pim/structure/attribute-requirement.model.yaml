@@ -1,0 +1,9 @@
+# pim_catalog_attribute_requirement: an attribute required for completeness in one channel.
+id: fuyymtyer2
+ownedBy: mt2wjcx7nj
+storedIn: r1xvgi7bie
+name: Attribute Requirement
+fields:
+  - { id: ef36syz4ji, name: family, type: string, pk: true, ref: up92jqcxxf }
+  - { id: o8x191tsat, name: channel, type: string, pk: true, ref: k4nfak5v5g }
+  - { id: c5aredoeii, name: attribute, type: string, pk: true, ref: z66zy4j2n8 }

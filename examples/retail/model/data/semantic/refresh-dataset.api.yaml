@@ -1,0 +1,15 @@
+# Power BI REST: called after gold is built so Direct Lake reframes onto the new Delta versions.
+id: ezrgvgwhvx
+parent: toy346x26m
+name: Refresh dataset in group
+method: POST
+path: /v1.0/myorg/groups/{groupId}/datasets/{datasetId}/refreshes
+auth: "bearer (Entra ID service principal, Dataset.ReadWrite.All)"
+params:
+  - { id: ivbj1gxixk, name: groupId, in: path, type: uuid, description: the fjeld-data-prod workspace }
+  - { id: jmuayldef0, name: datasetId, in: path, type: uuid }
+responses:
+  - { status: 202, description: "Accepted; refresh runs, Location header has the request id" }
+  - { status: 400, description: "a refresh is already running" }
+  - { status: 401, description: Token missing or expired }
+  - { status: 429, description: "too many refreshes (8 a day without Premium; unlimited on Fabric capacity via API)" }

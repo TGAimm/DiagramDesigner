@@ -1,0 +1,22 @@
+id: haxkxd4qhw
+ownedBy: b1ptklldw3
+name: Line Item
+fields:
+  - { id: c9xmzjnpp8, name: id, type: uuid, required: true }
+  - { id: amrxr25tzn, name: productId, type: uuid, required: true, ref: zchid5zayi }
+  - { id: ibpdw4zlak, name: productKey, type: string, nullable: true, from: [y0vgavtgc6] }
+  - { id: tzgfqq0q8b, name: name, type: LocalizedString, required: true, from: [huyilro2b9], derived: snapshot of current data when added }
+  - { id: gcwttkirr6, name: productSlug, type: LocalizedString, nullable: true, from: [gw8rv1dzbo] }
+  - { id: dhj0v9hg6v, name: productType, type: uuid, required: true, ref: ot7coaln4t, from: [wp8uvw4o9v] }
+  - { id: mfm2nwfwft, name: variant, model: zey11c3zfk, required: true, from: [h1rdhrnd74, h4ytihxxz6], derived: "snapshot of the chosen variant: sku, attributes, images" }
+  - { id: bctto5wq1y, name: price, model: mw8krecq3e, required: true, from: [roy8169338], derived: "best match on currency, country, customerGroup, channel and validity" }
+  - { id: ae7tr09nmb, name: quantity, type: int, required: true, constraints: [min 1] }
+  - { id: mh5uizwxp4, name: totalPrice, model: ik7usc5zp1, required: true, from: [bctto5wq1y, ae7tr09nmb], derived: price x quantity minus line and cart discounts }
+  - { id: xkm7wlocr5, name: discountedPricePerQuantity, type: "{quantity, discountedPrice {value, includedDiscounts[]}}", many: true, stored: false }
+  - { id: oab1g1w2xd, name: taxRate, model: oxv3h61cni, nullable: true }
+  - { id: dkwiht0i2z, name: taxedPrice, type: "{totalNet: Money, totalGross: Money, totalTax: Money}", nullable: true, from: [mh5uizwxp4, oab1g1w2xd], derived: total price split by the tax rate }
+  - { id: k1q2bof4we, name: supplyChannel, type: uuid, nullable: true, ref: yi0uf2c9tg, constraints: [3PL warehouse, or the store for click & collect] }
+  - { id: pn4ohkzjk6, name: distributionChannel, type: uuid, nullable: true, ref: yi0uf2c9tg }
+  - { id: yaqjzlzegz, name: priceMode, type: string, required: true, constraints: ["one of: Platform, Embedded, ExternalPrice, ExternalTotal"] }  # GAP: enum
+  - { id: dads2hzct3, name: lineItemMode, type: string, required: true, constraints: ["one of: Standard, GiftLineItem"] }  # GAP: enum
+  - { id: rumgwwtf0e, name: addedAt, type: datetime, nullable: true }

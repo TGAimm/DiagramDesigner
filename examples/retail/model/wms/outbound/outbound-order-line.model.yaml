@@ -1,0 +1,20 @@
+id: hh65a8yt9w
+ownedBy: yvrhh8zk8f
+storedIn: ka6mzbfc7x
+name: Outbound order line
+fields:
+  - { id: enu5edh6ix, name: id, type: int, pk: true }
+  - { id: asj13oyw9s, name: orderId, type: int, required: true, ref: zitqiyfbjs }
+  - { id: o7nssjtox1, name: lineNo, type: int, required: true, from: [dldcqxfont] }
+  - { id: cz6fuj4cyn, name: erpLineNo, type: int, required: true, from: [bzv6svrhs2], constraints: [echoed back in SHIPCONF] }
+  - { id: h29mzhxoid, name: itemId, type: int, required: true, ref: ixjus3gqio, from: [sdosprcbio], derived: looked up by item no. }
+  - { id: chzzyp8d3x, name: itemNo, type: string, required: true, from: [sdosprcbio] }
+  - { id: c9ctfmgi6z, name: description, type: string, nullable: true, from: [dvg4u1xpjk] }
+  - { id: hl4ib4prci, name: qtyOrdered, type: int, required: true, from: [mokdrwm7so] }
+  - { id: r7pnhw4yz1, name: qtyAllocated, type: int, required: true, constraints: [min 0, at most qtyOrdered] }
+  - { id: dujuwqrmkr, name: qtyPicked, type: int, required: true, constraints: [min 0] }
+  - { id: bgr8ducu5r, name: packageId, type: int, nullable: true, ref: vvm0sb8vdb, constraints: [the parcel it was packed in; a line split over parcels keeps the last] }
+  - { id: ho2dd2dzrw, name: qtyShipped, type: int, required: true, from: [dujuwqrmkr], derived: set when packed }
+indexes:
+  - { id: zk9uw2khtg, name: ux_line_order_no, fields: [asj13oyw9s, o7nssjtox1], unique: true }
+  - { id: suc139an5o, name: ix_line_item, fields: [h29mzhxoid] }

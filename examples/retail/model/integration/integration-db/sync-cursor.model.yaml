@@ -1,0 +1,17 @@
+# Where each delta poll stopped: the source's own lastModifiedDateTime, never the run clock.
+id: nanvethhnv
+ownedBy: v38tj7w8bg
+storedIn: v38tj7w8bg
+name: sync.Cursors
+fields:
+  # GAP: enum
+  - { id: wga2xjq2ti, name: source, type: string, pk: true, constraints: ["one of: erp, stripe, marketing, pos, wms"] }
+  - { id: fzn4xtnm5r, name: entity, type: string, pk: true, constraints: ["e.g. priceListLines, inventoryByLocation, items, payouts, unsubscribed-events, receipts"] }
+  - { id: xp7kavyurc, name: lastModifiedDateTime, type: datetime, required: true, from: [jwid5gdy97, jxvus70k0s, nk6emwf0ov], derived: "highest lastModifiedDateTime (or created) seen in the last successful page, minus 2 min overlap" }
+  - { id: pwetgz36ds, name: lastKey, type: string, nullable: true, constraints: ["tie-breaker for equal timestamps, or a Stripe starting_after id"] }
+  - { id: ff2qipm3wu, name: lastRunAt, type: datetime, required: true }
+  # GAP: enum
+  - { id: rag2yrb5vs, name: lastRunStatus, type: string, required: true, constraints: ["one of: ok, partial, failed"] }
+  - { id: bit5eukc2k, name: itemsLastRun, type: int, required: true }
+  - { id: exjw6yppc5, name: lastError, type: string, nullable: true }
+  - { id: ygbwa6gza9, name: lockedUntil, type: datetime, nullable: true, constraints: [a run holds the row so two timer firings never overlap] }

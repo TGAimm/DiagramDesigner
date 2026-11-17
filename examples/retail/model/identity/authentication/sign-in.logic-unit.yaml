@@ -1,0 +1,48 @@
+id: sw2phdawza
+parent: z4a8fcfwai
+name: signIn
+handles: [j09kgaxudj]
+inputs:
+  - { id: cn2ngs48rw, name: client_id, type: string, required: true }
+  - { id: ahyiozjufw, name: redirect_uri, type: string, required: true }
+  - { id: hrk979p06n, name: scope, type: string, required: true }
+  - { id: xl0dj5wnn6, name: nonce, type: string, required: true }
+  - { id: cl9ebbhoe1, name: code_challenge, type: string, required: true }
+  - { id: hpt0sdhsbn, name: prompt, type: string, nullable: true }
+outputs:
+  - { id: wuh6d55juh, name: code, type: string, description: "authorization code, single use, 10 min" }
+fails:
+  - { name: invalidClient, description: unknown client_id or redirect_uri not registered }
+  - { name: accessDenied, description: the shopper cancelled }
+  - { name: invalidCredentials, description: "wrong password or code; shown on the page, the shopper retries" }
+  - { name: accountDisabled }
+steps:
+  - { read: yrqt9pcc7g, with: client_id, gets: app }
+  - if: no app, or redirect_uri not in app.web.redirectUris
+    then:
+      - { fail: invalidClient }
+  - { read: ctuxygbaj9, with: "conditions.applications contains client_id", gets: flow }
+  - if: prompt is create, or the shopper picks "No account? Create one"
+    then:
+      - { call: uh8cyhr6je, with: "flow, app", gets: user }
+    else:
+      - if: a session cookie for the tenant and prompt is not login
+        then:
+          - { note: single sign-on; no page }
+        else:
+          - { note: "sign-in page: email + password, or a social provider (redirect and back)" }
+          - { read: u24xst6unw, with: "issuer, issuerAssignedId", gets: identity }
+          - if: no identity, or wrong password
+            then:
+              - { fail: invalidCredentials }
+      - { read: nozb9f6rc0, with: identity.userId, gets: user }
+  - if: not user.accountEnabled
+    then:
+      - { fail: accountDisabled }
+  - if: the shopper cancels
+    then:
+      - { fail: accessDenied }
+  - { write: lm0iw0ctro, note: now }
+  - { write: h08kztce0w, note: "insert kind authorization_code: client, user, redirect_uri, scope, nonce, code_challenge; expires in 10 min" }
+  - { note: set the session cookie }
+  - { return: code }

@@ -1,0 +1,17 @@
+id: eefg9hcgbr
+parent: y5739ri6l0
+name: getOrderIds
+handles: [bsdfg1ghgr]
+inputs:
+  - { id: o7z4x4keib, name: orderNumber, type: string, required: true }
+outputs:
+  - { id: vjr1jd3npw, name: ids, model: n8ujyi0o8a }
+fails:
+  - { name: notFound, description: unknown order number (404) }
+steps:
+  - { read: n8ujyi0o8a, with: orderNumber, gets: ids }
+  - if: none
+    then:
+      - { fail: notFound }
+  - { read: r1iwd1t2bt, with: orderNumber, gets: returns }
+  - { return: ids }

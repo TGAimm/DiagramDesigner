@@ -1,0 +1,25 @@
+# The released ERP sales order as the 3PL takes it: one ORDERS file block, or the body of
+# POST /v1/orders. Queued on wms-outbound-orders while files are the contract.
+id: vs6f80curs
+ownedBy: myr8ju3xsr
+name: WmsOrderDraft
+tags: [pii]
+fields:
+  - { id: zm73bjppdz, name: orderNo, type: string, required: true, from: [aq2v5k54f3] }
+  - { id: ji75rjn5dz, name: customerRef, type: string, required: true, from: [shria7urcn], constraints: [the webshop order number; printed on the packing slip] }
+  # GAP: enum
+  - { id: ungsj393nc, name: orderType, type: string, required: true, from: [u3odsty44b], derived: "WEB > B2C; B2B customers > B2B", constraints: ["one of: B2C, B2B, STORE"] }
+  - { id: e38zqdpc2e, name: orderDate, type: date, required: true, from: [euqztn9f8v] }
+  - { id: bezd55u2fv, name: deliveryDate, type: date, nullable: true, from: [y7bdrrre8w] }
+  - { id: rvmf5bkme0, name: priority, type: int, required: true, from: [p7xf549b6n], derived: "1 for an express service code, else 5" }
+  - { id: islix8zkvv, name: shipToName, type: string, required: true, from: [t0j000f6ro] }
+  - { id: b1d6eutcd8, name: shipToAddress1, type: string, required: true, from: [laly4xiy7s] }
+  - { id: jf0is2in5h, name: shipToAddress2, type: string, nullable: true, from: [gouc67x2su] }
+  - { id: mbza8rogo0, name: shipToZip, type: string, required: true, from: [g4qkqlw5iz] }
+  - { id: a4xtni4wvx, name: shipToCity, type: string, required: true, from: [czh6i0sp61] }
+  - { id: ri3w9f3mhz, name: shipToCountry, type: string, required: true, from: [cj08x70i8k] }
+  - { id: e2vv4azl5c, name: shipToEmail, type: string, nullable: true, from: [kl3bd1tg9y] }
+  - { id: ssh77x7c4p, name: shipToPhone, type: string, nullable: true, from: [dpko5hfl8p] }
+  - { id: qc3j10n2ac, name: carrierProduct, type: string, nullable: true, from: [p7xf549b6n], derived: "ERP service code > Shipping product code (GLS_PRIVATE, PDK_MC, BRING_SERVICEPAKKE)" }
+  - { id: lw6rvvlube, name: pickupPointId, type: string, nullable: true, from: [kedos6mv1p] }
+  - { id: oqgj0tm5sy, name: lines, model: yybkfivtvd, many: true, required: true }

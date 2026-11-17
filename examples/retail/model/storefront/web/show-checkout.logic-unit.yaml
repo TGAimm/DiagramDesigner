@@ -1,0 +1,10 @@
+id: p7lb2y6ibq
+parent: ogmj497j15
+name: showCheckout
+inputs: []
+outputs:
+  - { id: xv3sjzy7mp, name: summary, model: c5wtilu6sm }
+steps:
+  - { call: s9a7yaz3bg, gets: summary }
+  - { note: "409 sends the shopper back to the cart; otherwise open the first incomplete step (address, delivery, payment)" }
+  - { return: summary }

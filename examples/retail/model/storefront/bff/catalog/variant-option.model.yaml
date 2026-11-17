@@ -1,0 +1,14 @@
+id: mh5pz3frd5
+ownedBy: lnizoffy7m
+name: Variant Option
+fields:
+  - { id: rxeaxe626y, name: sku, type: string, required: true, from: [c1uzjurwuu] }
+  - { id: ybea9wi3gm, name: variantId, type: int, required: true, from: [vu80pdsjme] }
+  - { id: ox9q09nqnq, name: colour, type: string, nullable: true, from: [b5zlg7995z], derived: "attribute colour, label in the locale" }
+  - { id: vom179lp6c, name: colourCode, type: string, nullable: true, from: [b5zlg7995z], derived: "attribute colour, option key" }
+  - { id: l4ulmu52p6, name: size, type: string, nullable: true, from: [b5zlg7995z], derived: "attribute size" }
+  - { id: q75jc3leeo, name: imageUrl, type: string, nullable: true, from: [aun8w1fli3], derived: first image }
+  - { id: l5cs6xzxzw, name: inStock, type: bool, required: true, from: [txl9q5ewps] }
+  - { id: t4lymazfgx, name: lowStock, type: int, nullable: true, from: [iwv4fn8ceg], derived: "availableQuantity when under 5 (Only 3 left)" }
+  - { id: kr8ljgmx3c, name: restockableInDays, type: int, nullable: true, from: [jgqtz2z8ba] }
+  - { id: x2lzysdxuz, name: storesWithStock, type: int, required: true, from: [er80zen2vb], derived: store channels with isOnStock }

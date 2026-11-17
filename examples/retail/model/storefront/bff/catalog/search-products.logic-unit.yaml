@@ -1,0 +1,33 @@
+id: v158ql16uk
+parent: lnizoffy7m
+name: searchProducts
+handles: [zs95d67zfk, hjoe5q8cud]
+inputs:
+  - { id: m21jiasp0i, name: query, type: string, nullable: true }
+  - { id: bgqkzpv8ur, name: categorySlug, type: string, nullable: true }
+  - { id: olcim1xc6r, name: filters, type: string, nullable: true }
+  - { id: upmjguj6uf, name: sort, type: string, nullable: true }
+  - { id: m3winqvat6, name: page, type: int, nullable: true }
+outputs:
+  - { id: vmiz0t3bns, name: view, model: lfl06w7glo }
+fails:
+  - { name: unknownCategory, description: "404" }
+  - { name: badFilter, description: "400: a filter on an attribute that isn't a facet" }
+steps:
+  - { call: cylyc9xl5m, gets: session }
+  - if: categorySlug
+    then:
+      - { call: pmxvaacmcg, gets: nodes }
+      - if: no node has the slug
+        then:
+          - { fail: unknownCategory }
+      - { note: "filters += categoryKeys:<key>; ruleContexts category-<key>; breadcrumbs from the node's ancestors" }
+  - if: filters name an unknown attribute
+    then:
+      - { fail: badFilter }
+  - { note: "index = products_<locale>, or its _price_asc, _price_desc or _newest replica for sort" }
+  - { call: rlbt46vo3u, with: "query (or '' for a category), filters, facetFilters, facets brand colour sizesAvailable hierarchicalCategories.* price, page - 1, hitsPerPage 48, clickAnalytics, userToken = hashed session id", gets: response }
+  - if: no hits and a query
+    then:
+      - { call: rlbt46vo3u, with: "the same with removeWordsIfNoResults allOptional", gets: response }
+  - { return: view }

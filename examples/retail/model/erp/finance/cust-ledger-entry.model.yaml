@@ -1,0 +1,27 @@
+# Table 21 Cust. Ledger Entry: open invoices, payments and credit memos per customer.
+id: eij6j7uhhb
+ownedBy: gob5rrh7wh
+storedIn: q43aprn5l0
+name: Cust. Ledger Entry
+tags: [pii]
+fields:
+  - { id: drsz4tv52b, name: entryNo, type: int, pk: true }
+  - { id: a7mwygm3ni, name: customerNo, type: string, required: true, ref: iloktksmbd }
+  - { id: biebfcxpol, name: postingDate, type: date, required: true }
+  - { id: putdcvdqod, name: documentType, type: string, constraints: ["one of: ' ', Payment, Invoice, Credit Memo, Refund"] }   # GAP: enum
+  - { id: dm4mhw81ph, name: documentNo, type: string, required: true }
+  - { id: a9ippenfzq, name: externalDocumentNo, type: string }
+  - { id: z3m082qnvr, name: description, type: string }
+  - { id: cg8mq7supo, name: currencyCode, type: string, ref: nirn4ae2ma }
+  - { id: z7ivfh4xwq, name: amount, type: decimal }
+  - { id: l6y0ttmv2m, name: amountLcy, type: decimal, from: [z7ivfh4xwq, eruo2aalsf, wg7z8gi5to], derived: "amount at the posting date's exchange rate" }
+  - { id: bq4wf42bqu, name: remainingAmount, type: decimal, from: [z7ivfh4xwq], derived: "amount less applied payments" }
+  - { id: xqksams0vs, name: remainingAmountLcy, type: decimal, from: [l6y0ttmv2m], derived: "amount (LCY) less applied payments" }
+  - { id: amx4u2ttzy, name: dueDate, type: date }
+  - { id: zroxieo6r1, name: open, type: bool }
+  - { id: zb5i25t1m5, name: closedByEntryNo, type: int, nullable: true, ref: drsz4tv52b }
+  - { id: eq7z3arq0e, name: dimensionSetId, type: int, ref: nbwnn1hmri }
+  - { id: nuwn6pc5od, name: transactionNo, type: int }
+indexes:
+  - { id: o422kjrwp7, name: ix_cle_customer_open, fields: [a7mwygm3ni, zroxieo6r1, amx4u2ttzy] }
+  - { id: t3vtqkjmiq, name: ix_cle_document, fields: [dm4mhw81ph, putdcvdqod] }

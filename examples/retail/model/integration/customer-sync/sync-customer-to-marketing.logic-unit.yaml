@@ -1,0 +1,20 @@
+# GAP: triggered by subscription customer-changed/marketing
+id: wo1ab8nfb2
+parent: mwg6alxci7
+name: syncCustomerToMarketing
+inputs:
+  - { id: lp7gvhqwod, name: event, model: bbh3e6of1d, required: true }
+outputs: []
+steps:
+  - { note: "subscription customer-changed/marketing" }
+  - { call: gthq1faetp, with: "where id = event.customerId", gets: customer }
+  - { call: l92ija6prb, with: "contacts by alternate key, $select contactid, fjeld_loyaltytier", gets: contact }
+  - { note: "map to MarketingProfileDraft" }
+  - { call: kszuzobco0, with: the draft, gets: profile }
+  - if: 409 duplicate profile
+    then:
+      - { call: cc4xwm61gz, with: "the id from the 409's meta.duplicate_profile_id; the draft", gets: profile }
+  - if: event.marketingConsent and event.change is created
+    then:
+      - { call: sxjv75ejmp, with: "email, consent SUBSCRIBED, the country's newsletter list (double opt-in), custom_source Fjeld sign-up" }
+  - { write: yguluhbf6w, note: "processed, targetSystem marketing" }

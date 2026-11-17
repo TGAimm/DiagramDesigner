@@ -1,0 +1,9 @@
+id: u3sxl67syz
+ownedBy: g55sb0eqd6
+name: OrderShippedLine
+fields:
+  - { id: heb7hgjtlf, name: erpLineNo, type: int, required: true, from: [sjvr51l4l3] }
+  - { id: d7u3iihwak, name: sku, type: string, required: true, from: [ixcmex2k46, w272hp8w14] }
+  - { id: dp31d2rssp, name: commerceLineItemId, type: uuid, required: true, from: [c9xmzjnpp8], derived: "matched on sku in the Commerce order" }
+  - { id: vqtt7gjsid, name: quantity, type: int, required: true, from: [n5j1wxd5ln, nocb5xvs7l] }
+  - { id: c4bwv6n54e, name: unitPriceGross, type: long, required: true, from: [xqbgbhos07, fmmrzvdfda], derived: "ERP line amountIncludingTax / quantity, in cents" }

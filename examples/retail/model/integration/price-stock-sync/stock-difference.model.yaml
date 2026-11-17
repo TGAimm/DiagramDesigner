@@ -1,0 +1,14 @@
+# One line of the nightly WMS-vs-ERP stock comparison for the 3PL location (CENTRAL).
+id: q1zs67pdnk
+ownedBy: f1xy7xguug
+name: StockDifference
+fields:
+  - { id: w5nufw06on, name: itemNo, type: string, required: true, from: [en5qykrql4], derived: "item_no = '<ERP item no.>-<variant code>', split" }
+  - { id: d2d0hzshsn, name: variantCode, type: string, nullable: true, from: [en5qykrql4] }
+  - { id: pb20i1g347, name: wmsOnHand, type: int, required: true, from: [uxf918aiu2] }
+  - { id: ijjd7hqplo, name: wmsBlocked, type: int, required: true, from: [hwclv2vcf1] }
+  - { id: lxf1rwufwu, name: erpInventory, type: decimal, required: true, from: [wbgofszc3q] }
+  - { id: pwtzqizfjp, name: inTransitToWms, type: decimal, required: true, derived: "quantity on orders sent to the 3PL after snapshotAt and shipped in ERP before it (timing)" }
+  - { id: w6559j8x8c, name: difference, type: decimal, required: true, from: [pb20i1g347, lxf1rwufwu, pwtzqizfjp], derived: "wmsOnHand - erpInventory + inTransitToWms" }
+  - { id: ow4a7av3u7, name: snapshotAt, type: datetime, required: true, from: [qw8unyfn98] }
+  - { id: zth9gpbsqw, name: documentNo, type: string, required: true, from: [qw8unyfn98], derived: "WMS-<yyyyMMdd>" }

@@ -1,0 +1,17 @@
+id: gthq1faetp
+parent: oumwpbl70c
+name: Query customers
+method: GET
+path: /{projectKey}/customers
+auth: "bearer (view_customers)"
+params:
+  - { id: g9z63dcv9m, name: projectKey, in: path, type: string, description: fjeld-prod }
+  - { id: nnduq0mqdk, name: where, in: query, type: string, required: false, description: "e.g. externalId=\"<Identity user id>\"" }
+  - { id: dur0avn6vo, name: limit, in: query, type: int, required: false }
+  - { id: jq0ffsz11n, name: offset, in: query, type: int, required: false }
+responses:
+  - status: 200
+    fields:
+      - { id: rd0az2spz1, name: results, model: nrnhibse1t, many: true }
+      - { id: garwk4xm1g, name: total, type: int, nullable: true, from: [zhf6a5r56z], derived: count of matches }
+  - { status: 400, description: InvalidInput (bad predicate) }

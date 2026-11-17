@@ -1,0 +1,19 @@
+# The POS's copy of the ERP item and its store price lists; Integration upserts it, the till never changes it.
+id: jw2rr761o3
+ownedBy: a9udosegf6
+storedIn: hykg6pt8u2
+name: Product
+fields:
+  - { id: ulyru0izqj, name: sku, type: string, pk: true, from: [yu6wdxgb8q,u2mbyuw427], derived: "item no. + variant code, one product per variant" }
+  - { id: c3vfix037y, name: ean, type: string, nullable: true, from: [hvppx4kt1w,kxtlmorg2h], derived: "the variant's GTIN, else the item's", constraints: ["EAN-13 on the hang tag; what the till scans"] }
+  - { id: ep6vpmyi5p, name: name, type: string, required: true, from: [hu1yuj53fb], derived: "cut to 40 characters", constraints: [max 40, receipt line text] }
+  - { id: a89n2k5bjj, name: variantText, type: string, nullable: true, from: [wr2bk1xkfr,iz5mxs1rl5], derived: "size / colour", constraints: ["e.g. M / Forest green"] }
+  - { id: eqp5m5nkzc, name: category, type: string, nullable: true, from: [u7ggrrukee] }
+  - { id: jdl3f1uku5, name: vatRate, type: decimal, required: true, from: [vnuzc1n5nq,snyup3m9pl], derived: "VAT % of the item's VAT prod. posting group in the store country's VAT posting setup", constraints: ["percent, e.g. 25"] }
+  - { id: u3a51xm3c6, name: prices, model: olvvff4lp5, many: true }
+  - { id: ro3slcklgh, name: isGiftCard, type: bool, required: true, constraints: [sold amount loads a gift card] }
+  - { id: r4zupxegki, name: active, type: bool, required: true, from: [lut5pnjkad,xfrbaemefw], derived: "not blocked (item and variant)" }
+  - { id: rb3zwqedtd, name: updatedAt, type: datetime, required: true }
+indexes:
+  - { id: sbppq44g6l, name: ix_product_ean, fields: [c3vfix037y] }
+  - { id: rfkfxk3vwl, name: ix_product_updated, fields: [rb3zwqedtd] }

@@ -1,0 +1,27 @@
+# Flow 6 for a webshop order returned in a store: the goods stay in the store, the money goes
+# back to the online payment (POS returnAtTill calls this).
+id: d460gt69k0
+parent: nlc4zljjz8
+name: createStoreReturn
+handles: [lmic8gsioh]
+inputs:
+  - { id: nfwzicabm1, name: orderNumber, type: string, required: true }
+  - { id: l26v6s80z7, name: storeNo, type: string, required: true }
+  - { id: n1bslh8khj, name: receiptNo, type: string, required: true }
+  - { id: yltq0m1sjr, name: lines, type: "{sku, quantity, returnReason}", many: true, required: true }
+outputs:
+  - { id: xulls8xer3, name: rmaNumber, type: string }
+fails:
+  - { name: notFound, description: no such order (404) }
+  - { name: notReturnable, description: "quantity over what is left, or past the window (422)" }
+steps:
+  - { read: n8ujyi0o8a, with: orderNumber, gets: ids }
+  - if: no ids
+    then:
+      - { fail: notFound }
+  - { call: v2gmil25dl, with: ids.commerceOrderId, gets: order }
+  - if: a line's quantity > bought - returned, or today > shipped + window
+    then:
+      - { fail: notReturnable }
+  - { call: qgcqi7t2ku, with: "ReturnCreatedEvent: returnId new uuid, rmaNumber S<storeNo>-<receiptNo>, channel store, storeNo, items with line item id, sku, quantity, reason, condition 'checked in store'" }
+  - { return: rmaNumber }

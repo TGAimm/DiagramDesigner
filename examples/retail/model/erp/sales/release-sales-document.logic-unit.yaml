@@ -1,0 +1,31 @@
+# Codeunit 414 Release Sales Document
+id: nrqpqup513
+parent: vss7pk1oh5
+name: releaseSalesDocument
+inputs:
+  - { id: bza0t61d1k, name: documentType, type: string, required: true }
+  - { id: z8u0v4b8ye, name: documentNo, type: string, required: true }
+outputs:
+  - { id: yiirbympws, name: header, model: ejg622chhy }
+fails:
+  - { name: noLines, description: the document has no line with a quantity }
+  - { name: customerBlocked, description: "the customer is blocked for Ship or All" }
+  - { name: missingPrice, description: an item line has unit price 0 }
+steps:
+  - { read: ejg622chhy, with: "documentType, documentNo", gets: header }
+  - if: header.status = Released
+    then:
+      - { return: header }
+  - { read: uq9808b8co, with: header.sellToCustomerNo, gets: blocked }
+  - if: blocked is Ship or All
+    then:
+      - { fail: customerBlocked }
+  - { read: i09cr44p1c, with: "documentType, documentNo", gets: lines }
+  - if: no line has quantity > 0
+    then:
+      - { fail: noLines }
+  - if: an item line has unitPrice = 0
+    then:
+      - { fail: missingPrice }
+  - { write: xalurnbl6g, note: "Released; lines can no longer change" }
+  - { return: header }

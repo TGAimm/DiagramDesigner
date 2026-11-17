@@ -1,0 +1,16 @@
+id: gw2rbpg2bl
+parent: r3utcx4a06
+name: getProfile
+handles: [kj2e67wd0e]
+inputs: []
+outputs:
+  - { id: g2kbh9qi75, name: profile, model: cu38cv7e7h }
+fails:
+  - { name: notSignedIn, description: "401" }
+steps:
+  - { call: cylyc9xl5m, gets: session }
+  - if: no identityUserId
+    then:
+      - { fail: notSignedIn }
+  - { call: rn75rdis3r, with: the Identity access token, gets: customer }
+  - { return: profile }

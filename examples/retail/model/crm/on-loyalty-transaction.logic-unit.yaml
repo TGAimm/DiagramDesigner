@@ -1,0 +1,33 @@
+# Loyalty points plugin: registered on Create of fjeld_loyaltytransaction, post-operation, synchronous.
+# GAP: data-change trigger (a Dataverse plugin step runs on Create of a table row, not on an api)
+id: t4zkwavwdn
+parent: pnvbx85509
+name: onLoyaltyTransactionCreated
+handles: [rj4zp0cjn6]
+meta: { plugin: Fjeld.Crm.Plugins.LoyaltyPoints, stage: post-operation }
+inputs:
+  - { id: ao58pbg413, name: transaction, model: ossdh2dm43, required: true }
+outputs: []
+fails:
+  - { name: insufficientPoints, description: a redemption would take the balance below zero }
+  - { name: duplicate, description: fjeld_externalid already used }
+steps:
+  - { read: zf98l7w5xi, with: fjeld_externalid, gets: earlier transaction }
+  - if: earlier transaction exists
+    then:
+      - { fail: duplicate }
+  - { read: vr2vfukamq, with: fjeld_loyaltymemberid, gets: member }
+  - if: "type is Redeem and member.fjeld_pointsbalance + points < 0"
+    then:
+      - { fail: insufficientPoints }
+  - { write: ossdh2dm43, note: insert }
+  - { write: l2dfuhplmo, note: balance + points }
+  - { read: ossdh2dm43, with: "member, Earn, last 12 months", gets: earned points }
+  - { write: yhofp26dbz }
+  - { read: w0jpoakgg2, gets: tiers by rank }
+  - { note: pick the highest tier whose fjeld_threshold the earned points reach }
+  - if: tier changed
+    then:
+      - { write: a5mmzwangy, note: "and fjeld_tiervalidto = today + 12 months" }
+      - { write: g6wd5evlsf }
+      - { call: ou5ubt8x3f, with: "RemoteExecutionContext of the contact Update (service endpoint step filtered on fjeld_loyaltytier): pre and post tier, commerce customer id" }

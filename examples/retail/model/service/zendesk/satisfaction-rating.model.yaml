@@ -1,0 +1,15 @@
+id: rb09clayu8
+ownedBy: dodjtgoau2
+storedIn: kulzyfespz
+name: Satisfaction rating
+fields:
+  - { id: bzz6zt8rm2, name: id, type: int, pk: true }
+  - { id: cbi27z3lfg, name: ticket_id, type: int, required: true, ref: cd3t7bjar1 }
+  - { id: ueupwraytf, name: requester_id, type: int, required: true, ref: ekcor3oja3 }
+  - { id: uybc5xj9nr, name: assignee_id, type: int, nullable: true, ref: ekcor3oja3 }
+  - { id: bp0salysjm, name: group_id, type: int, nullable: true, ref: lck4mzgmuz }
+  # GAP: enum
+  - { id: toxjb45ooh, name: score, type: string, required: true, constraints: ["one of: offered, unoffered, good, bad"] }
+  - { id: zukp55q29c, name: comment, type: string, nullable: true }
+  - { id: r6yejzbtp9, name: reason, type: string, nullable: true, constraints: ["for bad: took too long, not resolved, rude, other"] }
+  - { id: v5m2nye6du, name: created_at, type: datetime, required: true }

@@ -1,0 +1,16 @@
+# Store sales of one business day, summed per item and VAT rate: the lines of the day's ERP
+# sales invoice to customer STORE-<storeNo>.
+id: lmw9aubxm6
+ownedBy: nlc4zljjz8
+name: StoreDaySales
+fields:
+  - { id: uxxdeghdwi, name: storeNo, type: string, required: true, from: [ta0yzi1b46] }
+  - { id: jz847rjmvl, name: erpLocationCode, type: string, required: true, from: [g6s8welf7y] }
+  - { id: xs9krq4uuj, name: businessDay, type: date, required: true, from: [lz87p5mqnv, fsi64r70ld] }
+  - { id: tnas7xbu8w, name: currency, type: string, required: true, from: [xwf28n2bqx] }
+  - { id: hkaou49ssd, name: sku, type: string, required: true, from: [spogg3guvr] }
+  - { id: fu0447y005, name: vatRate, type: decimal, required: true, from: [hcgava4jct] }
+  - { id: axuaeykjxv, name: quantity, type: decimal, required: true, from: [jnw4tryjno], derived: "sum; returns are negative" }
+  - { id: eampwvphrs, name: amountInclVat, type: decimal, required: true, from: [x871oi7nj9], derived: sum of line totals }
+  - { id: d1gijqpcid, name: discountAmount, type: decimal, required: true, from: [kzmhww5hax], derived: sum }
+  - { id: bosm09glmd, name: zReportNos, type: string, many: true, from: [rmleixbd5s], constraints: [in the invoice's external document no.] }

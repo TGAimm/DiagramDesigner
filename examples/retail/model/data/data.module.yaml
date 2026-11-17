@@ -1,0 +1,10 @@
+# Fjeld's analytics platform: Fabric workspace fjeld-data-prod. Medallion layout: Data Factory
+# pipelines land raw source data in bronze, Spark notebooks clean and conform it in silver and
+# build the star schema in gold, Power BI reads gold through one Direct Lake semantic model.
+id: qubihx15dl
+name: Data Platform
+meta: { kind: own-built, owner: data-team, product: Microsoft Fabric (F64 capacity), workspace: fjeld-data-prod, region: West Europe, stack: "Data Factory pipelines, Spark notebooks (PySpark), Delta lakehouses, Power BI Direct Lake", lcy: DKK }
+links:
+  - { label: Microsoft Fabric docs, url: "https://learn.microsoft.com/fabric/" }
+  - { label: Lakehouse and Delta tables, url: "https://learn.microsoft.com/fabric/data-engineering/lakehouse-and-delta-tables" }
+  - { label: Power BI REST API (datasets), url: "https://learn.microsoft.com/rest/api/power-bi/datasets" }

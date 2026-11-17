@@ -1,0 +1,18 @@
+id: kc7narqpiq
+parent: xi92dufx8c
+name: List users
+method: GET
+path: /v1.0/users
+auth: bearer (app-only Graph token, User.Read.All)
+params:
+  - { id: qp0gkzkkwa, name: $filter, in: query, type: string, required: false, description: "e.g. identities/any(c:c/issuerAssignedId eq 'ane@example.dk' and c/issuer eq 'fjeldid.onmicrosoft.com')" }
+  - { id: k4kffwmwif, name: $select, in: query, type: string, required: false, description: "extension attributes are only returned when named here" }
+  - { id: nu0ir7d9kg, name: $top, in: query, type: int, required: false, description: "max 999" }
+  - { id: wf6qpjtatl, name: ConsistencyLevel, in: header, type: string, required: false, description: "eventual, for $count and $search" }
+responses:
+  # GAP: OData envelope (value, @odata.nextLink) and paging: written as many of the model
+  - { status: 200, model: nozb9f6rc0, many: true }
+  - { status: 400, description: Unsupported $filter }
+  - { status: 401, description: Missing or expired token }
+  - { status: 403, description: Missing User.Read.All }
+  - { status: 429, description: "Throttled; Retry-After" }

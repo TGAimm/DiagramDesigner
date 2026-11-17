@@ -1,0 +1,11 @@
+id: dj29s9w4t1
+parent: i282x7cdne
+name: Find stores
+method: GET
+path: /api/stores
+auth: session cookie fj_sid
+params:
+  - { id: e9qyzacyy9, name: near, in: query, type: string, required: false, description: "postal code or lat,lng" }
+  - { id: jiv8k1vfpx, name: sku, in: query, type: string, required: false, description: "adds stock per store for click & collect" }
+responses:
+  - { status: 200, model: r5c8x8etbs, many: true }

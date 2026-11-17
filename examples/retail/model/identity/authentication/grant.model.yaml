@@ -1,0 +1,20 @@
+# GAP: internal state of a bought product (codes and refresh tokens the IdP keeps): modelled because the token api checks against it, though no public api returns it
+id: h08kztce0w
+ownedBy: z4a8fcfwai
+storedIn: ji6igng4bi
+name: Grant
+tags: [internal]
+fields:
+  - { id: blgrqu8b1u, name: id, type: string, pk: true, constraints: ["the authorization code, or a hash of the refresh token"] }
+  - { id: et1k8bs181, name: kind, type: string, required: true, constraints: ["one of: authorization_code, refresh_token"] }   # GAP: enum
+  - { id: j92tbt7bnb, name: clientId, type: string, required: true, ref: rii92gdhxd }
+  - { id: hxso15n5wx, name: userId, type: uuid, required: true, ref: nozb9f6rc0 }
+  - { id: gifhl870eo, name: redirectUri, type: string, nullable: true }
+  - { id: hj297grc14, name: scope, type: string, required: true }
+  - { id: ettxkdy4me, name: nonce, type: string, nullable: true }
+  - { id: eho578fign, name: codeChallenge, type: string, nullable: true }
+  - { id: crrgu8y6xq, name: expiresAt, type: datetime, required: true }
+  - { id: ekvla1lp3x, name: redeemedAt, type: datetime, nullable: true }
+  - { id: vxfmzh1nps, name: revokedAt, type: datetime, nullable: true }
+indexes:
+  - { id: gprh7unibb, name: ix_grant_user, fields: [hxso15n5wx, et1k8bs181] }

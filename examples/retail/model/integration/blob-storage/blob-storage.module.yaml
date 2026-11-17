@@ -1,0 +1,6 @@
+id: gd7b9xmakj
+parent: mleccno0ev
+name: Blob storage
+meta: { account: stfjeldintegration, sftp: enabled, containers: "pim (SFTP home of local user pim-export), archive (cool tier, 400 days), payloads (30 days)" }
+links:
+  - { label: SFTP for Blob Storage, url: https://learn.microsoft.com/azure/storage/blobs/secure-file-transfer-protocol-support }

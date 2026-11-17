@@ -1,0 +1,21 @@
+id: sg4tkrnvm7
+parent: vssqq48tt7
+name: pushTrackingWebhook
+inputs:
+  - { id: x4oc4y8t5n, name: event, model: e2ken4rl8u, required: true }
+outputs: []
+fails:
+  - { name: deliveryFailed, description: no 2xx after 5 retries over 24 h }
+steps:
+  - { read: a31x3gyqkh, with: "action tracking_status_changed, enabled", gets: subscriptions }
+  - { read: o96th79s8y, with: event.shipment_id, gets: "reference, order_id" }
+  - { read: x8ugoms0sh, with: event.parcel_id, gets: "pkg_no, tracking_url" }
+  - { note: build the TrackingWebhookPayload }
+  - each: subscription in subscriptions
+    do:
+      - { note: "sign: X-Signature = HMAC-SHA256 of the body with subscription.key" }
+      - { call: yo31h6b52c, with: "the payload, X-Signature (Fjeld: Integration updates Commerce order tracking and sends the Marketing Delivered / Delivery Update event)" }
+      - if: no 2xx
+        then:
+          - { note: retry 5 times with backoff over 24 h }
+          - { fail: deliveryFailed }

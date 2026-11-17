@@ -1,0 +1,17 @@
+# One row per source record, pointing at the customer it was matched to (many to one).
+# GAP: union lineage - rows come from five tables and source_key is "whichever source this row
+# is"; `from` cannot say that only the CRM rows come from contactid.
+id: i0coshp5wa
+ownedBy: c9pk2gmf7l
+storedIn: c9pk2gmf7l
+name: customer_source_map
+fields:
+  - { id: fn0kv26084, name: source_system, type: string, pk: true, constraints: ["one of: commerce, crm, erp, pos_member, klaviyo"] } # GAP: enum
+  - { id: k7kxq5y8j2, name: source_key, type: string, pk: true, from: [nseajx30tk, noqzl76io3, mlpulx8dmi, m5k8j4nzpj, ncwzh853ks], derived: "the source's own key, as text" }
+  - { id: lw1lqawip9, name: customer_key, type: string, required: true, from: [nseajx30tk, ht9maw6rtg, i2cbnqcv9d, klcxf6ik13, v0i6r8ufpb, kspb7rvuu3, bd3oxhi1pv, vkzle93mhm], derived: "rules in order: same Commerce id (CRM link, Klaviyo external_id); loyalty member's contact; same normalised e-mail; else a new key (uuid)" }
+  - { id: df2onzp2z1, name: match_rule, type: string, required: true, constraints: ["one of: commerce_id, crm_link, member_contact, email, new"] } # GAP: enum
+  - { id: juuc93iuem, name: match_confidence, type: decimal, required: true, constraints: [0..1, "1 for id rules, 0.9 for e-mail"] }
+  - { id: vbfan16iuo, name: matched_at, type: datetime, required: true }
+  - { id: o9193qzlh8, name: unmatched_at, type: datetime, nullable: true, constraints: [set when a CRM merge or e-mail change moves the record to another customer] }
+indexes:
+  - { id: czkb98z3ct, name: ix_source_map_customer, fields: [lw1lqawip9] }

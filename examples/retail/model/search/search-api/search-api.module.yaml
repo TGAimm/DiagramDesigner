@@ -1,0 +1,5 @@
+id: w84no1i22u
+parent: qj04e3k5z2
+name: Search API
+links:
+  - { label: Search an index, url: "https://www.algolia.com/doc/rest-api/search/#tag/Search/operation/searchSingleIndex" }

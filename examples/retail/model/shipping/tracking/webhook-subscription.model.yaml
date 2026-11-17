@@ -1,0 +1,12 @@
+id: a31x3gyqkh
+ownedBy: vssqq48tt7
+storedIn: t99y8h5mfb
+name: WebhookSubscription
+fields:
+  - { id: wgp18qks2d, name: id, type: int, pk: true }
+  - { id: skirtr0bp3, name: name, type: string, required: true }
+  - { id: l62cqqqgz2, name: endpoint, type: string, required: true, constraints: ["Fjeld: Integration's tracking webhook receiver"] }
+  - { id: esz0b5d0hi, name: action, type: string, required: true, constraints: ["one of: tracking_status_changed, shipment_created, shipment_cancelled"] }   # GAP: enum
+  - { id: w09oybfqb4, name: key, type: string, required: true, constraints: ["signs X-Signature, HMAC-SHA256"] }
+  - { id: p8y3oxyabg, name: enabled, type: bool }
+  - { id: jidur5id5y, name: created_at, type: datetime }

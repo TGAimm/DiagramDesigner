@@ -1,0 +1,5 @@
+id: x2x0s3utl1
+parent: s7eejjfr7l
+name: Inventory
+links:
+  - { label: Inventory, url: "https://learn.microsoft.com/en-us/dynamics365/business-central/inventory-manage-inventory" }

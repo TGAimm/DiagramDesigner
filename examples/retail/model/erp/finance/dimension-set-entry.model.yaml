@@ -1,0 +1,11 @@
+# Table 480 Dimension Set Entry: a set id names one combination of dimension values; every
+# document and ledger entry keeps just the set id.
+id: llkotssj1b
+ownedBy: gob5rrh7wh
+storedIn: q43aprn5l0
+name: Dimension Set Entry
+fields:
+  - { id: nbwnn1hmri, name: dimensionSetId, type: int, pk: true }
+  - { id: xztlugcuew, name: dimensionCode, type: string, pk: true, ref: ohdrg1ylyk }
+  - { id: eoxvvnmv3n, name: dimensionValueCode, type: string, required: true, ref: fogake3ysr }
+  - { id: svs70t02hd, name: dimensionValueId, type: int, from: [fogake3ysr], derived: "Dimension Value ID of the value" }

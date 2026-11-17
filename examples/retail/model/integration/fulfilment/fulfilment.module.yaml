@@ -1,0 +1,4 @@
+id: myr8ju3xsr
+parent: mleccno0ev
+name: Fulfilment
+meta: { functionApp: func-fjeld-fulfilment, runtime: ".NET 8 isolated", plan: Flex Consumption }

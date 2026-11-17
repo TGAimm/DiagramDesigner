@@ -1,0 +1,40 @@
+id: bx8bn1nd55
+parent: ybylhi4dg2
+name: applyPaymentUpdateActions
+handles: [dglp2lmh50]
+inputs:
+  - { id: yc3a5o3a3k, name: paymentId, type: uuid, required: true }
+  - { id: xy45j3d3vr, name: version, type: long, required: true }
+  - { id: e2x20ntqgc, name: actions, type: "UpdateAction {action, ...}", many: true, required: true }
+outputs:
+  - { id: yjzkyr6i76, name: payment, model: ucmgflrykd }
+fails:
+  - { name: notFound, description: ResourceNotFound (404) }
+  - { name: concurrentModification, description: version is stale (409) }
+  - { name: unknownTransaction, description: "InvalidOperation: transactionId not on the payment (400)" }
+steps:
+  - { read: ucmgflrykd, with: paymentId, gets: payment }
+  - if: payment not found
+    then:
+      - { fail: notFound }
+  - if: payment.version != version
+    then:
+      - { fail: concurrentModification }
+  - each: action in actions
+    do:
+      - if: action is addTransaction
+        then:
+          - { write: q0qlcnm8la, note: "e.g. Authorization Success when the Stripe PaymentIntent is confirmed; emits PaymentTransactionAdded" }
+      - if: action is changeTransactionState or changeTransactionInteractionId
+        then:
+          - if: transactionId not on the payment
+            then:
+              - { fail: unknownTransaction }
+          - { write: a67yy5xuf5, note: or interactionId }
+          - { call: lg4db2fxip, with: "Payment, PaymentTransactionStateChanged, transactionId + state", gets: message }
+      - if: action is setStatusInterfaceCode or setStatusInterfaceText
+        then:
+          - { write: o1802xzmdz }
+  - { note: "the order's paymentState is not derived from the payment; Integration sets it with changePaymentState" }
+  - { write: d13nt469el, note: +1 }
+  - { return: payment }

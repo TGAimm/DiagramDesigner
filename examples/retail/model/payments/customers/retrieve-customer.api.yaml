@@ -1,0 +1,11 @@
+id: tex0vxbka2
+parent: yzg8gfwzwo
+name: Retrieve a customer
+method: GET
+path: /v1/customers/{customer}
+auth: bearer (secret key)
+params:
+  - { id: at8t2s3nuo, name: customer, in: path, type: string }
+responses:
+  - { status: 200, model: b55i3wbaym, description: "a deleted customer comes back with deleted: true and no other fields" }
+  - { status: 404, model: pwpsr0fyli, description: resource_missing }

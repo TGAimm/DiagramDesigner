@@ -1,0 +1,19 @@
+id: xkx47o5yrw
+parent: vgv4575wz1
+name: Set stock levels
+method: PUT
+path: /v2/stock
+auth: bearer (API key per integration user)
+request:
+  fields:
+    - { id: r7dcwuefcj, name: storeNo, type: string, required: true, to: [poqeq2oxtg], description: looked up to the store id }
+    - { id: rxbs36b9jz, name: asOf, type: datetime, required: true, to: [rrjtshmqva], description: "when ERP counted it; till sales after this are kept" }
+    - { id: pr6sn8z9t1, name: levels, type: "{sku, qtyOnHand}", many: true, required: true, to: [irgtzk6axo, zp69ptx4zg] }
+responses:
+  - status: 200
+    fields:
+      - { id: q82pdek4gq, name: changed, type: int, from: [zp69ptx4zg], derived: count of levels that moved }
+      - { id: zshzntm8mi, name: unknownSkus, type: string, many: true, from: [irgtzk6axo], derived: skus not in the catalogue }
+  - { status: 400, description: "More than 5000 levels, or malformed body" }
+  - { status: 401, description: Bad API key }
+  - { status: 404, description: Unknown storeNo }

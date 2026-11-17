@@ -1,0 +1,26 @@
+id: ixjus3gqio
+ownedBy: d3aqew3zk6
+storedIn: ka6mzbfc7x
+name: Item
+fields:
+  - { id: oxccpwrtmg, name: id, type: int, pk: true }
+  - { id: yfuhon49xq, name: itemNo, type: string, required: true, from: [tfkxcqyj4r], constraints: [= ERP item no. = Commerce SKU] }
+  - { id: w7cnax2a6q, name: description, type: string, required: true, from: [ik10kssmaa] }
+  - { id: qn8wrhmtu1, name: ean, type: string, nullable: true, from: [yg0jtdq4tz], constraints: [what the scanners read] }
+  - { id: v5tl5eac4q, name: uom, type: string, required: true, from: [o9vvjqnf6e] }
+  - { id: v5pxmx8d5m, name: weightG, type: int, required: true, from: [f7z2bnikwh] }
+  - { id: g3jpb2rc1h, name: lengthCm, type: int, nullable: true, from: [xeoawf07uc] }
+  - { id: n3vshoif3t, name: widthCm, type: int, nullable: true, from: [zjgnqfmqps] }
+  - { id: x2hdg8jrsq, name: heightCm, type: int, nullable: true, from: [djprjnecrx] }
+  - { id: v8jp8l14ti, name: category, type: string, nullable: true, from: [ceg4iytirm] }
+  - { id: frdt8wh2fy, name: lotTracked, type: bool, required: true, from: [wmfmjlc1kd] }
+  - { id: yoy82j2sww, name: hazardous, type: bool, required: true, from: [jvb80jabau], constraints: [stored in the hazmat zone; ground transport only] }
+  - { id: fheym3grmg, name: countryOfOrigin, type: string, nullable: true, from: [ery1oscjdb] }
+  - { id: lxc9gjb1bv, name: tariffNo, type: string, nullable: true, from: [blgk08ev0r] }
+  # GAP: enum
+  - { id: be1yz6iwm9, name: status, type: string, required: true, from: [ni0grlff65], derived: "blocked Y → blocked", constraints: ["one of: active, blocked"] }
+  - { id: ndhuo5jhb4, name: createdAt, type: datetime, required: true }
+  - { id: jyvinj1wru, name: updatedAt, type: datetime, required: true }
+indexes:
+  - { id: k2ni0ubgey, name: ux_item_no, fields: [yfuhon49xq], unique: true }
+  - { id: kxtcm40j3r, name: ix_item_ean, fields: [qn8wrhmtu1] }

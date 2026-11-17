@@ -1,0 +1,12 @@
+# Query 50100 FJ Inventory By Location (Fjeld Integration): computed on read, never stored.
+id: la0b5vcx3a
+ownedBy: x2x0s3utl1
+name: Inventory By Location
+fields:
+  - { id: uyb5ygukb9, name: itemNo, type: string, from: [idyk06egxn] }
+  - { id: zx5k1zft1o, name: variantCode, type: string, from: [ygulbhn8jz] }
+  - { id: uprcju7fdf, name: locationCode, type: string, from: [oqzgrxsfw1] }
+  - { id: wbgofszc3q, name: inventory, type: decimal, from: [s6zz5v7v7t], derived: "sum of item ledger entry quantity per item, variant, location" }
+  - { id: t2oqxs7ee1, name: qtyOnSalesOrders, type: decimal, from: [eqjj9f1mlv, g6nhm9odkn], derived: "sum of outstanding quantity on open and released sales order lines" }
+  - { id: fj7wbj8f9j, name: availableQty, type: decimal, from: [wbgofszc3q, t2oqxs7ee1], derived: "inventory - qtyOnSalesOrders, floored at 0" }
+  - { id: jwid5gdy97, name: lastModifiedDateTime, type: datetime, from: [h8s09h2xoc, nt6ono6h16], derived: "latest change among its entries and order lines" }

@@ -1,0 +1,8 @@
+# Enabled at Fjeld: da_DK, sv_SE, nb_NO, de_DE, en_GB. A locale is enabled once a channel uses it.
+id: rtguxjsjrm
+ownedBy: c654efbgqw
+storedIn: r1xvgi7bie
+name: Locale
+fields:
+  - { id: pjdrglpirc, name: code, type: string, pk: true, required: true, constraints: ["ll_CC, e.g. da_DK"] }
+  - { id: u7yku2jmrx, name: enabled, type: bool, stored: false, from: [zm2gv06fiv], derived: true when any channel lists it }

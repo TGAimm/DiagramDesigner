@@ -1,0 +1,34 @@
+# Codeunit 80 Sales-Post with Ship: posts qty. to ship of each line as a shipment.
+id: qnj97ja5i1
+parent: vss7pk1oh5
+name: postSalesShipment
+inputs:
+  - { id: glt14ovsjw, name: orderNo, type: string, required: true }
+outputs:
+  - { id: cjbelrbdnt, name: shipment, model: dznaramfzx }
+fails:
+  - { name: notReleased, description: the order is not released }
+  - { name: nothingToShip, description: no line has a qty. to ship }
+  - { name: insufficientInventory, description: "item ledger would go negative at the location (Prevent Negative Inventory)" }
+steps:
+  - { read: ejg622chhy, with: "Order, orderNo", gets: header }
+  - if: header.status <> Released
+    then:
+      - { fail: notReleased }
+  - { read: i09cr44p1c, with: "Order, orderNo, qtyToShip > 0", gets: lines }
+  - if: lines is empty
+    then:
+      - { fail: nothingToShip }
+  # GAP: transaction boundary: all writes below commit together or roll back on any error
+  - { note: "one database transaction; locks Sales Header, Item Ledger Entry and G/L Entry" }
+  - { write: dznaramfzx, note: "insert, no. from series SSHIP, copied from the header" }
+  - each: line in lines
+    do:
+      - { call: dfac9bllv7, with: "Sale, item, variant, location, -qtyToShip, document = shipment no.", gets: itemLedgerEntryNo }
+      - if: the call fails with insufficientInventory
+        then:
+          - { fail: insufficientInventory }
+      - { write: hqt21ykoll, note: "insert with itemShptEntryNo" }
+      - { write: g6nhm9odkn, note: "add qtyToShip; qtyToShip reset to 0; qtyToInvoice = shipped not invoiced" }
+  - { note: "no G/L entries yet: value entries hold the expected cost and sales amount" }
+  - { return: shipment }

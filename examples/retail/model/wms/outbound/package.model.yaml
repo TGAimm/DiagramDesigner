@@ -1,0 +1,22 @@
+id: vvm0sb8vdb
+ownedBy: yvrhh8zk8f
+storedIn: ka6mzbfc7x
+name: Package
+fields:
+  - { id: ix00kv3fp0, name: id, type: int, pk: true }
+  - { id: dntzpzpd17, name: shipmentId, type: int, required: true, ref: nz3evtxf52 }
+  - { id: xykmbpklz4, name: sscc, type: string, required: true, constraints: ["SSCC-18 printed on the parcel"] }
+  - { id: vcy6f2vxjt, name: boxType, type: string, required: true, constraints: ["S, M, L, XL, BAG, OWN (in its own carton)"] }
+  - { id: ugt1drcebk, name: weightG, type: int, required: true, constraints: [weighed at the pack station] }
+  - { id: w8oiuldn47, name: lengthCm, type: int, nullable: true }
+  - { id: v7brau8vgc, name: widthCm, type: int, nullable: true }
+  - { id: vh650lefxs, name: heightCm, type: int, nullable: true }
+  - { id: e4bfjok7u8, name: trackingNo, type: string, required: true, from: [bq0e1j92yw] }
+  - { id: acyr93uz4y, name: trackingUrl, type: string, nullable: true, from: [namh6tyb85] }
+  - { id: pr5uvvp2ev, name: labelZpl, type: string, required: true, from: [igjh7asrs6], derived: "decoded from base64; printed at the pack station" }
+  - { id: jvksk81or5, name: packedBy, type: string, required: true }
+  - { id: fhpljbolwn, name: packedAt, type: datetime, required: true }
+indexes:
+  - { id: p4kepgabke, name: ix_package_shipment, fields: [dntzpzpd17] }
+  - { id: tzewgkn9pm, name: ux_package_sscc, fields: [xykmbpklz4], unique: true }
+  - { id: pn4j82kowa, name: ix_package_tracking, fields: [e4bfjok7u8] }

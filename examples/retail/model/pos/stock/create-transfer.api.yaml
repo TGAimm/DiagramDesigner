@@ -1,0 +1,11 @@
+id: v9y51rr3ou
+parent: vgv4575wz1
+name: Create incoming transfer
+method: POST
+path: /v2/stock-transfers
+auth: bearer (API key per integration user)
+request: { model: g9fn1pbjcw, pick: [q2j20ptobs, unsvc057iy, p4tsbkscqz, yi4ioqjs21, hxe7lnlbq0] }
+responses:
+  - { status: 201, model: g9fn1pbjcw, description: "In transit; shows on the store's goods-in list" }
+  - { status: 401, description: Bad API key }
+  - { status: 409, description: transferNo exists }

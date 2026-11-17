@@ -1,0 +1,20 @@
+id: na8s6l6yvb
+parent: yzg8gfwzwo
+name: Update a customer
+method: POST
+path: /v1/customers/{customer}
+auth: bearer (secret key)
+params:
+  - { id: p7u7l8g9qv, name: customer, in: path, type: string }
+request:
+  contentType: application/x-www-form-urlencoded
+  fields:
+    - { id: w7b0npznkw, name: email, type: string, to: [kqt4y5d9hx] }
+    - { id: cgffhadvyt, name: name, type: string, to: [xx8dwdsarj] }
+    - { id: ildks6pox4, name: phone, type: string, to: [wpwpc1nhm9] }
+    - { id: m8drwx81o3, name: address, model: efxi7uugd5 }
+    - { id: rkq1vwm60i, name: "invoice_settings[default_payment_method]", type: string, to: [bruolgicod] }
+responses:
+  - { status: 200, model: b55i3wbaym }
+  - { status: 400, model: pwpsr0fyli, description: invalid_request_error }
+  - { status: 404, model: pwpsr0fyli, description: resource_missing }

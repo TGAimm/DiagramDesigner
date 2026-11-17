@@ -1,0 +1,33 @@
+# GAP: scheduled trigger
+# Flow 7: yesterday's closed store days > one ERP sales invoice per store (customer STORE-<no>)
+# and the tenders as journal lines paying it.
+id: ovdz6twe8d
+parent: nlc4zljjz8
+name: importPosSales
+meta: { schedule: "30 1 * * *" }
+inputs: []
+outputs: []
+steps:
+  - { call: eyk06ixi2l, gets: stores }
+  - each: store
+    do:
+      - { call: j5oni9ol3b, with: "storeId, businessDay = yesterday", gets: z reports }
+      - if: a register of the store has no Z report
+        then:
+          - { write: wlmvgl2qp8, note: "store-ops: day not closed; the store is retried tomorrow" }
+        else:
+          - { call: tp4ijb3abm, with: "storeId, businessDay, status completed, all pages", gets: receipts }
+          - { note: "leave out receipts with a pickupOrderId (webshop orders, already in ERP) and lines of gift card sales (a liability, posted from the tenders)" }
+          - { write: lmw9aubxm6, note: "sum per sku and VAT rate" }
+          - { call: d6cde9w3nb, with: "customerNumber STORE-<storeNo>, externalDocumentNumber POS-<storeNo>-<yyyyMMdd>, locationCode, shortcutDimension1Code STORE, pricesIncludeTax, lines from StoreDaySales", gets: sales order }
+          - if: 400 (externalDocumentNumber exists)
+            then:
+              - { note: "imported before: skip the store" }
+            else:
+              - { call: x4csr5f2bm, with: sales order id, gets: invoice }
+              - { call: p0tngi23im, with: "$filter code eq 'POS'", gets: journal }
+              - each: tender in the Z reports (card, mobilepay, cash, gift card)
+                do:
+                  - { call: dduwg38kcl, with: "accountType Customer STORE-<storeNo>, amount = - tender total, balancing G/L by tender (card clearing 5850, cash in store 5710-<store>, gift card liability 2730), documentNumber POS-<storeNo>-<yyyyMMdd>", gets: line }
+              - { call: xris3u29wu, with: journal.id }
+  - { write: nanvethhnv, note: "pos / receipts: lastRunAt, days imported" }

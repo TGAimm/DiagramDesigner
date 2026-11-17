@@ -1,0 +1,17 @@
+# GAP: scheduled trigger
+id: phxlerj7re
+parent: g55sb0eqd6
+name: watchDeadLetters
+meta: { schedule: "*/15 * * * *" }
+inputs: []
+outputs: []
+steps:
+  - { note: "peek every subscription's $DeadLetterQueue (Service Bus management client) and forward what is there" }
+  - each: dead-lettered message
+    do:
+      - { call: gxh7trguok, with: "RetryEnvelope with DeadLetterReason and DeadLetterErrorDescription as lastError" }
+      - { write: wlmvgl2qp8, note: "retryable false" }
+  - { read: wlmvgl2qp8, with: "resolvedAt null, older than 1 hour", gets: open errors }
+  - if: any open error
+    then:
+      - { note: "alert integration-team (Azure Monitor action group: Teams channel #integration-alerts) with counts per function and target" }

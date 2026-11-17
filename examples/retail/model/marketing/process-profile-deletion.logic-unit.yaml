@@ -1,0 +1,18 @@
+id: d3tflynp3m
+parent: uewuqgvbe5
+name: processProfileDeletion
+handles: [b8j7eah6ro]
+inputs:
+  - { id: j7fp6kug6r, name: identifier, type: string, required: true, description: "email, phone number or profile id" }
+outputs: []
+fails:
+  - { name: notFound, description: no profile has the identifier (the job still completes) }
+steps:
+  - { read: apj02aeekt, with: identifier, gets: profile }
+  - if: no profile
+    then:
+      - { fail: notFound }
+  - { write: g4j7b6f21o, note: delete all the profile's events }
+  - { write: oulxlftdo7, note: delete list memberships }
+  - { write: m9398u9zcm, note: delete segment memberships }
+  - { write: apj02aeekt, note: "delete; the email is kept hashed on the suppression list so it is not re-imported" }

@@ -1,0 +1,27 @@
+id: ekcor3oja3
+ownedBy: rd06mopkno
+storedIn: kulzyfespz
+name: User
+tags: [pii]
+fields:
+  - { id: qgg5iha4nx, name: id, type: int, pk: true }
+  - { id: c4oj8pr2yl, name: name, type: string, required: true }
+  - { id: fvt97h71xi, name: email, type: string, nullable: true, constraints: [unique, email] }
+  - { id: gjp6209ji0, name: phone, type: string, nullable: true }
+  # GAP: enum
+  - { id: cbe2dgqf9k, name: role, type: string, required: true, constraints: ["one of: end-user, agent, admin"] }
+  - { id: n127hodmtq, name: external_id, type: string, nullable: true, from: [zhf6a5r56z], derived: uuid as text, constraints: [unique] }
+  - { id: k2scc1s67c, name: organization_id, type: int, nullable: true, ref: mqgsqrl464 }
+  - { id: v3gdjmsstv, name: default_group_id, type: int, nullable: true, ref: lck4mzgmuz, constraints: [agents only] }
+  - { id: gurtow2k3b, name: locale, type: string, nullable: true }
+  - { id: exq0cj29el, name: time_zone, type: string, nullable: true }
+  - { id: d6nn4ghph1, name: verified, type: bool, required: true }
+  - { id: vsrh4dkuxm, name: suspended, type: bool, required: true }
+  - { id: kmx3oa7vlv, name: tags, type: string, many: true }
+  - { id: qw9sjgqxv1, name: user_fields.loyalty_tier, type: string, nullable: true, from: [g6wd5evlsf], derived: via Integration }
+  - { id: x5po0umnak, name: user_fields.crm_contact_id, type: string, nullable: true, from: [gp3y3t4d1d], derived: via Integration }
+  - { id: rjf8rxrhtv, name: created_at, type: datetime, required: true }
+  - { id: nopxb2gvzy, name: updated_at, type: datetime, required: true }
+indexes:
+  - { id: btv6ka3ofw, name: ux_user_email, fields: [fvt97h71xi], unique: true }
+  - { id: irpq2jkjwj, name: ux_user_external_id, fields: [n127hodmtq], unique: true }

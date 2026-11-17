@@ -1,0 +1,21 @@
+id: caitj9aczq
+ownedBy: eaiyhlljnw
+storedIn: sox2v1ykga
+name: Refund
+fields:
+  - { id: pg4eb4bda5, name: id, type: string, pk: true, constraints: ["prefix re_"] }
+  - { id: noo838prte, name: amount, type: int, required: true, constraints: ["max charge.amount_captured - amount_refunded"] }
+  - { id: ifxgftl5vs, name: currency, type: string, required: true, from: [kkxt5t6xwz] }
+  - { id: g2797m16cn, name: charge, type: string, required: true, ref: lto0xhpsrl }
+  - { id: h4pwdoemtx, name: payment_intent, type: string, nullable: true, ref: g8pq0m68jp }
+  - { id: ddpdex8wea, name: status, type: string, required: true, constraints: ["one of: pending, requires_action, succeeded, failed, canceled"] }   # GAP: enum
+  - { id: mfd1g6byc2, name: reason, type: string, nullable: true, constraints: ["one of: duplicate, fraudulent, requested_by_customer, expired_uncaptured_charge"] }   # GAP: enum
+  - { id: n5x1rj6gy4, name: failure_reason, type: string, nullable: true, constraints: ["e.g. expired_or_canceled_card, lost_or_stolen_card"] }
+  - { id: h9qwn0l5gp, name: balance_transaction, type: string, nullable: true, ref: te75334qto }
+  # GAP: free-form key/value map (metadata): written as the fixed keys Fjeld sets, dotted
+  - { id: ils1iftfai, name: metadata.return_id, type: string, nullable: true, from: [x773wm1yhr], derived: uuid as text }
+  - { id: ta751euqp5, name: metadata.commerce_order_id, type: string, nullable: true, from: [n0tso6nfsf] }
+  - { id: vn8n78b28b, name: created, type: timestamp, required: true }
+indexes:
+  - { id: bacx99ba6g, name: ix_refund_charge, fields: [g2797m16cn] }
+  - { id: kk1t2gful7, name: ix_refund_payment_intent, fields: [h4pwdoemtx] }

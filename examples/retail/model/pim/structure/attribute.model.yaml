@@ -1,0 +1,31 @@
+# Fjeld examples: sku (identifier), name, description (textarea, wysiwyg), brand, colour, size,
+# material (multi select), weight (metric, Weight), price (price collection), ean,
+# product_images and size_guide (asset collections), care_instructions.
+id: hjsj87ps7y
+ownedBy: mt2wjcx7nj
+storedIn: r1xvgi7bie
+name: Attribute
+fields:
+  - { id: z66zy4j2n8, name: code, type: string, pk: true, required: true, constraints: ["^[a-zA-Z0-9_]+$", max 100] }
+  # GAP: enum
+  - { id: g9b5ok2uul, name: type, type: string, required: true, constraints: ["one of: pim_catalog_identifier, pim_catalog_text, pim_catalog_textarea, pim_catalog_simpleselect, pim_catalog_multiselect, pim_catalog_boolean, pim_catalog_number, pim_catalog_metric, pim_catalog_price_collection, pim_catalog_date, pim_catalog_file, pim_catalog_image, pim_catalog_asset_collection, pim_catalog_table", immutable] }
+  - { id: cy6wd1h97d, name: group, type: string, required: true, ref: p5rkkxbc5e }
+  - { id: rkejayk283, name: localizable, type: bool, required: true, constraints: [immutable] }
+  - { id: y7ksl2ci20, name: scopable, type: bool, required: true, constraints: [immutable] }
+  - { id: ity08gvf5c, name: unique, type: bool }
+  - { id: r1ee4jkzbk, name: useable_as_grid_filter, type: bool }
+  - { id: wuzvfo6xaw, name: available_locales, type: string, many: true, ref: pjdrglpirc, constraints: [empty means all] }
+  - { id: nmenbtz0th, name: max_characters, type: int, nullable: true }
+  # GAP: enum
+  - { id: q7nvmb4igd, name: validation_rule, type: string, nullable: true, constraints: ["one of: email, url, regexp"] }
+  - { id: dcmtntal1j, name: validation_regexp, type: string, nullable: true }
+  - { id: svqtplfw33, name: wysiwyg_enabled, type: bool, nullable: true }
+  - { id: pzovzifjae, name: metric_family, type: string, nullable: true, ref: va7e93eeoy, constraints: [metric attributes only] }
+  - { id: sypbzbutly, name: default_metric_unit, type: string, nullable: true, ref: tu7he05d9m }
+  - { id: b6nfax3vyw, name: decimals_allowed, type: bool, nullable: true }
+  - { id: br3xiqf3u8, name: negative_allowed, type: bool, nullable: true }
+  - { id: ivb7p8oou0, name: reference_data_name, type: string, nullable: true, ref: b87u64269r, constraints: ["asset collections: the asset family"] }
+  - { id: dhfv59awht, name: sort_order, type: int }
+  - { id: qulzcurvcz, name: labels, type: "map<locale, string>" }
+indexes:
+  - { id: mcrs1m8278, name: ix_attribute_group, fields: [cy6wd1h97d], unique: false }

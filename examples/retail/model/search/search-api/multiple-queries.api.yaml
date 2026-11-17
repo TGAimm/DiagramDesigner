@@ -1,0 +1,15 @@
+id: iitkxe2e1o
+parent: w84no1i22u
+name: Search multiple indices
+method: POST
+path: /1/indexes/*/queries
+auth: "X-Algolia-Application-Id + X-Algolia-API-Key (search-only key)"
+request:
+  fields:
+    - { id: yc3o37513t, name: requests, model: hvgl8g3qr7, many: true, required: true, description: "each names its indexName; strategy (none, stopIfEnoughMatches) rides beside it" }
+responses:
+  - status: 200
+    fields:
+      - { id: pkbb5q6v15, name: results, model: kvwb8tpsfj, many: true, description: "one per request, in order" }
+  - { status: 400, description: "invalid parameters in one request: the whole call fails" }
+  - { status: 403, description: invalid API key }

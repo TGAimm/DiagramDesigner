@@ -1,0 +1,17 @@
+id: bjxpj3vbjp
+parent: m149ml603p
+name: getStock
+handles: [pd94d5v3yu]
+when: { flag: j5jo9lc089, is: on }
+inputs:
+  - { id: gqny3cdeun, name: itemNo, type: string, nullable: true }
+  - { id: f65tt7jqzu, name: changedSince, type: datetime, nullable: true }
+outputs:
+  - { id: ffzodc0mtr, name: balances, model: cyvap5gucu, many: true }
+steps:
+  - if: itemNo given
+    then:
+      - { read: yfuhon49xq, with: itemNo, gets: item }
+  - { read: cyvap5gucu, with: "item or all, updatedAt > changedSince, one page", gets: balances }
+  - { note: "sum per item over bins; blocked = qc, damaged and blocked bins" }
+  - { return: balances }

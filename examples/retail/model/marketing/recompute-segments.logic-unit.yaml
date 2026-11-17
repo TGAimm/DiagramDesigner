@@ -1,0 +1,16 @@
+# GAP: scheduled trigger
+id: ni7w1v36p2
+parent: znpte2ol9p
+name: recomputeSegments
+meta: { schedule: "0 * * * *", note: "time-based conditions; event and property changes also update membership as they happen" }
+inputs: []
+outputs: []
+steps:
+  - { read: og6ds2tl8y, with: is_active, gets: segments }
+  - each: segment
+    do:
+      - { read: gjcrayqqot, gets: definition }
+      - { read: g4j7b6f21o, with: "metrics and time windows the definition names", gets: events }
+      - { read: apj02aeekt, with: "properties the definition names (loyalty_tier, shop_country)", gets: profiles }
+      - { read: oulxlftdo7, with: lists the definition names }
+      - { write: m9398u9zcm, note: "add profiles now matching, remove those no longer matching" }

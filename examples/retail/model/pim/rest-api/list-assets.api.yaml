@@ -1,0 +1,17 @@
+# GAP: pagination envelope - search_after cursor only.
+id: xa82ymq3zt
+parent: vsn79avah8
+name: List assets of a family
+method: GET
+path: /api/rest/v1/asset-families/{asset_family_code}/assets
+auth: bearer
+params:
+  - { id: q37g21cqid, name: asset_family_code, in: path, type: string }
+  - { id: hxiujsru4d, name: search, in: query, type: json, required: false, description: "updated >, code IN, complete" }
+  - { id: wpyt7505jj, name: channel, in: query, type: string, required: false }
+  - { id: j3gvqiaf20, name: locales, in: query, type: string, required: false }
+  - { id: umcj71k902, name: search_after, in: query, type: string, required: false }
+responses:
+  - { status: 200, model: v5w74hpvpy, many: true }
+  - { status: 401, description: Missing or expired token }
+  - { status: 404, description: No asset family with this code }

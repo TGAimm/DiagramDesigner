@@ -1,0 +1,17 @@
+id: elkigma0eu
+parent: scelhoohob
+name: Query messages
+method: GET
+path: /{projectKey}/messages
+auth: "bearer (view_messages)"
+params:
+  - { id: x30t0aqty3, name: projectKey, in: path, type: string, description: fjeld-prod }
+  - { id: fpiu2bjgwi, name: where, in: query, type: string, required: false, description: "e.g. resource(id=\"...\") and type=\"OrderCreated\"; messages are kept 15 days" }
+  - { id: z9nabhr9vu, name: sort, in: query, type: string, required: false, description: sequenceNumber asc }
+  - { id: n1mrctfm64, name: limit, in: query, type: int, required: false }
+responses:
+  - status: 200
+    fields:
+      - { id: ak128fsfvx, name: results, model: r36jmkzojw, many: true }
+      - { id: lpvz30g3yt, name: total, type: int, nullable: true, from: [v85rw1hbek], derived: count of matches }
+  - { status: 400, description: InvalidInput (bad predicate) }

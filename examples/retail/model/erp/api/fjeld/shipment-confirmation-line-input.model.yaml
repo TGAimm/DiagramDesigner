@@ -1,0 +1,8 @@
+# Line of a WMS shipment confirmation sent to the custom salesShipmentConfirmations page.
+id: u0efrijt7p
+ownedBy: efcxalw7mu
+name: shipmentConfirmationLine (API)
+fields:
+  - { id: j1d4qn3uo4, name: itemNumber, type: string, from: [rb6xm6b02o] }
+  - { id: i6010jnq0g, name: variantCode, type: string, from: [ca4tdaa49z] }
+  - { id: aoe9yew5l9, name: quantity, type: decimal, from: [ymxoxlznx0], derived: "becomes qty. to ship on the matching order line" }

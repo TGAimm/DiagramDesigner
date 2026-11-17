@@ -1,0 +1,19 @@
+id: otm133ip2y
+ownedBy: oidhle7bm8
+storedIn: ka6mzbfc7x
+name: Return order
+tags: [pii]
+fields:
+  - { id: a49uxsb7ss, name: id, type: int, pk: true }
+  - { id: ehqa9kdbss, name: returnNo, type: string, required: true, from: [fkvauhvioc] }
+  - { id: qmh1m8eyjv, name: rmaNumber, type: string, required: true, from: [jiwg9ee61k] }
+  - { id: rdcg3o2fb4, name: orderRef, type: string, required: true, from: [omm28lq7dk] }
+  - { id: ecej5d5c7k, name: customerEmail, type: string, nullable: true, from: [upwnnfjnhs] }
+  - { id: by28ma23c9, name: expectedDate, type: date, nullable: true, from: [gztbvg6oyj] }
+  # GAP: enum
+  - { id: c1mrwgrbcy, name: status, type: string, required: true, constraints: ["one of: expected, received, closed"] }
+  - { id: g1kr0u8oo6, name: lines, model: nc62fwb9eg, many: true, required: true }
+  - { id: bdx8bkuga0, name: createdAt, type: datetime, required: true }
+indexes:
+  - { id: qqrjju5jw2, name: ux_return_no, fields: [ehqa9kdbss], unique: true }
+  - { id: p99mc8uk0d, name: ux_return_rma, fields: [qmh1m8eyjv], unique: true }

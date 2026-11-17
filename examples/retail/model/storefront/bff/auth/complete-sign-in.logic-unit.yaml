@@ -1,0 +1,38 @@
+id: yk5hjior7g
+parent: vkdx3tfwhz
+name: completeSignIn
+handles: [mzvsl5y5gp]
+inputs:
+  - { id: m6j80igkfh, name: code, type: string, nullable: true }
+  - { id: la5sor3wr6, name: state, type: string, required: true }
+outputs:
+  - { id: ukhxxje4g4, name: returnTo, type: string }
+fails:
+  - { name: stateMismatch, description: "state isn't the session's: possible CSRF" }
+  - { name: refused, description: "the shopper cancelled, or the code was refused" }
+steps:
+  - { call: cylyc9xl5m, gets: session }
+  - if: state differs from session.authRequest.state
+    then:
+      - { fail: stateMismatch }
+  - { call: tekcdjdubg, with: "authorization_code, code, redirect_uri, code_verifier, client secret", gets: tokens }
+  - if: no code, or 400
+    then:
+      - { fail: refused }
+  - { call: gqgvy92yr4, with: "tenant (cached 24 h)", gets: keys }
+  - { note: "verify the id_token: RS256 signature by kid, iss, aud = BFF client id, nonce, exp" }
+  - { call: rn75rdis3r, with: the new access token (External OAuth), gets: customer }
+  - if: customer.externalId is empty
+    then:
+      - { call: ekgirua9an, with: "client_credentials of the BFF API client (cached)", gets: serverToken }
+      - { call: n5s9evk4bf, with: "setExternalId = the oid claim (the Identity user didn't exist yet when the sign-up hook created the customer)", gets: customer }
+  - if: the anonymous cart has lines
+    then:
+      - { call: t2l6i8nkh1, with: the customer token, gets: customerCart }
+      - if: no customer cart
+        then:
+          - { call: cwh4uwg3f8, with: "currency, country, store, locale, the anonymous cart's lines", gets: customerCart }
+        else:
+          - { call: r8uoh3ve5d, with: "addLineItem per anonymous line not already in the cart", gets: customerCart }
+  - { write: ffqq3wfhpp, note: "Identity tokens, identityUserId, commerceCustomerId, email, firstName, marketingConsent, cartId := customer cart; drop the anonymous token and authRequest" }
+  - { return: returnTo }

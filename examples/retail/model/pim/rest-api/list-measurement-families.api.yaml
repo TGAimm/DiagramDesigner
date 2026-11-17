@@ -1,0 +1,10 @@
+# Not paginated: the full list.
+id: zdt4nz6xtd
+parent: vsn79avah8
+name: List measurement families
+method: GET
+path: /api/rest/v1/measurement-families
+auth: bearer
+responses:
+  - { status: 200, model: nje8idpe91, many: true }
+  - { status: 401, description: Missing or expired token }

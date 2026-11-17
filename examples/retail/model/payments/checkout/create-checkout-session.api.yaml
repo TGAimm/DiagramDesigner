@@ -1,0 +1,28 @@
+id: u5jqjvg1hf
+parent: pbv5f8a0tz
+name: Create a Checkout Session
+method: POST
+path: /v1/checkout/sessions
+auth: bearer (secret key)
+params:
+  - { id: krck41z924, name: Idempotency-Key, in: header, type: string, required: false, description: Fjeld sends the commerce cart id + version }
+request:
+  contentType: application/x-www-form-urlencoded
+  fields:
+    - { id: et8fk6t0k6, name: mode, type: string, required: true, to: [p1xs7e26aq] }
+    - { id: hibw9rhcgd, name: "line_items[]", type: "{price_data: {currency, unit_amount, product_data: {name, images[]}}, quantity}", many: true, required: true, to: [kjheffvem6, ou5i8881vs, klw2arrr9p] }
+    - { id: cdfopptvhw, name: customer_email, type: string, to: [wq6a5daccl] }
+    - { id: ms2g49w2v7, name: customer, type: string, to: [o7pg28qn84] }
+    - { id: debai4hj79, name: client_reference_id, type: string, to: [rci92cdr23] }
+    - { id: qbhk6ztkmd, name: locale, type: string, to: [w0kcn8qqsu] }
+    - { id: rty085c1if, name: success_url, type: string, required: true, to: [tas31ad9tr] }
+    - { id: xda4dp57cu, name: cancel_url, type: string, to: [dms5izluwa] }
+    - { id: tx18jypnab, name: "payment_method_types[]", type: string, many: true, to: [rkvwqvtojv] }
+    - { id: fhtk7x8mi5, name: "payment_intent_data[capture_method]", type: string, to: [qn53c9o9kr] }
+    - { id: zzoq3rhnxe, name: "payment_intent_data[metadata][commerce_cart_id]", type: string, to: [suvd0kb1ix] }
+    - { id: ov59g5n6kp, name: "metadata[commerce_cart_id]", type: string, to: [k8jbxlswy2] }
+    - { id: g8tjclsbav, name: expires_at, type: timestamp, to: [kzy64onj7a] }
+responses:
+  - { status: 200, model: jlokrbulgw, description: "Created, status open, with the hosted page url" }
+  - { status: 400, model: pwpsr0fyli, description: invalid_request_error (missing or bad parameter) }
+  - { status: 401, description: Invalid API key }

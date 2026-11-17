@@ -1,0 +1,30 @@
+# Online orders and POS receipts in one shape. A POS return receipt is kept as an order with
+# negative amounts (and also feeds silver return).
+id: l9wari4ncs
+ownedBy: c9pk2gmf7l
+storedIn: c9pk2gmf7l
+name: order
+fields:
+  - { id: czdt9fjnll, name: order_key, type: string, pk: true, from: [wcuyzzwo11, pvtiaf6yea], derived: "'C-' + Commerce order id, or 'P-' + POS receipt id" }
+  - { id: snbgad1eo3, name: source_system, type: string, required: true, constraints: ["one of: commerce, pos"] } # GAP: enum
+  - { id: se2awu780s, name: order_number, type: string, required: true, from: [p00dw79fsw, fhqaax3d1a] }
+  - { id: jyonhj34gj, name: channel_code, type: string, required: true, from: [tdoybc1nhn, qwqvqzkrxn, admxyift9i], derived: "web (Commerce, no collect store), click_collect (Commerce with collect store; the POS pickup receipt is dropped as a duplicate), store (POS)" }
+  - { id: ugdlpg7u4x, name: customer_key, type: string, nullable: true, from: [lw1lqawip9, wra4ebvayq, w7j5jbzpyz, i9444tyf4f], derived: "map lookup on Commerce customer id, else guest e-mail, else POS member number; null for anonymous store sales" }
+  - { id: b06lo0cext, name: store_key, type: string, nullable: true, ref: d3vg1yf3fk, from: [ulejnf1iz6, qwqvqzkrxn, rbdi2b55ac], derived: "the receipt's store, or the collect store; null for web" }
+  - { id: lwl2uyf7r1, name: country, type: string, required: true, from: [qtfjwi1yfr, hvyiosb8pv], derived: "Commerce order country, store country for POS" }
+  - { id: tw47z03mne, name: postal_code, type: string, nullable: true, from: [zlo6r0dabm, mtc5ogmmf5] }
+  - { id: evhogeparg, name: city, type: string, nullable: true, from: [wuqh2d8dzd, upi2kwvs5q] }
+  - { id: h695zf24pa, name: currency, type: string, required: true, from: [jot79csopc, ftm57ddruu] }
+  - { id: pxn20ueycc, name: ordered_at, type: datetime, required: true, from: [tx9n22lb28, ot3lzu5gkc] }
+  - { id: ujmkkkel96, name: order_date, type: date, required: true, from: [tx9n22lb28, h9z4arl9xh], derived: "Commerce: createdAt in Europe/Copenhagen; POS: businessDay" }
+  - { id: l8bjril2ux, name: status, type: string, required: true, from: [imfwvmkzlt, mgsgddbs3y, vgz2hz3v9p], derived: "open, shipped, completed, cancelled (Commerce states mapped; POS completed or voided)" }
+  - { id: of0ewpn9c8, name: gross_amount, type: decimal, required: true, from: [pj9vdgib5w, fsaxgtcr7c], derived: "Commerce cents / 100; incl. VAT and shipping" }
+  - { id: x254kpfdyk, name: tax_amount, type: decimal, required: true, from: [v3cgj6zaiu, vdjqtmxss6] }
+  - { id: l067cqif42, name: shipping_amount, type: decimal, required: true, from: [d0t0jppbwc], derived: "0 for POS" }
+  - { id: d63kqgorm9, name: discount_amount, type: decimal, required: true, from: [r4gmf8ci6u, vnicirik8t, szlehcq2au, wuuxkmvqpg], derived: "POS discountTotal; Commerce sum of (unit price * quantity - line total)" }
+  - { id: vjxxircsgi, name: is_return_receipt, type: bool, required: true, from: [b9ooeh5b9p], derived: "POS type return" }
+  - { id: z48etju93v, name: erp_order_no, type: string, nullable: true, from: [qgrbuks7gb] }
+  - { id: pcel9a2jvf, name: updated_at, type: datetime, required: true, from: [p6ad495qfp, ot3lzu5gkc] }
+indexes:
+  - { id: ct4qv79dmt, name: ix_order_customer, fields: [ugdlpg7u4x, pxn20ueycc] }
+  - { id: nfyvk4emnq, name: ix_order_erp_no, fields: [z48etju93v] }

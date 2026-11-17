@@ -1,0 +1,12 @@
+id: iha3prs5iy
+parent: d8hyu4qiq7
+name: Cancel shipment
+method: DELETE
+path: /api/public/v3/shipments/{id}
+auth: basic (API user + key)
+params:
+  - { id: w6a5obara0, name: id, in: path, type: int }
+responses:
+  - { status: 204, description: Cancelled at the carrier; not invoiced }
+  - { status: 404, description: Not found }
+  - { status: 409, description: Already handed over to the carrier }

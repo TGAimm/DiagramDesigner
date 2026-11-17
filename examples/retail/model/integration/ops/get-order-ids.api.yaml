@@ -1,0 +1,14 @@
+id: bsdfg1ghgr
+parent: y5739ri6l0
+name: Get order ids
+method: GET
+path: /ops/orders/{orderNumber}/ids
+auth: "bearer (Entra ID, app role Integration.Reader; also used by CX in Zendesk)"
+params:
+  - { id: kmitcxwird, name: orderNumber, in: path, type: string }
+responses:
+  - status: 200
+    fields:
+      - { id: yo3dfsmpie, name: order, model: n8ujyi0o8a }
+      - { id: aq5y1kvibz, name: returns, model: r1iwd1t2bt, many: true }
+  - { status: 404, description: Unknown order number }

@@ -1,0 +1,14 @@
+id: x2dhfuyuvj
+parent: i282x7cdne
+name: Pickup points
+method: GET
+path: /api/pickup-points
+auth: session cookie fj_sid
+params:
+  - { id: l58j2u51wu, name: carrierCode, in: query, type: string }
+  - { id: iz85orhn2f, name: postalCode, in: query, type: string }
+  - { id: m3j9oiakyq, name: street, in: query, type: string, required: false }
+responses:
+  - { status: 200, model: hu4lmlya6m, many: true }
+  - { status: 422, description: unknown postal code }
+  - { status: 502, description: "the carrier's lookup is down: the page offers home delivery" }

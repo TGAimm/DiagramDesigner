@@ -1,0 +1,14 @@
+id: h3vvganqxl
+parent: wyb51ibopv
+name: List sales invoices
+method: GET
+path: /api/v2.0/companies({companyId})/salesInvoices
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: r1779lqums, name: companyId, in: path, type: guid }
+  - { id: lckwi56tkw, name: $filter, in: query, type: string, required: false, description: "e.g. externalDocumentNumber eq 'FJ-100234' or lastModifiedDateTime gt ..." }
+  - { id: lvvxtkv1bp, name: $top, in: query, type: int, required: false }
+responses:
+  # GAP: OData collection envelope { value: [...], @odata.nextLink } written as many: true
+  - { status: 200, model: y4izto0ijr, many: true }
+  - { status: 401, description: Unauthorized }

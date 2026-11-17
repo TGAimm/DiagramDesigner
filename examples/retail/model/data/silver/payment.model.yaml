@@ -1,0 +1,18 @@
+# Stripe balance transactions (charges, refunds, fees) for online orders. Store tenders are not
+# here: the POS settles card payments through its own acquirer.
+id: mh10ze19ky
+ownedBy: c9pk2gmf7l
+storedIn: c9pk2gmf7l
+name: payment
+fields:
+  - { id: rjo56go6m4, name: payment_key, type: string, pk: true, from: [k20t6grymw] }
+  - { id: d0ii8u2wo2, name: order_key, type: string, nullable: true, ref: czdt9fjnll, from: [ia0xnxse0e], derived: "'C-' + id; null for payouts, adjustments and Stripe fees not tied to a charge" }
+  - { id: kuqamlk6o0, name: type, type: string, required: true, from: [e5djr043ja, bz8cwqc2ci], derived: "charge, refund, dispute, payout, fee, adjustment" }
+  - { id: ic6cwrxij3, name: status, type: string, required: true, from: [m3neoasazi] }
+  - { id: egsrukr3z4, name: amount, type: decimal, required: true, from: [m7s1xvcvkt], derived: minor units / 100 }
+  - { id: e27irikmy1, name: fee, type: decimal, required: true, from: [ppw6hxr9np], derived: minor units / 100 }
+  - { id: wct6i1ewfj, name: net, type: decimal, required: true, from: [gesblujdcs], derived: minor units / 100 }
+  - { id: z6k7v5cvga, name: currency, type: string, required: true, from: [w6pg0nullx], derived: upper case }
+  - { id: th3wqn3grc, name: created_at, type: datetime, required: true, from: [ayb61yfekn], derived: epoch to UTC }
+  - { id: we19qlto8y, name: payout_id, type: string, nullable: true, from: [fic5othmzr] }
+  - { id: frzwkjmu11, name: payout_arrival_date, type: date, nullable: true, from: [fic5othmzr, b1yizdejvt, bf2bguqkkt], derived: "join on payout id" }

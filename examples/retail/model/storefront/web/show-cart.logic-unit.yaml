@@ -1,0 +1,10 @@
+id: gb2ct31p7h
+parent: gkng6vfutd
+name: showCart
+inputs: []
+outputs:
+  - { id: rgmf2b4akt, name: cart, model: lq4foj9308, nullable: true }
+steps:
+  - { call: u0ur2d2664, gets: cart }
+  - { note: "render the lines, the free-shipping bar and totals; 204 shows the empty cart" }
+  - { return: cart }

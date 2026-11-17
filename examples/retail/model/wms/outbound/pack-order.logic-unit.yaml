@@ -1,0 +1,37 @@
+# Started at the pack station when the packer scans the order's tote and closes the last box.
+id: swgz4h4ye6
+parent: yvrhh8zk8f
+name: packOrder
+inputs:
+  - { id: ji4eueref5, name: orderId, type: int, required: true }
+  - { id: nbg5kuruob, name: packages, model: vvm0sb8vdb, many: true, required: true, description: "box type, weight and size per parcel, as packed" }
+  - { id: iqldqeagbn, name: packerId, type: string, required: true }
+outputs:
+  - { id: t15v38lnlp, name: shipment, model: nz3evtxf52 }
+fails:
+  - { name: notPicked, description: order is not in status picked }
+  - { name: bookingFailed, description: "Shipping refused the booking (422 or 502); the order goes on hold" }
+steps:
+  - { read: zitqiyfbjs, with: orderId, gets: order }
+  - if: order.status != picked
+    then:
+      - { fail: notPicked }
+  - { read: hh65a8yt9w, with: orderId, gets: lines }
+  - call: d5brhsdbg0
+    with: "product_code = carrierProduct, sender = the 3PL's Kolding address, receiver = ship-to fields, pickup_point_id, parcels = weight and size per package, reference = orderNumber, order_id = customerRef"
+    gets: "shipment id, carrier, parcels with pkg_no and tracking_url, labels"
+  - if: Shipping answers 422 or 502
+    then:
+      - { write: zitqiyfbjs, note: "status on_hold, holdReason booking failed: the 3PL's support desk fixes the address and re-packs" }
+      - { fail: bookingFailed }
+  - { call: sc7aktbecr, with: "shipment id, label_format zpl", gets: labels }
+  - { note: "print one ZPL label per parcel on the pack station's printer" }
+  - { write: nz3evtxf52, note: "insert, status booked" }
+  - each: package in packages
+    do:
+      - { write: vvm0sb8vdb, note: "insert with sscc, trackingNo and labelZpl from the matching parcel and label" }
+  - each: line in lines
+    do:
+      - { write: hh65a8yt9w, note: "qtyShipped = qtyPicked, packageId" }
+  - { write: gfhtt2sknp, note: packed }
+  - { return: shipment }

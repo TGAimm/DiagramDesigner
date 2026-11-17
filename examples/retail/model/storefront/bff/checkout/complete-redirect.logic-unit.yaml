@@ -1,0 +1,28 @@
+id: bt13ix6fe0
+parent: a2x6k1ux7z
+name: completeRedirect
+handles: [tm324y5vi6]
+when: { flag: p9sg006xy9, is: off }
+inputs:
+  - { id: rtzgb2mkl1, name: sessionId, type: string, required: true, description: "Stripe's session_id, not the fj_sid" }
+outputs:
+  - { id: coj5gdzxob, name: order, model: g5tcad7xx0 }
+fails:
+  - { name: wrongSession, description: "400" }
+  - { name: notPaid, description: "303 back to the checkout with payment=failed" }
+steps:
+  - { read: mq42e5fkwd, gets: legacyCheckoutSessionId }
+  - if: sessionId differs
+    then:
+      - { fail: wrongSession }
+  - { call: tl3daivhbw, with: sessionId, gets: "checkoutSession (status and payment_intent)" }
+  - { call: by4f2wsisq, with: the session's payment_intent, gets: intent }
+  - if: status isn't requires_capture
+    then:
+      - { fail: notPaid }
+  - { call: vhts24past, gets: cart }
+  - { call: ekgirua9an, with: "client_credentials of the BFF API client (cached)", gets: serverToken }
+  - { call: ns9g2d6exx, with: "interfaceId = intent.id, amountPlanned, transaction Authorization Success", gets: payment }
+  - { call: r8uoh3ve5d, with: "addPayment payment.id", gets: cart }
+  - { call: ol06c5ybgi, with: "cart, intent.id", gets: order }
+  - { return: order }

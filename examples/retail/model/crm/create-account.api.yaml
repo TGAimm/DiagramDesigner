@@ -1,0 +1,11 @@
+id: w7nc3iccbl
+parent: izc0a89lge
+name: Create account
+method: POST
+path: /api/data/v9.2/accounts
+auth: OAuth 2.0 bearer (Entra ID app registration)
+request: { model: kv9n6l36ml, omit: [d37066a3jc] }
+responses:
+  - { status: 204, description: Created; OData-EntityId header }
+  - { status: 400, model: blqvorzt9x }
+  - { status: 412, model: blqvorzt9x, description: duplicate account }

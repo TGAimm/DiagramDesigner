@@ -1,0 +1,11 @@
+id: efyo8vr364
+parent: jzcljy1080
+name: Remove line
+method: DELETE
+path: /api/cart/lines/{lineItemId}
+auth: session cookie fj_sid
+params:
+  - { id: tszoskebp6, name: lineItemId, in: path, type: uuid }
+responses:
+  - { status: 200, model: lq4foj9308 }
+  - { status: 404, description: no such line in the session's cart }

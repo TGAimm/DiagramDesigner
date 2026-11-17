@@ -1,0 +1,16 @@
+# Query rules: merchandising (pin the season's jacket on "jakke"), banners per category through
+# userData, and the home page rails through ruleContexts (home-featured, home-new, home-sale).
+id: u2jtnahx4h
+ownedBy: mnu2zqtqzh
+storedIn: u4435mqo47
+name: Rule
+fields:
+  - { id: ia3kdwmnnv, name: indexName, type: string, pk: true, ref: fwm01mcigb }
+  - { id: wl7bbcpqfe, name: objectID, type: string, pk: true }
+  # GAP: embedded sub-object of a stored record
+  - { id: v2app3e4rm, name: conditions, model: s0y9sesfo7, many: true }
+  - { id: lpjg269awh, name: consequence, model: meqcqbh34y, required: true }
+  - { id: n74bu3orfc, name: enabled, type: bool, required: true }
+  - { id: t0et44gaho, name: validity, type: "{from: timestamp, until: timestamp}", many: true, constraints: [campaign windows] }
+  - { id: y06a61ck9p, name: description, type: string, nullable: true }
+  - { id: q1iknpshfe, name: tags, type: string, many: true, constraints: ["e.g. merchandising, campaign-blackweek"] }

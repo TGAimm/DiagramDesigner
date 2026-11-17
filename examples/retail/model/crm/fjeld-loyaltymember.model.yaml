@@ -1,0 +1,21 @@
+id: vr2vfukamq
+ownedBy: pnvbx85509
+storedIn: kqjludw0r4
+name: fjeld_loyaltymember
+tags: [b2c]
+fields:
+  - { id: iv8kumnam6, name: fjeld_loyaltymemberid, type: uuid, pk: true }
+  - { id: kphnsa6zxo, name: fjeld_membernumber, type: string, pi: true, required: true, constraints: ["autonumber FJ-{SEQNUM:8}"] }
+  - { id: lts0cl73lp, name: fjeld_contactid, type: uuid, required: true, ref: vw2khd7qyi }
+  # GAP: enum
+  - { id: a5mmzwangy, name: fjeld_tier, type: string, required: true, from: [yhofp26dbz, eolfedbj25], derived: highest tier whose threshold the last 12 months' earned points reach, constraints: ["one of: Basecamp, Trail, Summit"] }
+  - { id: l2dfuhplmo, name: fjeld_pointsbalance, type: int, required: true, from: [o8qa1i94nr], derived: sum of all transactions, constraints: [min 0] }
+  - { id: yhofp26dbz, name: fjeld_pointsearned12m, type: int, required: true, from: [o8qa1i94nr, xi73yv0pci, n0coa544bq], derived: sum of earn transactions in the last 12 months }
+  - { id: pfswupmin7, name: fjeld_joinedon, type: date, required: true }
+  - { id: x704kpgnqr, name: fjeld_tiervalidto, type: date, nullable: true }
+  # GAP: enum
+  - { id: x1kxrmgl7g, name: statecode, type: string, required: true, constraints: ["one of: Active, Inactive"] }
+  - { id: ctmdvbgrc7, name: modifiedon, type: datetime, required: true }
+indexes:
+  - { id: w45p5jre02, name: ak_fjeld_membernumber, fields: [kphnsa6zxo], unique: true }
+  - { id: dvj03frguo, name: ux_member_contact, fields: [lts0cl73lp], unique: true }

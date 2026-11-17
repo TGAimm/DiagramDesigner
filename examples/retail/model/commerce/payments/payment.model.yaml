@@ -1,0 +1,20 @@
+id: ucmgflrykd
+ownedBy: ybylhi4dg2
+storedIn: rrg5e7natg
+name: Payment
+fields:
+  - { id: qqf0oorxab, name: id, type: uuid, pk: true }
+  - { id: d13nt469el, name: version, type: long, required: true }
+  - { id: wfg70fhyrr, name: key, type: string, nullable: true }
+  - { id: vvyj8qqsim, name: customer, type: uuid, nullable: true, ref: zhf6a5r56z }
+  - { id: zfgpsyiirq, name: anonymousId, type: string, nullable: true }
+  - { id: xhwkjtoolk, name: interfaceId, type: string, nullable: true, from: [p8benaa0fr], constraints: ["Stripe PaymentIntent id, pi_..."] }
+  - { id: t6lurp3gms, name: amountPlanned, model: ik7usc5zp1, required: true }
+  - { id: y8927u99hb, name: paymentMethodInfo, model: ie4ybkea6i, required: true }
+  - { id: o1802xzmdz, name: paymentStatus, type: "{interfaceCode, interfaceText, state}", nullable: true, from: [dmfyebtj3a], derived: interfaceCode = PaymentIntent status }
+  - { id: q0qlcnm8la, name: transactions, model: xfiqw13cdi, many: true }
+  - { id: c5u2cqjrkw, name: createdAt, type: datetime, required: true }
+  - { id: j6kgdv20yi, name: lastModifiedAt, type: datetime, required: true }
+indexes:
+  - { id: punm75mzii, name: ix_payment_interface_id, fields: [xhwkjtoolk] }
+  - { id: bmf88tiixq, name: ux_payment_key, fields: [wfg70fhyrr], unique: true }

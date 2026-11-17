@@ -1,0 +1,16 @@
+# GAP: pagination envelope.
+id: stvm1itb87
+parent: vsn79avah8
+name: List attribute options
+method: GET
+path: /api/rest/v1/attributes/{attribute_code}/options
+auth: bearer
+params:
+  - { id: fcyviwrqkq, name: attribute_code, in: path, type: string }
+  - { id: epg0qvv0md, name: page, in: query, type: int, required: false }
+  - { id: t0suve5d33, name: limit, in: query, type: int, required: false, description: max 100 }
+responses:
+  - { status: 200, model: ftmepi2ion, many: true }
+  - { status: 401, description: Missing or expired token }
+  - { status: 404, description: No attribute with this code }
+  - { status: 422, description: Attribute is not a simple or multi select }

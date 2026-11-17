@@ -1,0 +1,18 @@
+id: l5j11fszfp
+ownedBy: kw2jlrdqza
+storedIn: hykg6pt8u2
+name: Staff
+tags: [pii]
+fields:
+  - { id: dxe6tyy7ir, name: id, type: int, pk: true }
+  - { id: lexu5jo57j, name: employeeNo, type: string, required: true }
+  - { id: od2on1k7w7, name: firstName, type: string, required: true }
+  - { id: upnp4eirh0, name: lastName, type: string, required: true }
+  - { id: cmdc71dy98, name: email, type: string, nullable: true }
+  # GAP: enum
+  - { id: ri4bnolt30, name: role, type: string, required: true, constraints: ["one of: cashier, store_manager, area_manager, admin"] }
+  - { id: mg2w8c5ymo, name: storeIds, type: int, many: true, ref: h3qlberi23, constraints: [stores the person may sign in at] }
+  - { id: uvgtb3kz52, name: pinHash, type: string, required: true, constraints: [4-6 digit till PIN, hashed] }
+  - { id: ag63hpgzu9, name: active, type: bool, required: true }
+indexes:
+  - { id: u9jhzw3wwa, name: ux_staff_employee_no, fields: [lexu5jo57j], unique: true }

@@ -1,0 +1,14 @@
+# Grain: one row per Klaviyo event (Received, Opened, Clicked Email; Placed Order; Viewed Product).
+id: jfxjfy6y2t
+ownedBy: d0jfpet25d
+storedIn: d0jfpet25d
+name: fact_marketing_events
+fields:
+  - { id: wkuudpmetz, name: event_id, type: string, pk: true, from: [hd9dbpnzdy] }
+  - { id: dti2v4ad8s, name: date_key, type: int, required: true, ref: bgzdmszmqm, from: [f4bhdimz81] }
+  - { id: tztbxobzd1, name: customer_sk, type: bigint, required: true, ref: asdpx9s4yn, from: [kku3xxfyxl, k7kxq5y8j2, lw1lqawip9, asdpx9s4yn], derived: "profile id via customer_source_map (klaviyo), current version; -1 when the profile is not matched" }
+  - { id: xbhr9rgrn9, name: metric_name, type: string, required: true, from: [pldf43m1hu] }
+  - { id: u8fyonlrsh, name: message_id, type: string, nullable: true, from: [h5ra85ltn0], derived: "properties.$message: the campaign or flow message" }
+  - { id: rm1v11q9s8, name: flow_id, type: string, nullable: true, from: [h5ra85ltn0], derived: "properties.$flow" }
+  - { id: lt769na0zm, name: value_dkk, type: decimal, nullable: true, from: [vr2nnnrp9s, l6w7kb9rgm, l5lly03zg0, qyyts7sko5], derived: "Placed Order value converted at the event date" }
+  - { id: c1ulcv8cdf, name: attributed_order_key, type: string, nullable: true, from: [ytv8jl49iu, se2awu780s, czdt9fjnll], derived: "Placed Order: OrderId is the Commerce order number" }

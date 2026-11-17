@@ -1,0 +1,18 @@
+# GAP: GraphQL operation myOrders (one POST endpoint serves every query and mutation; only this operation is modelled)
+id: t33mqct0z1
+parent: ygmbkn58fj
+name: GraphQL
+method: POST
+path: /{projectKey}/graphql
+auth: "bearer (any scope; fields checked per resource)"
+params:
+  - { id: s69s6zchkm, name: projectKey, in: path, type: string, description: fjeld-prod }
+request: { model: c4ndv61qjj }
+responses:
+  - status: 200
+    description: "data, plus errors[] when part of the query failed (GraphQL answers 200 even then)"
+    fields:
+      - { id: qdx4v7fhez, name: orders, model: g5tcad7xx0, many: true, description: "data.me.orders.results" }
+      - { id: v8ekakby3q, name: total, type: int, from: [qazi456zfm], derived: count of the customer's orders }
+  - { status: 400, description: Query does not parse or validate }
+  - { status: 401, description: Missing or invalid token }

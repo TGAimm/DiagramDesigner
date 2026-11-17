@@ -1,0 +1,35 @@
+id: d6cde9w3nb
+parent: wyb51ibopv
+name: Create sales order
+method: POST
+path: /api/v2.0/companies({companyId})/salesOrders
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: cgpdg5n4dj, name: companyId, in: path, type: guid }
+request:
+  fields:
+    - { id: ssxkddvbet, name: externalDocumentNumber, type: string, required: true, to: [ogicbd970k], description: the Commerce order number }
+    - { id: izes5d4o4d, name: customerNumber, type: string, required: true, to: [jxi66gwzsa] }
+    - { id: ma3snh86pk, name: orderDate, type: date, required: true, to: [gyuqizl9h5] }
+    - { id: byeoh7yvy2, name: postingDate, type: date, to: [mybwo4yymx] }
+    - { id: gkb7z8jpp0, name: currencyCode, type: string, to: [j23trmmk7p] }
+    - { id: yeqz4w0ggo, name: pricesIncludeTax, type: bool, to: [kfm0c9x19t] }
+    - { id: w0bxq1056h, name: sellToAddressLine1, type: string, to: [z47zeh2gvk] }
+    - { id: zqiec8i16c, name: sellToAddressLine2, type: string, to: [gd70gu5shw] }
+    - { id: v1xqixe30o, name: sellToCity, type: string, to: [c08f83zc1u] }
+    - { id: nb1df818xy, name: sellToPostCode, type: string, to: [rh47r7gl2d] }
+    - { id: zuydujayki, name: sellToCountry, type: string, to: [buozwdkaid] }
+    - { id: ldoms0vzfy, name: shipToName, type: string, to: [o5hf9ar6tl] }
+    - { id: qe5j6xcwvi, name: shipToAddressLine1, type: string, to: [v7bki5knvj] }
+    - { id: gd9qam47bz, name: shipToCity, type: string, to: [is2lk0iyzn] }
+    - { id: bn0aie27jh, name: shipToPostCode, type: string, to: [w7szlebf82] }
+    - { id: grnvl20n9w, name: shipToCountry, type: string, to: [vu6570igtt] }
+    - { id: x8q2g4p3mf, name: email, type: string, to: [mkmn56v2yg] }
+    - { id: s1dh93be7f, name: requestedDeliveryDate, type: date, to: [l2gb7p6lt9] }
+    - { id: xvg4zmhax3, name: shortcutDimension1Code, type: string, to: [uivc2hle8y], description: "CHANNEL: WEB or CC" }
+    # GAP: nested own shape: a deep-insert line list can only hold a model, so its lineage runs from, not to
+    - { id: xctcavipvp, name: salesOrderLines, model: khgyxzn0cx, many: true, required: true, description: "deep insert; lineType, lineObjectNumber, itemVariantId, quantity, unitPrice, locationId" }
+responses:
+  - { status: 201, model: j4uwq30pr1, description: "Created; status Released, or Draft when release failed" }
+  - { status: 400, description: "BadRequest: customer or item not found, blocked, variant missing, or externalDocumentNumber already used" }
+  - { status: 401, description: Unauthorized }

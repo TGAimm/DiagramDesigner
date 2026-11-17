@@ -1,0 +1,13 @@
+id: tm324y5vi6
+parent: a2x6k1ux7z
+name: Return from Stripe Checkout
+method: GET
+path: /api/checkout/return
+auth: session cookie fj_sid (browser redirect from Stripe)
+when: { flag: p9sg006xy9, is: off }
+params:
+  - { id: dq1lyqq500, name: session_id, in: query, type: string, description: "the Checkout Session, {CHECKOUT_SESSION_ID} in success_url" }
+responses:
+  # GAP: a browser redirect carrying its result in the Location query
+  - { status: 303, description: "to /order/<orderNumber>; or to /checkout?payment=failed" }
+  - { status: 400, description: the session_id is not this session's }

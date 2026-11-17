@@ -1,0 +1,6 @@
+id: z4a8fcfwai
+parent: v3mahi44mt
+name: Authentication (OIDC)
+links:
+  - { label: Authorization code flow, url: https://learn.microsoft.com/entra/identity-platform/v2-oauth2-auth-code-flow }
+  - { label: ID token claims, url: https://learn.microsoft.com/entra/identity-platform/id-token-claims-reference }

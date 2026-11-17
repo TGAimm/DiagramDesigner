@@ -1,0 +1,49 @@
+# Codeunit 12 Gen. Jnl.-Post Line: turns one journal line into G/L, customer ledger and VAT
+# entries. Sales posting and journal posting both call it.
+id: g7nfkzjdkj
+parent: gob5rrh7wh
+name: genJnlPostLine
+inputs:
+  - { id: jb50ik2z2t, name: journalLine, model: czy9o9zg9d, required: true }
+outputs:
+  - { id: j9o4c8sd75, name: entryNo, type: int, description: "customer ledger entry no. for a Customer line, else the first G/L entry no." }
+fails:
+  - { name: accountBlocked, description: the G/L account or customer is blocked }
+  - { name: postingDateNotAllowed, description: posting date outside the allowed posting period }
+  - { name: dimensionInvalid, description: a dimension value is blocked or missing where mandatory }
+steps:
+  - if: postingDate outside allowed posting from..to
+    then:
+      - { fail: postingDateNotAllowed }
+  - { read: llkotssj1b, with: dimensionSetId, gets: dimension values }
+  - { read: j6iue5hjwy, with: "the set's values", gets: blocked flags }
+  - if: a value is blocked, or CHANNEL is missing on an income account
+    then:
+      - { fail: dimensionInvalid }
+  - if: accountType = Customer
+    then:
+      - { read: d60knzplbm, with: accountNo, gets: customer }
+      - if: customer.blocked = All
+        then:
+          - { fail: accountBlocked }
+      - { write: eij6j7uhhb, note: "insert; amount (LCY) at the posting date's exchange rate" }
+      - if: appliesToDocNo is set
+        then:
+          - { read: eij6j7uhhb, with: "open entry of appliesToDocType, appliesToDocNo", gets: applied entry }
+          - { write: bq4wf42bqu, note: "reduce both remaining amounts; close the entry that reaches 0 (closedByEntryNo)" }
+      - { write: tmmsilj09u, note: "receivables account of the customer posting group" }
+    else:
+      - { read: bilssu6sxi, with: accountNo, gets: account }
+      - if: account.blocked or not directPosting
+        then:
+          - { fail: accountBlocked }
+      - { write: tmmsilj09u, note: "the account line" }
+  - if: line carries VAT
+    then:
+      - { read: py7z6es3q5, with: "VAT bus. and prod. group", gets: vatPct and account }
+      - { write: ymy8r2yqbs, note: "insert VAT entry (base and amount)" }
+      - { write: tmmsilj09u, note: "VAT account line" }
+  - if: balAccountNo is set
+    then:
+      - { write: tmmsilj09u, note: "balancing line on the bal. account" }
+  - { return: entryNo }

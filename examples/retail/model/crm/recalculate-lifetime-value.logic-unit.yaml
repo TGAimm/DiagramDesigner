@@ -1,0 +1,14 @@
+# GAP: scheduled trigger
+id: bwzhlqz670
+parent: izc0a89lge
+name: recalculateLifetimeValue
+meta: { schedule: "0 2 * * *", runs: Power Automate scheduled cloud flow + bulk update }
+inputs: []
+outputs: []
+steps:
+  - { read: w8v3bf1ojm, with: "modifiedon since last run", gets: changed orders }
+  - each: contact with a changed order
+    do:
+      - { read: w8v3bf1ojm, with: "fjeld_contactid, fjeld_status not Cancelled or Returned", gets: "fjeld_totalamount_base, count" }
+      - { write: zfzskiajiw }
+      - { write: haxlloxail }

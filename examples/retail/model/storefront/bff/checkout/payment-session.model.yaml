@@ -1,0 +1,12 @@
+# What the browser needs to mount the Stripe Payment Element (new-checkout on).
+id: m9jojz23qq
+ownedBy: a2x6k1ux7z
+name: Payment Session
+fields:
+  - { id: yzkypz8xo4, name: paymentIntentId, type: string, required: true, from: [p8benaa0fr] }
+  - { id: ov5yksatl4, name: clientSecret, type: string, required: true, from: [qdc73j7mei] }
+  - { id: g2cl7fe25e, name: amount, type: int, required: true, from: [rkvxoeiokq] }
+  - { id: nndi2ygflk, name: currency, type: string, required: true, from: [j431blwzja] }
+  - { id: qrceprubuo, name: status, type: string, required: true, from: [dmfyebtj3a] }
+  - { id: mj7517jyjd, name: commercePaymentId, type: uuid, required: true, from: [qqf0oorxab] }
+  - { id: gplg46o5pz, name: returnUrl, type: string, required: true, constraints: ["https://fjeld.<tld>/checkout/complete, after 3-D Secure, Klarna or MobilePay"] }

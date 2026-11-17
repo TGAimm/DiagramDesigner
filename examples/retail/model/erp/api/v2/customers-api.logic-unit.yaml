@@ -1,0 +1,41 @@
+# Page 30009 APIV2 - Customers
+id: xvwcr2xtk9
+parent: wyb51ibopv
+name: customersApi
+handles: [l3fnnvgsvg, m8sggxk9j9, c9xs8f26qx, xyxqlr3l4f]
+inputs:
+  - { id: v6xryh4wt8, name: id, type: guid, nullable: true }
+  - { id: yqh9we1w06, name: customer, model: ocn983ouak, nullable: true, description: the body of a POST or PATCH }
+outputs:
+  - { id: hanmvpfmpt, name: result, model: ocn983ouak }
+  - { id: c743j4lp1a, name: results, model: ocn983ouak, many: true }
+fails:
+  - { name: notFound, description: no customer with this id }
+  - { name: etagMismatch, description: If-Match does not match the record's current etag }
+  - { name: invalid, description: a field fails validation }
+steps:
+  - if: POST
+    then:
+      - { note: "no. from series C-WEB; posting groups, VAT group, price group and payment terms from customer template B2C-<country>" }
+      - if: country or currency unknown
+        then:
+          - { fail: invalid }
+      - { write: d60knzplbm, note: insert }
+      - { return: result }
+  - if: PATCH
+    then:
+      - { read: d60knzplbm, with: systemId, gets: customer }
+      - if: not found
+        then:
+          - { fail: notFound }
+      - if: If-Match <> etag of systemModifiedAt
+        then:
+          - { fail: etagMismatch }
+      - { write: d60knzplbm, note: "modify the picked fields; runs the field validations" }
+      - { return: result }
+  - { read: d60knzplbm, with: "id, or $filter / $top / $skip", gets: customers }
+  - { read: kijl19kaai, with: each customer, gets: balance }
+  - if: by id and not found
+    then:
+      - { fail: notFound }
+  - { return: results }

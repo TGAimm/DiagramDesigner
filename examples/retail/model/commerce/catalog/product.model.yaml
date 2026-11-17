@@ -1,0 +1,17 @@
+id: w1g1lt9yyv
+ownedBy: woc2py521s
+storedIn: rrg5e7natg
+name: Product
+fields:
+  - { id: zchid5zayi, name: id, type: uuid, pk: true }
+  - { id: el6553deun, name: version, type: long, required: true, constraints: [optimistic concurrency; +1 per update] }
+  - { id: y0vgavtgc6, name: key, type: string, nullable: true, constraints: [= PIM product model code] }
+  - { id: wp8uvw4o9v, name: productType, type: uuid, required: true, ref: ot7coaln4t }
+  - { id: kuzcwrx6yk, name: masterData, model: jriykyt3n4, required: true }
+  - { id: hfjcbtj15y, name: taxCategory, type: uuid, nullable: true, ref: yzii05r372 }
+  - { id: l59nl7qif2, name: priceMode, type: string, nullable: true, constraints: ["one of: Embedded, Standalone"] }  # GAP: enum
+  - { id: zg6z6hiaoy, name: createdAt, type: datetime, required: true }
+  - { id: halk2wxidg, name: lastModifiedAt, type: datetime, required: true }
+indexes:
+  - { id: tpu3as44be, name: ux_product_key, fields: [y0vgavtgc6], unique: true }
+  - { id: a2t9kei9wb, name: ix_product_type, fields: [wp8uvw4o9v] }

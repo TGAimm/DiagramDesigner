@@ -1,0 +1,19 @@
+id: wla5m60bxu
+parent: x27wyx0r8h
+name: Get profiles
+method: GET
+path: /api/profiles
+auth: "Klaviyo-API-Key private key (scope profiles:read)"
+params:
+  - { id: p393724zsa, name: revision, in: header, type: string, required: true, description: "2024-10-15" }
+  - { id: we0ovao407, name: filter, in: query, type: string, required: false, description: "e.g. equals(email,\"a@b.dk\") or equals(external_id,\"…\")" }
+  - { id: dlc5rk8oli, name: "additional-fields[profile]", in: query, type: string, required: false, description: "subscriptions, predictive_analytics" }
+  - { id: pzad8odtit, name: "page[size]", in: query, type: int, required: false, description: "max 100" }
+  - { id: hw8pgtn39m, name: "page[cursor]", in: query, type: string, required: false }
+responses:
+  - status: 200
+    description: "{ data: [{ type: profile, id, attributes }], links: { next } }"
+    fields:
+      - { id: dkzuiyp43n, name: data, model: apj02aeekt, many: true }
+  - { status: 400, model: s4w1d8x1z4, description: invalid filter }
+  - { status: 429, model: s4w1d8x1z4, description: "throttled (75/s burst, 700/min steady)" }

@@ -1,0 +1,13 @@
+id: r5c8x8etbs
+ownedBy: i282x7cdne
+name: Store View
+fields:
+  - { id: sbc7q18dmh, name: key, type: string, required: true, from: [lscs8u8axo], constraints: ["store-<POS store no>"] }
+  - { id: qkose7bber, name: name, type: string, required: true, from: [jollvxxg7w], derived: in the locale }
+  - { id: hekvx0j88k, name: address, model: b8rzoiyo20, nullable: true, from: [l0gdv8482u] }
+  - { id: atoy3js7du, name: latitude, type: decimal, nullable: true, from: [au796qgf3t] }
+  - { id: dfj8f1oxz5, name: longitude, type: decimal, nullable: true, from: [au796qgf3t] }
+  - { id: hj1tbvzpic, name: distanceKm, type: decimal, nullable: true, from: [au796qgf3t], derived: "from the asked position or postal code centroid" }
+  - { id: s3rqeitzg8, name: openingHours, type: string, many: true, from: [phdzjhryyl], derived: "the POS store's opening hours, one line per day in the locale" }
+  - { id: xbb7wa6i4u, name: stock, type: string, nullable: true, from: [er80zen2vb], derived: "for the asked SKU: in-stock, few-left (under 3) or none" }
+  - { id: ya4hicpoj0, name: canCollect, type: bool, required: true, from: [g4v9qu62uy, er80zen2vb], derived: "an InventorySupply store with the SKU in stock" }

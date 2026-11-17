@@ -1,0 +1,30 @@
+id: hkknqgaz7c
+parent: eaiyhlljnw
+name: createRefund
+handles: [ekwvusqfdf]
+inputs:
+  - { id: vr718g5lm0, name: payment_intent, type: string }
+  - { id: nsfk6w2ick, name: amount, type: int }
+  - { id: rbq9egsp3k, name: reason, type: string }
+outputs:
+  - { id: qzyy8emwup, name: refund, model: caitj9aczq }
+fails:
+  - { name: alreadyRefunded, description: nothing left to refund }
+  - { name: amountTooLarge, description: more than captured minus refunded }
+steps:
+  - { read: g8pq0m68jp, with: payment_intent, gets: intent }
+  - { read: lto0xhpsrl, with: intent.latest_charge, gets: charge }
+  - if: charge.refunded
+    then:
+      - { fail: alreadyRefunded }
+  - if: amount > amount_captured - amount_refunded
+    then:
+      - { fail: amountTooLarge }
+  - { write: caitj9aczq, note: "insert, status pending" }
+  - { note: send the refund to the card network or Klarna }
+  - { write: te75334qto, note: "insert type refund, negative amount" }
+  - { write: caitj9aczq, note: "status succeeded, balance_transaction" }
+  - { write: wamybbu6c2, note: += amount }
+  - { call: knbcqp1ram, with: "charge.refunded, charge" }
+  - { call: knbcqp1ram, with: "refund.updated, refund" }
+  - { return: refund }

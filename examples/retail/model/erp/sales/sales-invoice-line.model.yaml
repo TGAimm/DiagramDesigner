@@ -1,0 +1,21 @@
+# Table 113 Sales Invoice Line
+id: rd7sjmorm0
+ownedBy: vss7pk1oh5
+storedIn: q43aprn5l0
+name: Sales Invoice Line
+fields:
+  - { id: dk9kmu7754, name: documentNo, type: string, pk: true, ref: p4ya5jzozb }
+  - { id: doxr42wz6j, name: lineNo, type: int, pk: true, from: [k3o7yzcc26] }
+  - { id: ah0gf7btko, name: type, type: string, from: [hhtder4u0q] }
+  - { id: ix6r1al24o, name: no, type: string, ref: yu6wdxgb8q, from: [rb6xm6b02o] }
+  - { id: e6nwcs2e4n, name: variantCode, type: string, ref: u2mbyuw427, from: [ca4tdaa49z] }
+  - { id: fd59f0h49f, name: description, type: string, from: [y0v8srt70n] }
+  - { id: h67iaxcstz, name: unitOfMeasureCode, type: string, from: [t9ikj1n85i] }
+  - { id: ja96oszpbr, name: quantity, type: decimal, from: [mzydf3dx6s], derived: "qty. to invoice at posting" }
+  - { id: gx84k26atf, name: unitPrice, type: decimal, from: [k3hc75df9p] }
+  - { id: iwogqq4c95, name: lineDiscountPct, type: decimal, from: [dbszms3i9q] }
+  - { id: k16v2ws1gl, name: vatPct, type: decimal, from: [xd8vftybkk] }
+  - { id: cqd4z6midc, name: amount, type: decimal, from: [khhoq2yeax, ja96oszpbr], derived: "pro rata to the invoiced quantity" }
+  - { id: qnujzud92c, name: amountIncludingVat, type: decimal, from: [qv93sjzupk, ja96oszpbr], derived: "pro rata to the invoiced quantity" }
+  - { id: aoh18z9xs5, name: shipmentNo, type: string, ref: w9uf1h6oz1, from: [e53sop086d] }
+  - { id: vwjasldf2w, name: shipmentLineNo, type: int, from: [u6vmx3i5y5] }

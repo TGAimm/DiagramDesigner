@@ -1,0 +1,10 @@
+id: ivkekgmtws
+ownedBy: c654efbgqw
+storedIn: r1xvgi7bie
+name: Measurement Unit
+fields:
+  - { id: hqfjx9oxes, name: measurementFamily, type: string, pk: true, ref: va7e93eeoy }
+  - { id: tu7he05d9m, name: code, type: string, pk: true, required: true }
+  - { id: pdekocjvzh, name: symbol, type: string }
+  - { id: umu8c6er8i, name: convert_from_standard, type: json, required: true, constraints: ["[{operator: mul|div|add|sub, value}]"] }
+  - { id: wf5a572ttp, name: labels, type: "map<locale, string>" }

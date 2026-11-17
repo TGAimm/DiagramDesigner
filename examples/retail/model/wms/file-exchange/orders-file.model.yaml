@@ -1,0 +1,29 @@
+# GAP: file interface (inbound ORDERS_<yyyyMMddHHmmss>.csv, written by Integration, read by importInboundFiles)
+id: l03dfm19e0
+ownedBy: tn4azsu06u
+storedIn: tn4azsu06u
+name: ORDERS_<ts>.csv
+tags: [pii]
+fields:
+  - { id: rji6sstkw2, name: order_no, type: string, pk: true, from: [rgkzrhf9cx], constraints: ["ERP sales order no., e.g. SO-104821"] }
+  - { id: dldcqxfont, name: line_no, type: int, pk: true, constraints: [min 1] }
+  - { id: b6y2caw308, name: customer_ref, type: string, nullable: true, from: [ogicbd970k], constraints: ["e.g. FJ-DK-1004821; printed on the packing slip"] }
+  # GAP: enum
+  - { id: epojch7o7v, name: order_type, type: string, required: true, constraints: ["one of: B2C, B2B, STORE (replenishment of a store)"] }
+  - { id: u3ruof2r9n, name: order_date, type: date, required: true, from: [gyuqizl9h5] }
+  - { id: q325ygn3im, name: delivery_date, type: date, nullable: true, from: [l2gb7p6lt9] }
+  - { id: cs86xvvzf5, name: priority, type: int, nullable: true, constraints: ["1 express, 5 normal (default)"] }
+  - { id: kjo3e4gpo0, name: ship_to_name, type: string, required: true, from: [o5hf9ar6tl] }
+  - { id: jn1nv6ovp8, name: ship_to_address1, type: string, required: true, from: [v7bki5knvj] }
+  - { id: o88icv4z3n, name: ship_to_address2, type: string, nullable: true, from: [zmzp6oahq8] }
+  - { id: pimzxpfvze, name: ship_to_zip, type: string, required: true, from: [w7szlebf82] }
+  - { id: hhs5ykjueb, name: ship_to_city, type: string, required: true, from: [is2lk0iyzn] }
+  - { id: peylz2zi2b, name: ship_to_country, type: string, required: true, from: [vu6570igtt], constraints: ["ISO 3166-1 alpha-2"] }
+  - { id: r4ih4364pn, name: ship_to_email, type: string, nullable: true, from: [mkmn56v2yg], derived: "the sell-to e-mail (BC has no ship-to e-mail)" }
+  - { id: i0d6uuvt5a, name: ship_to_phone, type: string, nullable: true, from: [x5qo178kay] }
+  - { id: noiqxq00bf, name: carrier_product, type: string, nullable: true, from: [j3vwm01ky9,ww9fdjtelm], derived: "agent + service mapped to the Shipping product code", constraints: ["Shipping product code, e.g. GLS_PRIVATE, PDK_MC; empty: Shipping's rules pick one"] }
+  - { id: ty5xuqq25y, name: pickup_point_id, type: string, nullable: true, from: [k7i112vh72] }
+  - { id: bzv6svrhs2, name: erp_line_no, type: int, required: true, from: [k3o7yzcc26] }
+  - { id: sdosprcbio, name: item_no, type: string, required: true, from: [rb6xm6b02o] }
+  - { id: dvg4u1xpjk, name: description, type: string, nullable: true, from: [y0v8srt70n] }
+  - { id: mokdrwm7so, name: qty, type: int, required: true, from: [eqjj9f1mlv], derived: "decimal to whole units", constraints: [min 1] }

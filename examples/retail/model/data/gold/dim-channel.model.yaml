@@ -1,0 +1,9 @@
+id: qlntrhv9zx
+ownedBy: d0jfpet25d
+storedIn: d0jfpet25d
+name: dim_channel
+fields:
+  - { id: ha5ot8uh2x, name: channel_sk, type: int, pk: true }
+  - { id: mcvmvxwzjm, name: channel_code, type: string, required: true, from: [jyonhj34gj], derived: "fixed list (web, click_collect, store), checked against the codes in silver order" }
+  - { id: qbs6ge31w8, name: channel_name, type: string, required: true, constraints: ["Webshop, Click & collect, Store"] }
+  - { id: ivm6wa9gu3, name: is_online, type: bool, required: true }

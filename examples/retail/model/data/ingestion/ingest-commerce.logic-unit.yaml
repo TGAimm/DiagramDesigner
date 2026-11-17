@@ -1,0 +1,18 @@
+# GAP: scheduled trigger
+id: i4mhbsjsv9
+parent: oyqmyb5nc3
+name: ingestCommerce
+meta: { schedule: "*/15 * * * *", pipeline: pl_ingest_commerce }
+inputs: []
+outputs: []
+steps:
+  - { read: qhfxfz0h8j, with: "source_system = commerce", gets: watermarks }
+  - { call: uvyftcjr0i, with: "where=lastModifiedAt > watermark - 5 min, sort=lastModifiedAt asc, limit=500, offset", gets: orders }
+  - each: changed order
+    do:
+      - { write: xxiv4r3zd7, note: MERGE on id }
+      - { write: ueunlh95mg, note: "replace the order's rows with its lineItems" }
+      - { write: vk9sw5k48f, note: "returnInfo[].items, MERGE on return item id" }
+  - { call: gthq1faetp, with: "where=lastModifiedAt > :watermark, sort=lastModifiedAt asc, limit=500, offset", gets: customers }
+  - { write: d0gklh222h, note: MERGE on id }
+  - { write: axtovqyj39, note: "max lastModifiedAt for orders and for customers" }

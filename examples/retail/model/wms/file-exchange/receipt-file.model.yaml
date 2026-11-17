@@ -1,0 +1,14 @@
+# GAP: file interface (outbound RECEIPT_<ts>.csv: goods received against an ASN, one row per receipt, read by Integration to post the purchase receipt in ERP)
+id: mvm4amf1a2
+ownedBy: tn4azsu06u
+storedIn: tn4azsu06u
+name: RECEIPT_<ts>.csv
+fields:
+  - { id: a48jtjapos, name: receipt_no, type: string, pk: true, from: [zlkvl8i22t] }
+  - { id: xt7ambs9hk, name: asn_no, type: string, required: true, from: [isvzap7pqa] }
+  - { id: kvnzv07blx, name: line_no, type: int, nullable: true, from: [v6ngtopjv0], constraints: [empty for an item not on the ASN] }
+  - { id: oos7u402tr, name: item_no, type: string, required: true, from: [yfuhon49xq] }
+  - { id: rvogv48kuk, name: qty_received, type: int, required: true, from: [nclnfu1otx] }
+  - { id: zrugw87non, name: qty_damaged, type: int, required: true, from: [fov26wnaix], constraints: [included in qty_received; held in QC] }
+  - { id: ejyxxzkw8q, name: lot_no, type: string, nullable: true, from: [fraym2opxs] }
+  - { id: ya1je29por, name: received_at, type: datetime, required: true, from: [olyrltz4u1] }

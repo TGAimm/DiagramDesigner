@@ -1,0 +1,45 @@
+id: jljdt2xod0
+parent: f6x7dhgzlz
+name: createOrderFromCart
+handles: [esk6wl37ki, cy3wdd7n7k]
+inputs:
+  - { id: dazqqjbpyy, name: cartId, type: uuid, required: true }
+  - { id: kt8juwyvf5, name: cartVersion, type: long, required: true }
+  - { id: xcz8a6ax1p, name: orderNumber, type: string, nullable: true }
+outputs:
+  - { id: tjf7o4ffvu, name: order, model: g5tcad7xx0 }
+fails:
+  - { name: cartNotFound, description: ResourceNotFound (404) }
+  - { name: concurrentModification, description: cart version is stale (409) }
+  - { name: cartNotActive, description: "InvalidOperation: cart is not Active (400)" }
+  - { name: duplicateOrderNumber, description: DuplicateField orderNumber (400) }
+  - { name: outOfStock, description: OutOfStock (400) }
+steps:
+  - { call: il3qm5h2mr, with: "token, manage_orders or manage_my_orders", gets: principal }
+  - { read: w4i82sypi6, with: cartId, gets: cart }
+  - if: cart not found, or a /me call and the cart is not the principal's
+    then:
+      - { fail: cartNotFound }
+  - if: cart.version != cartVersion
+    then:
+      - { fail: concurrentModification }
+  - if: cart.cartState is not Active
+    then:
+      - { fail: cartNotActive }
+  - if: orderNumber given
+    then:
+      - { read: lulkapcaa0, with: orderNumber, gets: existing }
+      - if: existing found
+        then:
+          - { fail: duplicateOrderNumber }
+  - { call: pgzgs1m2r3, with: "cartId, updateProductData false", gets: cart }
+  - if: cart.inventoryMode is TrackOnly or ReserveOnOrder
+    then:
+      - { call: o6a89deewe, with: "cart.lineItems, cart.inventoryMode", gets: entries }
+      - if: reservation failed
+        then:
+          - { fail: outOfStock }
+  - { write: g5tcad7xx0, note: "copy the cart: line items, prices, taxedPrice, addresses, shippingInfo, discountCodes, paymentInfo, store; orderState Open" }
+  - { write: glwj1k6pu8, note: Ordered }
+  - { call: lg4db2fxip, with: "Order, OrderCreated, order", gets: message }
+  - { return: order }

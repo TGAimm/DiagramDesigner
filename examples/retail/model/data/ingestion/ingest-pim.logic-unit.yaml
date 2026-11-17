@@ -1,0 +1,12 @@
+# GAP: scheduled trigger
+id: eo1mslhazk
+parent: oyqmyb5nc3
+name: ingestPim
+meta: { schedule: "0 3 * * *", pipeline: pl_ingest_pim, note: "the PIM Tailored Export lands at 01:00" }
+inputs: []
+outputs: []
+steps:
+  - { read: qhfxfz0h8j, with: "source_system = pim", gets: last file name }
+  - { read: pw2ipvszgu, with: "newest export file (all products, all locales)", gets: rows }
+  - { write: h8xg9se4b5, note: "MERGE on sku, locale; skus missing from a full export are kept (enabled stays as last seen)" }
+  - { write: axtovqyj39, note: file name }

@@ -1,0 +1,28 @@
+# A read copy of Commerce orders, so agents see a 360° view without opening Commerce.
+# Integration upserts it on OrderCreated and on every state change; it is never edited in CRM.
+id: w8v3bf1ojm
+ownedBy: crcmvfmp2d
+storedIn: kqjludw0r4
+name: fjeld_orderhistory
+tags: [read-copy]
+fields:
+  - { id: j2wyc1gm9s, name: fjeld_orderhistoryid, type: uuid, pk: true }
+  - { id: b2qvfubwco, name: fjeld_ordernumber, type: string, required: true, from: [lulkapcaa0], constraints: [alternate key] }
+  - { id: ix5hz1aa0h, name: fjeld_contactid, type: uuid, nullable: true, ref: vw2khd7qyi, from: [bxs264j33o], derived: contact looked up by fjeld_commercecustomerid }
+  - { id: m7r1gz9zng, name: fjeld_commercecustomerid, type: string, nullable: true, from: [zs9b3f85u9], derived: uuid as text }
+  - { id: k1wwptjtg6, name: fjeld_orderdate, type: datetime, required: true, from: [ifyxx7dooz] }
+  # GAP: enum
+  - { id: f70tvxknfg, name: fjeld_channel, type: string, required: true, from: [jh92a57fc6,k5u5kiw2fk], derived: "ClickAndCollect when a collect store is set, Store for in-store origin, else Web", constraints: ["one of: Web, Store, ClickAndCollect"] }
+  - { id: qfntplqo6l, name: fjeld_country, type: string, required: true, from: [e5lts0g7ke] }
+  - { id: tws6mwan1r, name: fjeld_currency, type: string, required: true, from: [n8mwhpvdh9], derived: "order totalPrice currency", constraints: ["one of: DKK, SEK, NOK, EUR"] }
+  - { id: yofpxwidkl, name: fjeld_totalamount, type: decimal, required: true, from: [oylo8sfbus], derived: "order totalPrice / 100", constraints: [money] }
+  - { id: do7q5k7yj2, name: fjeld_totalamount_base, type: decimal, required: true, from: [yofpxwidkl, tws6mwan1r], derived: converted to DKK at the Dataverse exchange rate on save, constraints: [money, DKK] }
+  # GAP: enum
+  - { id: xar9g43u0g, name: fjeld_status, type: string, required: true, from: [eg3umbi5el,r29wqfepvb], derived: "mapped from order state and shipment state", constraints: ["one of: Open, Confirmed, Shipped, Delivered, Cancelled, PartlyReturned, Returned"] }
+  - { id: w4zqml7wl5, name: fjeld_trackingnumber, type: string, nullable: true, from: [bq0e1j92yw], derived: "first parcel's package number, via Integration" }
+  - { id: mri4k7gghc, name: fjeld_returnstatus, type: string, nullable: true, from: [go1ylykc73], derived: "via Integration on return-created / return-status-changed; the latest return's status" }
+  - { id: dphfiu86we, name: fjeld_lines, model: pw2v0ksnhu, many: true }
+  - { id: fwkuxerp41, name: fjeld_syncedon, type: datetime, required: true }
+indexes:
+  - { id: jwkiaxqmue, name: ak_fjeld_ordernumber, fields: [b2qvfubwco], unique: true }
+  - { id: wm96dh5li9, name: ix_oh_contact, fields: [ix5hz1aa0h] }

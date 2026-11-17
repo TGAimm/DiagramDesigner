@@ -1,0 +1,12 @@
+id: emwr7t39bn
+parent: lzm2qjgaov
+name: Create inventory entry
+method: POST
+path: /{projectKey}/inventory
+auth: "bearer (manage_products)"
+params:
+  - { id: em7d3rt4y9, name: projectKey, in: path, type: string, description: fjeld-prod }
+request: { model: fsdygpvm9i, pick: [wv6nmudwhq, bhg7tr499g, jpfyutcqja, az9eabg78b, ws2iqpk3rv, ox57jp7kkm] }
+responses:
+  - { status: 201, model: fsdygpvm9i }
+  - { status: 400, description: "DuplicateField (sku + supplyChannel), ReferencedResourceNotFound (channel)" }

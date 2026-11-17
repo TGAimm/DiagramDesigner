@@ -1,0 +1,15 @@
+id: i5fc414eaf
+parent: m149ml603p
+name: Create or update item
+method: PUT
+path: /v1/items/{itemNo}
+auth: bearer (OAuth 2.0 client credentials)
+when: { flag: j5jo9lc089, is: on }
+params:
+  - { id: f05v2qj761, name: itemNo, in: path, type: string }
+request: { model: ixjus3gqio, omit: [oxccpwrtmg, yfuhon49xq, ndhuo5jhb4, jyvinj1wru] }
+responses:
+  - { status: 200, model: ixjus3gqio, description: Updated }
+  - { status: 201, model: ixjus3gqio, description: Created }
+  - { status: 401, description: Missing or expired token }
+  - { status: 422, description: "No weight, or the EAN is on another item" }

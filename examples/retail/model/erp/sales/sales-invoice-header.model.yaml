@@ -1,0 +1,32 @@
+# Table 112 Sales Invoice Header
+id: v9er9w3t9v
+ownedBy: vss7pk1oh5
+storedIn: q43aprn5l0
+name: Sales Invoice Header
+tags: [pii]
+fields:
+  - { id: p4ya5jzozb, name: no, type: string, pk: true, constraints: ["No. Series SINV"] }
+  - { id: iblbkf2pyw, name: systemId, type: guid, required: true }
+  - { id: dxas00756t, name: orderNo, type: string, from: [rgkzrhf9cx] }
+  - { id: igi5a1f5uk, name: sellToCustomerNo, type: string, required: true, ref: iloktksmbd, from: [jxi66gwzsa] }
+  - { id: tpfevxh7q1, name: sellToCustomerName, type: string, from: [kcchmko5aq] }
+  - { id: uunxkpcir2, name: billToCustomerNo, type: string, required: true, ref: iloktksmbd, from: [qdwhwtkg5g] }
+  - { id: ar5ufoev36, name: postingDate, type: date, required: true }
+  - { id: dl8l9uhstg, name: documentDate, type: date, from: [ar5ufoev36] }
+  - { id: gu84gmfg6m, name: dueDate, type: date, from: [dl8l9uhstg, a2ial3g7w0], derived: "document date + payment terms" }
+  - { id: lhxtnflzkl, name: externalDocumentNo, type: string, from: [ogicbd970k] }
+  - { id: a1ba18266e, name: currencyCode, type: string, ref: nirn4ae2ma, from: [j23trmmk7p] }
+  - { id: alf9p4k00a, name: currencyFactor, type: decimal, from: [nzfwy4abep] }
+  - { id: k2kcq3n7py, name: pricesIncludingVat, type: bool, from: [kfm0c9x19t] }
+  - { id: ftdf852wnp, name: dimensionSetId, type: int, ref: nbwnn1hmri, from: [n6cluwp3lk] }
+  - { id: min3kqho0l, name: amount, type: decimal, from: [cqd4z6midc], derived: "sum of lines" }
+  - { id: wqrdxzjvdh, name: amountIncludingVat, type: decimal, from: [qnujzud92c], derived: "sum of lines" }
+  - { id: hcldy652fe, name: custLedgerEntryNo, type: int, ref: drsz4tv52b }
+  - { id: x1z1c1d32z, name: remainingAmount, type: decimal, stored: false, from: [bq4wf42bqu], derived: "FlowField: remaining amount of its customer ledger entry" }
+  - { id: uiep5eggxd, name: cancelled, type: bool }
+  - { id: po08dwj2zy, name: lines, model: rd7sjmorm0, many: true }
+  - { id: jfueo7u2kz, name: systemModifiedAt, type: datetime, required: true }
+indexes:
+  - { id: zcccrdrg0x, name: ux_sales_invoice_systemid, fields: [iblbkf2pyw], unique: true }
+  - { id: n7vwvfl1jx, name: ix_sales_invoice_order, fields: [dxas00756t] }
+  - { id: la1c7jyvw6, name: ix_sales_invoice_modified, fields: [jfueo7u2kz] }

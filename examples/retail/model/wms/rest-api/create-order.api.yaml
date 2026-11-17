@@ -1,0 +1,16 @@
+id: r11ikjpjzs
+parent: m149ml603p
+name: Create outbound order
+method: POST
+path: /v1/orders
+auth: bearer (OAuth 2.0 client credentials)
+when: { flag: j5jo9lc089, is: on }
+request:
+  model: zitqiyfbjs
+  pick: [epw5zsq6wa, atg8uokgh3, zu5j99nvng, dhgldpc5wt, gx13btim1s, f9wlmo0i6r, mm4hz3mu7u, dndnmpszek, xvl1ezt9h6, vroqklj2g7, tsyzgx9sro, k0gs7oc2f0, yza5f6535i, hhn35ddch6, nxlvjtja20, uegn4qt0w2, b51yvv9ane]
+responses:
+  - { status: 201, model: zitqiyfbjs, pick: [py3wo1s5fb, epw5zsq6wa, gfhtt2sknp, clbh3sex9k], description: Received }
+  - { status: 400, description: Malformed body }
+  - { status: 401, description: Missing or expired token }
+  - { status: 409, description: orderNumber already received }
+  - { status: 422, description: "Unknown item no., or an address the 3PL cannot ship to" }

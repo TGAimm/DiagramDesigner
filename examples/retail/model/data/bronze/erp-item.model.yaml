@@ -1,0 +1,23 @@
+id: xkovmskr8u
+ownedBy: ar9pfoadj7
+storedIn: ar9pfoadj7
+name: erp_item
+fields:
+  - { id: o9b8y9t6zw, name: id, type: guid, pk: true, from: [cdp1q14bbl] }
+  - { id: i4f6l59pqw, name: number, type: string, required: true, from: [f8w7h2g3n1] }
+  - { id: avepykpq29, name: displayName, type: string, from: [eugq37aqup] }
+  - { id: eow02x53n4, name: displayName2, type: string, nullable: true, from: [wuirr432d7] }
+  - { id: ld1r9kn9i6, name: type, type: string, from: [l5sisge3xd] }
+  - { id: izn5zdqcca, name: itemCategoryCode, type: string, nullable: true, from: [q220e8ga47] }
+  - { id: i3yixl9wne, name: blocked, type: bool, from: [lw6wgyv8kz] }
+  - { id: a76c5cr2sg, name: gtin, type: string, nullable: true, from: [bxcop8yg96] }
+  - { id: t3lbgrsms0, name: inventory, type: decimal, from: [n4kol5m00h] }
+  - { id: vndx300fr2, name: unitPrice, type: decimal, from: [sjwwbsg4ky] }
+  - { id: o44unsbeo4, name: unitCost, type: decimal, from: [jxyw0z3n52] }
+  - { id: o4ibwlptli, name: baseUnitOfMeasureCode, type: string, from: [f1w6ztgigm] }
+  - { id: utcxifzew4, name: lastModifiedDateTime, type: datetime, from: [nk6emwf0ov] }
+  - { id: kcforkqrvk, name: _loaded_at, type: datetime, required: true }
+  - { id: tv4zd0xgo2, name: _source, type: string, required: true, constraints: ["erp/items"] }
+  - { id: w5ilhgtq1x, name: _batch_id, type: string, required: true }
+indexes:
+  - { id: dbqq8sxt1i, name: ux_erp_item_number, fields: [i4f6l59pqw], unique: true }

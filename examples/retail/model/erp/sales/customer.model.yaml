@@ -1,0 +1,35 @@
+# Table 18 Customer. B2C customers are created on their first webshop order; stores sell to
+# one walk-in customer per store (C-STORE-S01..S12).
+id: d60knzplbm
+ownedBy: vss7pk1oh5
+storedIn: q43aprn5l0
+name: Customer
+tags: [pii]
+fields:
+  - { id: iloktksmbd, name: no, type: string, pk: true, constraints: [max 20, "from No. Series C-WEB"] }
+  - { id: ixdytd8nrf, name: systemId, type: guid, required: true }
+  - { id: sil52iby8z, name: name, type: string, required: true, constraints: [max 100] }
+  - { id: vumlhqqhmd, name: address, type: string, constraints: [max 100] }
+  - { id: u5zt4c9pw1, name: address2, type: string, constraints: [max 50] }
+  - { id: lcn2pfd4nj, name: city, type: string, constraints: [max 30] }
+  - { id: dziaf0m5gk, name: postCode, type: string, constraints: [max 20] }
+  - { id: vks4fix0cl, name: countryRegionCode, type: string, constraints: [max 10, "one of: DK, SE, NO, DE"] }   # GAP: enum
+  - { id: tzmq359hks, name: phoneNo, type: string, constraints: [max 30] }
+  - { id: nxz9rh19e0, name: eMail, type: string, constraints: [max 80] }
+  - { id: gyqz530tn4, name: customerPostingGroup, type: string, required: true, constraints: ["one of: B2C, STORE"] }   # GAP: enum
+  - { id: qrd3ijhh3s, name: genBusPostingGroup, type: string, required: true, ref: tjvxys2n13 }
+  - { id: jc8db77dpe, name: vatBusPostingGroup, type: string, required: true, ref: z5j4u9tg8x }
+  - { id: qx2hsuh5rl, name: customerPriceGroup, type: string, nullable: true, ref: tk6f474iqi }
+  - { id: xtslnk70p9, name: currencyCode, type: string, nullable: true, ref: nirn4ae2ma, constraints: ["blank = DKK (LCY)"] }
+  - { id: a2ial3g7w0, name: paymentTermsCode, type: string, constraints: ["one of: PREPAID, 14D"] }   # GAP: enum
+  - { id: s13wtip7nb, name: paymentMethodCode, type: string, constraints: ["one of: STRIPE, KLARNA, CASH, CARD-POS"] }   # GAP: enum
+  - { id: uq9808b8co, name: blocked, type: string, constraints: ["one of: ' ', Ship, Invoice, All"] }   # GAP: enum
+  - { id: ogl8ey3ro2, name: globalDimension1Code, type: string, ref: fogake3ysr, constraints: ["CHANNEL dimension: WEB, STORE"] }
+  - { id: bvtznzvo6z, name: fjeldCommerceCustomerId, type: string, nullable: true, from: [zhf6a5r56z], constraints: ["table extension field (Fjeld Integration)"] }
+  - { id: e2z19qwxvq, name: systemModifiedAt, type: datetime, required: true }
+  - { id: kijl19kaai, name: balanceLcy, type: decimal, stored: false, from: [xqksams0vs], derived: "FlowField: sum of open Cust. Ledger Entry remaining amount (LCY)" }
+indexes:
+  - { id: x1u4mrulzx, name: ux_customer_systemid, fields: [ixdytd8nrf], unique: true }
+  - { id: uiniapzcwf, name: ix_customer_email, fields: [nxz9rh19e0] }
+  - { id: rkmiffgqdk, name: ix_customer_commerce_id, fields: [bvtznzvo6z] }
+  - { id: i5cjsyejf8, name: ix_customer_modified, fields: [e2z19qwxvq] }

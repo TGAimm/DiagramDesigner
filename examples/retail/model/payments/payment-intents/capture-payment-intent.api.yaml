@@ -1,0 +1,18 @@
+id: vov3owlhe3
+parent: pfvgbz7fey
+name: Capture a PaymentIntent
+method: POST
+path: /v1/payment_intents/{intent}/capture
+auth: bearer (secret key)
+params:
+  - { id: ysszbwwk38, name: intent, in: path, type: string }
+  - { id: eja4v15fkv, name: Idempotency-Key, in: header, type: string, required: false, description: Fjeld sends the WMS shipment id }
+request:
+  contentType: application/x-www-form-urlencoded
+  fields:
+    - { id: gz0c9byxae, name: amount_to_capture, type: int, to: [p8152nu84z], description: "partial capture when not all lines shipped; default amount_capturable" }
+    - { id: b1qx5kkbve, name: final_capture, type: bool, to: [fxa7uwf74j], description: "false keeps the rest capturable (multicapture)" }
+responses:
+  - { status: 200, model: g8pq0m68jp, description: succeeded }
+  - { status: 400, model: pwpsr0fyli, description: "payment_intent_unexpected_state (not requires_capture), amount_too_large" }
+  - { status: 402, model: pwpsr0fyli, description: "card_error: authorization expired after 7 days" }

@@ -1,0 +1,5 @@
+# Cleaned and conformed: one shape per business entity across sources, SCD2 history where it matters.
+id: c9pk2gmf7l
+parent: qubihx15dl
+name: Silver lakehouse
+meta: { lakehouse: lh_silver, format: Delta, notebooks: "nb_silver_*" }

@@ -1,0 +1,13 @@
+id: pp88xlfmmr
+parent: nlc4zljjz8
+name: Get webshop order for a store return
+method: GET
+path: /pos/webshop-orders/{orderNumber}
+auth: "API key (x-functions-key, one per POS tenant)"
+params:
+  - { id: s88r4f67g5, name: orderNumber, in: path, type: string }
+  - { id: uikxvzgqxt, name: email, in: query, type: string, required: true, description: "the customer's e-mail, checked against the order (no lookup by number alone)" }
+responses:
+  - { status: 200, model: tj82h3poo1 }
+  - { status: 401, description: Missing or wrong key }
+  - { status: 404, description: "No such order, or the e-mail does not match" }

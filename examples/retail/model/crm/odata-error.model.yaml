@@ -1,0 +1,6 @@
+id: blqvorzt9x
+ownedBy: wh40r2i41o
+name: OData error
+fields:
+  - { id: djc99nljfk, name: code, type: string, required: true, constraints: [hex error code, e.g. 0x80040333] }
+  - { id: q7vqet5guy, name: message, type: string, required: true }

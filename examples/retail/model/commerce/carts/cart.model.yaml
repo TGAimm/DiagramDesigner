@@ -1,0 +1,32 @@
+id: w4i82sypi6
+ownedBy: b1ptklldw3
+storedIn: rrg5e7natg
+name: Cart
+fields:
+  - { id: zin8vxu1v5, name: id, type: uuid, pk: true }
+  - { id: q4kzs22wi1, name: version, type: long, required: true }
+  - { id: zmnbvchmvx, name: key, type: string, nullable: true }
+  - { id: t7o0kf74is, name: customerId, type: uuid, nullable: true, ref: zhf6a5r56z }
+  - { id: gci0aev7hj, name: customerEmail, type: string, nullable: true, constraints: [pii] }
+  - { id: t5ctabsu6j, name: anonymousId, type: string, nullable: true }
+  - { id: phqnwlp4r3, name: customerGroup, type: uuid, nullable: true, ref: dosb9gjm5q }
+  - { id: vkpb2ika6w, name: store, type: string, required: true, ref: vomy6kr4nq, constraints: [KeyReference to the country store] }
+  - { id: q352ftjm2k, name: country, type: string, required: true, constraints: ["one of: DK, SE, NO, DE"] }  # GAP: enum
+  - { id: qeov4vu4az, name: locale, type: string, nullable: true }
+  - { id: glwj1k6pu8, name: cartState, type: string, required: true, constraints: ["one of: Active, Merged, Ordered, Frozen"] }  # GAP: enum
+  - { id: qay8apurvi, name: inventoryMode, type: string, required: true, constraints: ["one of: None, TrackOnly, ReserveOnOrder"] }  # GAP: enum
+  - { id: yetpwf2v1e, name: taxMode, type: string, required: true, constraints: ["one of: Platform, External, ExternalAmount, Disabled"] }  # GAP: enum
+  - { id: q63yvujwgi, name: lineItems, model: haxkxd4qhw, many: true }
+  - { id: k3nskt5l62, name: totalPrice, model: ik7usc5zp1, required: true, from: [mh5uizwxp4, j6aeqj954u], derived: sum of line totals plus shipping }
+  - { id: eyflaxa8zc, name: taxedPrice, model: wfw9x2aejp, nullable: true }
+  - { id: zhm5q0qjk4, name: shippingAddress, model: mrllytyew7, nullable: true }
+  - { id: grm3w7hrus, name: billingAddress, model: mrllytyew7, nullable: true }
+  - { id: ldmh0wvzze, name: shippingInfo, model: fsxk836i4v, nullable: true }
+  - { id: u607md5szl, name: discountCodes, model: vhafikux7j, many: true }
+  - { id: ijoq8f8nr0, name: paymentInfo, type: uuid, many: true, ref: qqf0oorxab, constraints: [paymentInfo.payments] }
+  - { id: o8xh2a3lgr, name: deleteDaysAfterLastModification, type: int, nullable: true, constraints: [Fjeld uses 30] }
+  - { id: ddcaseua0l, name: createdAt, type: datetime, required: true }
+  - { id: ywfnb5d7tn, name: lastModifiedAt, type: datetime, required: true }
+indexes:
+  - { id: d4apiag4ds, name: ix_cart_customer_state, fields: [t7o0kf74is, glwj1k6pu8] }
+  - { id: xlkwjb2a1j, name: ix_cart_anonymous, fields: [t5ctabsu6j] }

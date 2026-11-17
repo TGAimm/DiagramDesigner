@@ -1,0 +1,4 @@
+name: Stop sending the order number to Stripe
+description: Payments metadata keeps only the Commerce order id; reconciliation must look the number up.
+changes:
+  - { drop: vy3l1rdwsx }

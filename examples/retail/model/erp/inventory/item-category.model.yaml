@@ -1,0 +1,12 @@
+# Table 5722 Item Category: a tree (parentCategory).
+id: jhlps3z93h
+ownedBy: x2x0s3utl1
+storedIn: q43aprn5l0
+name: Item Category
+fields:
+  - { id: rhw9pqyx42, name: code, type: string, pk: true, constraints: [max 20] }
+  - { id: vupcnyiu4i, name: systemId, type: guid, required: true }
+  - { id: la9kv5qiy5, name: parentCategory, type: string, nullable: true, ref: rhw9pqyx42 }
+  - { id: ve2ebmn5db, name: description, type: string }
+  - { id: pmyv9r4r53, name: indentation, type: int, from: [la9kv5qiy5], derived: "depth in the tree" }
+  - { id: ojai8xfqb9, name: systemModifiedAt, type: datetime, required: true }

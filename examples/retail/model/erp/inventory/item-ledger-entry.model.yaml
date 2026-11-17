@@ -1,0 +1,28 @@
+# Table 32 Item Ledger Entry: append-only; every stock movement is one entry.
+id: z3s5srw5r2
+ownedBy: x2x0s3utl1
+storedIn: q43aprn5l0
+name: Item Ledger Entry
+fields:
+  - { id: u0qtahb835, name: entryNo, type: int, pk: true }
+  - { id: idyk06egxn, name: itemNo, type: string, required: true, ref: yu6wdxgb8q }
+  - { id: ygulbhn8jz, name: variantCode, type: string, ref: u2mbyuw427 }
+  - { id: y2havt77sa, name: postingDate, type: date, required: true }
+  - { id: l3rn7c1drd, name: entryType, type: string, required: true, constraints: ["one of: Purchase, Sale, Positive Adjmt., Negative Adjmt., Transfer, Consumption, Output"] }   # GAP: enum
+  - { id: j5i0np72ux, name: documentType, type: string, constraints: ["one of: ' ', Sales Shipment, Sales Return Receipt, Purchase Receipt, Transfer Shipment, Transfer Receipt"] }   # GAP: enum
+  - { id: kw211k9lfu, name: documentNo, type: string, required: true }
+  - { id: oqzgrxsfw1, name: locationCode, type: string, required: true, ref: gsrr00mc9x }
+  - { id: s6zz5v7v7t, name: quantity, type: decimal, required: true, constraints: ["negative for outbound"] }
+  - { id: c35ejweexz, name: remainingQuantity, type: decimal }
+  - { id: oongahlhwp, name: invoicedQuantity, type: decimal }
+  - { id: df2unaq77p, name: open, type: bool }
+  - { id: vvmb9kg7pg, name: appliesToEntry, type: int, nullable: true, ref: u0qtahb835 }
+  - { id: lpehdcirh9, name: costAmountActual, type: decimal, stored: false, from: [p18extlk0n], derived: "FlowField: sum of its value entries" }
+  - { id: km4bp67bg6, name: salesAmountActual, type: decimal, stored: false, from: [thngce3c4i], derived: "FlowField: sum of its value entries" }
+  - { id: vgmqujdsx3, name: dimensionSetId, type: int, ref: nbwnn1hmri }
+  - { id: h8s09h2xoc, name: systemCreatedAt, type: datetime, required: true }
+indexes:
+  - { id: mrim9fti57, name: ix_ile_item_variant_location, fields: [idyk06egxn, ygulbhn8jz, oqzgrxsfw1, y2havt77sa] }
+  - { id: oxl3f2ao6w, name: ix_ile_open, fields: [idyk06egxn, df2unaq77p, oqzgrxsfw1] }
+  - { id: xmys5nvqs9, name: ix_ile_document, fields: [kw211k9lfu, j5i0np72ux] }
+  - { id: d7p397x9tp, name: ix_ile_created, fields: [h8s09h2xoc] }

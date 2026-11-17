@@ -1,0 +1,9 @@
+id: sece451wdf
+parent: ztyvug6ivb
+name: List carriers
+method: GET
+path: /api/public/v3/carriers
+auth: basic (API user + key)
+responses:
+  - { status: 200, model: vy1t0d26e3, many: true }
+  - { status: 401, description: Wrong API user or key }

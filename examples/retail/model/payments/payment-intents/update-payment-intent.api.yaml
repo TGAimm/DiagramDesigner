@@ -1,0 +1,21 @@
+id: sh277rgi1r
+parent: pfvgbz7fey
+name: Update a PaymentIntent
+method: POST
+path: /v1/payment_intents/{intent}
+auth: bearer (secret key)
+params:
+  - { id: kjtv7g4829, name: intent, in: path, type: string }
+request:
+  contentType: application/x-www-form-urlencoded
+  fields:
+    - { id: rj0wpa1272, name: amount, type: int, to: [rkvxoeiokq], description: cart total changed before confirm }
+    - { id: xro5ha07bh, name: customer, type: string, to: [ad09afvurs] }
+    - { id: qe8pa75f39, name: payment_method, type: string, to: [i1gxbia3hg] }
+    - { id: syultu0txy, name: receipt_email, type: string, to: [ek3u4dy03h] }
+    - { id: y89sqfp5xt, name: "metadata[commerce_order_id]", type: string, to: [n0tso6nfsf] }
+    - { id: qe2hcur70e, name: "metadata[order_number]", type: string, to: [vy3l1rdwsx] }
+responses:
+  - { status: 200, model: g8pq0m68jp }
+  - { status: 400, model: pwpsr0fyli, description: "payment_intent_unexpected_state (already confirmed)" }
+  - { status: 404, model: pwpsr0fyli, description: resource_missing }

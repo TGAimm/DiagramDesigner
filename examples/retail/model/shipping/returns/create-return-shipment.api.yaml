@@ -1,0 +1,23 @@
+id: migmlq45fv
+parent: x1aigxm73q
+name: Create return shipment
+method: POST
+path: /api/public/v3/return_shipments
+auth: basic (API user + key)
+request:
+  fields:
+    - { id: kob9567451, name: original_shipment_id, type: int, to: [qr2ft3petg] }
+    - { id: rd031a5yjw, name: product_code, type: string, required: true, to: [mj6uwuhkg9] }
+    - { id: kpsj4eus5v, name: sender, model: grcw7cakmk, required: true }
+    - { id: m7pmnzv9i1, name: reference, type: string, required: true, to: [urhtuv0udb] }
+    - { id: c6q0ais34d, name: weight, type: int, to: [jyff1nrddk] }
+    - { id: h1996s0xkj, name: label_delivery, type: string, required: true, to: [ys8d9tj64o] }
+responses:
+  - status: 201
+    fields:
+      - { id: mmpgzlefhe, name: id, type: int, from: [q4qerp6wwc] }
+      - { id: js2wmwottt, name: pkg_no, type: string, from: [rn9ay7olrf] }
+      - { id: umeohcmlvt, name: qr_code, type: string, nullable: true, from: [dj0veyvvtj] }
+      - { id: tt1qokqo4c, name: label, model: punlk0tvcx, nullable: true, description: when label_delivery is pdf }
+  - { status: 404, description: Original shipment not found }
+  - { status: 422, description: Not a return product for the sender's country }

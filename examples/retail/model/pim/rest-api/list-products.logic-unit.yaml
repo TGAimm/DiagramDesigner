@@ -1,0 +1,33 @@
+id: rxntax712c
+parent: vsn79avah8
+name: listProducts
+handles: [zajzch8peu]
+inputs:
+  - { id: do53xawrab, name: search, type: json, nullable: true }
+  - { id: qvyqw7rnka, name: scope, type: string, nullable: true }
+  - { id: nmb11tgnu8, name: locales, type: string, many: true }
+  - { id: lo11gyrrrx, name: attributes, type: string, many: true }
+  - { id: x2adgpzb3v, name: cursor, type: string, nullable: true, description: page number or search_after }
+  - { id: azxd9f0xgt, name: limit, type: int }
+outputs:
+  - { id: pk15eem7ko, name: products, model: qitb6ezis6, many: true }
+fails:
+  - { name: invalidSearch, description: "422: unknown filter, operator, scope or locale" }
+  - { name: tooLarge, description: "422: limit over 100" }
+steps:
+  - if: limit > 100
+    then:
+      - { fail: tooLarge }
+  - if: scope or a locale is not an enabled channel / locale
+    then:
+      - { fail: invalidSearch }
+  - { read: hjsj87ps7y, with: attribute codes named in search, gets: "types, so filters can be checked" }
+  - if: a filter names an unknown attribute or an operator its type doesn't support
+    then:
+      - { fail: invalidSearch }
+  - { note: "query Elasticsearch product_and_product_model for matching uuids, sorted, from the cursor" }
+  - { read: qitb6ezis6, with: matching uuids, gets: "products with values, filtered to scope/locales/attributes" }
+  - if: with_completenesses
+    then:
+      - { read: y3n2a1xjts, with: uuids, gets: completenesses }
+  - { return: products }

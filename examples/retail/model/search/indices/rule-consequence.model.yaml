@@ -1,0 +1,12 @@
+id: meqcqbh34y
+ownedBy: mnu2zqtqzh
+name: Rule Consequence
+fields:
+  - { id: ox4unnad8h, name: params.query, type: string, nullable: true, constraints: [replaces or edits the query words] }
+  - { id: uqsv7r4kxj, name: params.filters, type: string, nullable: true, constraints: ["e.g. salePrice > 0 for home-sale"] }
+  - { id: jh7f0dqy0m, name: params.automaticFacetFilters, type: string, many: true }
+  - { id: snnf51669r, name: promote, type: "{objectIDs: string[], position: int}", many: true }
+  - { id: k2hu69pbzc, name: filterPromotes, type: bool, nullable: true }
+  - { id: gg8xurijyc, name: hide, type: "{objectID}", many: true }
+  # GAP: free-form properties (userData is any JSON; Fjeld sends {bannerUrl, bannerLink, bannerAlt})
+  - { id: oxn5ftpt58, name: userData, type: json, nullable: true }

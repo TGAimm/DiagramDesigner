@@ -1,0 +1,15 @@
+id: x7lyqi7j2l
+parent: vssqq48tt7
+name: Create webhook
+method: POST
+path: /api/public/v3/webhooks
+auth: basic (API user + key)
+request:
+  fields:
+    - { id: fkpakxnwup, name: name, type: string, required: true, to: [skirtr0bp3] }
+    - { id: g9eojoj1ue, name: endpoint, type: string, required: true, to: [l62cqqqgz2] }
+    - { id: lvko8bgpp2, name: action, type: string, required: true, to: [esz0b5d0hi] }
+    - { id: kidgly63gp, name: key, type: string, required: true, to: [w09oybfqb4] }
+responses:
+  - { status: 201, model: a31x3gyqkh, omit: [w09oybfqb4] }
+  - { status: 422, description: Invalid endpoint or action }

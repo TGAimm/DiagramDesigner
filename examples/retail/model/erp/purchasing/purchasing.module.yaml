@@ -1,0 +1,5 @@
+id: si82yvapze
+parent: s7eejjfr7l
+name: Purchasing
+links:
+  - { label: Purchasing, url: "https://learn.microsoft.com/en-us/dynamics365/business-central/purchasing-manage-purchasing" }

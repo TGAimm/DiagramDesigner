@@ -1,0 +1,19 @@
+# Online returns (Commerce return items) and store returns (POS return lines) in one shape.
+id: lf52toylkg
+ownedBy: c9pk2gmf7l
+storedIn: c9pk2gmf7l
+name: return
+fields:
+  - { id: a1hyum61n2, name: return_key, type: string, pk: true, from: [ka9havh5vt, ewnnodqiwp], derived: "'C-' or 'P-' + source id" }
+  - { id: mkodltrd4j, name: order_line_key, type: string, nullable: true, ref: wvksc7fxsj, from: [vu3ab6i3fo, nigz1s61bi], derived: "the sold line; null for a store return without the original receipt" }
+  - { id: kodb77diy9, name: order_key, type: string, nullable: true, ref: czdt9fjnll, from: [to3yja7cmo, gcdr2vhvxc] }
+  - { id: lf9qf4geax, name: channel_code, type: string, required: true, from: [jyonhj34gj], derived: "channel of the original order; store when the original is unknown" }
+  - { id: grm9p5zbz9, name: returned_to, type: string, required: true, constraints: ["one of: warehouse, store"] } # GAP: enum
+  - { id: efq89pkgep, name: store_key, type: string, nullable: true, ref: d3vg1yf3fk, from: [ulejnf1iz6, rbdi2b55ac], derived: the store that took the return back }
+  - { id: ss5m2zki57, name: sku, type: string, required: true, from: [vvpa5weohe, gqqvzs3hu4] }
+  - { id: etxpl7plpj, name: quantity, type: int, required: true, from: [w5a75lsc3b, g2h8bhjcu9], derived: positive (POS quantity negated) }
+  - { id: vyn8e6c3n3, name: reason_code, type: string, nullable: true, from: [awlo2s1fu0, gaizfxn2cu], derived: "Commerce: text before ':' in the comment; POS returnReason" }
+  - { id: uoln4mmnz8, name: status, type: string, required: true, from: [wpctewqvau, dt3zwv19sz], derived: "announced, received, refunded (POS returns are refunded at once)" }
+  - { id: xr1ffxpnj7, name: returned_at, type: datetime, required: true, from: [cwfijzzliv, ot3lzu5gkc] }
+  - { id: z6ooiptajb, name: refund_amount, type: decimal, nullable: true, from: [b1nlpddm21, cd1t16hxej, wrew270gti], derived: "sold line gross / sold quantity * returned quantity; POS: - lineTotal. The Stripe refund is per order, not per line" }
+  - { id: z4n5h5m5uh, name: currency, type: string, required: true, from: [qj6tmvtede, ftm57ddruu] }

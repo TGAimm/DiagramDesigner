@@ -1,0 +1,16 @@
+# One Stripe balance transaction of a payout as an ERP general journal line (batch STRIPE-<currency>).
+# Balancing account on every line: the bank account the payout lands on, so a payout nets to its amount.
+id: lctrjdt67j
+ownedBy: mwsgna90tw
+name: PayoutJournalLine
+fields:
+  - { id: gm9a4h6uft, name: payoutId, type: string, required: true, from: [ickiwbul7m, n6liyrhotq], constraints: [the journal documentNumber] }
+  - { id: c4gw5yzyjk, name: balanceTransactionId, type: string, required: true, from: [qb2q7z19dc] }
+  - { id: pvdvr02nmg, name: postingDate, type: date, required: true, from: [dvmx85wcau], derived: payout arrival_date }
+  - { id: fr25se6rf3, name: accountNumber, type: string, required: true, from: [faroj9yrhw, yns2e2eoou], derived: "charge, refund > 5820 Stripe clearing; fee > 7220 card fees; dispute > 5830; adjustment > 5840" }
+  - { id: s1ybbpv4lg, name: amount, type: decimal, required: true, from: [qcebp0k7a8, tlyd5xmf5c], derived: "gross / 100 on the clearing line, fee / 100 on a separate fee line; sign so the payout nets to its amount" }
+  - { id: lzr5zmsunk, name: currency, type: string, required: true, from: [kti9cnks25], derived: upper case }
+  - { id: ni8uatexxf, name: externalDocumentNumber, type: string, nullable: true, from: [oz74t9igb1], derived: "the ch_ / re_ / dp_ id" }
+  - { id: z2cv8kawn8, name: orderNumber, type: string, nullable: true, from: [vy3l1rdwsx], derived: "metadata.order_number of the charge's PaymentIntent; in the description" }
+  - { id: yvnastbx2w, name: description, type: string, required: true, from: [ccwgo82vwh, z2cv8kawn8], derived: "'<type> <order number>', 100 chars" }
+  - { id: zndmeuhsj6, name: balancingAccountNumber, type: string, required: true, from: [r06peo9d6q], derived: "the payout destination's bank account (5910 DKK, 5911 SEK, 5912 NOK, 5913 EUR)" }

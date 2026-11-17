@@ -1,0 +1,13 @@
+id: ei03hl8rwj
+ownedBy: w8lrzinusw
+name: ErpSalesOrderLineDraft
+fields:
+  # GAP: enum
+  - { id: jkucbxrvkn, name: lineType, type: string, required: true, constraints: ["one of: Item, Account (shipping fee on G/L 3110)"] }
+  - { id: inz1xb52jd, name: lineObjectNumber, type: string, required: true, from: [c1uzjurwuu], derived: "item no. = sku before the last '-'; 3110 for the shipping line" }
+  - { id: bxt1x91h6o, name: variantCode, type: string, nullable: true, from: [c1uzjurwuu], derived: "sku after the last '-'" }
+  - { id: efmx93epsa, name: description, type: string, nullable: true, from: [tzgfqq0q8b], derived: "name in the order's locale, 100 chars" }
+  - { id: p90d11ub50, name: quantity, type: decimal, required: true, from: [ae7tr09nmb] }
+  - { id: hykjmpr2dp, name: unitPrice, type: decimal, required: true, from: [oylo8sfbus], derived: "line price.value.centAmount / 100 (incl. VAT)" }
+  - { id: l9ajvy2t1i, name: discountAmount, type: decimal, nullable: true, from: [xkm7wlocr5, mh5uizwxp4], derived: "price x quantity - totalPrice, / 100" }
+  - { id: v641a36mu1, name: commerceLineItemId, type: uuid, nullable: true, from: [c9xmzjnpp8], constraints: [kept in xref to match shipped lines back] }

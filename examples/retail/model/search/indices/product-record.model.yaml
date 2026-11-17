@@ -1,0 +1,37 @@
+# One record per style and colour (FJ-JKT-1042-RED), with its sizes as a list: the grid shows
+# colours, not sizes. Written by Integration through the batch api from the PIM export (content),
+# Commerce prices and Commerce inventory (stock), one locale's index at a time.
+# GAP: lineage by attribute - name, brand, colour and size come from the PIM Product DTO, which
+# already says which attribute each column holds; the Commerce price and stock lineage can't say
+# "for the index's country" or "for the webshop channel": that is in derived only.
+id: s08z88xp3c
+ownedBy: mnu2zqtqzh
+storedIn: u4435mqo47
+name: Product Record
+fields:
+  - { id: g3ojlcghpt, name: indexName, type: string, pk: true, ref: fwm01mcigb, constraints: [written to the primary; Algolia copies it to the replicas] }
+  - { id: kfdn4jaxfq, name: objectID, type: string, pk: true, from: [f9cml31utd], derived: "colour model code, e.g. FJ-JKT-1042-RED; the style code for single-colour styles" }
+  - { id: urqg0238zp, name: sku, type: string, required: true, from: [p8wyfcgywb], derived: "SKU of the first size in stock (else the first size): the variant the card links to" }
+  - { id: cfs3fks2vf, name: styleCode, type: string, required: true, from: [jvygu2no09] }
+  - { id: jq9a3ellmv, name: name, type: string, required: true, from: [o5j7ow8nvb], derived: "PIM name in the index's locale" }
+  - { id: oe41r94iyb, name: description, type: string, nullable: true, from: [vll2yirzi6], derived: "HTML stripped, first 500 characters (records stay under 10 KB)" }
+  - { id: pnt2qzakc1, name: brand, type: string, required: true, from: [goat59440e] }
+  - { id: cemc2bgkwg, name: hierarchicalCategories.lvl0, type: string, many: true, from: [cu90qctfbq, o5e94o42uo], derived: "label of each fjeld_web category's top level in the locale, e.g. Men" }
+  - { id: fvs4gll05v, name: hierarchicalCategories.lvl1, type: string, many: true, from: [cu90qctfbq, o5e94o42uo], derived: "two levels, ' > '-joined, e.g. Men > Jackets" }
+  - { id: dkp753e0j6, name: hierarchicalCategories.lvl2, type: string, many: true, from: [cu90qctfbq, o5e94o42uo], derived: "three levels, e.g. Men > Jackets > Shell jackets" }
+  - { id: rhkb2nkf03, name: categoryKeys, type: string, many: true, from: [cu90qctfbq], derived: "PIM category codes, own and inherited (= Commerce category keys): the listing page filters on these" }
+  - { id: no1c4i3mx9, name: colour, type: string, nullable: true, from: [ev5p820zff] }
+  - { id: p1yvntkvk5, name: colourCode, type: string, nullable: true, from: [ga5utkrbow] }
+  - { id: xpd602u5jh, name: sizesAvailable, type: string, many: true, from: [woa27ss468, z6tv7i6g31], derived: "size labels of the colour's SKUs with availableQuantity > 0 on the webshop entry (no supply channel)" }
+  - { id: rl8dsmbon0, name: price, type: decimal, required: true, from: [oylo8sfbus, zcw0t2ipvp], derived: "RETAIL price of the index's country, lowest over the sizes, centAmount / 100" }
+  - { id: tj8zjtwuip, name: salePrice, type: decimal, nullable: true, from: [a6o71cl4m7], derived: "discounted value / 100 while a product discount applies; null otherwise" }
+  - { id: g51ejrtye3, name: currency, type: string, required: true, from: [n8mwhpvdh9] }
+  - { id: m0z3k6h9j2, name: discountPercent, type: int, nullable: true, from: [rl8dsmbon0, tj8zjtwuip], derived: "round((price - salePrice) / price * 100)" }
+  - { id: dp4veqfmxp, name: inStock, type: bool, required: true, from: [z6tv7i6g31], derived: any size available on the webshop entry }
+  - { id: wg1b9np9uw, name: imageUrl, type: string, nullable: true, from: [b3ps761mof], derived: "first image URL, ?w=600 rendition" }
+  - { id: nf4q71v5os, name: popularity, type: int, required: true, from: [ae7tr09nmb], derived: "units ordered in the last 30 days, summed by Integration from Commerce order lines" }
+  - { id: dvc7yy6w3y, name: newArrival, type: bool, required: true, from: [m812a2j24z], derived: created in PIM within the last 30 days }
+  - { id: sfz9ffy0qd, name: url, type: string, required: true, from: [gw8rv1dzbo], derived: "/p/<Commerce slug in the locale>, the Storefront product route" }
+  - { id: jw2fe8mn2j, name: updatedAt, type: datetime, required: true, from: [ui0em7awxz, aabm79sji8], derived: "latest of the content, price and stock change" }
+indexes:
+  - { id: c8f1dji7j7, name: ix_record_style, fields: [g3ojlcghpt, cfs3fks2vf] }

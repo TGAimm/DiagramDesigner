@@ -1,0 +1,23 @@
+id: xlbj8mjxng
+parent: i282x7cdne
+name: findPickupPoints
+handles: [x2dhfuyuvj]
+inputs:
+  - { id: ku4yssfq2m, name: carrierCode, type: string, required: true }
+  - { id: g8log0y01d, name: postalCode, type: string, required: true }
+  - { id: jjl6e53ohg, name: street, type: string, nullable: true }
+outputs:
+  - { id: vczcng220p, name: points, model: hu4lmlya6m, many: true }
+fails:
+  - { name: unknownPostalCode, description: "422" }
+  - { name: carrierDown, description: "502" }
+steps:
+  - { call: cylyc9xl5m, gets: session }
+  - { call: vvr7att2ml, with: "carrier_code, country_code = session country, zipcode, address = street, quantity 10", gets: points }
+  - if: "422"
+    then:
+      - { fail: unknownPostalCode }
+  - if: "502"
+    then:
+      - { fail: carrierDown }
+  - { return: points }

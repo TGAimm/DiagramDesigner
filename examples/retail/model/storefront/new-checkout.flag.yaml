@@ -1,0 +1,7 @@
+# On: Stripe Payment Element in the checkout page (BFF creates and confirms the PaymentIntent).
+# Off: the legacy redirect to a Stripe-hosted Checkout Session.
+id: p9sg006xy9
+parent: xu1hb6iufu
+name: newCheckout
+key: new-checkout
+default: off

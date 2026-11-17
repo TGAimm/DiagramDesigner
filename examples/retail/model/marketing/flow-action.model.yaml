@@ -1,0 +1,17 @@
+id: qdn0ucww74
+ownedBy: s3at4589xs
+storedIn: mm9tmyhvey
+name: Flow action
+fields:
+  - { id: mg01q5agry, name: id, type: string, pk: true }
+  - { id: xwtzy39sms, name: flow_id, type: string, required: true, ref: f5xx76vtts }
+  - { id: e31vhkepks, name: position, type: int, required: true }
+  # GAP: enum
+  - { id: brp1dyz3xx, name: action_type, type: string, required: true, constraints: ["one of: SEND_EMAIL, SEND_SMS, TIME_DELAY, CONDITIONAL_SPLIT, TRIGGER_SPLIT, UPDATE_PROFILE"] }
+  # GAP: enum
+  - { id: p22u4bwdgo, name: status, type: string, required: true, constraints: ["one of: draft, manual, live, disabled"] }
+  - { id: akjyjrsz36, name: settings.delay, type: string, nullable: true, constraints: ["e.g. 4 hours, 14 days"] }
+  - { id: rusp7tsk4p, name: send_options.use_smart_sending, type: bool, nullable: true }
+  - { id: y2umk3x7s0, name: message.subject, type: string, nullable: true }
+  - { id: j6ldb7hif4, name: message.template_id, type: string, nullable: true, ref: g7h3wk0ixm }
+  - { id: viafzjneej, name: created, type: datetime, required: true }

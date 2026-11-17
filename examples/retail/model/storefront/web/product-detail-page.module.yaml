@@ -1,0 +1,4 @@
+id: fdjbxyzftg
+parent: pk9bqr5frw
+name: Product detail page
+meta: { route: "/p/[slug]" }

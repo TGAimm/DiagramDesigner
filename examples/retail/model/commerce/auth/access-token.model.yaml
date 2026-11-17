@@ -1,0 +1,18 @@
+id: okef4sk2jd
+ownedBy: pg4yiapkrt
+storedIn: pg4yiapkrt
+name: Access Token
+tags: [secret]
+fields:
+  - { id: trqt1u7pdx, name: access_token, type: string, pk: true }
+  - { id: l11l8bit91, name: token_type, type: string, required: true, constraints: ["one of: Bearer"] }  # GAP: enum
+  - { id: nq1j54qc98, name: clientId, type: string, required: true }
+  - { id: ox78v3euaz, name: grantType, type: string, required: true, constraints: ["one of: client_credentials, anonymous_token, refresh_token"] }  # GAP: enum
+  - { id: x2n39n0nd4, name: scope, type: string, required: true, constraints: ["space-separated, e.g. manage_orders:fjeld-prod view_products:fjeld-prod"] }
+  - { id: ln19171ns9, name: expires_in, type: int, required: true, constraints: [172800 seconds (48h)] }
+  - { id: eo42w89q2h, name: refresh_token, type: string, nullable: true }
+  - { id: dr8rz3asx0, name: anonymousId, type: string, nullable: true }
+  - { id: q7fg87u0c7, name: customerId, type: uuid, nullable: true, ref: zhf6a5r56z }
+  - { id: qi17jgpmyv, name: issuedAt, type: datetime, required: true }
+indexes:
+  - { id: n6olnzpfs9, name: ix_token_client, fields: [nq1j54qc98] }

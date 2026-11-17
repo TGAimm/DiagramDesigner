@@ -1,0 +1,16 @@
+id: ov82wvitdc
+parent: t6al4kcu16
+name: Create return
+method: POST
+path: /returns
+auth: portal session (from the order lookup)
+request:
+  fields:
+    - { id: ye3a3pnjep, name: order_number, type: string, required: true, to: [twmqcvgacf] }
+    - { id: gbe62o9dq5, name: email, type: string, required: true, to: [vm8fhaf7i8] }
+    - { id: e8wbydznuj, name: refund_method, type: string, required: true, to: [p3hb1kuqk6] }
+    - { id: l5rln64f5a, name: items, model: bej5xqj7kg, many: true, required: true }
+responses:
+  - { status: 201, model: dntnqyedil }
+  - { status: 404, description: order not found }
+  - { status: 422, description: "outside the return window, too many items, non-returnable category, or a reason needs a comment" }

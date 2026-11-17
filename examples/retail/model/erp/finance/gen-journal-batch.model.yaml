@@ -1,0 +1,14 @@
+# Table 232 Gen. Journal Batch: STRIPE (payouts, fees), POS (store takings), CASHRCPT (customer
+# payments, template CASHRCPT).
+id: kdsx0vw44f
+ownedBy: gob5rrh7wh
+storedIn: q43aprn5l0
+name: Gen. Journal Batch
+fields:
+  - { id: w8qoq0h2bh, name: journalTemplateName, type: string, pk: true, constraints: ["one of: GENERAL, CASHRCPT"] }   # GAP: enum
+  - { id: ab6lrt7ekn, name: name, type: string, pk: true, constraints: ["one of: STRIPE, POS, CASHRCPT, DEFAULT"] }   # GAP: enum
+  - { id: h0aq5u46iu, name: systemId, type: guid, required: true }
+  - { id: yw2xlspqa3, name: description, type: string }
+  - { id: imlkm5at3x, name: balAccountType, type: string, constraints: ["one of: G/L Account, Bank Account"] }   # GAP: enum
+  - { id: afr56tgvr4, name: balAccountNo, type: string, nullable: true }
+  - { id: hu0do0pqnc, name: systemModifiedAt, type: datetime, required: true }

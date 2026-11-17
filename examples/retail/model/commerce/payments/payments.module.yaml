@@ -1,0 +1,5 @@
+id: ybylhi4dg2
+parent: ygmbkn58fj
+name: Payments
+links:
+  - { label: Payments, url: "https://docs.commercetools.com/api/projects/payments" }

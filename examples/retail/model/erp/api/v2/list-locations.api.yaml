@@ -1,0 +1,18 @@
+id: iqn1ze0a3p
+parent: wyb51ibopv
+name: List locations
+method: GET
+path: /api/v2.0/companies({companyId})/locations
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: bszzdm292w, name: companyId, in: path, type: guid }
+responses:
+  - status: 200
+    many: true
+    fields:
+      - { id: kw4lt1z895, name: id, type: guid, from: [pd9j849qnx] }
+      - { id: ulgfn6h5fm, name: code, type: string, from: [gsrr00mc9x] }
+      - { id: ff4u7zt7px, name: displayName, type: string, from: [utd9or8y4n] }
+      - { id: e36v7lw5ob, name: country, type: string, from: [xslo5wvxl9] }
+      - { id: x00djvktnp, name: lastModifiedDateTime, type: datetime, from: [vpk58thnjr] }
+  - { status: 401, description: Unauthorized }

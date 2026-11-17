@@ -1,0 +1,18 @@
+id: va5eavdghf
+ownedBy: x27wyx0r8h
+name: Profile subscriptions
+tags: [gdpr]
+fields:
+  # GAP: enum
+  - { id: bcagv4gekq, name: email.marketing.consent, type: string, required: true, constraints: ["one of: SUBSCRIBED, UNSUBSCRIBED, NEVER_SUBSCRIBED"] }
+  - { id: sxuhz27bqm, name: email.marketing.consent_timestamp, type: datetime, nullable: true }
+  # GAP: enum
+  - { id: oxuirnfvj8, name: email.marketing.method, type: string, nullable: true, constraints: ["one of: API, FORM, PREFERENCE_PAGE, UNSUBSCRIBE_LINK, SPAM_COMPLAINT, BOUNCE"] }
+  - { id: o8j235hiwt, name: email.marketing.double_optin, type: bool, nullable: true }
+  - { id: o074odm3zy, name: email.marketing.custom_method_detail, type: string, nullable: true }
+  # GAP: enum
+  - { id: zbnj2a5nmb, name: email.marketing.suppression.reason, type: string, nullable: true, constraints: ["one of: HARD_BOUNCE, SPAM_COMPLAINT, USER_SUPPRESSED, INVALID_EMAIL"] }
+  # GAP: enum
+  - { id: wxvdukb871, name: sms.marketing.consent, type: string, required: true, constraints: ["one of: SUBSCRIBED, UNSUBSCRIBED, NEVER_SUBSCRIBED"] }
+  - { id: dbk52nlu0f, name: sms.marketing.consent_timestamp, type: datetime, nullable: true }
+  - { id: lr62hyh1lx, name: sms.transactional.consent, type: string, nullable: true }

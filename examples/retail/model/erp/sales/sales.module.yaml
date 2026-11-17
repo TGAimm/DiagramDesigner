@@ -1,0 +1,5 @@
+id: vss7pk1oh5
+parent: s7eejjfr7l
+name: Sales
+links:
+  - { label: Sales documents, url: "https://learn.microsoft.com/en-us/dynamics365/business-central/sales-manage-sales" }

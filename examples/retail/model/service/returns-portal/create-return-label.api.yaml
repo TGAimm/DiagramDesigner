@@ -1,0 +1,12 @@
+id: q97o3dq69n
+parent: jzdz677osb
+name: Create return label
+method: POST
+path: /returns/{returnId}/label
+auth: portal session
+params:
+  - { id: a8cfb2sw2y, name: returnId, in: path, type: string }
+responses:
+  - { status: 201, model: al96kyiny7 }
+  - { status: 409, description: "return not approved, or a label already exists" }
+  - { status: 502, description: Shipping refused the booking }

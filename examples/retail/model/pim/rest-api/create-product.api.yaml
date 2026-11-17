@@ -1,0 +1,13 @@
+id: q7rjqx4vwa
+parent: vsn79avah8
+name: Create product
+method: POST
+path: /api/rest/v1/products-uuid
+auth: bearer
+request: { model: qitb6ezis6, omit: [zvcn8bc68d, m812a2j24z, jgbpew18pm] }
+responses:
+  - { status: 201, description: "Created; Location header, no body" }
+  - { status: 400, description: Malformed JSON or unknown property }
+  - { status: 401, description: Missing or expired token }
+  - { status: 415, description: Content-Type is not application/json }
+  - { status: 422, description: "Validation failed, or uuid/identifier already exists" }

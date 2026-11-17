@@ -1,0 +1,18 @@
+id: srsxqwlqvb
+ownedBy: kw2jlrdqza
+storedIn: hykg6pt8u2
+name: Register
+fields:
+  - { id: kurnos0lfj, name: id, type: int, pk: true }
+  - { id: sfboh8xqyh, name: storeId, type: int, required: true, ref: h3qlberi23 }
+  - { id: qz0uqg2qae, name: registerNo, type: int, required: true, constraints: [1-based per store] }
+  - { id: tmw03k1mry, name: name, type: string, required: true, constraints: ["e.g. Kasse 1"] }
+  - { id: r0l2anakim, name: terminalId, type: string, nullable: true, constraints: [paired card terminal] }
+  - { id: ecqigfjhba, name: controlUnitId, type: string, nullable: true, constraints: ["fiscal control unit (SE kontrollenhet) / TSE (DE)"] }
+  # GAP: enum
+  - { id: ezzynqxmt7, name: status, type: string, required: true, constraints: ["one of: open, closed"] }
+  - { id: easytok7sf, name: openedAt, type: datetime, nullable: true }
+  - { id: xclb48y8qt, name: openedBy, type: int, nullable: true, ref: l5j11fszfp }
+  - { id: mgj1x4iwi7, name: openingFloat, type: decimal, nullable: true, constraints: [cash in the drawer at opening] }
+indexes:
+  - { id: wny6ssz4zx, name: ux_register_store_no, fields: [sfboh8xqyh, qz0uqg2qae], unique: true }

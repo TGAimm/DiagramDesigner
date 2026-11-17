@@ -1,0 +1,14 @@
+id: r30cerwybo
+parent: y5739ri6l0
+name: Trigger sync
+method: POST
+path: /ops/sync/{job}
+auth: "bearer (Entra ID, app role Integration.Operator)"
+params:
+  # GAP: enum
+  - { id: uzwtozxh04, name: job, in: path, type: string, description: "one of: product, products-full, prices-full, stock, items, payouts, pos-sales" }
+  - { id: w7b1sfdanh, name: key, in: query, type: string, required: false, description: "PIM uuid for job product; business day for pos-sales" }
+responses:
+  - { status: 202, description: Started }
+  - { status: 403, description: Missing app role }
+  - { status: 409, description: The job is running }

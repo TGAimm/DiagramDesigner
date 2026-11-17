@@ -1,0 +1,17 @@
+id: sy8kzriu6h
+ownedBy: lnizoffy7m
+name: Product Card
+fields:
+  - { id: job0wjzbwa, name: objectID, type: string, required: true, from: [qhx0jm0xrt] }
+  - { id: yqlrkh4zb3, name: sku, type: string, required: true, from: [pv0uzzlpyy] }
+  - { id: fifccyn8lv, name: name, type: string, required: true, from: [cxwt752s0m] }
+  - { id: ictxk62bsy, name: highlightedName, type: string, nullable: true, from: [o8z64vj39s], derived: "name with <em> marks from _highlightResult (search only)" }
+  - { id: dueez8baam, name: brand, type: string, required: true, from: [uqrvgz0woe] }
+  - { id: s0piyi0t1d, name: colour, type: string, nullable: true, from: [f2q935sala] }
+  - { id: lc8brlr5pf, name: colourCode, type: string, nullable: true, from: [a1f1vcyns7] }
+  - { id: uyf3b66led, name: sizes, type: string, many: true, from: [k68x6oreha] }
+  - { id: yzymkxoecp, name: imageUrl, type: string, nullable: true, from: [z08xgaucw8] }
+  - { id: dwlk8bvp75, name: url, type: string, required: true, from: [vzucckt8es, pv0uzzlpyy], derived: "url + ?sku= so the page opens on that colour" }
+  - { id: srgxxjg5e8, name: price, type: string, required: true, from: [pme3mwc06w, n8pf4sgs9r], derived: "formatted in the session locale, e.g. 1.299,00 kr." }
+  - { id: o7vqkhfxb8, name: salePrice, type: string, nullable: true, from: [wtvo6qjtn5, n8pf4sgs9r], derived: formatted }
+  - { id: kfbt360zxy, name: badge, type: string, nullable: true, from: [spwc8hnu4k, pgjgnqk3p7, ipbp42nmnb], derived: "-20 %, New, or Sold out" }

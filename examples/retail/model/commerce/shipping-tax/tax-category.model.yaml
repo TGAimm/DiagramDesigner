@@ -1,0 +1,12 @@
+id: qjn7kv5o12
+ownedBy: d2rl6i7zpf
+storedIn: rrg5e7natg
+name: Tax Category
+fields:
+  - { id: yzii05r372, name: id, type: uuid, pk: true }
+  - { id: g7xgaxt84x, name: version, type: long, required: true }
+  - { id: kh51txpxiy, name: key, type: string, nullable: true, constraints: ["one of: standard, reduced"] }
+  - { id: tynlqvveey, name: name, type: string, required: true }
+  - { id: nj0f3qofdz, name: rates, model: oxv3h61cni, many: true, constraints: [one per country] }
+indexes:
+  - { id: uyr9z49r9h, name: ux_tax_category_key, fields: [kh51txpxiy], unique: true }

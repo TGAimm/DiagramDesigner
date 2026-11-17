@@ -1,0 +1,24 @@
+id: bej5xqj7kg
+ownedBy: t6al4kcu16
+storedIn: lhfbozuhuf
+name: Return item
+fields:
+  - { id: zc99yb28t3, name: id, type: uuid, pk: true }
+  - { id: vghoctvlsf, name: return_request_id, type: uuid, required: true, ref: dntnqyedil }
+  - { id: p5w01mdhpk, name: line_item_id, type: string, required: true, from: [yha9wl5n3c] }
+  - { id: hirmes5nzi, name: sku, type: string, required: true, from: [mxkqe0lxhq] }
+  - { id: l4k8q2lav3, name: quantity, type: int, required: true, constraints: [min 1, at most the line's returnable quantity] }
+  - { id: bdvb269494, name: reason_code, type: string, required: true, ref: dqkug7urdt }
+  - { id: jwsgafwh1q, name: comment, type: string, nullable: true }
+  # GAP: enum
+  - { id: hlel772m6u, name: condition, type: string, required: true, constraints: ["one of: unused_with_tags, used, damaged, defective"] }
+  - { id: o2vp48dxt9, name: photo_urls, type: string, many: true }
+  - { id: lvp5ez8mer, name: unit_price, type: decimal, required: true, from: [ta25exrvzs] }
+  - { id: dotgxpusff, name: refund_amount, type: decimal, required: true, from: [l4k8q2lav3, lvp5ez8mer], derived: "quantity * unit price; 0 when inspection rejects it" }
+  # GAP: enum
+  - { id: gjr7hku7d8, name: inspection_result, type: string, nullable: true, constraints: ["one of: accepted, rejected, partial"] }
+  - { id: tq1nzzyrw5, name: restock, type: bool, nullable: true, constraints: [set by the warehouse on receipt] }
+  - { id: ydqmjz5bus, name: exchange_sku, type: string, nullable: true, constraints: [only when refund_method is exchange] }
+indexes:
+  - { id: o7zcvvshx6, name: ix_item_return, fields: [vghoctvlsf] }
+  - { id: r4btkvexhh, name: ix_item_line, fields: [p5w01mdhpk] }

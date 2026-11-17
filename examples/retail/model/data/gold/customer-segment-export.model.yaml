@@ -1,0 +1,16 @@
+# The row the segments export returns and the reverse ETL pushes: current customer with ids in
+# the systems it goes back to.
+id: ds642k1483
+ownedBy: flpant1ni7
+name: customer segment row
+tags: [pii]
+fields:
+  - { id: xer8051liu, name: customer_key, type: string, required: true, from: [derhub8di9] }
+  - { id: rmw6brbcdr, name: email, type: string, nullable: true, from: [q4zggny5hi] }
+  - { id: if7yrkq4mp, name: crm_contact_id, type: uuid, nullable: true, from: [g3url7ucm2] }
+  - { id: t0rf8bdk9l, name: klaviyo_profile_id, type: string, nullable: true, from: [acce6s3q9r] }
+  - { id: fq8dpl3le3, name: segment, type: string, required: true, from: [jcw4m97rq6] }
+  - { id: oqk3hmsldx, name: lifetime_value_dkk, type: decimal, required: true, from: [cma6yjlw5h] }
+  - { id: rr40pzs561, name: order_count, type: int, required: true, from: [he0lyb9gun] }
+  - { id: t15vpdl9tt, name: last_order_date, type: date, required: true, from: [aacbwgudsd] }
+  - { id: u5d027g1vt, name: calculated_at, type: datetime, required: true, from: [j0bf5itvrp] }

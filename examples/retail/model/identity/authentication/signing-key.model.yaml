@@ -1,0 +1,13 @@
+id: gsx2w0iahj
+ownedBy: z4a8fcfwai
+storedIn: ji6igng4bi
+name: SigningKey
+fields:
+  - { id: cuki2hdkaw, name: kid, type: string, pk: true }
+  - { id: ien1z4lhwu, name: kty, type: string, required: true, constraints: [RSA] }
+  - { id: nxm55e262n, name: use, type: string, required: true, constraints: [sig] }
+  - { id: gbhzf1jdiq, name: n, type: string, required: true }
+  - { id: hqpvnwovsj, name: e, type: string, required: true }
+  - { id: vjrr1sg4nu, name: x5c, type: string, many: true }
+  - { id: ufe4ovc4gp, name: issuer, type: string, from: [gcu3ue2h17] }
+  - { id: g5fpf1loa1, name: nbf, type: int, constraints: ["rotated by Microsoft; clients must re-fetch on unknown kid"] }

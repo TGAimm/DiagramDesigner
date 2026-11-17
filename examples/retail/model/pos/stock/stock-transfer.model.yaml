@@ -1,0 +1,18 @@
+id: g9fn1pbjcw
+ownedBy: vgv4575wz1
+storedIn: hykg6pt8u2
+name: Stock transfer
+fields:
+  - { id: sb2lzhtomz, name: id, type: uuid, pk: true }
+  - { id: q2j20ptobs, name: transferNo, type: string, required: true, from: [ljlh12h9yw] }
+  - { id: unsvc057iy, name: fromLocation, type: string, required: true, from: [i9r2q9k1g1], constraints: ["ERP location code: the 3PL warehouse, or another store"] }
+  - { id: p4tsbkscqz, name: toStoreId, type: int, required: true, ref: h3qlberi23 }
+  # GAP: enum
+  - { id: wiehcci4s2, name: status, type: string, required: true, constraints: ["one of: in_transit, received, discrepancy"] }
+  - { id: yi4ioqjs21, name: lines, model: rc311dl3kq, many: true, required: true }
+  - { id: hxe7lnlbq0, name: shippedAt, type: datetime, nullable: true }
+  - { id: mc0qwosk5w, name: receivedAt, type: datetime, nullable: true }
+  - { id: cbb6z4io8c, name: receivedBy, type: int, nullable: true, ref: l5j11fszfp }
+indexes:
+  - { id: tle5jx0xsv, name: ux_transfer_no, fields: [q2j20ptobs], unique: true }
+  - { id: kku9n4c8x4, name: ix_transfer_store_status, fields: [p4tsbkscqz, wiehcci4s2] }

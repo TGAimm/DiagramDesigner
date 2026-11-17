@@ -1,0 +1,56 @@
+# Page 30028 APIV2 - Sales Orders (OnInsertRecord) and 30044 Sales Order Lines, with the Fjeld
+# extension's subscribers: duplicate check on externalDocumentNumber, auto-release.
+id: nlj4meww8n
+parent: wyb51ibopv
+name: createSalesOrder
+handles: [d6cde9w3nb, yl9wep3jj0]
+inputs:
+  - { id: j82gi551qv, name: order, model: j4uwq30pr1, required: true }
+outputs:
+  - { id: ou9x3auumd, name: created, model: j4uwq30pr1 }
+fails:
+  - { name: customerNotFound, description: no customer with this number }
+  - { name: customerBlocked, description: the customer is blocked }
+  - { name: duplicateOrder, description: "an order with this externalDocumentNumber exists (Fjeld subscriber)" }
+  - { name: itemNotFound, description: a line's item does not exist or is sales-blocked }
+  - { name: variantRequired, description: a line's item has variants and none was given }
+  - { name: orderReleased, description: "adding a line to an order that is released" }
+steps:
+  - if: adding a line to an existing order
+    then:
+      - { read: xalurnbl6g, with: order id, gets: status }
+      - if: status = Released
+        then:
+          - { fail: orderReleased }
+  - { read: d60knzplbm, with: customerNumber, gets: customer }
+  - if: customer not found
+    then:
+      - { fail: customerNotFound }
+  - if: customer.blocked = All
+    then:
+      - { fail: customerBlocked }
+  - { read: ogicbd970k, with: "Order, externalDocumentNumber", gets: existing order }
+  - if: existing order found
+    then:
+      - { fail: duplicateOrder }
+  - { write: ejg622chhy, note: "insert; no. from series SO; defaults from customer; location CENTRAL, or the store of the first line's locationId for click and collect; dimensions CHANNEL, STORE, COUNTRY" }
+  - each: line in salesOrderLines
+    do:
+      - { read: edi8izn1qa, with: lineObjectNumber, gets: item }
+      - if: item missing or salesBlocked
+        then:
+          - { fail: itemNotFound }
+      - { read: qokf6rurzg, with: "item, itemVariantId", gets: variant }
+      - if: item has variants and none given
+        then:
+          - { fail: variantRequired }
+      - { call: vxudxdo5ae, with: "item, variant, customer price group, currency, quantity, orderDate", gets: "unitPrice, lineDiscountPct" }
+      - if: line.unitPrice given
+        then:
+          - { note: "keep the Commerce checkout price; log a warning when it differs from the price list by more than 0.01" }
+      - { write: i09cr44p1c, note: "insert; VAT %, amounts, dimensions" }
+  - { call: nrqpqup513, with: "Order, no.", gets: header }
+  - if: release fails
+    then:
+      - { note: "order stays Open (API status Draft); the release job retries" }
+  - { return: created }

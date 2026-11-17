@@ -1,0 +1,13 @@
+# Trees: fjeld_web (navigation: men > jackets > shell jackets ...), fjeld_stores, fjeld_print.
+id: tzpgjz8l4e
+ownedBy: mt2wjcx7nj
+storedIn: r1xvgi7bie
+name: Category
+fields:
+  - { id: o2peddxqos, name: code, type: string, pk: true, required: true }
+  - { id: dfdr80vx1j, name: parent, type: string, nullable: true, ref: o2peddxqos, constraints: [null on a tree root] }
+  - { id: vafkbhvge2, name: position, type: int, constraints: [among siblings, with with_position=true] }
+  - { id: o5e94o42uo, name: labels, type: "map<locale, string>" }
+  - { id: d8cwgy753w, name: updated, type: datetime }
+indexes:
+  - { id: zqwzamp6kq, name: ix_category_parent, fields: [dfdr80vx1j], unique: false }

@@ -1,0 +1,19 @@
+# Grain: one row per returned item line.
+id: tb9l4es1im
+ownedBy: d0jfpet25d
+storedIn: d0jfpet25d
+name: fact_returns
+fields:
+  - { id: eusix20tkh, name: return_key, type: string, pk: true, from: [a1hyum61n2] }
+  - { id: ezfv4g5sd8, name: order_line_key, type: string, nullable: true, ref: dkmk0gy7ds, from: [mkodltrd4j] }
+  - { id: aa0lgei4a7, name: date_key, type: int, required: true, ref: bgzdmszmqm, from: [xr1ffxpnj7], derived: yyyyMMdd }
+  - { id: haj20czm37, name: sale_date_key, type: int, nullable: true, ref: bgzdmszmqm, from: [ljedf5umlv], derived: "the sale's date, to count returns against the period sold" }
+  - { id: aekjyis983, name: customer_sk, type: bigint, required: true, ref: asdpx9s4yn, from: [nqorc93yfb], derived: "the sale's customer version; -1 if unknown" }
+  - { id: z3rxopbgmm, name: product_sk, type: bigint, required: true, ref: jqish8v510, from: [ss5m2zki57, xr1ffxpnj7, jqish8v510, tx898qausm, r91vbltkz1, uhjdwtppni], derived: version valid at returned_at }
+  - { id: n77cs8xr1l, name: channel_sk, type: int, required: true, ref: ha5ot8uh2x, from: [lf9qf4geax, ha5ot8uh2x] }
+  - { id: jwwjd3a7hw, name: store_sk, type: int, required: true, ref: b9k4oabttz, from: [efq89pkgep, b9k4oabttz], derived: "-1 for returns to the warehouse" }
+  - { id: pp7i30vz5g, name: reason_code, type: string, nullable: true, from: [vyn8e6c3n3] }
+  - { id: dr4xiked1d, name: returned_to, type: string, required: true, from: [grm9p5zbz9] }
+  - { id: yq5ipar1ye, name: quantity, type: int, required: true, from: [etxpl7plpj] }
+  - { id: oeekfgoe2f, name: refund_amount_dkk, type: decimal, nullable: true, from: [z6ooiptajb, z4n5h5m5uh, l5lly03zg0, qyyts7sko5], derived: "incl. VAT, at the rate on the return date" }
+  - { id: cp9ft1ml18, name: days_to_return, type: int, nullable: true, from: [xr1ffxpnj7, pxn20ueycc] }

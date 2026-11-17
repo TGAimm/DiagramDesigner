@@ -1,0 +1,21 @@
+id: zyvdhbdmff
+parent: i282x7cdne
+name: findStores
+handles: [dj29s9w4t1]
+inputs:
+  - { id: h0lj09hi36, name: near, type: string, nullable: true }
+  - { id: flm8x907e6, name: sku, type: string, nullable: true }
+outputs:
+  - { id: p6t52hjwze, name: stores, model: r5c8x8etbs, many: true }
+steps:
+  - { call: cylyc9xl5m, gets: session }
+  - { call: ekgirua9an, with: "client_credentials of the BFF API client (cached)", gets: serverToken }
+  - { call: b7kdjegmu4, with: "where key starts with store- and roles contains InventorySupply and address.country = the session's country, limit 100", gets: channels }
+  - { call: eyk06ixi2l, with: "(cached 1 h), matched to the channels by storeNo", gets: posStores }
+  - if: sku
+    then:
+      - { call: nliulbw7pi, with: "sku = sku and supplyChannel in the store channels", gets: entries }
+  - if: near
+    then:
+      - { note: "sort by distance to near (postal code centroids are a table in code)" }
+  - { return: stores }

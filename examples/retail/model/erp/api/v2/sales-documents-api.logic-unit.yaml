@@ -1,0 +1,48 @@
+# Pages 30028 APIV2 - Sales Orders (read, shipAndInvoice), 30059 Sales Shipments,
+# 30012 Sales Invoices (+ pdfDocument), 30038 Sales Credit Memos
+id: xkcj2zsdx9
+parent: wyb51ibopv
+name: salesDocumentsApi
+handles: [u0yqufq4ls, u1dn6w0tne, x4csr5f2bm, eznh46l51c, l95pgmxptg, h3vvganqxl, duhy39eipd, wr7fna19p0, ssysvkxgsk]
+inputs:
+  - { id: c0ukrtuyoy, name: id, type: guid, nullable: true }
+  - { id: lixvoj9xz8, name: filter, type: string, nullable: true }
+outputs:
+  - { id: n12wcpc2rb, name: orders, model: j4uwq30pr1, many: true }
+  - { id: dfs8j223rr, name: invoices, model: y4izto0ijr, many: true }
+fails:
+  - { name: notFound, description: no document with this id }
+  - { name: postingFailed, description: shipAndInvoice raised a posting error }
+steps:
+  - if: shipAndInvoice
+    then:
+      - { read: ejg622chhy, with: id, gets: order }
+      - if: not found
+        then:
+          - { fail: notFound }
+      - { call: qnj97ja5i1, with: order.no, gets: shipment }
+      - { call: phjm212yw2, with: order.no, gets: invoice }
+      - if: either posting fails
+        then:
+          - { fail: postingFailed }
+  - if: salesOrders
+    then:
+      - { read: ejg622chhy, with: "Order, id or filter", gets: headers }
+      - { read: i09cr44p1c, with: "when $expand=salesOrderLines", gets: lines }
+      - { return: orders }
+  - if: salesShipments
+    then:
+      - { read: dznaramfzx, with: "id or filter", gets: shipments }
+      - { read: hqt21ykoll, with: "shipment no., for salesShipmentLines", gets: lines }
+  - if: salesInvoices
+    then:
+      - { read: v9er9w3t9v, with: "id or filter", gets: invoices }
+      - { read: bq4wf42bqu, with: each invoice's ledger entry, gets: remainingAmount }
+      - if: pdfDocument
+        then:
+          - { read: rd7sjmorm0, with: invoice no., gets: lines }
+          - { note: "render report 1306 Standard Sales - Invoice to PDF" }
+      - { return: invoices }
+  - if: salesCreditMemos
+    then:
+      - { read: p5w0ghuarm, with: "id or filter", gets: creditMemos }

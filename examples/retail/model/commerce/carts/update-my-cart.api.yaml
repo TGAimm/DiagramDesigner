@@ -1,0 +1,18 @@
+id: r8uoh3ve5d
+parent: b1ptklldw3
+name: Update my cart
+method: POST
+path: /{projectKey}/me/carts/{id}
+auth: "bearer (customer or anonymous session token, manage_my_orders)"
+params:
+  - { id: cmzdzgcw2p, name: projectKey, in: path, type: string, description: fjeld-prod }
+  - { id: s7dyevespu, name: id, in: path, type: uuid }
+request:
+  fields:
+    - { id: lw6es0xg7p, name: version, type: long, required: true, to: [q4kzs22wi1] }
+    - { id: bhlq0r23nl, name: actions, model: hbavag5dcj, many: true, required: true, description: "My-cart subset: no setCustomerId, no price overrides" }
+responses:
+  - { status: 200, model: w4i82sypi6 }
+  - { status: 400, description: "InvalidOperation, DiscountCodeNonApplicable" }
+  - { status: 404, description: not the token's cart }
+  - { status: 409, description: ConcurrentModification }

@@ -1,0 +1,13 @@
+# Body and answer are application/vnd.akeneo.collection+json: one JSON object per line.
+id: zcadzbnpxd
+parent: vsn79avah8
+name: Update or create several products
+method: PATCH
+path: /api/rest/v1/products-uuid
+auth: bearer
+request: { model: qitb6ezis6, many: true, omit: [zvcn8bc68d, m812a2j24z, jgbpew18pm], contentType: application/vnd.akeneo.collection+json }
+responses:
+  - { status: 200, model: i47cwqndtt, many: true, contentType: application/vnd.akeneo.collection+json, description: one line per input line; failures are per line }
+  - { status: 401, description: Missing or expired token }
+  - { status: 413, description: More than 100 lines }
+  - { status: 415, description: Content-Type is not application/vnd.akeneo.collection+json }

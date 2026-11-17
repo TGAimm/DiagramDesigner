@@ -1,0 +1,29 @@
+id: nrnhibse1t
+ownedBy: oumwpbl70c
+storedIn: rrg5e7natg
+name: Customer
+tags: [pii]
+fields:
+  - { id: zhf6a5r56z, name: id, type: uuid, pk: true }
+  - { id: t2o3kvzaxn, name: version, type: long, required: true }
+  - { id: k4m7zon4rw, name: key, type: string, nullable: true }
+  - { id: odn7tdqw8z, name: customerNumber, type: string, nullable: true, constraints: [set once; = ERP customer no. after first order] }
+  - { id: c558p8igta, name: externalId, type: string, nullable: true, from: [pyd47ra3l8], constraints: [not enforced unique by commercetools] }
+  - { id: ehf2zs4sc2, name: email, type: string, required: true, constraints: [unique per project (case-insensitive)] }
+  - { id: t3mf7j2rez, name: firstName, type: string, nullable: true }
+  - { id: q0hnw17jwj, name: lastName, type: string, nullable: true }
+  - { id: x7n98o1bcz, name: dateOfBirth, type: date, nullable: true }
+  - { id: y7vf6ytrw2, name: addresses, model: mrllytyew7, many: true }
+  - { id: il17i6fjed, name: defaultShippingAddressId, type: string, nullable: true, ref: bk4lcoskkv }
+  - { id: fh8lpd7ms4, name: defaultBillingAddressId, type: string, nullable: true, ref: bk4lcoskkv }
+  - { id: wzod3l5teg, name: customerGroup, type: uuid, nullable: true, ref: dosb9gjm5q }
+  - { id: zfwig3x4mh, name: isEmailVerified, type: bool, required: true }
+  - { id: rtt1jqp5f3, name: locale, type: string, nullable: true }
+  - { id: z295ttgha6, name: stores, type: string, many: true, ref: vomy6kr4nq, constraints: [empty = global customer] }
+  - { id: qo386yhe4z, name: authenticationMode, type: string, required: true, constraints: ["one of: Password, ExternalAuth; Fjeld uses ExternalAuth"] }  # GAP: enum
+  - { id: bsxztnetv1, name: createdAt, type: datetime, required: true }
+  - { id: bi199ydzlj, name: lastModifiedAt, type: datetime, required: true }
+indexes:
+  - { id: oqqczbanpx, name: ux_customer_email, fields: [ehf2zs4sc2], unique: true }
+  - { id: ia0m0cc8hw, name: ix_customer_external_id, fields: [c558p8igta] }
+  - { id: w4lq5xs163, name: ux_customer_number, fields: [odn7tdqw8z], unique: true }

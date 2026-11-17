@@ -1,0 +1,13 @@
+id: tdh6mnjmty
+parent: ktxxdlpyeb
+name: Get a record
+method: GET
+path: /1/indexes/{indexName}/{objectID}
+auth: "X-Algolia-Application-Id + X-Algolia-API-Key (search-only key)"
+params:
+  - { id: i92l02h9ja, name: indexName, in: path, type: string }
+  - { id: fgxv0gc4n7, name: objectID, in: path, type: string }
+  - { id: sgckzedv53, name: attributesToRetrieve, in: query, type: string, required: false, description: comma-separated }
+responses:
+  - { status: 200, model: s08z88xp3c, omit: [g3ojlcghpt] }
+  - { status: 404, description: ObjectID does not exist }

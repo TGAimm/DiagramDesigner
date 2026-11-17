@@ -1,0 +1,7 @@
+id: mleccno0ev
+name: Integration
+meta: { kind: own-built, platform: "Azure (Service Bus, Functions, SQL, Storage)", owner: integration-team, repo: fjeld-integration-hub, region: "Sweden Central" }
+links:
+  - { label: Azure Service Bus docs, url: https://learn.microsoft.com/azure/service-bus-messaging/ }
+  - { label: Azure Functions docs, url: https://learn.microsoft.com/azure/azure-functions/ }
+  - { label: Blob storage SFTP support, url: https://learn.microsoft.com/azure/storage/blobs/secure-file-transfer-protocol-support }

@@ -1,0 +1,25 @@
+# GAP: response projection - a hit is the record cut to attributesToRetrieve (set per index and
+# per query) plus _highlightResult; Hit lists the attributes Fjeld retrieves.
+id: djlyk8w84b
+ownedBy: w84no1i22u
+name: Hit
+fields:
+  - { id: qhx0jm0xrt, name: objectID, type: string, required: true, from: [kfdn4jaxfq] }
+  - { id: pv0uzzlpyy, name: sku, type: string, required: true, from: [urqg0238zp] }
+  - { id: vyuxdh8hyg, name: styleCode, type: string, required: true, from: [cfs3fks2vf] }
+  - { id: cxwt752s0m, name: name, type: string, required: true, from: [jq9a3ellmv] }
+  - { id: uqrvgz0woe, name: brand, type: string, required: true, from: [pnt2qzakc1] }
+  - { id: e0m3ra8u57, name: hierarchicalCategories.lvl2, type: string, many: true, from: [dkp753e0j6] }
+  - { id: f2q935sala, name: colour, type: string, nullable: true, from: [no1c4i3mx9] }
+  - { id: a1f1vcyns7, name: colourCode, type: string, nullable: true, from: [p1yvntkvk5] }
+  - { id: k68x6oreha, name: sizesAvailable, type: string, many: true, from: [xpd602u5jh] }
+  - { id: pme3mwc06w, name: price, type: decimal, required: true, from: [rl8dsmbon0] }
+  - { id: wtvo6qjtn5, name: salePrice, type: decimal, nullable: true, from: [tj8zjtwuip] }
+  - { id: n8pf4sgs9r, name: currency, type: string, required: true, from: [g51ejrtye3] }
+  - { id: spwc8hnu4k, name: discountPercent, type: int, nullable: true, from: [m0z3k6h9j2] }
+  - { id: ipbp42nmnb, name: inStock, type: bool, required: true, from: [dp4veqfmxp] }
+  - { id: pgjgnqk3p7, name: newArrival, type: bool, required: true, from: [dvc7yy6w3y] }
+  - { id: z08xgaucw8, name: imageUrl, type: string, nullable: true, from: [wg1b9np9uw] }
+  - { id: vzucckt8es, name: url, type: string, required: true, from: [sfz9ffy0qd] }
+  - { id: o8z64vj39s, name: _highlightResult, type: "map<attribute, {value, matchLevel, matchedWords[]}>", required: true, from: [jq9a3ellmv, pnt2qzakc1], derived: "matched words wrapped in <em>" }
+  - { id: anzwvps8g5, name: _rankingInfo, type: json, nullable: true, from: [nf4q71v5os, dp4veqfmxp], derived: "per-criterion scores; only with getRankingInfo" }

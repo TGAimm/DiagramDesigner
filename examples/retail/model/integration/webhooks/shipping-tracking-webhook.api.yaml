@@ -1,0 +1,14 @@
+# Endpoint of the Shipping webhook subscription (action tracking_status_changed).
+id: yo31h6b52c
+parent: ft040pevh9
+name: Receive tracking update
+method: POST
+path: /webhooks/shipping/tracking
+auth: "X-Signature = HMAC-SHA256(body, subscription key)"
+params:
+  - { id: l5hs87gk2y, name: X-Signature, in: header, type: string, required: true }
+request: { model: auv8rnp3yb }
+responses:
+  - { status: 200, description: Received }
+  - { status: 401, description: Bad signature }
+  - { status: 422, description: "order_id is not a known webshop order (logged; Shipping does not retry a 4xx)" }

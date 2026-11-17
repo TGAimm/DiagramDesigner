@@ -1,0 +1,14 @@
+# GAP: pagination envelope.
+id: hsad5i7kdo
+parent: vsn79avah8
+name: List attributes
+method: GET
+path: /api/rest/v1/attributes
+auth: bearer
+params:
+  - { id: e9cc3dn26g, name: search, in: query, type: json, required: false, description: "e.g. code IN, type IN, updated >" }
+  - { id: riw1h49ozr, name: page, in: query, type: int, required: false }
+  - { id: qgdj9g3h1m, name: limit, in: query, type: int, required: false, description: max 100 }
+responses:
+  - { status: 200, model: hjsj87ps7y, many: true }
+  - { status: 401, description: Missing or expired token }

@@ -1,0 +1,10 @@
+id: tqdi590eeu
+ownedBy: f6x7dhgzlz
+name: Delivery
+fields:
+  - { id: ic7xjch277, name: id, type: uuid, required: true }
+  - { id: ayvfbrw0vn, name: key, type: string, nullable: true, constraints: [= WMS shipment no.] }
+  - { id: g2hx7gykdv, name: items, type: "{id: lineItemId, quantity}", many: true }
+  - { id: fo4sb693cz, name: parcels, model: fdebp4wyz9, many: true }
+  - { id: virudvyqoo, name: address, model: mrllytyew7, nullable: true }
+  - { id: zss6mp6153, name: createdAt, type: datetime, required: true }

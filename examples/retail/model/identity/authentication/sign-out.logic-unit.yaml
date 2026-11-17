@@ -1,0 +1,11 @@
+id: xf7w05bhue
+parent: z4a8fcfwai
+name: signOut
+handles: [owbrjdfiit]
+inputs:
+  - { id: k73o0oeka7, name: post_logout_redirect_uri, type: string, nullable: true }
+outputs: []
+steps:
+  - { note: clear the tenant session cookie }
+  - { read: yrqt9pcc7g, with: id_token_hint's aud, gets: "app, to check the redirect is registered" }
+  - { note: redirect to post_logout_redirect_uri; refresh tokens stay valid until revoked }

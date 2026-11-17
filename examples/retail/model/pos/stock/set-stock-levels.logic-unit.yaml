@@ -1,0 +1,25 @@
+id: gte2hif37b
+parent: vgv4575wz1
+name: setStockLevels
+handles: [xkx47o5yrw]
+inputs:
+  - { id: vyse8b697t, name: storeNo, type: string, required: true }
+  - { id: houc1puovs, name: asOf, type: datetime, required: true }
+  - { id: sl41sm5v4t, name: levels, type: "{sku, qtyOnHand}", many: true, required: true }
+outputs:
+  - { id: i59ltykkls, name: changed, type: int }
+fails:
+  - { name: unknownStore, description: no store with this storeNo (404) }
+steps:
+  - { read: ta0yzi1b46, with: storeNo, gets: store }
+  - if: no store
+    then:
+      - { fail: unknownStore }
+  - each: level
+    do:
+      - { read: wdcm6cs4ja, with: "store, sku", gets: current }
+      - { read: xi19qutu0h, with: "store, sku, createdAt > asOf, reason sale or return", gets: till movements since }
+      - { write: zp69ptx4zg, note: "level + till movements since asOf, so sales made while ERP counted are not lost" }
+      - { write: rrjtshmqva }
+      - { write: xi19qutu0h, note: "reason set_by_integration, the difference" }
+  - { return: changed }

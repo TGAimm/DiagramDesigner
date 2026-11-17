@@ -1,0 +1,7 @@
+id: wyb51ibopv
+parent: itnba1gbhh
+name: API v2.0
+external: true
+links:
+  - { label: API v2.0 reference, url: "https://learn.microsoft.com/en-us/dynamics365/business-central/dev-itpro/api-reference/v2.0/" }
+meta: { baseUrl: "https://api.businesscentral.dynamics.com/v2.0/{tenantId}/Production", auth: "OAuth 2.0 client credentials, Entra ID app registration" }

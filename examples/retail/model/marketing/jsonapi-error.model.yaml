@@ -1,0 +1,11 @@
+id: s4w1d8x1z4
+ownedBy: n8ihwc0bzw
+name: JSON:API error
+fields:
+  - { id: lshhfcn11p, name: id, type: string, required: true }
+  - { id: rqj4bg3a05, name: status, type: int, required: true }
+  - { id: jb2knvm5d5, name: code, type: string, required: true, constraints: ["e.g. duplicate_profile, invalid, throttled"] }
+  - { id: wyj4qyd6m4, name: title, type: string, required: true }
+  - { id: buo7asdaqj, name: detail, type: string, required: true }
+  - { id: v59mw2eqwm, name: source.pointer, type: string, nullable: true, constraints: ["e.g. /data/attributes/email"] }
+  - { id: rwbygo45mo, name: meta.duplicate_profile_id, type: string, nullable: true, constraints: [only for 409 duplicate_profile] }

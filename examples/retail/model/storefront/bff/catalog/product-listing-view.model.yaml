@@ -1,0 +1,16 @@
+id: lfl06w7glo
+ownedBy: lnizoffy7m
+name: Product Listing View
+fields:
+  - { id: c6fjb42tkr, name: mode, type: string, required: true, constraints: ["one of: category, search"] }  # GAP: enum
+  - { id: lrn24b7lv1, name: title, type: string, required: true, from: [b5fnle68c8, o7h15lqnnp], derived: "the category name, or Results for <query>" }
+  - { id: z5opy072r3, name: query, type: string, nullable: true, from: [o7h15lqnnp] }
+  - { id: kfkm3oic31, name: breadcrumbs, model: dfdbfcgwae, many: true }
+  - { id: ojmbkg2fqm, name: products, model: sy8kzriu6h, many: true, from: [gofg7di4ji] }
+  - { id: q147zt198h, name: facets, model: jcf2mhioag, many: true }
+  - { id: tflgx0bofl, name: total, type: int, required: true, from: [gff96acykq] }
+  - { id: a5ez0ftfjm, name: page, type: int, required: true, from: [zhphd71abf], derived: "+ 1 (pages count from 1 in the URL)" }
+  - { id: dmk5axy08v, name: pageCount, type: int, required: true, from: [blbnf3usqk] }
+  - { id: tzyesqij7l, name: sort, type: string, required: true, constraints: ["one of: relevance, price-asc, price-desc, newest", "picks the index or replica queried"] }  # GAP: enum
+  - { id: jd7oi5l1g1, name: banner, type: "{url, link, alt}", nullable: true, from: [aiulg5bkro], derived: "userData of the first rule with a banner" }
+  - { id: sqzin9hqnu, name: queryID, type: string, nullable: true, from: [brq7rcl5jh], constraints: [sent with click events to Algolia Insights] }

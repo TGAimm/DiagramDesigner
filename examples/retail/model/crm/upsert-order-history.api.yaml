@@ -1,0 +1,14 @@
+id: rni3b5uac0
+parent: crcmvfmp2d
+name: Upsert order history
+method: PATCH
+path: /api/data/v9.2/fjeld_orderhistories(fjeld_ordernumber='{orderNumber}')
+auth: OAuth 2.0 bearer (Entra ID app registration)
+params:
+  - { id: tep23pz26z, name: orderNumber, in: path, type: string }
+request:
+  model: w8v3bf1ojm
+  omit: [j2wyc1gm9s, ix5hz1aa0h, do7q5k7yj2]
+responses:
+  - { status: 204, description: Created or updated }
+  - { status: 400, model: blqvorzt9x }

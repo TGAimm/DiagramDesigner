@@ -1,0 +1,24 @@
+id: kf6k9rb5zk
+parent: ogmj497j15
+name: onPay
+inputs: []
+outputs: []
+fails:
+  - { name: declined, description: "card declined or authentication failed: the message shows under the Payment Element" }
+steps:
+  - flag: p9sg006xy9
+    on:
+      - { call: hnssihbdth, gets: payment }
+      - { note: "mount the Payment Element with payment.clientSecret (card, Klarna, MobilePay)" }
+      - { call: k3slo13dhk, with: "stripe.confirmPayment from the browser: publishable key, client_secret, return_url = payment.returnUrl", gets: intent }
+      - if: intent.status is requires_action
+        then:
+          - { note: "Stripe.js shows 3-D Secure, or redirects to Klarna or MobilePay and back to returnUrl, which runs the rest" }
+      - if: an error came back
+        then:
+          - { fail: declined }
+      - { call: p24mectfxj, with: payment.paymentIntentId, gets: order }
+      - { note: "navigate to /order/<orderNumber>; on 409 back to the cart with the reason" }
+    off:
+      - { call: x153xmm4du, gets: redirectUrl }
+      - { note: "window.location = redirectUrl (Stripe-hosted page); Stripe returns the shopper to /api/checkout/return" }

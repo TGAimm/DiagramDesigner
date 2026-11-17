@@ -1,0 +1,27 @@
+id: r46tvyl99q
+parent: t6al4kcu16
+name: lookupOrder
+handles: [noq9nb6lng]
+inputs:
+  - { id: pquevhzv06, name: orderNumber, type: string, required: true }
+  - { id: omfvqcy7ib, name: email, type: string, required: true }
+outputs:
+  - { id: r3s211op2a, name: order, model: bdri29g04e }
+  - { id: rz96lqwmx7, name: policy, model: se76htodri }
+fails:
+  - { name: notFound, description: no order with that number and e-mail }
+  - { name: notShipped, description: nothing has shipped yet; cancel instead }
+steps:
+  - { call: ekgirua9an, with: "client_credentials of the portal's API client (cached)", gets: token }
+  - { call: fxxz5v03t0, with: orderNumber, gets: order }
+  - if: no order, or its e-mail differs (case-insensitive)
+    then:
+      - { fail: notFound }
+  - if: shipped_at is empty
+    then:
+      - { fail: notShipped }
+  - { read: se76htodri, with: order.country, gets: policy }
+  - { read: bej5xqj7kg, with: "order's line item ids, returns not rejected or cancelled", gets: quantities already returned }
+  - { note: "returnable quantity per line; lines in non_returnable_categories get 0" }
+  - { return: order }
+  - { return: policy }

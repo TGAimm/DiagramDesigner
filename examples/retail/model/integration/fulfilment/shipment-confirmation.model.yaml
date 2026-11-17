@@ -1,0 +1,14 @@
+# SHIPCONF rows grouped per order and parcel: one ERP shipment confirmation each.
+id: jbpjxdpxlr
+ownedBy: myr8ju3xsr
+name: ShipmentConfirmation
+fields:
+  - { id: hmc1uq8tx2, name: orderNo, type: string, required: true, from: [e7xle4v47a] }
+  - { id: ujdqwjek3u, name: customerRef, type: string, nullable: true, from: [lfr5843pxs] }
+  - { id: fp0tips1a1, name: parcelNo, type: string, required: true, from: [mccfkpq64k] }
+  - { id: lczsvgzy39, name: shipDate, type: date, required: true, from: [zsgp3vkwox], derived: "date part, Europe/Copenhagen" }
+  - { id: qqg2eaqz4r, name: shippingAgentCode, type: string, required: true, from: [v1sctmofxm], derived: "gls > GLS, postnord > POSTNORD, bring > BRING, dhl > DHL" }
+  - { id: lwkoomwpvx, name: trackingNo, type: string, required: true, from: [ws7pqfpvzk] }
+  - { id: gvc43g0qra, name: trackingUrl, type: string, nullable: true, from: [cp5sif7tgk] }
+  - { id: mwpqsgs0j8, name: shippingShipmentId, type: int, required: true, from: [retop3ymlw] }
+  - { id: soubufz8f0, name: lines, model: u0efrijt7p, many: true, required: true, constraints: ["rows with qty_shipped 0 are left out: the ERP line stays open as backorder"] }

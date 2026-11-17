@@ -1,0 +1,14 @@
+# The POS posts the pickup order whenever a click & collect order moves to ready or collected.
+id: i7wwl5qj48
+parent: ft040pevh9
+name: Receive pickup order event
+method: POST
+path: /webhooks/pos/pickup-orders
+auth: "API key (x-functions-key, one per POS tenant)"
+params:
+  - { id: d9jkx8gkiv, name: x-functions-key, in: header, type: string, required: true }
+request: { model: n7gkyqvsz0, pick: [z5eknvpmx3, lqil8hi4vu, mbocbn5b8k, m7rbanwl2c, x0se6qa8q8, dus5z1kcou, hxi0xcl9b0, ws02m2o6k1, fwoa7zws96] }
+responses:
+  - { status: 202, description: Accepted }
+  - { status: 401, description: Missing or wrong key }
+  - { status: 404, description: orderNumber is not a known click & collect order }

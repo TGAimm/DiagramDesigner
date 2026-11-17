@@ -1,0 +1,15 @@
+id: l3fnnvgsvg
+parent: wyb51ibopv
+name: List customers
+method: GET
+path: /api/v2.0/companies({companyId})/customers
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: vj9xuvy94p, name: companyId, in: path, type: guid }
+  - { id: hy36yc7c8s, name: $filter, in: query, type: string, required: false, description: "e.g. email eq 'a@b.dk' or lastModifiedDateTime gt 2026-11-17T08:00:00Z" }
+  - { id: ca5ql5i3k7, name: $top, in: query, type: int, required: false }
+  - { id: s4j6xjggvn, name: $skip, in: query, type: int, required: false }
+responses:
+  # GAP: OData collection envelope { value: [...], @odata.nextLink } written as many: true
+  - { status: 200, model: ocn983ouak, many: true }
+  - { status: 401, description: Unauthorized }

@@ -1,0 +1,37 @@
+# Table 27 Item: one item per style; sizes and colours are variants. Item no. = PIM product
+# model code, so the PIM and Commerce can match it.
+id: edi8izn1qa
+ownedBy: x2x0s3utl1
+storedIn: q43aprn5l0
+name: Item
+fields:
+  - { id: yu6wdxgb8q, name: no, type: string, pk: true, constraints: [max 20, "PIM product model code, e.g. JKT-1042"] }
+  - { id: vyrbqcg8xn, name: systemId, type: guid, required: true }
+  - { id: hu1yuj53fb, name: description, type: string, required: true, constraints: [max 100] }
+  - { id: utyqejmnov, name: description2, type: string, constraints: [max 50] }
+  - { id: ym2tzk5x1l, name: type, type: string, required: true, constraints: ["one of: Inventory, Service, Non-Inventory"] }   # GAP: enum
+  - { id: s6l1z5i5rc, name: baseUnitOfMeasure, type: string, required: true, constraints: ["PCS"] }
+  - { id: u7ggrrukee, name: itemCategoryCode, type: string, ref: rhw9pqyx42 }
+  - { id: qcfiyg2wwe, name: unitPrice, type: decimal, constraints: ["DKK incl. VAT fallback; real prices sit on price lists"] }
+  - { id: ytq7la5syd, name: unitCost, type: decimal, from: [p18extlk0n, s6zz5v7v7t], derived: "average cost, updated by adjust cost" }
+  - { id: o6obry2lyy, name: costingMethod, type: string, constraints: ["one of: FIFO, LIFO, Specific, Average, Standard"] }   # GAP: enum
+  - { id: hb30avb45w, name: genProdPostingGroup, type: string, required: true, ref: qjo9nlj1of }
+  - { id: vnuzc1n5nq, name: vatProdPostingGroup, type: string, required: true, ref: w1vficcjeb }
+  - { id: xc6wogmxdu, name: inventoryPostingGroup, type: string, required: true, constraints: ["one of: APPAREL, FOOTWEAR, EQUIPMENT"] }   # GAP: enum
+  - { id: kxtlmorg2h, name: gtin, type: string, nullable: true, constraints: ["style-level GTIN; variant GTINs on Item Variant"] }
+  - { id: aoq0k2e4ib, name: vendorNo, type: string, ref: bu20ykl7b9 }
+  - { id: w3t0r7ewhc, name: vendorItemNo, type: string }
+  - { id: wcxdbwptf4, name: netWeight, type: decimal }
+  - { id: fikgeby52d, name: tariffNo, type: string, constraints: ["HS code, for NO customs"] }
+  - { id: ae7jaj0bua, name: countryRegionOfOriginCode, type: string, nullable: true, constraints: ["ISO 3166-1 alpha-2"] }
+  - { id: g03kcyrlbb, name: itemTrackingCode, type: string, nullable: true, constraints: ["LOTALL for lot-tracked items (gas canisters, fuel), empty otherwise"] }
+  - { id: a6slwq674z, name: fjeldHazardous, type: bool, constraints: ["table extension field; dangerous goods (gas canisters, fuel)"] }
+  - { id: lut5pnjkad, name: blocked, type: bool }
+  - { id: ltw7oe7c42, name: salesBlocked, type: bool }
+  # GAP: FlowFilter: inventory is a sum whose result depends on filters the caller sets (Location Filter, Variant Filter)
+  - { id: wpvsicailg, name: inventory, type: decimal, stored: false, from: [s6zz5v7v7t], derived: "FlowField: sum of item ledger entry quantity within Location Filter and Variant Filter" }
+  - { id: mvcxjualzc, name: systemModifiedAt, type: datetime, required: true }
+indexes:
+  - { id: b79s1o4nzj, name: ux_item_systemid, fields: [vyrbqcg8xn], unique: true }
+  - { id: neluj3n5r7, name: ix_item_category, fields: [u7ggrrukee] }
+  - { id: iozra2l41s, name: ix_item_modified, fields: [mvcxjualzc] }

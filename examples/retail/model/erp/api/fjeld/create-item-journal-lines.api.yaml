@@ -1,0 +1,31 @@
+# API page 50104 FJ Item Journal Lines: stock adjustments from the nightly WMS snapshot and
+# store counts.
+id: ql8hoi10k9
+parent: efcxalw7mu
+name: Create item journal lines
+method: POST
+path: /api/fjeld/integration/v1.0/companies({companyId})/itemJournalLines
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: zny5dmzvpp, name: companyId, in: path, type: guid }
+# GAP: OData $batch: Integration sends one POST per line inside a $batch request; written as a list body
+request:
+  many: true
+  fields:
+    - { id: ghggtw00sl, name: journalBatchName, type: string, required: true, to: [glrug6nhht] }
+    - { id: jmkv8xdiou, name: entryType, type: string, required: true, to: [ayu8jwm2nv], description: "Positive Adjmt. or Negative Adjmt." }
+    - { id: wfzdinlzej, name: postingDate, type: date, required: true, to: [jlg7jz19mc] }
+    - { id: nfdji9a4xv, name: documentNumber, type: string, required: true, to: [t4j2eclgru] }
+    - { id: x4afvd5xn6, name: itemNumber, type: string, required: true, to: [pkl5eoms52] }
+    - { id: z0vy7pewyw, name: variantCode, type: string, to: [y1vri12bk2] }
+    - { id: qepwcceet8, name: locationCode, type: string, required: true, to: [jst1eoi6vt] }
+    - { id: x00wacxezn, name: quantity, type: decimal, required: true, to: [lc3r44vxc7] }
+    - { id: ukmar6v849, name: reasonCode, type: string, to: [gtvji6pp1q] }
+    - { id: dm5nrrc7ur, name: externalDocumentNumber, type: string, to: [mpho6roqt9] }
+responses:
+  - status: 201
+    many: true
+    fields:
+      - { id: ypxkh0140t, name: id, type: guid, from: [zlgu3auq72] }
+      - { id: stpnftua7f, name: lineNumber, type: int, from: [ft4vk0s9cu] }
+  - { status: 400, description: "BadRequest: unknown item, variant or location" }

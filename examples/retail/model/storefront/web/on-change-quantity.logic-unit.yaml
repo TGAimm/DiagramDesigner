@@ -1,0 +1,14 @@
+id: bcjb2j7eg2
+parent: gkng6vfutd
+name: onChangeQuantity
+inputs:
+  - { id: zbu7buwurp, name: lineItemId, type: uuid, required: true }
+  - { id: us8ok5p5cx, name: quantity, type: int, required: true }
+outputs: []
+steps:
+  - if: quantity is 0 (the bin icon)
+    then:
+      - { call: efyo8vr364, with: lineItemId, gets: cart }
+    else:
+      - { call: r4kyemycbn, with: "lineItemId, quantity", gets: cart }
+  - { note: "re-render totals; on 409 put the old quantity back and say how many are left" }

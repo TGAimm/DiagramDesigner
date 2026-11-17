@@ -1,0 +1,11 @@
+id: t0twn00w8a
+ownedBy: vdvywljuew
+storedIn: kulzyfespz
+name: Macro
+fields:
+  - { id: hfxf96yjow, name: id, type: int, pk: true }
+  - { id: n3hfvjg3mx, name: title, type: string, required: true, constraints: ["e.g. Returns::Label resent, Delivery::Delayed at carrier"] }
+  - { id: z2x1h7w9e8, name: active, type: bool, required: true }
+  - { id: iotneg8qfh, name: actions, type: json, required: true, constraints: ["[{field, value}]: comment_value, status, set_tags"] }
+  - { id: ta7xrj45ym, name: restriction.ids, type: int, many: true, ref: lck4mzgmuz }
+  - { id: h5k6ssamah, name: usage_7d, type: int, nullable: true }

@@ -1,0 +1,18 @@
+id: qvdp86i2vg
+parent: b1ptklldw3
+name: Update cart
+method: POST
+path: /{projectKey}/carts/{id}
+auth: "bearer (manage_orders)"
+params:
+  - { id: qcdp6z6l91, name: projectKey, in: path, type: string, description: fjeld-prod }
+  - { id: p63xqufxp6, name: id, in: path, type: uuid }
+request:
+  fields:
+    - { id: xiytpju4ig, name: version, type: long, required: true, to: [q4kzs22wi1] }
+    - { id: ewzchg86zx, name: actions, model: hbavag5dcj, many: true, required: true }
+responses:
+  - { status: 200, model: w4i82sypi6 }
+  - { status: 400, description: "InvalidOperation, MatchingPriceNotFound, DiscountCodeNonApplicable" }
+  - { status: 404, description: ResourceNotFound }
+  - { status: 409, description: ConcurrentModification }

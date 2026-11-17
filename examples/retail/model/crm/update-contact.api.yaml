@@ -1,0 +1,16 @@
+id: us5h4sj9fc
+parent: izc0a89lge
+name: Update contact
+method: PATCH
+path: /api/data/v9.2/contacts({contactid})
+auth: OAuth 2.0 bearer (Entra ID app registration)
+params:
+  - { id: j8ogt5399u, name: contactid, in: path, type: uuid }
+  - { id: xrkswwj04n, name: If-Match, in: header, type: string, required: false, description: "* to forbid create; an etag for optimistic concurrency" }
+request:
+  model: vw2khd7qyi
+  pick: [if2mlrvh1r, b590a1yfa4, uunwqf9kfu, rvejr5t3yj, dk1mji9tc5, mqnnlwxrj2, owdahbbxyv, kf7fvju1z1, ih7y93cbv2]
+responses:
+  - { status: 204, description: Updated }
+  - { status: 404, model: blqvorzt9x }
+  - { status: 412, model: blqvorzt9x, description: Etag mismatch }

@@ -1,0 +1,12 @@
+id: i468v09qbd
+parent: jzcljy1080
+name: Apply discount code
+method: POST
+path: /api/cart/discount-codes
+auth: session cookie fj_sid
+request:
+  fields:
+    - { id: rhfmwgbz6j, name: code, type: string, required: true, to: [hnm2w7w63y] }
+responses:
+  - { status: 200, model: lq4foj9308 }
+  - { status: 400, description: "unknown or expired code, or it doesn't match the cart" }

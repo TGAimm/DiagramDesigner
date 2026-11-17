@@ -1,0 +1,20 @@
+id: esk6wl37ki
+parent: f6x7dhgzlz
+name: Create order from cart
+method: POST
+path: /{projectKey}/orders
+auth: "bearer (manage_orders)"
+params:
+  - { id: ubam1wrueq, name: projectKey, in: path, type: string, description: fjeld-prod }
+request:
+  fields:
+    - { id: h2iqc9tsbm, name: cart, type: "ResourceIdentifier {id}", required: true, to: [j0hx4rd1qc] }
+    - { id: dvck8pfw6c, name: version, type: long, required: true, description: the cart's version, to: [q4kzs22wi1] }
+    - { id: b45nobptmo, name: orderNumber, type: string, to: [lulkapcaa0] }
+    - { id: fjp4b4p2qo, name: orderState, type: string, description: defaults to Open, to: [eg3umbi5el] }
+    - { id: dizn5e5dyy, name: shipmentState, type: string, to: [r29wqfepvb] }
+    - { id: wq6qp4tm9w, name: paymentState, type: string, to: [b0edsryzw7] }
+responses:
+  - { status: 201, model: g5tcad7xx0 }
+  - { status: 400, description: "OutOfStock, PriceChanged, DuplicateField (orderNumber), InvalidOperation (cart not Active), MatchingPriceNotFound" }
+  - { status: 409, description: ConcurrentModification (cart version is stale) }

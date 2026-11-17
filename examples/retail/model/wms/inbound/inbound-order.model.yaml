@@ -1,0 +1,19 @@
+id: rqh29xdiae
+ownedBy: p6h0yiqcjm
+storedIn: ka6mzbfc7x
+name: Inbound order (ASN)
+fields:
+  - { id: iijmlls7re, name: id, type: int, pk: true }
+  - { id: isvzap7pqa, name: asnNo, type: string, required: true, from: [kjz7xed0nq] }
+  - { id: pdhigx7vv4, name: supplierNo, type: string, required: true, from: [mfubewjq17] }
+  - { id: vvadjomsii, name: supplierName, type: string, required: true, from: [cxjr2ki90u] }
+  - { id: ltdi2nlxro, name: expectedDate, type: date, required: true, from: [fevcl0s2il] }
+  - { id: go59i7d3zc, name: containerNo, type: string, nullable: true, from: [ndg2aikq97] }
+  # GAP: enum
+  - { id: dghg7wytkh, name: status, type: string, required: true, constraints: ["one of: expected, receiving, received, closed"] }
+  - { id: i4o8ihl200, name: lines, model: zdgllbeptr, many: true, required: true }
+  - { id: ik0x1t8orj, name: createdAt, type: datetime, required: true }
+  - { id: k90ohdlih6, name: closedAt, type: datetime, nullable: true }
+indexes:
+  - { id: uquyr0a0fa, name: ux_inbound_asn, fields: [isvzap7pqa], unique: true }
+  - { id: ujwba2s1aw, name: ix_inbound_status_date, fields: [dghg7wytkh, ltdi2nlxro] }

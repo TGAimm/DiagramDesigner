@@ -1,0 +1,9 @@
+id: fedx59417d
+ownedBy: bez4ea9raq
+storedIn: kqjludw0r4
+name: phonecall
+fields:
+  - { id: ymz8x0oo5h, name: activityid, type: uuid, pk: true, ref: bu7y6rgq9y }
+  - { id: nr6sq76zeq, name: phonenumber, type: string, nullable: true }
+  - { id: upar7mv834, name: directioncode, type: bool, required: true, constraints: [true = outgoing] }
+  - { id: a6z0k6thdr, name: actualdurationminutes, type: int, nullable: true, constraints: [min 0] }

@@ -1,0 +1,19 @@
+# Daily stock per sku and location: the 3PL warehouse from the WMS STOCK file, the stores and the
+# ERP's own view of the warehouse from ERP inventory by location.
+# GAP: union lineage - qty_on_hand comes from the WMS file for location NORDLAGER and from ERP
+# for the stores; nothing says which rows come from which source.
+id: zqwb4ovyun
+ownedBy: c9pk2gmf7l
+storedIn: c9pk2gmf7l
+name: stock_snapshot
+fields:
+  - { id: ik8j05vo2m, name: snapshot_date, type: date, pk: true, from: [s8xcn1woa4, qrhjj8q80r], derived: "date in Europe/Copenhagen" }
+  - { id: yrbcff3ejc, name: location_code, type: string, pk: true, from: [mzki1xbkkw], derived: "ERP location code; NORDLAGER for WMS rows" }
+  - { id: m81agd62a1, name: sku, type: string, pk: true, from: [fcf3n4f44b, zp3ebjhphh, dgpxbdtci0], derived: "item number (+ '-' + variant code when there is one)" }
+  - { id: c4985zm4ee, name: source_system, type: string, required: true, constraints: ["one of: wms, erp"] } # GAP: enum
+  - { id: nbt6jzvjtw, name: qty_on_hand, type: decimal, required: true, from: [nqot558vsa, h6zxxpl90w] }
+  - { id: rsx524spss, name: qty_allocated, type: decimal, required: true, from: [rbzggxcga2, tccqc4ic4r] }
+  - { id: c6rkg2bddq, name: qty_blocked, type: decimal, required: true, from: [jl6rns7d3q], derived: 0 for stores }
+  - { id: kv3z05120s, name: qty_available, type: decimal, required: true, from: [fh633jq4jj, na9o9ple1z] }
+  - { id: bxp75qhwyv, name: erp_qty_on_hand, type: decimal, nullable: true, from: [h6zxxpl90w, mzki1xbkkw], derived: "ERP's figure for the same sku and location (NORDLAGER) to show the variance" }
+  - { id: kw8mp35uyx, name: store_key, type: string, nullable: true, ref: d3vg1yf3fk, from: [fvr4fq2kkc, d3vg1yf3fk], derived: store whose ERP location this is }

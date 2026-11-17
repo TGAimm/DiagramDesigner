@@ -1,0 +1,11 @@
+id: svcw9dcoel
+parent: xi92dufx8c
+name: Delete user
+method: DELETE
+path: /v1.0/users/{id}
+auth: bearer (app-only Graph token, User.ReadWrite.All)
+params:
+  - { id: k95okojd93, name: id, in: path, type: uuid }
+responses:
+  - { status: 204, description: Soft-deleted; restorable for 30 days }
+  - { status: 404, description: Request_ResourceNotFound }

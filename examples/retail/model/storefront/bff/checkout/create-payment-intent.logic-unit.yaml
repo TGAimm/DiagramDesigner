@@ -1,0 +1,24 @@
+id: d865fifb5m
+parent: a2x6k1ux7z
+name: createPaymentIntent
+handles: [hnssihbdth]
+when: { flag: p9sg006xy9, is: on }
+inputs: []
+outputs:
+  - { id: v4mfe1fgic, name: payment, model: m9jojz23qq }
+fails:
+  - { name: notReady, description: "409: the checkout isn't complete" }
+steps:
+  - { call: oc9reaoski, gets: summary }
+  - if: not summary.canPay
+    then:
+      - { fail: notReady }
+  - if: the cart already has a Stripe payment
+    then:
+      - { call: sh277rgi1r, with: "amount = totalPrice.centAmount (the cart may have changed)", gets: intent }
+    else:
+      - { call: vb25x790bc, with: "amount, currency, capture_method manual, payment_method_types card klarna mobilepay, receipt_email, metadata commerce_cart_id store_country, Idempotency-Key <cartId>-<version>", gets: intent }
+      - { call: ekgirua9an, with: "client_credentials of the BFF API client (cached)", gets: serverToken }
+      - { call: ns9g2d6exx, with: "interfaceId = intent.id, amountPlanned, paymentMethodInfo paymentInterface stripe, transaction Authorization Initial", gets: payment }
+      - { call: r8uoh3ve5d, with: "addPayment payment.id", gets: cart }
+  - { return: payment }

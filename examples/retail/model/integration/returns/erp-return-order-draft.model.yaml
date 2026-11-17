@@ -1,0 +1,10 @@
+id: eaa93bksku
+ownedBy: sicmj00m5m
+name: ErpReturnOrderDraft
+fields:
+  - { id: sxda98s90q, name: externalDocumentNumber, type: string, required: true, from: [oxkce35es6] }
+  - { id: freoe2vytc, name: customerNumber, type: string, required: true, from: [j28005n5ys] }
+  - { id: ltie0cwfyh, name: originalInvoiceNumber, type: string, required: true, from: [xglupncpbb], derived: "the order's invoice holding the returned items (the latest when several)" }
+  - { id: l72doi2xou, name: returnReasonCode, type: string, required: true, from: [bdvb269494], derived: "portal reason > ERP code: too_small, too_big > SIZE; faulty > DEFECT; not_as_described > NOTASDESCR; else REGRET; the first item's when they differ" }
+  - { id: xu4mj7of36, name: locationCode, type: string, required: true, from: [rofmyenj5k], derived: "CENTRAL, or the store's location code for an in-store return" }
+  - { id: xh8giw2b1q, name: salesReturnOrderLines, model: zm3yeyn1gr, many: true, required: true, constraints: ["item no. and variant from the sku; quantity from the return item"] }

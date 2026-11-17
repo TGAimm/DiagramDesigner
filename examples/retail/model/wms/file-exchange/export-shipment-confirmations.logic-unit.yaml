@@ -1,0 +1,20 @@
+# GAP: scheduled trigger
+id: gviw2csk2v
+parent: c636znasve
+name: exportShipmentConfirmations
+meta: { schedule: "5,35 * * * *" }
+inputs: []
+outputs: []
+steps:
+  - { read: nz3evtxf52, with: "status dispatched, confirmationFile null", gets: shipments }
+  - if: no shipments
+    then:
+      - { note: "no file; the client does not want empty files" }
+    else:
+      - each: shipment
+        do:
+          - { read: zitqiyfbjs, with: shipment.orderId, gets: order }
+          - { read: hh65a8yt9w, with: order, gets: lines }
+          - { read: vvm0sb8vdb, with: shipment, gets: packages }
+      - { write: rr62mqt1v6, note: "one row per line and parcel; short lines with qty_shipped 0" }
+      - { write: xy7p5uigdy }

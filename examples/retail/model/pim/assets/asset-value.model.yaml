@@ -1,0 +1,11 @@
+# e.g. media: {locale: null, channel: null, data: "1/2/3/4/a1b2_FJ-JKT-1042-RED-1.jpg"}, alt_text per locale.
+# GAP: embedded JSON column - stored in the asset's value_collection JSON.
+id: lxx6qjxrva
+ownedBy: t9ah36fepl
+name: Asset Value
+fields:
+  - { id: wgeulvlf6z, name: attribute, type: string, required: true }
+  - { id: cmqjretkad, name: locale, type: string, nullable: true, ref: pjdrglpirc }
+  - { id: ims4shgxgs, name: channel, type: string, nullable: true, ref: k4nfak5v5g }
+  - { id: mndb0zlbva, name: data, type: json, required: true, constraints: [media_file values hold an Asset Media File code] }
+  - { id: xbas4lju2y, name: _links, type: json, stored: false, from: [qz9o3h3mq4], derived: "media_file values: download href /api/rest/v1/asset-media-files/{code}" }

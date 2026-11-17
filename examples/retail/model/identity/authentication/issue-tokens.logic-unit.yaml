@@ -1,0 +1,43 @@
+id: p6ywabv0pi
+parent: z4a8fcfwai
+name: issueTokens
+handles: [tekcdjdubg]
+inputs:
+  - { id: ywtpe75jvj, name: grant_type, type: string, required: true }
+  - { id: uwg232nnxq, name: client_id, type: string, required: true }
+  - { id: xidb1bwsan, name: client_secret, type: string, required: true }
+  - { id: tnxw1461a8, name: code, type: string, nullable: true }
+  - { id: vow1a7ng7p, name: code_verifier, type: string, nullable: true }
+  - { id: jz7io52dgx, name: refresh_token, type: string, nullable: true }
+outputs:
+  - { id: ixx57ikzly, name: tokens, model: douprfp1i9 }
+fails:
+  - { name: invalidClient, description: bad client_secret }
+  - { name: invalidGrant, description: "code used, expired or PKCE mismatch; refresh token revoked; user deleted or disabled" }
+steps:
+  - { read: yrqt9pcc7g, with: client_id, gets: app }
+  - if: client_secret matches no unexpired password credential
+    then:
+      - { fail: invalidClient }
+  - { read: h08kztce0w, with: "code or refresh_token, of kind grant_type", gets: grant }
+  - if: "no grant, other client, expired, redeemed or revoked"
+    then:
+      - { fail: invalidGrant }
+  - if: "grant_type is authorization_code and (redirect_uri differs or SHA256(code_verifier) != code_challenge)"
+    then:
+      - { fail: invalidGrant }
+  - { write: ekvla1lp3x, note: "now: a code is single use; an old refresh token is replaced" }
+  - { read: nozb9f6rc0, with: grant.userId, gets: user }
+  - if: user deleted or not accountEnabled
+    then:
+      - { fail: invalidGrant }
+  - { read: u24xst6unw, with: user, gets: "identity, for idp" }
+  - { read: pqkdfvra6c, gets: "tenant id, issuer" }
+  - { note: "claims mapping from the app registration's optional claims: build IdTokenClaims (email, name, given_name, family_name, ctry, commerce_customer_id, marketing_consent)" }
+  - { note: "build AccessTokenClaims for the requested scopes of api://fjeld-commerce-api" }
+  - { read: gsx2w0iahj, with: current signing key, gets: kid }
+  - { note: sign both RS256 }
+  - if: scope has offline_access
+    then:
+      - { write: h08kztce0w, note: "insert kind refresh_token, 90 days sliding" }
+  - { return: tokens }

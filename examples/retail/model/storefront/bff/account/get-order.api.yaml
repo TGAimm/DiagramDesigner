@@ -1,0 +1,11 @@
+id: ebauq9hcdi
+parent: r3utcx4a06
+name: Order
+method: GET
+path: /api/orders/{orderNumber}
+auth: session cookie fj_sid
+params:
+  - { id: tpkmfhm481, name: orderNumber, in: path, type: string }
+responses:
+  - { status: 200, model: u2alh1f0hd }
+  - { status: 404, description: "not the customer's order, or (guest) not the order just placed in this session" }

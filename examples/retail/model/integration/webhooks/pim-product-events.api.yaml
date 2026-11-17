@@ -1,0 +1,16 @@
+# Subscriber URL of the PIM Connection "integration-hub" (Akeneo Events API).
+# GAP: batch envelope - the body is {"events": [Product Event, ...]}; written as a list of the event
+id: vbxtu472o3
+parent: ft040pevh9
+name: Receive PIM product events
+method: POST
+path: /webhooks/pim/product-events
+auth: "HMAC: X-Akeneo-Request-Signature = HMAC-SHA256(timestamp.body, Connection secret)"
+params:
+  - { id: zouzzjb52t, name: X-Akeneo-Request-Signature, in: header, type: string, required: true }
+  - { id: llmbdcp7g5, name: X-Akeneo-Request-Timestamp, in: header, type: int, required: true, description: "unix seconds; older than 5 min is refused" }
+request: { model: d7xcs4r6vp, many: true }
+responses:
+  - { status: 200, description: "Accepted (answer within 0.5 s: work goes to product-changed)" }
+  - { status: 400, description: Body is not an event batch }
+  - { status: 401, description: Bad signature or stale timestamp }

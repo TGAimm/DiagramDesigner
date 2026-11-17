@@ -1,0 +1,33 @@
+# The Fjeld dedupe plugin: registered on Upsert of contact, pre-operation, synchronous.
+# GAP: data-change trigger (a Dataverse plugin step runs on a message to a table, whoever sends it; here only the upsert api sends it)
+id: ls65oybd6n
+parent: izc0a89lge
+name: upsertContact
+handles: [puwxwdjg6b]
+meta: { plugin: Fjeld.Crm.Plugins.ContactDedupe, stage: pre-operation }
+inputs:
+  - { id: zrrb348w3d, name: customerId, type: string, required: true }
+  - { id: ey52vlhs50, name: contact, model: vw2khd7qyi, required: true }
+outputs:
+  - { id: my2ia686dm, name: contact, model: vw2khd7qyi }
+fails:
+  - { name: ambiguous, description: several active contacts share the e-mail; left for an agent to merge }
+steps:
+  - { read: bxs264j33o, with: customerId, gets: existing }
+  - if: existing found
+    then:
+      - { write: vw2khd7qyi, note: update the existing contact }
+    else:
+      - { call: t9d49kjuut, with: contact, gets: matches }
+      - if: one match
+        then:
+          - { write: bxs264j33o, note: "link: set fjeld_commercecustomerid on the match (a store or service contact who now shops online)" }
+          - { write: vw2khd7qyi, note: update the matched contact with the incoming columns }
+      - if: several matches
+        then:
+          - { write: ofrzcemiw1, note: "task for the CX team: merge duplicates of this e-mail" }
+          - { fail: ambiguous }
+      - if: no match
+        then:
+          - { write: vw2khd7qyi, note: insert }
+  - { return: contact }

@@ -1,0 +1,19 @@
+id: dx0o22r92a
+parent: woc2py521s
+name: Query categories
+method: GET
+path: /{projectKey}/categories
+auth: "bearer (view_categories)"
+links: [{ label: Categories, url: "https://docs.commercetools.com/api/projects/categories" }]
+params:
+  - { id: mpila1a1w3, name: projectKey, in: path, type: string, description: fjeld-prod }
+  - { id: gtrnhlhgdz, name: where, in: query, type: string, required: false, description: "predicate, e.g. ancestors(key=\"fjeld_web\")" }
+  - { id: adenc8j6vo, name: sort, in: query, type: string, required: false, description: "e.g. orderHint asc" }
+  - { id: v6fhhdv8a3, name: limit, in: query, type: int, required: false, description: "default 20, max 500" }
+  - { id: f0fczzbed3, name: offset, in: query, type: int, required: false }
+responses:
+  - status: 200
+    fields:
+      - { id: y0qfagnu15, name: results, model: z6o1gq525i, many: true }
+      - { id: ymsc3rmv6w, name: total, type: int, nullable: true, from: [nfhbnrj8ng], derived: count of matches }
+  - { status: 400, description: InvalidInput (bad predicate) }

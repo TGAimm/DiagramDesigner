@@ -1,0 +1,14 @@
+id: je6879dtkt
+parent: dodjtgoau2
+name: Show ticket
+method: GET
+path: /api/v2/tickets/{ticket_id}
+auth: "basic (agent e-mail/token + API token) or OAuth bearer"
+params:
+  - { id: lqcr76xt7k, name: ticket_id, in: path, type: int }
+  - { id: s7syyw10mp, name: include, in: query, type: string, required: false, description: "users, groups, organizations (sideloads)" }
+responses:
+  - status: 200
+    fields:
+      - { id: c7q3zmxrv6, name: ticket, model: cd3t7bjar1 }
+  - { status: 404, model: zkkh7sjnsz, description: RecordNotFound }

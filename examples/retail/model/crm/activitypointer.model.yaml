@@ -1,0 +1,22 @@
+# GAP: table inheritance (email, phonecall and task are activity tables; activitypointer holds their shared columns and one row per activity)
+id: lz4thlcs9x
+ownedBy: bez4ea9raq
+storedIn: kqjludw0r4
+name: activitypointer
+fields:
+  - { id: bu7y6rgq9y, name: activityid, type: uuid, pk: true }
+  # GAP: enum
+  - { id: ntsmgiovex, name: activitytypecode, type: string, required: true, constraints: ["one of: email, phonecall, task"] }
+  - { id: wttfjc6ewp, name: subject, type: string, required: true, constraints: [max 400] }
+  - { id: doz164d3qv, name: description, type: string, nullable: true }
+  # GAP: polymorphic lookup (regardingobjectid can be a contact, account, lead or fjeld_orderhistory; ref names contact, the usual one)
+  - { id: zdktr6vzgt, name: regardingobjectid, type: uuid, nullable: true, ref: vw2khd7qyi }
+  - { id: a1ki279uoo, name: regardingobjecttypecode, type: string, nullable: true, constraints: ["one of: contact, account, lead, fjeld_orderhistory"] }
+  # GAP: enum
+  - { id: fkb6i37hly, name: statecode, type: string, required: true, constraints: ["one of: Open, Completed, Canceled"] }
+  - { id: ku06af3ryv, name: scheduledend, type: datetime, nullable: true }
+  - { id: dl3ytaam7w, name: actualend, type: datetime, nullable: true }
+  - { id: jd6z3kayom, name: ownerid, type: uuid, required: true }
+  - { id: n02bt5y1wp, name: createdon, type: datetime, required: true }
+indexes:
+  - { id: sov58d76uv, name: ix_activity_regarding, fields: [zdktr6vzgt] }

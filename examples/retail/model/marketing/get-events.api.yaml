@@ -1,0 +1,19 @@
+id: whp14ffgmn
+parent: dtgcjgjtna
+name: Get events
+method: GET
+path: /api/events
+auth: "Klaviyo-API-Key private key (scope events:read)"
+params:
+  - { id: s9fr3em04a, name: revision, in: header, type: string, required: true, description: "2024-10-15" }
+  - { id: lva2rkjdof, name: filter, in: query, type: string, required: false, description: "e.g. equals(metric_id,\"…\"),greater-than(datetime,2026-11-17T06:00:00Z)" }
+  - { id: ilu02pqpzn, name: include, in: query, type: string, required: false, description: "metric, profile" }
+  - { id: jd92fj8eni, name: sort, in: query, type: string, required: false, description: "datetime or -datetime" }
+  - { id: wt7wgii05g, name: "page[cursor]", in: query, type: string, required: false }
+responses:
+  - status: 200
+    description: "{ data: [{ type: event, id, attributes }], included, links: { next } }; 200 per page"
+    fields:
+      - { id: gn6oaj2ijt, name: data, model: g4j7b6f21o, many: true }
+  - { status: 400, model: s4w1d8x1z4, description: invalid filter }
+  - { status: 429, model: s4w1d8x1z4, description: "throttled (350/s burst, 3500/min steady)" }

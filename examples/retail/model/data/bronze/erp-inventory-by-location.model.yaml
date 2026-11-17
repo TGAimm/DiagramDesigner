@@ -1,0 +1,19 @@
+# GAP: lineage through an api own shape - the rows arrive through the inventoryByLocation
+# response, whose fields are api fields; `from` may only name model fields, so it skips the api
+# and points at the ERP table behind it. Renaming the api field is not traced to this copy.
+id: bikx1km3c2
+ownedBy: ar9pfoadj7
+storedIn: ar9pfoadj7
+name: erp_inventory_by_location
+fields:
+  - { id: zp3ebjhphh, name: itemNumber, type: string, pk: true, from: [uyb5ygukb9] }
+  - { id: dgpxbdtci0, name: variantCode, type: string, pk: true, from: [zx5k1zft1o], constraints: ["'' when the item has no variants"] }
+  - { id: mzki1xbkkw, name: locationCode, type: string, pk: true, from: [uprcju7fdf] }
+  - { id: h6zxxpl90w, name: inventory, type: decimal, from: [wbgofszc3q] }
+  - { id: tccqc4ic4r, name: quantityOnSalesOrders, type: decimal, from: [t2oqxs7ee1] }
+  - { id: na9o9ple1z, name: availableQuantity, type: decimal, from: [fj7wbj8f9j] }
+  - { id: aielska6mr, name: lastModifiedDateTime, type: datetime, from: [jwid5gdy97] }
+  - { id: qrhjj8q80r, name: _snapshot_date, type: date, required: true, constraints: [the business day the full read was taken] }
+  - { id: pkfkrydzg7, name: _loaded_at, type: datetime, required: true }
+  - { id: m44wzv3p7d, name: _source, type: string, required: true, constraints: ["erp/inventoryByLocation"] }
+  - { id: a7u45lyioe, name: _batch_id, type: string, required: true }

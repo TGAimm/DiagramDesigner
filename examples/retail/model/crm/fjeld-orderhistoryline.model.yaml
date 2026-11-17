@@ -1,0 +1,13 @@
+id: pw2v0ksnhu
+ownedBy: crcmvfmp2d
+storedIn: kqjludw0r4
+name: fjeld_orderhistoryline
+tags: [read-copy]
+fields:
+  - { id: x7ze5jd8nl, name: fjeld_orderhistorylineid, type: uuid, pk: true }
+  - { id: qvqdyubgjq, name: fjeld_orderhistoryid, type: uuid, required: true, ref: w8v3bf1ojm }
+  - { id: i9vjaq5c32, name: fjeld_sku, type: string, required: true, from: [c1uzjurwuu] }
+  - { id: nqm0c32gbe, name: fjeld_productname, type: string, required: true, from: [tzgfqq0q8b], derived: "value in the order's locale" }
+  - { id: hfmnlhja6k, name: fjeld_quantity, type: int, required: true, from: [ae7tr09nmb], constraints: [min 1] }
+  - { id: ivs7c9h0cn, name: fjeld_unitprice, type: decimal, required: true, from: [oylo8sfbus], derived: "line item price value / 100", constraints: [money] }
+  - { id: i1aq6nriam, name: fjeld_linetotal, type: decimal, required: true, from: [hfmnlhja6k, ivs7c9h0cn], derived: quantity * unit price, constraints: [money] }

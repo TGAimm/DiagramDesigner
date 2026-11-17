@@ -1,0 +1,20 @@
+id: lmic8gsioh
+parent: nlc4zljjz8
+name: Return webshop order in store
+method: POST
+path: /pos/webshop-returns
+auth: "API key (x-functions-key, one per POS tenant)"
+request:
+  fields:
+    - { id: qnlnjbp2oj, name: orderNumber, type: string, required: true, to: [kazwvmlrrm] }
+    - { id: xlj73c2cp8, name: storeNo, type: string, required: true, to: [rofmyenj5k, kb8wprm404] }
+    - { id: p9vsywgbbp, name: receiptNo, type: string, required: true, to: [oxkce35es6], description: "the return receipt at the till; RMA = S<storeNo>-<receiptNo>" }
+    - { id: lt99f38paj, name: lines, type: "{sku, quantity, returnReason}", many: true, required: true, to: [y625nchc15] }
+responses:
+  - status: 202
+    description: Accepted; refunded to the original payment within minutes
+    fields:
+      - { id: aamfwlz13v, name: rmaNumber, type: string, from: [oxkce35es6] }
+  - { status: 401, description: Missing or wrong key }
+  - { status: 404, description: No such order }
+  - { status: 422, description: "a quantity over what is left to return, or past the return window" }

@@ -1,0 +1,13 @@
+# Fjeld families: jacket, trousers, base_layer, footwear, tent, sleeping_bag, backpack, accessory.
+id: gilsfjyao5
+ownedBy: mt2wjcx7nj
+storedIn: r1xvgi7bie
+name: Family
+fields:
+  - { id: up92jqcxxf, name: code, type: string, pk: true, required: true }
+  - { id: xgwhlcjsau, name: labels, type: "map<locale, string>" }
+  - { id: z7a2s9ak36, name: attributes, type: string, many: true, ref: z66zy4j2n8, constraints: [always includes sku] }
+  - { id: dwlkk4lezs, name: attribute_as_label, type: string, required: true, ref: z66zy4j2n8, constraints: [a text attribute of the family] }
+  - { id: l601wgs5ey, name: attribute_as_image, type: string, nullable: true, ref: z66zy4j2n8 }
+  # GAP: keyed map - attribute_requirements is {channel code: [attribute codes]}.
+  - { id: i46dmb4nbo, name: attribute_requirements, model: fuyymtyer2, many: true }

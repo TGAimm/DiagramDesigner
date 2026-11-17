@@ -1,0 +1,11 @@
+id: efxi7uugd5
+ownedBy: yzg8gfwzwo
+name: Address
+tags: [pii]
+fields:
+  - { id: nfl33jt0nt, name: line1, type: string, nullable: true }
+  - { id: c987u94y8o, name: line2, type: string, nullable: true }
+  - { id: q2bpbr3l9t, name: postal_code, type: string, nullable: true }
+  - { id: m8oyfiwbjz, name: city, type: string, nullable: true }
+  - { id: gol5aam9cp, name: state, type: string, nullable: true }
+  - { id: sabx49jwy1, name: country, type: string, nullable: true, constraints: ["ISO 3166-1 alpha-2"] }

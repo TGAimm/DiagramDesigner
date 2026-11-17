@@ -1,0 +1,6 @@
+id: f6x7dhgzlz
+parent: ygmbkn58fj
+name: Orders
+links:
+  - { label: Orders, url: "https://docs.commercetools.com/api/projects/orders" }
+  - { label: My Orders, url: "https://docs.commercetools.com/api/projects/me-orders" }

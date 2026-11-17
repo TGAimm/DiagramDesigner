@@ -1,0 +1,27 @@
+id: rkfy26cvxh
+parent: s3at4589xs
+name: sendFlowEmail
+inputs:
+  - { id: gf049isisw, name: action, model: qdn0ucww74, required: true }
+  - { id: u6rvzxifzn, name: profile, model: apj02aeekt, required: true }
+  - { id: ueof8balqd, name: eventProperties, model: d1iw1a9cct }
+outputs: []
+fails:
+  - { name: suppressed, description: "the address is suppressed (bounce, spam complaint)" }
+steps:
+  - { read: va5eavdghf, with: profile, gets: consent and suppression }
+  - if: email suppressed
+    then:
+      - { fail: suppressed }
+  - if: "marketing flow and email.marketing.consent is not SUBSCRIBED"
+    then:
+      - { note: "skip (transactional flows like Shipped notification send anyway)" }
+    else:
+      - if: smart sending on and the profile got an email in the last 16 hours
+        then:
+          - { note: skip }
+        else:
+          - { read: g7h3wk0ixm, with: action.message.template_id, gets: template }
+          - { note: "render the template with profile and event properties (Items, TrackingUrl)" }
+          - { note: "send through Klaviyo's sending infrastructure" }
+          - { write: g4j7b6f21o, note: "Received Email event on the profile" }

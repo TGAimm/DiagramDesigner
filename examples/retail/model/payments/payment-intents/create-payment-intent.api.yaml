@@ -1,0 +1,28 @@
+id: vb25x790bc
+parent: pfvgbz7fey
+name: Create a PaymentIntent
+method: POST
+path: /v1/payment_intents
+auth: bearer (secret key)
+params:
+  - { id: vwp9lfvz9g, name: Idempotency-Key, in: header, type: string, required: false, description: Fjeld sends the commerce cart id + version }
+request:
+  contentType: application/x-www-form-urlencoded
+  fields:
+    - { id: i0bk75cs2n, name: amount, type: int, required: true, to: [rkvxoeiokq] }
+    - { id: neny6c3lrr, name: currency, type: string, required: true, to: [j431blwzja] }
+    - { id: inyagmcdwj, name: customer, type: string, to: [ad09afvurs] }
+    - { id: kihgarznpa, name: "payment_method_types[]", type: string, many: true, to: [dm31l066yh] }
+    - { id: dbf6zd3ndh, name: capture_method, type: string, to: [qn53c9o9kr] }
+    - { id: dcz7fw47kj, name: description, type: string, to: [grigtzcvar] }
+    - { id: z3shit41dg, name: receipt_email, type: string, to: [ek3u4dy03h] }
+    - { id: dhr97ukq9v, name: statement_descriptor_suffix, type: string, to: [kcs1r0ffy5] }
+    - { id: buakzuj5xm, name: "metadata[commerce_order_id]", type: string, to: [n0tso6nfsf] }
+    - { id: ij7lo41tij, name: "metadata[commerce_cart_id]", type: string, to: [suvd0kb1ix] }
+    - { id: pfc4pam1c1, name: "metadata[order_number]", type: string, to: [vy3l1rdwsx] }
+    - { id: gvhugberez, name: "metadata[store_country]", type: string, to: [ctyxa8ejk3] }
+responses:
+  - { status: 200, model: g8pq0m68jp, description: "Created, status requires_payment_method" }
+  - { status: 400, model: pwpsr0fyli, description: invalid_request_error (missing or bad parameter) }
+  - { status: 401, description: Invalid API key }
+  - { status: 409, model: pwpsr0fyli, description: idempotency_error (key reused with other parameters) }

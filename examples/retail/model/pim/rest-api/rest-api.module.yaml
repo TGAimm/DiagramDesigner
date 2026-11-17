@@ -1,0 +1,9 @@
+# REST API v1. Callers authenticate with an OAuth2 password grant per Connection
+# (Fjeld: "integration-hub"); access tokens last 1 hour.
+id: vsn79avah8
+parent: x72oqgh6of
+name: REST API
+external: true
+links:
+  - { label: Filters (search param), url: https://api.akeneo.com/documentation/filter.html }
+  - { label: Pagination, url: https://api.akeneo.com/documentation/pagination.html }

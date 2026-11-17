@@ -1,0 +1,23 @@
+# Fjeld runs one primary index per webshop locale (products_da_dk, products_sv_se,
+# products_nb_no, products_de_de) and three sort replicas per primary (_price_asc,
+# _price_desc, _newest): 16 indices, one record shape.
+# GAP: one record shape in many indices - written as one Index model (a row per index) and one
+# Product Record keyed by indexName; that a replica is a full copy of its primary's records,
+# kept by Algolia and re-sorted by its own ranking, can't be said with from or storedIn.
+id: xb9pymmha0
+ownedBy: mnu2zqtqzh
+storedIn: u4435mqo47
+name: Index
+fields:
+  - { id: fwm01mcigb, name: name, type: string, pk: true, constraints: ["products_<locale>, or products_<locale>_<sort> for a replica"] }
+  - { id: lps2y7mqci, name: locale, type: string, required: true, constraints: ["one of: da_dk, sv_se, nb_no, de_de"] }  # GAP: enum
+  - { id: srj1lavgck, name: primary, type: string, nullable: true, ref: fwm01mcigb, constraints: ["set on a replica: the index it copies"] }
+  - { id: wy898j0nmd, name: replicas, type: string, many: true, ref: fwm01mcigb, from: [juff29tl9w] }
+  - { id: l3wlqditi9, name: entries, type: int, required: true, constraints: ["about 9,000 colour records per locale"] }
+  - { id: huj5cogdd7, name: dataSize, type: long, required: true, constraints: [bytes] }
+  - { id: cayfnug6vg, name: lastBuildTimeS, type: int, required: true }
+  - { id: qfovlwxpng, name: pendingTask, type: bool, required: true, from: [c4sgr17xab], derived: any task of the index not yet published }
+  - { id: len1zuvl9o, name: createdAt, type: datetime, required: true }
+  - { id: gl2n9t5g5c, name: updatedAt, type: datetime, required: true }
+indexes:
+  - { id: biwgkiu7hp, name: ix_index_primary, fields: [srj1lavgck] }

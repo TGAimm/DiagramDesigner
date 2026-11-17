@@ -1,0 +1,16 @@
+id: lv4qtmmk5w
+parent: vsn79avah8
+name: Update or create product
+method: PATCH
+path: /api/rest/v1/products-uuid/{uuid}
+auth: bearer
+params:
+  - { id: rc2dbhl2fg, name: uuid, in: path, type: uuid }
+request: { model: qitb6ezis6, omit: [zvcn8bc68d, m812a2j24z, jgbpew18pm] }
+responses:
+  - { status: 201, description: "Created; Location header, no body" }
+  - { status: 204, description: "Updated; Location header, no body" }
+  - { status: 400, description: Malformed JSON or unknown property }
+  - { status: 401, description: Missing or expired token }
+  - { status: 415, description: Content-Type is not application/json }
+  - { status: 422, description: "Validation failed: {code, message, errors: [{property, message, attribute, locale, scope}]}" }

@@ -1,0 +1,15 @@
+id: qczxb1q4s5
+parent: r3utcx4a06
+name: Update my profile
+method: PATCH
+path: /api/account/profile
+auth: session cookie fj_sid
+request:
+  fields:
+    - { id: iadjx2v2x4, name: firstName, type: string, to: [t3mf7j2rez] }
+    - { id: t5bhqy3tve, name: lastName, type: string, to: [q0hnw17jwj] }
+    - { id: dp42sft7h7, name: dateOfBirth, type: date, nullable: true, to: [x7n98o1bcz] }
+    - { id: vhbal6kzhl, name: locale, type: string, to: [rtt1jqp5f3] }
+responses:
+  - { status: 200, model: cu38cv7e7h }
+  - { status: 401, description: not signed in }

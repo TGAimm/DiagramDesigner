@@ -1,0 +1,12 @@
+id: x153xmm4du
+parent: a2x6k1ux7z
+name: Start payment (Stripe Checkout redirect)
+method: POST
+path: /api/checkout/redirect-session
+auth: session cookie fj_sid
+when: { flag: p9sg006xy9, is: off }
+responses:
+  - status: 200
+    fields:
+      - { id: g0g91xpvc6, name: redirectUrl, type: string, from: [zkud2thpbo], description: the Stripe-hosted page }
+  - { status: 409, description: the checkout isn't complete }

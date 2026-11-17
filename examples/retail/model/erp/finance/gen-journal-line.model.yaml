@@ -1,0 +1,29 @@
+# Table 81 Gen. Journal Line: unposted; deleted when the batch posts.
+id: czy9o9zg9d
+ownedBy: gob5rrh7wh
+storedIn: q43aprn5l0
+name: Gen. Journal Line
+fields:
+  - { id: gfbu5evgxy, name: journalTemplateName, type: string, pk: true, ref: w8qoq0h2bh }
+  - { id: p1axpv28kv, name: journalBatchName, type: string, pk: true, ref: ab6lrt7ekn }
+  - { id: f47n15g19x, name: lineNo, type: int, pk: true }
+  - { id: jqbs60jcbg, name: systemId, type: guid, required: true }
+  - { id: kq80zi3px3, name: accountType, type: string, required: true, constraints: ["one of: G/L Account, Customer, Vendor, Bank Account"] }   # GAP: enum
+  # GAP: polymorphic ref: the key points at a different table per type/accountType
+  - { id: kmr5d4pbu4, name: accountNo, type: string, required: true, ref: ro270d71oh, constraints: ["a customer no. when accountType = Customer"] }
+  - { id: mhgh88rpxh, name: postingDate, type: date, required: true }
+  - { id: zf42a5x4a8, name: documentType, type: string, constraints: ["one of: ' ', Payment, Invoice, Credit Memo, Refund"] }   # GAP: enum
+  - { id: rkp1lahodw, name: documentNo, type: string, required: true }
+  - { id: x22q1mqx7f, name: externalDocumentNo, type: string, constraints: ["Stripe payout or balance transaction id"] }
+  - { id: id1sz0bkpr, name: description, type: string }
+  - { id: mnaa7od0i8, name: amount, type: decimal, required: true }
+  - { id: n0oe2bhzsy, name: currencyCode, type: string, ref: nirn4ae2ma }
+  - { id: nwl8xbx2n2, name: balAccountType, type: string, from: [imlkm5at3x] }
+  - { id: rj9vz5h4uv, name: balAccountNo, type: string, from: [afr56tgvr4] }
+  - { id: kir785lga9, name: appliesToDocType, type: string, nullable: true }
+  - { id: rauxp5ir5v, name: appliesToDocNo, type: string, nullable: true, ref: p4ya5jzozb }
+  - { id: y294xc5pah, name: shortcutDimension1Code, type: string, ref: fogake3ysr }
+  - { id: xnboulknyz, name: dimensionSetId, type: int, ref: nbwnn1hmri }
+  - { id: zwfodpnmyr, name: systemModifiedAt, type: datetime, required: true }
+indexes:
+  - { id: ysj4a48iuh, name: ux_gen_journal_line_systemid, fields: [jqbs60jcbg], unique: true }

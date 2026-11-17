@@ -1,0 +1,4 @@
+# Akeneo jobs: Tailored Export runs on a schedule and pushes the file to an SFTP server.
+id: lawdrrqrtr
+parent: x72oqgh6of
+name: Job Automation

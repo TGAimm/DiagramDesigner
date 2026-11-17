@@ -1,0 +1,17 @@
+id: gn60whiwfk
+parent: ktxxdlpyeb
+name: Set index settings
+method: PUT
+path: /1/indexes/{indexName}/settings
+auth: "X-Algolia-Application-Id + X-Algolia-API-Key (admin key: editSettings ACL; deployed from the search-config repo)"
+params:
+  - { id: zin72ndoz8, name: indexName, in: path, type: string }
+  - { id: xtvm1vo20w, name: forwardToReplicas, in: query, type: bool, required: false }
+request: { model: wtqn6ejr7o, omit: [eqpqg8mp72, al4h03wsj1] }
+responses:
+  - status: 200
+    fields:
+      - { id: h951oulixd, name: taskID, type: long, from: [s7s7oe1bfu] }
+      - { id: atm2hu0faq, name: updatedAt, type: datetime, from: [al4h03wsj1] }
+  - { status: 400, description: "a bad ranking or customRanking expression" }
+  - { status: 403, description: missing editSettings ACL }

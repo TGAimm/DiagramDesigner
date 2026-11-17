@@ -1,0 +1,32 @@
+# Tailored Export "fjeld_webshop_products": one flat row per enabled product and ecommerce
+# locale, with model-level values inherited. This is the flattened shape the shop needs.
+# GAP: file interface - CSV pushed to the SFTP server; the SFTP lives in Integration (wire later).
+# GAP: lineage by attribute - every value column comes from Product Value.data, but lineage
+# can't say which attribute code (name, colour ...) picks the value; that is in `derived` only.
+id: pw2ipvszgu
+ownedBy: lawdrrqrtr
+storedIn: lawdrrqrtr
+name: Product DTO
+fields:
+  - { id: gzcx4y8gil, name: uuid, type: uuid, pk: true, from: [gziztcdf03] }
+  - { id: vz5omggq2b, name: locale, type: string, pk: true, from: [zm2gv06fiv], derived: "one row per locale of channel ecommerce (da_DK, sv_SE, nb_NO, de_DE, en_GB)" }
+  - { id: p8wyfcgywb, name: sku, type: string, required: true, from: [caehs975j2] }
+  - { id: bb00vuqu9d, name: ean, type: string, nullable: true, from: [ak4lwfuxfc, ymt19shyk9], derived: "value of attribute ean" }
+  - { id: jvygu2no09, name: styleCode, type: string, nullable: true, from: [xseslrjvdv, jutcmn2c3j], derived: "root product model code: parent's parent, or parent with one level" }
+  - { id: f9cml31utd, name: colourModelCode, type: string, nullable: true, from: [xseslrjvdv], derived: "parent when the family variant has two levels" }
+  - { id: s96jko0qis, name: family, type: string, from: [a81eusllga] }
+  - { id: o5j7ow8nvb, name: name, type: string, required: true, from: [ak4lwfuxfc, ymt19shyk9, oam7xf44d2], derived: "value of attribute name for the row's locale, inherited from the root model" }
+  - { id: vll2yirzi6, name: description, type: html, nullable: true, from: [ak4lwfuxfc, ymt19shyk9, oam7xf44d2, jerii494jn], derived: "description for the locale and scope ecommerce" }
+  - { id: goat59440e, name: brand, type: string, nullable: true, from: [ak4lwfuxfc, k81itv2t6e], derived: "label of the brand option in the row's locale" }
+  - { id: ev5p820zff, name: colour, type: string, nullable: true, from: [ak4lwfuxfc, k81itv2t6e], derived: "label of the colour option (level-1 axis) in the row's locale" }
+  - { id: ga5utkrbow, name: colourCode, type: string, nullable: true, from: [ak4lwfuxfc], derived: "colour option code, for swatches and filters" }
+  - { id: woa27ss468, name: size, type: string, nullable: true, from: [ak4lwfuxfc, k81itv2t6e], derived: "label of the size option (level-2 axis)" }
+  - { id: h9udjhssww, name: material, type: string, nullable: true, from: [ak4lwfuxfc, k81itv2t6e], derived: "multi-select labels, comma-joined" }
+  - { id: xo3tz19vqh, name: weightGrams, type: int, nullable: true, from: [ak4lwfuxfc, lq04bnzrc2, umu8c6er8i], derived: "weight metric converted to GRAM" }
+  - { id: cu90qctfbq, name: categories, type: string, many: true, from: [jxmckttq6i, evst4siuh2], derived: "own and inherited codes in tree fjeld_web, '|'-joined" }
+  - { id: b3ps761mof, name: imageUrls, type: string, many: true, from: [ak4lwfuxfc, mndb0zlbva, qz9o3h3mq4], derived: "product_images asset codes > main media file > public CDN URL of the web rendition, in asset order" }
+  - { id: d19p3av0sh, name: sizeGuideUrl, type: string, nullable: true, from: [ak4lwfuxfc, mndb0zlbva, qz9o3h3mq4], derived: "first size_guides asset > media file URL" }
+  - { id: qtqt5dphji, name: crossSellSkus, type: string, many: true, from: [j2mscfhv1w, v46qtfxg2z, caehs975j2], derived: "identifiers of X_SELL products" }
+  - { id: unll6arb9z, name: enabled, type: bool, required: true, from: [pvp2s2tzpq] }
+  - { id: bjrqvl73qi, name: completeness, type: int, from: [nopyi44oky], derived: "percent for channel ecommerce and the row's locale" }
+  - { id: ui0em7awxz, name: updated, type: datetime, required: true, from: [jgbpew18pm, hnlzp42nxi], derived: "latest of the product and its models" }

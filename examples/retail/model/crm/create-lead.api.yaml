@@ -1,0 +1,10 @@
+id: ana7qnkzv4
+parent: wuk6o6ekkf
+name: Create lead
+method: POST
+path: /api/data/v9.2/leads
+auth: OAuth 2.0 bearer (Entra ID app registration)
+request: { model: gay18202bx, omit: [n5xrwrkd57] }
+responses:
+  - { status: 204, description: Created; OData-EntityId header }
+  - { status: 400, model: blqvorzt9x }

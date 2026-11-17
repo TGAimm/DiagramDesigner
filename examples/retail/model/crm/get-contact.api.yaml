@@ -1,0 +1,13 @@
+id: l92ija6prb
+parent: izc0a89lge
+name: Get contact
+method: GET
+path: /api/data/v9.2/contacts({contactid})
+auth: OAuth 2.0 bearer (Entra ID app registration)
+params:
+  - { id: r6t8h111on, name: contactid, in: path, type: uuid }
+  - { id: f7yzsfsa0d, name: $select, in: query, type: string, required: false }
+  - { id: no2ltyd0wa, name: $expand, in: query, type: string, required: false }
+responses:
+  - { status: 200, model: vw2khd7qyi }
+  - { status: 404, model: blqvorzt9x, description: Does not exist }

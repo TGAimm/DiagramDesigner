@@ -1,0 +1,17 @@
+id: irtushvfl9
+parent: vuo50id8ln
+name: List all balance transactions
+method: GET
+path: /v1/balance_transactions
+auth: bearer (secret key)
+params:
+  - { id: ikgbm4lg0f, name: payout, in: query, type: string, required: false, description: only transactions paid out in this automatic payout }
+  - { id: y4ugl5j5q7, name: type, in: query, type: string, required: false }
+  - { id: u70n12rwc2, name: "created[gte]", in: query, type: timestamp, required: false }
+  - { id: kt46n6klp1, name: limit, in: query, type: int, required: false, description: "1-100, default 10" }
+  - { id: mb9usyrkpt, name: starting_after, in: query, type: string, required: false, description: cursor }
+  - { id: vhcjypsd7k, name: "expand[]", in: query, type: string, required: false, description: "data.source, to get the charge and its metadata in one call" }
+responses:
+  # GAP: list envelope ({ object: list, data, has_more, url }) and cursor pagination: written as many of the model
+  - { status: 200, model: te75334qto, many: true }
+  - { status: 400, model: pwpsr0fyli, description: invalid_request_error }

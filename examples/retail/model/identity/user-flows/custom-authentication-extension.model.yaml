@@ -1,0 +1,13 @@
+id: s9lv74uj34
+ownedBy: dsa7av53v5
+storedIn: ji6igng4bi
+name: CustomAuthenticationExtension
+links: [{ label: onAttributeCollectionSubmitCustomExtension, url: https://learn.microsoft.com/graph/api/resources/onattributecollectionsubmitcustomextension }]
+fields:
+  - { id: hrhb3m8hil, name: id, type: uuid, pk: true }
+  - { id: xb9lpd9o6d, name: displayName, type: string, required: true, constraints: ["Fjeld: Storefront sign-up hook (the B2C name: API connector before creating the user)"] }
+  - { id: qykivhjf2p, name: endpointConfiguration.targetUrl, type: string, required: true, constraints: ["Fjeld: Storefront BFF /identity/attribute-collection-submit"] }
+  - { id: wsnw2k1qlk, name: authenticationConfiguration.resourceId, type: string, required: true, constraints: ["app id URI the call's bearer token is issued for"] }
+  - { id: blnlknu10c, name: clientConfiguration.timeoutInMilliseconds, type: int, constraints: ["max 2000"] }
+  - { id: l0o8d23m1y, name: clientConfiguration.maximumRetries, type: int, constraints: ["0 or 1"] }
+  - { id: gwu0ouvh1m, name: claimsForTokenConfiguration, type: string, many: true }

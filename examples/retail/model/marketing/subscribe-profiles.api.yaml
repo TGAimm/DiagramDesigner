@@ -1,0 +1,21 @@
+id: sxjv75ejmp
+parent: x27wyx0r8h
+name: Bulk subscribe profiles
+method: POST
+path: /api/profile-subscription-bulk-create-jobs
+auth: "Klaviyo-API-Key private key (scopes profiles:write, subscriptions:write)"
+params:
+  - { id: koaypmfxnu, name: revision, in: header, type: string, required: true }
+request:
+  contentType: application/vnd.api+json
+  fields:
+    - { id: dhy2fhcpf6, name: data.attributes.custom_source, type: string, to: [o074odm3zy], description: "e.g. Fjeld checkout, Fjeld store signup" }
+    - { id: gtni63cdv6, name: "data.attributes.profiles.data[].attributes.email", type: string, many: true, to: [twxat301yi] }
+    - { id: d3y8zg29xz, name: "data.attributes.profiles.data[].attributes.phone_number", type: string, many: true, to: [wpaulnuzqr] }
+    - { id: k27h3ttc8d, name: "data.attributes.profiles.data[].attributes.subscriptions.email.marketing.consent", type: string, many: true, to: [bcagv4gekq], description: always SUBSCRIBED }
+    - { id: tgyrjxu89z, name: "data.attributes.profiles.data[].attributes.subscriptions.email.marketing.consented_at", type: datetime, many: true, to: [sxuhz27bqm], description: historical consent time from the source }
+    - { id: f29nv56hfa, name: "data.attributes.profiles.data[].attributes.subscriptions.sms.marketing.consent", type: string, many: true, to: [wxvdukb871] }
+    - { id: h3oo5r9p1g, name: data.relationships.list.data.id, type: string, required: true, to: [z5js8uj1t1] }
+responses:
+  - { status: 202, description: job accepted; double opt-in lists send a confirmation first }
+  - { status: 400, model: s4w1d8x1z4 }

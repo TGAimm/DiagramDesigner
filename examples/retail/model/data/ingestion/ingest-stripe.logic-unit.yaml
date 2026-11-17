@@ -1,0 +1,14 @@
+# GAP: scheduled trigger
+id: ezay3v2j3k
+parent: oyqmyb5nc3
+name: ingestStripe
+meta: { schedule: "30 4 * * *", pipeline: pl_ingest_stripe, note: "after Stripe's midnight payout run" }
+inputs: []
+outputs: []
+steps:
+  - { read: qhfxfz0h8j, with: "source_system = stripe", gets: watermarks }
+  - { call: irtushvfl9, with: "created[gte] = watermark - 10 days, limit=100, expand[]=data.source.payment_intent, paginate with starting_after", gets: balance transactions }
+  - { write: fp7gmidmzm, note: "MERGE on id; the 10-day overlap picks up payout ids set after the transaction" }
+  - { call: d9rqhzexn0, with: "arrival_date[gte] = watermark - 10 days, limit=100", gets: payouts }
+  - { write: mwrogcwqle, note: MERGE on id }
+  - { write: axtovqyj39, note: max created (epoch seconds) }

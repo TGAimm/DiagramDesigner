@@ -1,0 +1,33 @@
+# API page 50101 FJ Price List Lines: active sales prices and discounts. Deleted lines are not
+# returned; Integration also runs a nightly full read.
+id: re3p0ieali
+parent: efcxalw7mu
+name: List price list lines
+method: GET
+path: /api/fjeld/integration/v1.0/companies({companyId})/priceListLines
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: ekdm2nxxnh, name: companyId, in: path, type: guid }
+  - { id: qw7ncrbvv5, name: $filter, in: query, type: string, required: false, description: "delta: lastModifiedDateTime gt <last run>; customerPriceGroup eq 'B2C-SE'" }
+  - { id: rr5mk7whlx, name: Prefer, in: header, type: string, required: false, description: "odata.maxpagesize=5000" }
+responses:
+  # GAP: OData collection envelope { value: [...], @odata.nextLink } written as many: true
+  - status: 200
+    many: true
+    fields:
+      - { id: njjaevt33l, name: id, type: guid, from: [t4amrq5aak] }
+      - { id: p1k0cvy02g, name: priceListCode, type: string, from: [m8xb6ceh1z] }
+      - { id: hgnba9wakg, name: customerPriceGroup, type: string, from: [aalc01ycu4], derived: "blank when the list is for All Customers" }
+      - { id: lyrpk8fnjf, name: currencyCode, type: string, from: [dr41csivdn], derived: "blank shown as DKK" }
+      - { id: cuxgg1epq9, name: itemNumber, type: string, from: [rkjvkv9x3b] }
+      - { id: cxk3m0aamp, name: variantCode, type: string, from: [wm2ctpbax6] }
+      - { id: sr2gvyhw22, name: startingDate, type: date, from: [ck1kd7z8q8] }
+      - { id: v8ut6xe9dc, name: endingDate, type: date, from: [frlq0a7tky] }
+      - { id: s80oyh41qs, name: minimumQuantity, type: decimal, from: [x027hk1fnr] }
+      - { id: xcj3od61by, name: amountType, type: string, from: [r74j51bn3t] }
+      - { id: bm21s3b87e, name: unitPrice, type: decimal, from: [kqip2xr4t7] }
+      - { id: uvseccmtgw, name: lineDiscountPercent, type: decimal, from: [i80lhot82k] }
+      - { id: kdojlt72oq, name: priceIncludesTax, type: bool, from: [wiqy2eaw2b] }
+      - { id: yk83xqc9kk, name: status, type: string, from: [jftrbxw4xz] }
+      - { id: zf8d1142hx, name: lastModifiedDateTime, type: datetime, from: [jxvus70k0s] }
+  - { status: 401, description: Unauthorized }

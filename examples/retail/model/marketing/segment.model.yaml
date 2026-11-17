@@ -1,0 +1,14 @@
+# GAP: configuration records (Fjeld's segments, e.g. "Engaged 90 days", "Summit tier", "Lapsed 180 days", are rows; the schema has no instances)
+id: og6ds2tl8y
+ownedBy: znpte2ol9p
+storedIn: mm9tmyhvey
+name: Segment
+fields:
+  - { id: wfrzhko2s7, name: id, type: string, pk: true }
+  - { id: wxeu78niwq, name: name, type: string, required: true }
+  - { id: gjcrayqqot, name: definition, type: json, required: true, constraints: [condition groups over profile properties, events and list membership] }
+  - { id: puk2kcrm0d, name: is_active, type: bool, required: true }
+  - { id: he08pcam37, name: is_processing, type: bool, required: true }
+  - { id: pzxc4xnclz, name: is_starred, type: bool, required: true }
+  - { id: zo5g7jejmf, name: created, type: datetime, required: true }
+  - { id: zjv1xb3qyf, name: updated, type: datetime, required: true }

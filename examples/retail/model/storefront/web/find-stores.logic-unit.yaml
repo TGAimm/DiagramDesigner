@@ -1,0 +1,12 @@
+id: qsa3cggx2y
+parent: pcwnkmmuwj
+name: findStores
+inputs:
+  - { id: zhaae10x8i, name: near, type: string, nullable: true, description: "postal code typed, or the browser's position" }
+  - { id: sjq4lo73rh, name: sku, type: string, nullable: true, description: "set when opened from a product's click & collect link" }
+outputs:
+  - { id: xtowdrifaz, name: stores, model: r5c8x8etbs, many: true }
+steps:
+  - { call: dj29s9w4t1, with: "near, sku", gets: stores }
+  - { note: "map and list; with sku, each store shows its stock and a Collect here button" }
+  - { return: stores }

@@ -1,0 +1,21 @@
+# Report 795 Adjust Cost - Item Entries, with automatic cost posting to the G/L.
+id: g2csn1iezu
+parent: x2x0s3utl1
+name: adjustCostItemEntries
+inputs:
+  - { id: pzhn26mv9v, name: itemNoFilter, type: string, nullable: true }
+outputs:
+  - { id: chagorc67p, name: adjustedEntries, type: int }
+steps:
+  - { read: edi8izn1qa, with: "items with cost changes since the last run (Cost is Adjusted = false)", gets: items }
+  - each: item in items
+    do:
+      - { read: z3s5srw5r2, with: "inbound entries of the item", gets: inbound }
+      - { read: qq1p83ss5p, with: "value entries of those entries", gets: costs }
+      - { note: "average cost per period; difference against the cost each outbound entry was posted with" }
+      - { write: qq1p83ss5p, note: "insert adjustment entries (adjustment = true) on outbound entries" }
+      - { write: ytq7la5syd, note: "new average unit cost" }
+  - { read: qq1p83ss5p, with: "value entries where costPostedToGL <> costAmountActual", gets: unposted }
+  - { call: g7nfkzjdkj, with: "inventory (balance) and COGS / inventory adjustment accounts per posting group" }
+  - { write: vw7mo97qu5, note: "mark as posted to G/L" }
+  - { return: adjustedEntries }

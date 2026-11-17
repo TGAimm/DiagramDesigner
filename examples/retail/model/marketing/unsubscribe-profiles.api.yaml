@@ -1,0 +1,17 @@
+id: lszlprou4t
+parent: x27wyx0r8h
+name: Bulk unsubscribe profiles
+method: POST
+path: /api/profile-subscription-bulk-delete-jobs
+auth: "Klaviyo-API-Key private key (scopes profiles:write, subscriptions:write)"
+params:
+  - { id: bwvka5z8gf, name: revision, in: header, type: string, required: true }
+request:
+  contentType: application/vnd.api+json
+  fields:
+    - { id: vtgw8wdzib, name: "data.attributes.profiles.data[].attributes.email", type: string, many: true, to: [twxat301yi] }
+    - { id: zrfjj9l55l, name: "data.attributes.profiles.data[].attributes.subscriptions.email.marketing.consent", type: string, many: true, to: [bcagv4gekq], description: always UNSUBSCRIBED }
+    - { id: da02glb7df, name: data.relationships.list.data.id, type: string, to: [z5js8uj1t1], description: "optional: leave out to unsubscribe from all email marketing" }
+responses:
+  - { status: 202, description: job accepted }
+  - { status: 400, model: s4w1d8x1z4 }

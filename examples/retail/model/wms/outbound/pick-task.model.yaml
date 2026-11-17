@@ -1,0 +1,21 @@
+id: h8jsrfryjc
+ownedBy: yvrhh8zk8f
+storedIn: ka6mzbfc7x
+name: Pick task
+fields:
+  - { id: bilcoxwc0d, name: id, type: int, pk: true }
+  - { id: kvyoagknu6, name: waveId, type: int, required: true, ref: du7403qqrh }
+  - { id: na6qexhllt, name: orderLineId, type: int, required: true, ref: hh65a8yt9w }
+  - { id: grvl8ypgob, name: itemId, type: int, required: true, ref: ixjus3gqio }
+  - { id: eo998ei460, name: fromLocationId, type: int, required: true, ref: emtjsw8emx }
+  - { id: qgi3nr1wg7, name: lotNo, type: string, nullable: true }
+  - { id: au8m6u8ago, name: qtyToPick, type: int, required: true, constraints: [min 1] }
+  - { id: c7ioqq0she, name: qtyPicked, type: int, nullable: true }
+  # GAP: enum
+  - { id: k4uthtiee3, name: status, type: string, required: true, constraints: ["one of: open, in_progress, done, short"] }
+  - { id: fu46220oof, name: pickerId, type: string, nullable: true }
+  - { id: afx4nkju7f, name: sequence, type: int, required: true, from: [b3fcylyoni], derived: "order on the picker's route" }
+  - { id: o0wpnx6udb, name: confirmedAt, type: datetime, nullable: true }
+indexes:
+  - { id: s9va3osfkh, name: ix_task_wave_seq, fields: [kvyoagknu6, afx4nkju7f] }
+  - { id: akp8bxs4pp, name: ix_task_line, fields: [na6qexhllt] }

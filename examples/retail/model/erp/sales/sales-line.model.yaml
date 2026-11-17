@@ -1,0 +1,37 @@
+# Table 37 Sales Line
+id: i09cr44p1c
+ownedBy: vss7pk1oh5
+storedIn: q43aprn5l0
+name: Sales Line
+fields:
+  - { id: vfu2b8xsug, name: documentType, type: string, pk: true, ref: estckbpmdg }
+  - { id: tnqhjlak5o, name: documentNo, type: string, pk: true, ref: rgkzrhf9cx }
+  - { id: k3o7yzcc26, name: lineNo, type: int, pk: true, constraints: ["steps of 10000"] }
+  - { id: c8y45n1jkp, name: systemId, type: guid, required: true }
+  - { id: hhtder4u0q, name: type, type: string, required: true, constraints: ["one of: ' ', G/L Account, Item, Resource, Fixed Asset, Charge (Item)"] }   # GAP: enum
+  # GAP: polymorphic ref: the key points at a different table per type/accountType
+  - { id: rb6xm6b02o, name: no, type: string, required: true, ref: yu6wdxgb8q, constraints: ["item no. when type = Item; G/L account for shipping fee lines"] }
+  - { id: ca4tdaa49z, name: variantCode, type: string, nullable: true, ref: u2mbyuw427 }
+  - { id: y0v8srt70n, name: description, type: string, from: [hu1yuj53fb, xzqesc3cbv], derived: "item description, variant description appended" }
+  - { id: b9ea6tbrzd, name: locationCode, type: string, ref: gsrr00mc9x, from: [xn764vj10c] }
+  - { id: t9ikj1n85i, name: unitOfMeasureCode, type: string, ref: oqoid63vr5, from: [s6l1z5i5rc] }
+  - { id: eqjj9f1mlv, name: quantity, type: decimal, required: true, constraints: [min 0] }
+  - { id: ymxoxlznx0, name: qtyToShip, type: decimal, from: [eqjj9f1mlv], derived: "defaults to outstanding quantity" }
+  - { id: g6nhm9odkn, name: quantityShipped, type: decimal, from: [bhqnnifsxx], derived: "sum of posted shipment lines" }
+  - { id: mzydf3dx6s, name: qtyToInvoice, type: decimal, from: [g6nhm9odkn], derived: "shipped not invoiced" }
+  - { id: z86s14bjrr, name: quantityInvoiced, type: decimal, from: [ja96oszpbr], derived: "sum of posted invoice lines" }
+  - { id: u90z8jq9o9, name: returnQtyToReceive, type: decimal, nullable: true, constraints: ["return orders only"] }
+  - { id: be4ogjpbfh, name: returnQtyReceived, type: decimal, nullable: true }
+  - { id: k3hc75df9p, name: unitPrice, type: decimal, required: true, from: [kqip2xr4t7, qcfiyg2wwe], derived: "best price from the price lists unless given by the caller; item unit price as fallback" }
+  - { id: dbszms3i9q, name: lineDiscountPct, type: decimal, from: [i80lhot82k], derived: "best line discount" }
+  - { id: rfsp69gwrq, name: lineDiscountAmount, type: decimal, from: [eqjj9f1mlv, k3hc75df9p, dbszms3i9q], derived: "quantity * unitPrice * lineDiscountPct / 100, rounded" }
+  - { id: khhoq2yeax, name: amount, type: decimal, from: [eqjj9f1mlv, k3hc75df9p, rfsp69gwrq, xd8vftybkk], derived: "quantity * unitPrice - lineDiscountAmount, VAT taken out when prices include VAT" }
+  - { id: qv93sjzupk, name: amountIncludingVat, type: decimal, from: [khhoq2yeax, xd8vftybkk], derived: "amount * (1 + vatPct / 100)" }
+  - { id: uubn72fxtb, name: genProdPostingGroup, type: string, from: [hb30avb45w] }
+  - { id: qwhg3vz9o9, name: vatProdPostingGroup, type: string, from: [vnuzc1n5nq] }
+  - { id: xd8vftybkk, name: vatPct, type: decimal, from: [snyup3m9pl], derived: "VAT posting setup of the header's VAT bus. group and the line's VAT prod. group" }
+  - { id: gxsqotfn6o, name: dimensionSetId, type: int, ref: nbwnn1hmri, from: [n6cluwp3lk] }
+  - { id: nt6ono6h16, name: systemModifiedAt, type: datetime, required: true }
+indexes:
+  - { id: hplewpvok3, name: ux_sales_line_systemid, fields: [c8y45n1jkp], unique: true }
+  - { id: fkstl6csar, name: ix_sales_line_outstanding, fields: [vfu2b8xsug, hhtder4u0q, rb6xm6b02o, ca4tdaa49z, b9ea6tbrzd] }

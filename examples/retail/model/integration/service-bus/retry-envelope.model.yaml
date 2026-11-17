@@ -1,0 +1,12 @@
+id: vxed7chciz
+ownedBy: g55sb0eqd6
+name: RetryEnvelope
+fields:
+  - { id: ui42yvjrtg, name: originalChannel, type: string, required: true, constraints: ["topic/subscription or queue the message came from"] }
+  - { id: sklyxb2j07, name: originalMessageId, type: string, required: true, from: [dviz03d47f] }
+  - { id: crobtbo19s, name: correlationId, type: string, required: true, from: [floqkfenec] }
+  - { id: eqcajfqgam, name: function, type: string, required: true, from: [y4oklrb8d3] }
+  - { id: jaz0v7bgc8, name: attempt, type: int, required: true, constraints: ["max 6: 5 min, 15 min, 1 h, 4 h, 12 h, then dead letter"] }
+  - { id: six02cgu4c, name: body, type: json, required: true, constraints: [the original message body] }
+  - { id: r9g6t3qppo, name: lastError, type: string, required: true, from: [nq1jv3r1mr] }
+  - { id: rgfrw5jmtm, name: notBefore, type: datetime, required: true, from: [zj5gun4fcb], constraints: [sent as ScheduledEnqueueTimeUtc] }

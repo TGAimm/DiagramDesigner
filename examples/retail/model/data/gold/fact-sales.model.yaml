@@ -1,0 +1,31 @@
+# Grain: one row per order line, online and store. Amounts in transaction currency and in DKK.
+# GAP: grain - the grain (one row per order line) is the defining fact of a fact table and is
+# only in a comment.
+# GAP: as-of join - customer_sk and product_sk pick the dim version valid at ordered_at;
+# `from` lists the columns of the join but not that it is a range lookup.
+id: jogoyx9y7y
+ownedBy: d0jfpet25d
+storedIn: d0jfpet25d
+name: fact_sales
+fields:
+  - { id: dkmk0gy7ds, name: order_line_key, type: string, pk: true, from: [wvksc7fxsj] }
+  - { id: dywz3qk1xj, name: order_key, type: string, required: true, from: [p05ld4k5l9] }
+  - { id: ljedf5umlv, name: date_key, type: int, required: true, ref: bgzdmszmqm, from: [ujmkkkel96], derived: yyyyMMdd }
+  - { id: nqorc93yfb, name: customer_sk, type: bigint, required: true, ref: asdpx9s4yn, from: [ugdlpg7u4x, pxn20ueycc, asdpx9s4yn, n3au7ckomv, ithouywvhq, vwg77bc7px], derived: "version valid at ordered_at; -1 when no customer" }
+  - { id: we8vfqwwjp, name: product_sk, type: bigint, required: true, ref: jqish8v510, from: [vvpa5weohe, pxn20ueycc, jqish8v510, tx898qausm, r91vbltkz1, uhjdwtppni], derived: "version valid at ordered_at; -1 when unknown" }
+  - { id: emu6l04pz8, name: store_sk, type: int, required: true, ref: b9k4oabttz, from: [b06lo0cext, uc0pp2x7nr, b9k4oabttz], derived: "-1 for web" }
+  - { id: xxyo5t37bq, name: channel_sk, type: int, required: true, ref: ha5ot8uh2x, from: [jyonhj34gj, mcvmvxwzjm, ha5ot8uh2x] }
+  - { id: l9shvefahi, name: geography_sk, type: int, required: true, ref: tudxv1xefc, from: [lwl2uyf7r1, tw47z03mne, tudxv1xefc], derived: "ship-to for web, the store's for POS" }
+  - { id: oscm7gep7z, name: quantity, type: int, required: true, from: [cd1t16hxej] }
+  - { id: hir7so5oav, name: currency, type: string, required: true, from: [qj6tmvtede] }
+  - { id: kdcbp9wkhf, name: gross_amount, type: decimal, required: true, from: [b1nlpddm21] }
+  - { id: wxnaojf4ye, name: net_amount, type: decimal, required: true, from: [yzrrui4j7a] }
+  - { id: ty2qkzcw1m, name: discount_amount, type: decimal, required: true, from: [q5ofud4zoz] }
+  - { id: vxbzcoa2l7, name: fx_rate_to_dkk, type: decimal, required: true, from: [zhdet7nkav, kdm9zptz16, qyyts7sko5, l5lly03zg0, ujmkkkel96], derived: "relational / exchange rate amount of the latest ERP rate on or before the order date; 1 for DKK" }
+  - { id: wl2al8x21l, name: net_amount_dkk, type: decimal, required: true, from: [wxnaojf4ye, vxbzcoa2l7], derived: net * rate }
+  - { id: qs1aep1z5x, name: discount_amount_dkk, type: decimal, required: true, from: [ty2qkzcw1m, vxbzcoa2l7], derived: discount * rate }
+  - { id: v2dk43s4sf, name: cost_amount_dkk, type: decimal, required: true, from: [gl2yi1g2td, cd1t16hxej], derived: unit cost * quantity }
+  - { id: il8xc1ku9m, name: gross_margin_dkk, type: decimal, required: true, from: [wl2al8x21l, v2dk43s4sf], derived: net - cost }
+  - { id: xhxnw1g6qm, name: is_return, type: bool, required: true, from: [dq2auoa9wt] }
+indexes:
+  - { id: py8ez2qkrt, name: ix_fact_sales_date, fields: [ljedf5umlv] }

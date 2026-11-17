@@ -1,0 +1,17 @@
+id: don6d0cx4q
+parent: f6x7dhgzlz
+name: Query my orders
+method: GET
+path: /{projectKey}/me/orders
+auth: "bearer (customer token, view_my_orders)"
+params:
+  - { id: iphi4li705, name: projectKey, in: path, type: string, description: fjeld-prod }
+  - { id: xjj1z8m7nw, name: sort, in: query, type: string, required: false, description: "e.g. createdAt desc" }
+  - { id: jksjg1r5eu, name: limit, in: query, type: int, required: false }
+  - { id: f9iyf5o30z, name: offset, in: query, type: int, required: false }
+responses:
+  - status: 200
+    fields:
+      - { id: ybu7uzpg81, name: results, model: g5tcad7xx0, many: true }
+      - { id: tamosje2ih, name: total, type: int, nullable: true, from: [qazi456zfm], derived: count of the customer's orders }
+  - { status: 403, description: insufficient_scope (anonymous token) }

@@ -1,0 +1,18 @@
+id: r3hc53cs79
+parent: rd06mopkno
+name: Create or update organization
+method: POST
+path: /api/v2/organizations/create_or_update
+auth: "basic (agent e-mail/token + API token) or OAuth bearer"
+request:
+  fields:
+    - { id: q8flwe6qt5, name: organization.name, type: string, required: true, to: [jgv6ktlc82] }
+    - { id: rm663qtmac, name: organization.external_id, type: string, required: true, to: [u7gsqy7na4] }
+responses:
+  - status: 200
+    fields:
+      - { id: w7i7j1llde, name: organization, model: mqgsqrl464 }
+  - status: 201
+    fields:
+      - { id: xkf2fh28cr, name: organization, model: mqgsqrl464 }
+  - { status: 422, model: zkkh7sjnsz }

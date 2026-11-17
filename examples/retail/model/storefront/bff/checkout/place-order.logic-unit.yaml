@@ -1,0 +1,27 @@
+# Shared by both payment flows once Stripe has authorised the payment (capture_method manual:
+# Integration captures on shipment).
+id: ol06c5ybgi
+parent: a2x6k1ux7z
+name: placeOrder
+inputs:
+  - { id: u7fhws0mam, name: cart, model: lq4foj9308, required: true }
+  - { id: ha7vyudwy6, name: paymentIntentId, type: string, required: true }
+outputs:
+  - { id: nacyre83wj, name: order, model: g5tcad7xx0 }
+fails:
+  - { name: cartChanged, description: "OutOfStock or PriceChanged: the authorisation is released" }
+steps:
+  - { call: cy3wdd7n7k, with: "cart.id, cart.version", gets: order }
+  - if: 400 OutOfStock or PriceChanged
+    then:
+      - { call: ry02p86mfk, with: "cancellation_reason abandoned", note: release the authorisation }
+      - { fail: cartChanged }
+  - { note: "orderNumber = FJ-<country>-<next number from Redis INCR order-seq:<country>>" }
+  - { call: ekgirua9an, with: "client_credentials of the BFF API client (cached)", gets: serverToken }
+  - { call: xdgvgxhc6p, with: "version, setOrderNumber orderNumber", gets: order }
+  - { call: sh277rgi1r, with: "metadata commerce_order_id, order_number", gets: intent }
+  - if: session.newsletterOptIn
+    then:
+      - { call: sxjv75ejmp, with: "email, consent SUBSCRIBED, list = the country's newsletter list (double opt-in), custom_source Fjeld checkout" }
+  - { write: ffqq3wfhpp, note: "cartId, pickup point, startedCheckoutCartId cleared; lastOrderNumber = orderNumber" }
+  - { return: order }

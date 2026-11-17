@@ -1,0 +1,21 @@
+id: mex5ba8puo
+parent: scelhoohob
+name: deliverToSubscriptions
+inputs:
+  - { id: vlufbxgfz5, name: message, model: r36jmkzojw, required: true }
+outputs: []
+steps:
+  - { read: iilvycwlpt, with: "messages[] has message.resource.typeId and its types contain message.type (empty types = all)", gets: subscriptions }
+  - each: subscription in subscriptions
+    do:
+      - if: subscription.status is ConfigurationErrorDeliveryStopped or ManuallySuspended
+        then:
+          - { note: skip }
+        else:
+          - if: subscription.format is CloudEvents
+            then:
+              - { note: "wrap in a CloudEvents 1.0 envelope (type com.commercetools.order.message.OrderCreated)" }
+          - { call: eklte5q4cf, with: "the message (destination.connectionString: SAS key with Send); at least once, order not guaranteed: consumers sort by resource + sequenceNumber" }
+          - if: send fails
+            then:
+              - { write: z0jcyx5rki, note: "TemporaryError; retried with backoff for up to 48 hours, then dropped; ConfigurationError if the topic or key is wrong" }

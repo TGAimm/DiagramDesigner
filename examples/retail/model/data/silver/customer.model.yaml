@@ -1,0 +1,37 @@
+# The unified customer: one customer_key per person, matched across Commerce customers, CRM
+# contacts, ERP customers, POS loyalty members and Klaviyo profiles (see customer_source_map).
+# SCD2: a new version when a tracked column changes (row_hash); valid_to closes the old one.
+# GAP: SCD2 history - versioning is a table pattern (valid_from/valid_to/is_current, key reused
+# across rows) the schema cannot state; pk is the surrogate, the business key is an index.
+# GAP: survivorship - a column fed by several sources with a precedence rule; `from` lists
+# them all, the precedence lives only in `derived`.
+id: bd62nmz25d
+ownedBy: c9pk2gmf7l
+storedIn: c9pk2gmf7l
+name: customer
+tags: [pii]
+fields:
+  - { id: nzh2rm32fl, name: customer_sk, type: bigint, pk: true, constraints: [identity, one per version] }
+  - { id: rjnuk01824, name: customer_key, type: string, required: true, from: [lw1lqawip9], derived: "the golden id of the match group" }
+  - { id: q4zggny5hi, name: email, type: string, nullable: true, from: [v0i6r8ufpb, kspb7rvuu3, bd3oxhi1pv, vkzle93mhm], derived: "lower-cased and trimmed; first non-empty of Commerce, CRM, ERP, Klaviyo" }
+  - { id: i4yj6nieap, name: first_name, type: string, nullable: true, from: [zijmnd3eto, fq7n3lqnuh, ltkdx5v5nq], derived: "Commerce, else CRM, else first word of the ERP name" }
+  - { id: x0nq6ngd54, name: last_name, type: string, nullable: true, from: [zo3ze58fq7, x04vm4862z, ltkdx5v5nq], derived: "Commerce, else CRM, else the rest of the ERP name" }
+  - { id: h3v65bohzk, name: birth_date, type: date, nullable: true, from: [xjnbp4u1ms, bq413z2pse], derived: Commerce else CRM }
+  - { id: mwi07f19ww, name: country, type: string, nullable: true, from: [cn8zxum2xw, td8gm3q61q, c9et8wedxo], derived: "ISO 3166 alpha-2; Commerce default shipping address, else CRM, else ERP" }
+  - { id: ssqemd6hnd, name: postal_code, type: string, nullable: true, from: [ftq48zst6b, sh0eu5ufmf, cbi0gvsgzt], derived: "spaces removed; same precedence as country" }
+  - { id: dn59vnol4a, name: city, type: string, nullable: true, from: [sq215auc97, ng447xe9e3], derived: CRM else ERP }
+  - { id: ccoj37lmh5, name: commerce_customer_id, type: uuid, nullable: true, from: [nseajx30tk] }
+  - { id: g3url7ucm2, name: crm_contact_id, type: uuid, nullable: true, from: [noqzl76io3, n284q9jcwk, qehcihpt92], derived: "the active contact: a merged contact is replaced by its masterid" }
+  - { id: hqw9bn036t, name: erp_customer_no, type: string, nullable: true, from: [mlpulx8dmi] }
+  - { id: w65j2hfgdg, name: loyalty_member_number, type: string, nullable: true, from: [m5k8j4nzpj] }
+  - { id: acce6s3q9r, name: klaviyo_profile_id, type: string, nullable: true, from: [ncwzh853ks] }
+  - { id: lymt6d2s4j, name: loyalty_tier, type: string, nullable: true, from: [bbdho91bhe] }
+  - { id: tish9s9xmt, name: marketing_consent, type: bool, required: true, from: [umnqqmep3u, lg8b544lb4], derived: "Klaviyo consent is SUBSCRIBED and CRM donotbulkemail is false" }
+  - { id: t98qerpp73, name: first_seen_at, type: datetime, required: true, from: [s88r25uj26, gl03in9m1n], derived: earliest of the sources }
+  - { id: wqu0e0qc02, name: row_hash, type: string, required: true, from: [q4zggny5hi, mwi07f19ww, ssqemd6hnd, lymt6d2s4j, tish9s9xmt], derived: sha2-256 over the SCD2-tracked columns }
+  - { id: d6lgzj0p8e, name: valid_from, type: datetime, required: true, from: [wnmd56q6tz, wrth15gpqx, ipoctnt8ci], derived: "modification time of the source row that opened this version" }
+  - { id: cbjnasudr1, name: valid_to, type: datetime, nullable: true, from: [d6lgzj0p8e], derived: "valid_from of the next version; null while current" }
+  - { id: eot2g8dqza, name: is_current, type: bool, required: true, from: [cbjnasudr1], derived: valid_to is null }
+indexes:
+  - { id: kps0s7ib96, name: ux_customer_key_valid_from, fields: [rjnuk01824, d6lgzj0p8e], unique: true }
+  - { id: cr9pfrm93e, name: ix_customer_email, fields: [q4zggny5hi] }

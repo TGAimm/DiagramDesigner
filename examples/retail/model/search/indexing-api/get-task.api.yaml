@@ -1,0 +1,15 @@
+id: qtljdrl4k8
+parent: ktxxdlpyeb
+name: Check task status
+method: GET
+path: /1/indexes/{indexName}/task/{taskID}
+auth: "X-Algolia-Application-Id + X-Algolia-API-Key"
+params:
+  - { id: b1it3q8t2m, name: indexName, in: path, type: string }
+  - { id: mmdjx02itt, name: taskID, in: path, type: long }
+responses:
+  - status: 200
+    fields:
+      - { id: nphfh77hbf, name: status, type: string, from: [c4sgr17xab] }
+      - { id: zms7mzd5s2, name: pendingTask, type: bool, from: [qfovlwxpng] }
+  - { status: 404, description: unknown task }

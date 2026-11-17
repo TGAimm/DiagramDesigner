@@ -1,0 +1,5 @@
+id: mnu2zqtqzh
+parent: qj04e3k5z2
+name: Indices
+links:
+  - { label: Indices, url: "https://www.algolia.com/doc/guides/sending-and-managing-data/manage-indices-and-apps/manage-indices/" }

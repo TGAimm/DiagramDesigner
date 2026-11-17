@@ -1,0 +1,15 @@
+id: tp4ijb3abm
+parent: cael6ntd06
+name: List receipts
+method: GET
+path: /v2/receipts
+auth: bearer (API key per integration user)
+params:
+  - { id: rqmmmpeulj, name: businessDay, in: query, type: date, required: true }
+  - { id: gm8j63qfbv, name: storeNo, in: query, type: string, required: false, description: all stores when left out }
+  - { id: d80qpk5pih, name: page, in: query, type: int, required: false }
+  - { id: jqlyf3a1c0, name: pageSize, in: query, type: int, required: false, description: "max 500, default 100" }
+responses:
+  - { status: 200, model: uvat8do1ib, many: true, description: "with lines and payments; sales and returns" }
+  - { status: 400, description: businessDay missing or in the future }
+  - { status: 401, description: Bad API key }

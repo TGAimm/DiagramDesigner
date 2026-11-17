@@ -1,0 +1,23 @@
+id: c9xs8f26qx
+parent: wyb51ibopv
+name: Create customer
+method: POST
+path: /api/v2.0/companies({companyId})/customers
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: o2v48evwfi, name: companyId, in: path, type: guid }
+request:
+  fields:
+    - { id: hqjbfg9o3b, name: displayName, type: string, required: true, to: [sil52iby8z] }
+    - { id: xo1vavd9i1, name: addressLine1, type: string, to: [vumlhqqhmd] }
+    - { id: tyfsnw6mob, name: addressLine2, type: string, to: [u5zt4c9pw1] }
+    - { id: y6wgryo5yv, name: city, type: string, to: [lcn2pfd4nj] }
+    - { id: j3lz16q1k5, name: postalCode, type: string, to: [dziaf0m5gk] }
+    - { id: czyimjr4m1, name: country, type: string, required: true, to: [vks4fix0cl], description: "picks the customer template B2C-<country>" }
+    - { id: p1cq0j3p62, name: phoneNumber, type: string, to: [tzmq359hks] }
+    - { id: atwss8dvsk, name: email, type: string, required: true, to: [nxz9rh19e0] }
+    - { id: phlgk668fk, name: currencyCode, type: string, to: [xtslnk70p9] }
+responses:
+  - { status: 201, model: ocn983ouak, description: Created }
+  - { status: 400, description: "BadRequest: a field fails validation (unknown country, currency)" }
+  - { status: 401, description: Unauthorized }

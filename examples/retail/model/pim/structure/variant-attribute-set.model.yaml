@@ -1,0 +1,9 @@
+id: jbem9ddd53
+ownedBy: mt2wjcx7nj
+storedIn: r1xvgi7bie
+name: Variant Attribute Set
+fields:
+  - { id: uwbhmrfptz, name: familyVariant, type: string, pk: true, ref: vee8cxhdki }
+  - { id: mh98btijd6, name: level, type: int, pk: true, constraints: [1 or 2] }
+  - { id: dvfm4otw6i, name: axes, type: string, many: true, required: true, ref: z66zy4j2n8, constraints: ["1 to 5", "simple select, boolean, metric or reference data attributes"] }
+  - { id: dia2jxi9au, name: attributes, type: string, many: true, ref: z66zy4j2n8, constraints: [includes the axes] }

@@ -1,0 +1,26 @@
+id: nozb9f6rc0
+ownedBy: xi92dufx8c
+storedIn: ji6igng4bi
+name: User
+tags: [pii, b2c]
+fields:
+  - { id: pyd47ra3l8, name: id, type: uuid, pk: true, constraints: ["object id; the oid claim"] }
+  - { id: i80ajt47n3, name: identities, model: u24xst6unw, many: true, required: true }
+  - { id: bwvqltczxj, name: mail, type: string, nullable: true, from: [eoh1y4b8yr], constraints: ["the verified sign-up email"] }
+  - { id: z2ki6fbhiv, name: displayName, type: string, required: true, from: [x542jk2379] }
+  - { id: rg79eelcd5, name: givenName, type: string, nullable: true, from: [a1zgv3xohr] }
+  - { id: gaf9qlyk35, name: surname, type: string, nullable: true, from: [xz77cdx8oq] }
+  - { id: mocqzowc3c, name: country, type: string, nullable: true, from: [xjcs2gbxf7], constraints: ["one of: Denmark, Sweden, Norway, Germany (display names, as the sign-up page lists them)"] }   # GAP: enum
+  - { id: y5bckyrq1c, name: preferredLanguage, type: string, nullable: true, from: [ozbc727hkp], constraints: ["da-DK, sv-SE, nb-NO, de-DE"] }
+  - { id: s64kq50zvi, name: accountEnabled, type: bool, required: true }
+  - { id: s2v5fgbp6x, name: creationType, type: string, nullable: true, constraints: ["LocalAccount for email sign-up; null for social"] }
+  - { id: mo23oaea11, name: createdDateTime, type: datetime, required: true }
+  - { id: lm0iw0ctro, name: signInActivity.lastSignInDateTime, type: datetime, nullable: true }
+  - { id: o8fzay5vas, name: deletedDateTime, type: datetime, nullable: true, constraints: ["set when soft-deleted; hard-deleted 30 days later"] }
+  # GAP: extension attribute names carry the b2c-extensions-app id ({extAppId}, no dashes); the field name differs per tenant
+  - { id: o0a4plawj8, name: "extension_{extAppId}_marketingConsent", type: bool, nullable: true, from: [u7ehl2wg9z] }
+  - { id: jvv29vdigj, name: "extension_{extAppId}_marketingConsentDate", type: datetime, nullable: true, derived: when marketingConsent was last set }
+  - { id: x0p9drrvt5, name: "extension_{extAppId}_commerceCustomerId", type: string, nullable: true, from: [xhkian2h8n], derived: set by the attribute-collection-submit extension (Storefront) }
+indexes:
+  - { id: bxsww2m26t, name: ix_user_mail, fields: [bwvqltczxj] }
+  - { id: qdyl1hpghv, name: ix_user_commerce_customer, fields: [x0p9drrvt5] }

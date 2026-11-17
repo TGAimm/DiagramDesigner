@@ -1,0 +1,8 @@
+# GAP: report uses - a report uses a handful of measures and columns, not whole models; listing
+# the models is the nearest, so impact cannot tell a report that shows Net sales from one that
+# does not.
+id: fetlp49t4o
+parent: m0obz8xmpm
+name: Sales dashboard
+meta: { audience: "management, e-commerce, store ops", pages: "Overview, Channels, Stores, Products", refresh: "after the nightly load" }
+models: [g9ggpv79gf, jogoyx9y7y, tb9l4es1im, pg9z87iutw, qlntrhv9zx, j7u638ho8v, dihqzxsjgl, no7a3ieq3i]

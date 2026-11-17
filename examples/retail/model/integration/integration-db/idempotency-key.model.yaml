@@ -1,0 +1,16 @@
+# Webhooks and Service Bus are at-least-once: a key is taken before work starts, so a
+# redelivery finds it and is acknowledged without doing the work twice.
+id: nmk8vxeclz
+ownedBy: v38tj7w8bg
+storedIn: v38tj7w8bg
+name: log.IdempotencyKeys
+fields:
+  - { id: vbvpzq8ug5, name: key, type: string, pk: true, from: [yfa5me2dg4, bbgd6grq0d, v85rw1hbek], derived: "<source>:<id>: stripe evt_…, pim event_id, commerce message id, shipping <shipment_id>:<status>, file name" }
+  - { id: avdwdxvy8u, name: source, type: string, required: true }
+  # GAP: enum
+  - { id: ddsoldtnw0, name: state, type: string, required: true, constraints: ["one of: in_progress, done, failed"] }
+  - { id: ejarkruzgp, name: resultCode, type: int, nullable: true, constraints: [HTTP status answered the first time; a replay answers the same] }
+  - { id: t623w0nrnz, name: firstSeenAt, type: datetime, required: true }
+  - { id: p9gkcrscw6, name: expiresAt, type: datetime, required: true, constraints: ["firstSeenAt + 30 days (Stripe keeps events 30 days)"] }
+indexes:
+  - { id: ear075gih9, name: ix_idempotency_expires, fields: [p9gkcrscw6] }

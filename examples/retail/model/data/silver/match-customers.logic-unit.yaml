@@ -1,0 +1,40 @@
+# nb_silver_customer: match every changed source record to a customer, then version the
+# customers whose merged record changed.
+id: jcfgpt7rd9
+parent: c9pk2gmf7l
+name: matchCustomers
+meta: { notebook: nb_silver_customer }
+inputs: []
+outputs: []
+steps:
+  - { read: d0gklh222h, with: "_loaded_at since the last run", gets: commerce customers }
+  - { read: s2uz0852i0, with: "_loaded_at since the last run", gets: contacts }
+  - { read: atzgowyr84, with: "_loaded_at since the last run", gets: loyalty members }
+  - { read: zs1qghnwpx, with: "_loaded_at since the last run", gets: erp customers }
+  - { read: v82y2iuse8, with: "_loaded_at since the last run", gets: profiles }
+  - each: changed source record
+    do:
+      - { read: i0coshp5wa, with: "source_system, source_key", gets: mapping }
+      - if: "a Commerce id links it (Commerce row itself, CRM fjeld_commercecustomerid, Klaviyo external_id)"
+        then:
+          - { read: lw1lqawip9, with: "commerce, that id", gets: key }
+      - if: "a loyalty member, or a CRM contact merged into another (follow masterid)"
+        then:
+          - { read: lw1lqawip9, with: "crm, the contact id", gets: key }
+      - if: no key yet and the normalised e-mail matches exactly one customer
+        then:
+          - { read: q4zggny5hi, with: "email, is_current", gets: key }
+      - if: no key yet
+        then:
+          - { note: "new customer_key (uuid); e-mail shared by several customers is not merged, it is logged for CX" }
+      - { write: i0coshp5wa, note: "upsert with match_rule and confidence; a record moving to another key sets unmatched_at on the old row" }
+  - each: customer_key with a changed or moved source record
+    do:
+      - { read: i0coshp5wa, with: customer_key, gets: its source records }
+      - { note: "survivorship: e-mail, names, birth date, country, postal code from the sources in precedence order; consent from Klaviyo and CRM" }
+      - { read: bd62nmz25d, with: "customer_key, is_current", gets: current version }
+      - if: no current version or row_hash differs
+        then:
+          - { write: cbjnasudr1, note: "close the current version at the new valid_from" }
+          - { write: eot2g8dqza, note: false on the closed version }
+          - { write: bd62nmz25d, note: "insert the new version, is_current true, valid_to null" }

@@ -1,0 +1,19 @@
+# GAP: file interface (outbound SHIPCONF_<ts>.csv: one row per shipped order line and parcel, read by Integration)
+id: rr62mqt1v6
+ownedBy: tn4azsu06u
+storedIn: tn4azsu06u
+name: SHIPCONF_<ts>.csv
+fields:
+  - { id: e7xle4v47a, name: order_no, type: string, pk: true, from: [epw5zsq6wa] }
+  - { id: sjvr51l4l3, name: erp_line_no, type: int, pk: true, from: [cz6fuj4cyn] }
+  - { id: mccfkpq64k, name: parcel_no, type: string, pk: true, from: [xykmbpklz4], constraints: [SSCC of the parcel holding the line] }
+  - { id: lfr5843pxs, name: customer_ref, type: string, nullable: true, from: [atg8uokgh3] }
+  - { id: ixcmex2k46, name: item_no, type: string, required: true, from: [chzzyp8d3x] }
+  - { id: n5j1wxd5ln, name: qty_shipped, type: int, required: true, from: [ho2dd2dzrw], constraints: ["0 for a line not shipped (short); ERP keeps it open as backorder"] }
+  - { id: zsgp3vkwox, name: ship_date, type: datetime, required: true, from: [w57abyzv2p] }
+  - { id: v1sctmofxm, name: carrier, type: string, required: true, from: [z1j4f29o5w] }
+  - { id: fm6ku789nx, name: product_code, type: string, required: true, from: [ozmn5hf7b0] }
+  - { id: ws7pqfpvzk, name: tracking_no, type: string, required: true, from: [e4bfjok7u8] }
+  - { id: cp5sif7tgk, name: tracking_url, type: string, nullable: true, from: [acyr93uz4y] }
+  - { id: isutwlqah1, name: weight_g, type: int, required: true, from: [ugt1drcebk] }
+  - { id: retop3ymlw, name: shipping_shipment_id, type: int, required: true, from: [vx0q996a85], constraints: [the Shipping system's shipment id] }

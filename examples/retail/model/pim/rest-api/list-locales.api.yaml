@@ -1,0 +1,14 @@
+# GAP: pagination envelope.
+id: r237vwce5j
+parent: vsn79avah8
+name: List locales
+method: GET
+path: /api/rest/v1/locales
+auth: bearer
+params:
+  - { id: g5sf4eekx3, name: search, in: query, type: json, required: false, description: "{\"enabled\":[{\"operator\":\"=\",\"value\":true}]}" }
+  - { id: dgdsv6dhe0, name: page, in: query, type: int, required: false }
+  - { id: gnufst2qj9, name: limit, in: query, type: int, required: false }
+responses:
+  - { status: 200, model: rtguxjsjrm, many: true }
+  - { status: 401, description: Missing or expired token }

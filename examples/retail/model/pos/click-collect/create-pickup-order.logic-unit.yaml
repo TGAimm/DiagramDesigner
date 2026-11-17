@@ -1,0 +1,32 @@
+id: fez9xglht0
+parent: ntfj7i0o5t
+name: createPickupOrder
+handles: [e2ngitd1kf]
+inputs:
+  - { id: xzhvcgzfmn, name: pickupOrder, model: n7gkyqvsz0, required: true }
+outputs:
+  - { id: rtn6me4o2d, name: pickupOrder, model: n7gkyqvsz0 }
+fails:
+  - { name: duplicate, description: orderNumber exists (409) }
+  - { name: unknownStore, description: "no such store, or click & collect off (422)" }
+  - { name: unknownSku, description: a line's sku is not in the catalogue (422) }
+steps:
+  - { read: lqil8hi4vu, with: orderNumber, gets: existing }
+  - if: existing
+    then:
+      - { fail: duplicate }
+  - { read: h3qlberi23, with: storeId, gets: store }
+  - if: no store, or clickCollectEnabled false
+    then:
+      - { fail: unknownStore }
+  - each: line
+    do:
+      - { read: jw2rr761o3, with: sku, gets: product }
+      - if: no product
+        then:
+          - { fail: unknownSku }
+      - { write: n9rzk3z11x, note: "+ quantity; the shelf stock is now held for the customer" }
+  - { write: n7gkyqvsz0, note: "insert, status new" }
+  - { write: hk7nkjcw5d }
+  - { note: "push a notification to the store app's click & collect list" }
+  - { return: pickupOrder }

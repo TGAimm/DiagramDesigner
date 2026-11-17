@@ -1,0 +1,28 @@
+id: d4gw6p4q16
+parent: dtgcjgjtna
+name: trackEvent
+handles: [na6iutswge]
+inputs:
+  - { id: ty6e9gxfyl, name: metricName, type: string, required: true }
+  - { id: mgeh33fzwq, name: profileIdentifiers, type: string, required: true, description: email and/or external_id }
+  - { id: c1y9qm3e8b, name: event, model: g4j7b6f21o, required: true }
+outputs: []
+fails:
+  - { name: invalid, description: no profile identifier or properties too large }
+steps:
+  - if: no profile identifier
+    then:
+      - { fail: invalid }
+  - { read: s4ov6l78rp, with: "metric, unique_id", gets: earlier event }
+  - if: earlier event exists
+    then:
+      - { note: "drop it: a resend from Integration" }
+    else:
+      - { read: lcojyx6z0a, with: metricName, gets: metric }
+      - if: no such metric
+        then:
+          - { write: i98v99bkxi, note: "create it, integration API" }
+      - { call: uivfylvr86, with: profile identifiers, gets: profile }
+      - { write: g4j7b6f21o }
+      - { write: zeulbm1dyr }
+      - { call: s5efm6lnfz, with: "event, profile", gets: flows entered }

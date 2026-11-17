@@ -1,0 +1,9 @@
+id: lck4mzgmuz
+ownedBy: rd06mopkno
+storedIn: kulzyfespz
+name: Group
+fields:
+  - { id: wsa2rmubap, name: id, type: int, pk: true }
+  - { id: e145idy62l, name: name, type: string, required: true, constraints: ["Fjeld: Kundeservice DK, Kundtjänst SE, Kundeservice NO, Kundenservice DE, Returns, B2B"] }
+  - { id: kgsng4z98g, name: default, type: bool, required: true }
+  - { id: nauhehtnv5, name: created_at, type: datetime, required: true }

@@ -1,0 +1,5 @@
+# Data flowing back out: scores computed in gold pushed to the systems people work in.
+id: n56pfhb1um
+parent: qubihx15dl
+name: Reverse ETL
+meta: { tool: "Data Factory pipeline pl_reverse_etl + notebook nb_push_scores" }

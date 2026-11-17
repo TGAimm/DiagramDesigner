@@ -1,0 +1,19 @@
+id: cyvap5gucu
+ownedBy: oqu3crot7j
+storedIn: ka6mzbfc7x
+name: Stock balance
+fields:
+  - { id: xggiygwrym, name: id, type: int, pk: true }
+  - { id: wunpl0o641, name: itemId, type: int, required: true, ref: ixjus3gqio }
+  - { id: xniltgs10p, name: locationId, type: int, required: true, ref: emtjsw8emx }
+  - { id: eo47b5o328, name: lotNo, type: string, nullable: true }
+  - { id: hg3gzb58bw, name: qtyOnHand, type: int, required: true, constraints: [min 0] }
+  - { id: d0v5nns9ar, name: qtyAllocated, type: int, required: true, constraints: [min 0, at most qtyOnHand] }
+  - { id: a3dg6sll31, name: qtyAvailable, type: int, stored: false, from: [hg3gzb58bw, d0v5nns9ar], derived: on hand - allocated }
+  # GAP: enum
+  - { id: e3yqtbydvw, name: status, type: string, required: true, constraints: ["one of: available, qc, damaged, blocked"] }
+  - { id: q08tyf6yhb, name: lastCountedAt, type: datetime, nullable: true }
+  - { id: i1e8acvj2b, name: updatedAt, type: datetime, required: true }
+indexes:
+  - { id: sum2ojvu7m, name: ux_balance_item_location_lot, fields: [wunpl0o641, xniltgs10p, eo47b5o328], unique: true }
+  - { id: fj19jj86wq, name: ix_balance_location, fields: [xniltgs10p] }

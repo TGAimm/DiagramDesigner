@@ -1,0 +1,6 @@
+id: dfdbfcgwae
+ownedBy: lnizoffy7m
+name: Breadcrumb
+fields:
+  - { id: hu32nkag2p, name: label, type: string, required: true, from: [b5fnle68c8] }
+  - { id: d6rniwzeqr, name: url, type: string, required: true, from: [ybaeyew9dz] }

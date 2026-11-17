@@ -1,0 +1,11 @@
+# Fjeld uses Weight (GRAM), Length (CENTIMETER) and Volume (LITER, backpacks).
+id: nje8idpe91
+ownedBy: c654efbgqw
+storedIn: r1xvgi7bie
+name: Measurement Family
+fields:
+  - { id: va7e93eeoy, name: code, type: string, pk: true, required: true }
+  - { id: vg9lfojhhz, name: labels, type: "map<locale, string>" }
+  - { id: pg29llznfv, name: standard_unit_code, type: string, required: true, ref: tu7he05d9m }
+  # GAP: keyed map - units is {unit code: unit}.
+  - { id: k369we8whs, name: units, model: ivkekgmtws, many: true }

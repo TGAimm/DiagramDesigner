@@ -1,0 +1,10 @@
+id: douprfp1i9
+ownedBy: z4a8fcfwai
+name: TokenResponse
+fields:
+  - { id: oh7tur94um, name: token_type, type: string, required: true, constraints: [Bearer] }
+  - { id: dejzumddhu, name: scope, type: string, required: true, from: [x0gtae8p1y] }
+  - { id: e4zazwg75o, name: expires_in, type: int, required: true, from: [miztsw278p, ksrop96mqy], derived: exp - iat }
+  - { id: rw84nc8l0q, name: access_token, type: string, required: true, from: [rst3txois7, w4vg4btrvm, x0gtae8p1y, dv6x5txny9, cuki2hdkaw], derived: "AccessTokenClaims as a JWT, RS256-signed with the current signing key" }
+  - { id: twcrnrk1sl, name: id_token, type: string, nullable: true, from: [bjin99rbt4, aotdzxokwb, fbdxbz2s0z, amummm21bl, t1qxsuftux, cuki2hdkaw], derived: "IdTokenClaims as a JWT, RS256; only when scope has openid" }
+  - { id: xmxe7cfrjp, name: refresh_token, type: string, nullable: true, from: [blgrqu8b1u], derived: "the new refresh_token grant; only with offline_access" }

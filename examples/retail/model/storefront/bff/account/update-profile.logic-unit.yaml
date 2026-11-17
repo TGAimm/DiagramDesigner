@@ -1,0 +1,29 @@
+# No /me update exists in the model, so the BFF updates the customer with its own API client,
+# always by the id from the session (never one from the browser).
+id: vg2yj8f7zy
+parent: r3utcx4a06
+name: updateProfile
+handles: [qczxb1q4s5, ylvrtxfjqt]
+inputs:
+  - { id: nrck20nyhi, name: changes, type: "{firstName, lastName, dateOfBirth, locale}", nullable: true }
+  - { id: a7b1h9ju5w, name: address, model: b8rzoiyo20, nullable: true }
+outputs:
+  - { id: yhom0yxw7c, name: profile, model: cu38cv7e7h }
+fails:
+  - { name: notSignedIn, description: "401" }
+  - { name: invalid, description: "400" }
+steps:
+  - { call: cylyc9xl5m, gets: session }
+  - if: no commerceCustomerId
+    then:
+      - { fail: notSignedIn }
+  - if: address and its postal code doesn't fit the country
+    then:
+      - { fail: invalid }
+  - { call: rn75rdis3r, with: the Identity access token, gets: customer }
+  - { call: ekgirua9an, with: "client_credentials of the BFF API client (cached)", gets: serverToken }
+  - { call: n5s9evk4bf, with: "customer.version; setFirstName, setLastName, setDateOfBirth, setLocale, or addAddress + setDefaultShippingAddress when it's the first", gets: customer }
+  - if: 409 ConcurrentModification
+    then:
+      - { call: n5s9evk4bf, with: "again with the current version", gets: customer }
+  - { return: profile }

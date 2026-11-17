@@ -1,0 +1,8 @@
+id: b8l1c902ne
+parent: lnizoffy7m
+name: Category menu
+method: GET
+path: /api/navigation
+auth: session cookie fj_sid
+responses:
+  - { status: 200, model: gwviq03kq6, many: true, omit: [sle2i7zl55] }

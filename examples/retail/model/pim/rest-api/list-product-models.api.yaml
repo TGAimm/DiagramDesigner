@@ -1,0 +1,19 @@
+# GAP: pagination envelope, as on List products.
+id: vw2ff6yhb4
+parent: vsn79avah8
+name: List product models
+method: GET
+path: /api/rest/v1/product-models
+auth: bearer
+params:
+  - { id: ztkfb4c66f, name: search, in: query, type: json, required: false, description: "e.g. updated, family, parent (is_root: {\"parent\":[{\"operator\":\"EMPTY\"}]})" }
+  - { id: ykipwyd16g, name: scope, in: query, type: string, required: false }
+  - { id: szdmdfk8te, name: locales, in: query, type: string, required: false }
+  - { id: adebq74l72, name: attributes, in: query, type: string, required: false }
+  - { id: q2rbc9kos0, name: pagination_type, in: query, type: string, required: false }
+  - { id: jixor3sgwg, name: search_after, in: query, type: string, required: false }
+  - { id: zn383koxe9, name: limit, in: query, type: int, required: false, description: max 100 }
+responses:
+  - { status: 200, model: aukbkxsjc3, many: true }
+  - { status: 401, description: Missing or expired token }
+  - { status: 422, description: Invalid search filter }

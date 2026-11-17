@@ -1,0 +1,27 @@
+# API page 50103 FJ Shipment Confirmations: the WMS confirmation of one parcel, posted as a
+# shipment of exactly those quantities. Invoicing follows by job queue.
+id: hooked7xsj
+parent: efcxalw7mu
+name: Confirm sales shipment
+method: POST
+path: /api/fjeld/integration/v1.0/companies({companyId})/salesShipmentConfirmations
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: vt84iel1vb, name: companyId, in: path, type: guid }
+request:
+  fields:
+    - { id: yunuw2za8q, name: orderNumber, type: string, required: true, to: [ygeu3nwrdy] }
+    - { id: o8xy3h16k4, name: shipmentDate, type: date, required: true, to: [gm0tfqpc0k] }
+    - { id: k7ho973de1, name: shippingAgentCode, type: string, required: true, to: [j3vwm01ky9], description: "one of: POSTNORD, GLS, BRING, DHL" }
+    - { id: l7bbuqhdsc, name: packageTrackingNumber, type: string, required: true, to: [py17kpp1a0] }
+    - { id: wven1muzjv, name: lines, model: u0efrijt7p, many: true, required: true }
+responses:
+  - status: 201
+    description: Shipment posted
+    fields:
+      - { id: daeposfjbm, name: shipmentId, type: guid, from: [wluf8wirig] }
+      - { id: esz689pz16, name: shipmentNumber, type: string, from: [w9uf1h6oz1] }
+      - { id: dup9qunoit, name: postingDate, type: date, from: [gm0tfqpc0k] }
+  - { status: 200, description: "the same tracking number was already posted for this order; returns that shipment (replay)" }
+  - { status: 400, description: "BadRequest: a quantity exceeds the outstanding quantity, or posting failed (insufficient inventory)" }
+  - { status: 404, description: no open order with this number }

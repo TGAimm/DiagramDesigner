@@ -1,0 +1,25 @@
+id: xnpfj52x8i
+parent: jzcljy1080
+name: changeLine
+handles: [r4kyemycbn, efyo8vr364]
+inputs:
+  - { id: h09hcl62uf, name: lineItemId, type: uuid, required: true }
+  - { id: b67phvygfv, name: quantity, type: int, required: true, description: 0 on DELETE }
+outputs:
+  - { id: mypls9xtnu, name: cart, model: lq4foj9308 }
+fails:
+  - { name: noSuchLine, description: "404" }
+  - { name: outOfStock, description: "409" }
+steps:
+  - { call: vhts24past, gets: cart }
+  - if: the cart has no such line
+    then:
+      - { fail: noSuchLine }
+  - if: quantity > the line's quantity
+    then:
+      - { call: nliulbw7pi, with: "the line's sku and supply channel", gets: entry }
+      - if: entry.availableQuantity < quantity
+        then:
+          - { fail: outOfStock }
+  - { call: r8uoh3ve5d, with: "version, changeLineItemQuantity lineItemId quantity (0 removes)", gets: cart }
+  - { return: cart }

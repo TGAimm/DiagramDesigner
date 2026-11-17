@@ -1,0 +1,14 @@
+# Table 325 VAT Posting Setup: DOMESTIC for DK, OSS-SE and OSS-DE for EU distance sales,
+# EXPORT for NO (VOEC).
+id: py7z6es3q5
+ownedBy: gob5rrh7wh
+storedIn: q43aprn5l0
+name: VAT Posting Setup
+fields:
+  - { id: z5j4u9tg8x, name: vatBusPostingGroup, type: string, pk: true, constraints: ["one of: DOMESTIC, OSS-SE, OSS-DE, EXPORT"] }   # GAP: enum
+  - { id: w1vficcjeb, name: vatProdPostingGroup, type: string, pk: true, constraints: ["one of: STANDARD, ZERO"] }   # GAP: enum
+  - { id: snyup3m9pl, name: vatPct, type: decimal, required: true, constraints: ["25 DK/SE/NO, 19 DE"] }
+  - { id: myck33fddy, name: vatCalculationType, type: string, constraints: ["one of: Normal VAT, Reverse Charge VAT, Full VAT, Sales Tax"] }   # GAP: enum
+  - { id: uhrvtri50i, name: salesVatAccount, type: string, ref: ro270d71oh }
+  - { id: ikk8amca7l, name: purchaseVatAccount, type: string, ref: ro270d71oh }
+  - { id: xd60nrx72b, name: vatIdentifier, type: string }

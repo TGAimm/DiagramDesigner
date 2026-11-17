@@ -1,0 +1,20 @@
+id: nz3evtxf52
+ownedBy: yvrhh8zk8f
+storedIn: ka6mzbfc7x
+name: Shipment
+fields:
+  - { id: ptoglugynp, name: id, type: int, pk: true }
+  - { id: tx85erhc0l, name: orderId, type: int, required: true, ref: zitqiyfbjs }
+  - { id: vx0q996a85, name: shippingShipmentId, type: int, required: true, from: [xac9b2igw1] }
+  - { id: z1j4f29o5w, name: carrierCode, type: string, required: true, from: [hq2wq6hpea] }
+  - { id: ozmn5hf7b0, name: productCode, type: string, required: true, from: [de5w2ko0g2] }
+  - { id: bbrlwwjhy5, name: freightCost, type: decimal, nullable: true, from: [ab7uvphbdv] }
+  - { id: fadsiousa4, name: packages, model: vvm0sb8vdb, many: true, required: true }
+  # GAP: enum
+  - { id: b5dtze70ns, name: status, type: string, required: true, constraints: ["one of: booked, dispatched, cancelled"] }
+  - { id: ub32jpj067, name: bookedAt, type: datetime, required: true }
+  - { id: w57abyzv2p, name: dispatchedAt, type: datetime, nullable: true, constraints: [the carrier's gate scan] }
+  - { id: xy7p5uigdy, name: confirmationFile, type: string, nullable: true, constraints: [SHIPCONF file it went out in; null until exported] }
+indexes:
+  - { id: phaa5y086r, name: ix_shipment_order, fields: [tx85erhc0l] }
+  - { id: yd1c19isli, name: ix_shipment_status_export, fields: [b5dtze70ns, xy7p5uigdy] }

@@ -1,0 +1,20 @@
+id: bszf4fnonm
+parent: wyb51ibopv
+name: List item variants
+method: GET
+path: /api/v2.0/companies({companyId})/items({id})/itemVariants
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: jykcnfd7p1, name: companyId, in: path, type: guid }
+  - { id: hgtuxyaeb5, name: id, in: path, type: guid, description: the item's id }
+responses:
+  - status: 200
+    many: true
+    fields:
+      - { id: cvt7wrfurj, name: id, type: guid, from: [ltnsfq79pv] }
+      - { id: pkdi0vp5q4, name: itemId, type: guid, from: [f469sma5pc, vyrbqcg8xn], derived: "systemId of the item" }
+      - { id: ebmc9yzwoe, name: itemNumber, type: string, from: [f469sma5pc] }
+      - { id: adyy8xzjd6, name: code, type: string, from: [u2mbyuw427] }
+      - { id: wtkg3syqxt, name: description, type: string, from: [xzqesc3cbv] }
+      - { id: b4pqhvumng, name: lastModifiedDateTime, type: datetime, from: [njpwhhy6im] }
+  - { status: 404, description: no item with this id }

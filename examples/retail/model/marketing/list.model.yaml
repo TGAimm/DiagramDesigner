@@ -1,0 +1,11 @@
+id: cgx25dzwjy
+ownedBy: znpte2ol9p
+storedIn: mm9tmyhvey
+name: List
+fields:
+  - { id: kkvhrnfgqc, name: id, type: string, pk: true, constraints: ["6-char id, e.g. Y6nRLr"] }
+  - { id: e4qqcx5gc9, name: name, type: string, required: true, constraints: ["Fjeld: Newsletter DK, Newsletter SE, Newsletter NO, Newsletter DE, Loyalty members"] }
+  # GAP: enum
+  - { id: s791u50owa, name: opt_in_process, type: string, required: true, constraints: ["one of: single_opt_in, double_opt_in (DE lists)"] }
+  - { id: e51cvoq0fu, name: created, type: datetime, required: true }
+  - { id: mxb2q3d47l, name: updated, type: datetime, required: true }

@@ -1,0 +1,27 @@
+id: il3qm5h2mr
+parent: pg4yiapkrt
+name: authorizeRequest
+inputs:
+  - { id: xmfg345s2k, name: bearerToken, type: string, required: true }
+  - { id: ae0fr2ocbk, name: requiredScope, type: string, required: true }
+outputs:
+  - { id: fkm1eg14tf, name: customerId, type: uuid, nullable: true, description: set for /me endpoints }
+  - { id: qrtbivit73, name: anonymousId, type: string, nullable: true }
+fails:
+  - { name: unauthorized, description: token unknown or expired (401) }
+  - { name: insufficientScope, description: token lacks the scope (403) }
+steps:
+  - { read: okef4sk2jd, with: bearerToken, gets: token }
+  - if: token not issued by commercetools (a JWT from the Identity tenant)
+    then:
+      # Entra has no introspection endpoint; the BFF answers it for the tenant (External OAuth)
+      - { call: cuzp9gjcp9, with: bearerToken, gets: "active, scope (customer_id:<id>) and sub" }
+      - { read: c558p8igta, with: "sub of the introspected token", gets: customer }
+  - if: token unknown, expired or introspection says inactive
+    then:
+      - { fail: unauthorized }
+  - if: token scope lacks requiredScope
+    then:
+      - { fail: insufficientScope }
+  - { return: customerId }
+  - { return: anonymousId }

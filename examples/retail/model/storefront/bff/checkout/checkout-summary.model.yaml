@@ -1,0 +1,15 @@
+id: c5wtilu6sm
+ownedBy: a2x6k1ux7z
+name: Checkout Summary
+tags: [pii]
+fields:
+  - { id: rqyn5intw9, name: cart, model: lq4foj9308, required: true }
+  - { id: hy07dnwu05, name: email, type: string, nullable: true, from: [gci0aev7hj] }
+  - { id: r9ahglzekt, name: shippingAddress, model: b8rzoiyo20, nullable: true, from: [zhm5q0qjk4] }
+  - { id: yn11ln4zw1, name: billingAddress, model: b8rzoiyo20, nullable: true, from: [grm3w7hrus] }
+  - { id: uthp6y6kz6, name: shippingOptions, model: vff2640otj, many: true }
+  - { id: mpsk6a4l7u, name: selectedShippingMethodId, type: uuid, nullable: true, from: [nsd27ppf5i] }
+  - { id: ut47og2wz8, name: pickupPoint, model: hu4lmlya6m, nullable: true, from: [jh9i5rb85s] }
+  - { id: ge4bdrxnkx, name: newsletterOptIn, type: bool, required: true, from: [hp3khxqvp9] }
+  - { id: whvckfz1kl, name: paymentFlow, type: string, required: true, constraints: ["one of: element, redirect", "element while new-checkout is on"] }  # GAP: enum
+  - { id: mpokn7jsbz, name: canPay, type: bool, required: true, from: [gci0aev7hj, zhm5q0qjk4, ldmh0wvzze, jh9i5rb85s], derived: "email, shipping address and method set; a pickup point when the method needs one" }

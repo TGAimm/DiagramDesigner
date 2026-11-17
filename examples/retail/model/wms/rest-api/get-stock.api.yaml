@@ -1,0 +1,24 @@
+id: pd94d5v3yu
+parent: m149ml603p
+name: Get stock
+method: GET
+path: /v1/stock
+auth: bearer (OAuth 2.0 client credentials)
+when: { flag: j5jo9lc089, is: on }
+params:
+  - { id: y0m1qnsy2l, name: itemNo, in: query, type: string, required: false, description: one item; all items when left out }
+  - { id: modrjjtvcz, name: changedSince, in: query, type: datetime, required: false, description: only items whose stock changed after this time }
+  - { id: rx5uy67eyp, name: page, in: query, type: int, required: false }
+  - { id: ungsoo2arr, name: pageSize, in: query, type: int, required: false, description: "max 1000, default 200" }
+responses:
+  - status: 200
+    many: true
+    fields:
+      - { id: c9kr2cr0rp, name: itemNo, type: string, from: [yfuhon49xq] }
+      - { id: yi4at96uqf, name: onHand, type: int, from: [hg3gzb58bw], derived: sum over bins }
+      - { id: nz5emitow9, name: allocated, type: int, from: [d0v5nns9ar], derived: sum over bins }
+      - { id: vxv4rj9xgm, name: blocked, type: int, from: [hg3gzb58bw, e3yqtbydvw], derived: "on hand in qc, damaged or blocked bins" }
+      - { id: jxm9do302h, name: available, type: int, from: [hg3gzb58bw, d0v5nns9ar, e3yqtbydvw], derived: on hand - allocated - blocked }
+      - { id: yuhx84pjll, name: updatedAt, type: datetime, from: [i1e8acvj2b], derived: latest over bins }
+  - { status: 400, description: "pageSize over 1000, or a bad changedSince" }
+  - { status: 401, description: Missing or expired token }

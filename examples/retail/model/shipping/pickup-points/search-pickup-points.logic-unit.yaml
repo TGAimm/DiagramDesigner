@@ -1,0 +1,25 @@
+id: osurr1z5vi
+parent: cm3gbbx2sq
+name: searchPickupPoints
+handles: [vvr7att2ml]
+inputs:
+  - { id: va23erilfy, name: carrier_code, type: string, required: true }
+  - { id: tggbq6q9fb, name: country_code, type: string, required: true }
+  - { id: vxmtee9yhx, name: zipcode, type: string, required: true }
+  - { id: tf55ez2s25, name: address, type: string, nullable: true }
+outputs:
+  - { id: u9l17t1gwp, name: points, model: y9waosuibq, many: true }
+fails:
+  - { name: carrierDown, description: no cache and the carrier's lookup fails }
+steps:
+  - { read: y9waosuibq, with: "carrier, country, zipcode", gets: cached }
+  - if: none cached, or fetched_at older than 24 h
+    then:
+      # GAP: external API with no system in the design (the carriers' service point lookups)
+      - { note: "ask the carrier's service point API" }
+      - if: carrier fails and nothing cached
+        then:
+          - { fail: carrierDown }
+      - { write: y9waosuibq, note: "upsert, fetched_at now" }
+  - { note: "geocode address; distance; sort nearest first; take quantity" }
+  - { return: points }

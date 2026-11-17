@@ -1,0 +1,7 @@
+id: n8ihwc0bzw
+name: Marketing
+meta: { vendor: Klaviyo, product: Klaviyo, kind: saas, owner: cx-team, apiRevision: "2024-10-15" }
+links:
+  - { label: API reference, url: https://developers.klaviyo.com/en/reference/api_overview }
+  - { label: JSON:API conventions, url: https://developers.klaviyo.com/en/docs/apis_json_api }
+  - { label: E-commerce events, url: https://developers.klaviyo.com/en/docs/guide_to_integrating_a_platform_without_a_pre_built_klaviyo_integration }

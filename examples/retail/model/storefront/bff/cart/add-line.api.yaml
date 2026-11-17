@@ -1,0 +1,15 @@
+id: hxzqf0nk71
+parent: jzcljy1080
+name: Add to cart
+method: POST
+path: /api/cart/lines
+auth: session cookie fj_sid
+request:
+  fields:
+    - { id: fd55cm6jaa, name: sku, type: string, required: true, to: [i4ltmge5r7] }
+    - { id: f8ew4734sn, name: quantity, type: int, required: true, to: [tskdp4f0x6] }
+    - { id: hm8ynzs3ca, name: storeKey, type: string, nullable: true, to: [okzymaoiob], description: "click & collect: the store channel to reserve from" }
+responses:
+  - { status: 200, model: lq4foj9308 }
+  - { status: 400, description: "unknown SKU, or no price for the country" }
+  - { status: 409, description: not enough stock }

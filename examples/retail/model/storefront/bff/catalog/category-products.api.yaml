@@ -1,0 +1,15 @@
+id: hjoe5q8cud
+parent: lnizoffy7m
+name: Category listing
+method: GET
+path: /api/categories/{slug}/products
+auth: session cookie fj_sid
+params:
+  - { id: uncm2550dc, name: slug, in: path, type: string, description: "the last slug of /c/men/jackets" }
+  - { id: bwzuuote0w, name: filters, in: query, type: string, required: false }
+  - { id: e87p5tb508, name: sort, in: query, type: string, required: false }
+  - { id: c27x6jubh6, name: page, in: query, type: int, required: false }
+responses:
+  - { status: 200, model: lfl06w7glo }
+  - { status: 400, description: unknown filter attribute }
+  - { status: 404, description: no category with this slug in the locale }

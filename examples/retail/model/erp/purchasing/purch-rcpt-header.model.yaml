@@ -1,0 +1,14 @@
+# Table 120 Purch. Rcpt. Header
+id: x3cwlhi48w
+ownedBy: si82yvapze
+storedIn: q43aprn5l0
+name: Purch. Rcpt. Header
+fields:
+  - { id: u6q2dwzg0w, name: no, type: string, pk: true, constraints: ["No. Series PRCPT"] }
+  - { id: s3cibjh5s4, name: orderNo, type: string, from: [d1cqu9qwzq] }
+  - { id: kd5j3rghns, name: buyFromVendorNo, type: string, ref: bu20ykl7b9, from: [oz0tu7wkiv] }
+  - { id: a7uxistbf5, name: postingDate, type: date, required: true }
+  - { id: svmxubzyon, name: vendorShipmentNo, type: string, constraints: ["the 3PL's inbound receipt reference"] }
+  - { id: ys8hjke4j5, name: locationCode, type: string, ref: gsrr00mc9x, from: [nio9aggiw3] }
+  - { id: sy7ue6xrc0, name: lines, model: qtkzpmml7p, many: true }
+  - { id: pkfr8oo14d, name: systemModifiedAt, type: datetime, required: true }

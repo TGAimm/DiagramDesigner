@@ -1,0 +1,25 @@
+id: e4lgvm8ym0
+parent: r3utcx4a06
+name: getOrder
+handles: [ebauq9hcdi]
+inputs:
+  - { id: hyh5rr1n86, name: orderNumber, type: string, required: true }
+outputs:
+  - { id: b45a2lh31a, name: order, model: u2alh1f0hd }
+fails:
+  - { name: notFound, description: "404" }
+steps:
+  - { call: cylyc9xl5m, gets: session }
+  - if: signed in
+    then:
+      - { call: don6d0cx4q, with: "where orderNumber = orderNumber, limit 1", gets: order }
+    else:
+      - if: orderNumber isn't session.lastOrderNumber
+        then:
+          - { fail: notFound }
+      - { call: ekgirua9an, with: "client_credentials of the BFF API client (cached)", gets: serverToken }
+      - { call: fxxz5v03t0, with: orderNumber, gets: order }
+  - if: no order
+    then:
+      - { fail: notFound }
+  - { return: order }

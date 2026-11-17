@@ -1,0 +1,13 @@
+id: mzvsl5y5gp
+parent: vkdx3tfwhz
+name: Sign-in callback
+method: GET
+path: /api/auth/callback
+auth: session cookie fj_sid (browser redirect from Identity)
+params:
+  - { id: xkxphw96le, name: code, in: query, type: string, required: false }
+  - { id: i4508ujdie, name: state, in: query, type: string }
+  - { id: qdtgpgq48j, name: error, in: query, type: string, required: false, description: "access_denied when the shopper cancels" }
+responses:
+  - { status: 302, description: to returnTo; the session now holds the tokens }
+  - { status: 400, description: "state doesn't match, or the code was refused" }

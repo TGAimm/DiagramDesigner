@@ -1,0 +1,13 @@
+# Table 349 Dimension Value: CHANNEL (WEB, STORE, CC), STORE (S01..S12), COUNTRY (DK, SE, NO, DE).
+id: j6iue5hjwy
+ownedBy: gob5rrh7wh
+storedIn: q43aprn5l0
+name: Dimension Value
+fields:
+  - { id: ohdrg1ylyk, name: dimensionCode, type: string, pk: true, constraints: ["one of: CHANNEL, STORE, COUNTRY"] }   # GAP: enum
+  - { id: fogake3ysr, name: code, type: string, pk: true, constraints: [max 20] }
+  - { id: hmdu2mnh9h, name: systemId, type: guid, required: true }
+  - { id: iii1zmgsby, name: name, type: string }
+  - { id: u8h1a7ww6a, name: dimensionValueType, type: string, constraints: ["one of: Standard, Heading, Total, Begin-Total, End-Total"] }   # GAP: enum
+  - { id: ccqkz4iijy, name: blocked, type: bool }
+  - { id: z1jhbk60yq, name: systemModifiedAt, type: datetime, required: true }

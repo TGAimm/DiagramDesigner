@@ -1,0 +1,6 @@
+id: m149ml603p
+parent: rtydt8mkge
+name: REST API v1
+meta: { baseUrl: "https://api.nordlager.dk/fjeld", auth: "OAuth 2.0 client credentials, one client per 3PL customer" }
+links:
+  - { label: Ongoing WMS REST API, url: https://developer.ongoingwarehouse.com/ }

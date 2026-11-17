@@ -1,0 +1,19 @@
+id: b5wltiomiu
+ownedBy: mb9l2suvi6
+storedIn: rrg5e7natg
+name: Discount Code
+fields:
+  - { id: hc4uytye8h, name: id, type: uuid, pk: true }
+  - { id: q3cc1bcvx6, name: version, type: long, required: true }
+  - { id: o7rh76kw30, name: code, type: string, required: true, constraints: ["e.g. WELCOME10; case-sensitive"] }
+  - { id: eyoadrcv5p, name: name, type: LocalizedString, nullable: true }
+  - { id: y7hqrmloy3, name: cartDiscounts, type: uuid, many: true, required: true, ref: uh7frpe0lz }
+  - { id: df6pqr4i3q, name: cartPredicate, type: string, nullable: true }
+  - { id: dq7wb890el, name: isActive, type: bool, required: true }
+  - { id: oic44hh01f, name: maxApplications, type: long, nullable: true }
+  - { id: yr910oqhlk, name: maxApplicationsPerCustomer, type: long, nullable: true }
+  - { id: umd9k60cza, name: validFrom, type: datetime, nullable: true }
+  - { id: g7unemqba3, name: validUntil, type: datetime, nullable: true }
+  - { id: v445fulsaw, name: groups, type: string, many: true, constraints: ["campaign group, e.g. newsletter-2026-11 (codes are generated per Marketing campaign)"] }
+indexes:
+  - { id: mzq5prl0qv, name: ux_discount_code, fields: [o7rh76kw30], unique: true }

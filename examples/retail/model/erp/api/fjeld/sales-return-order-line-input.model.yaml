@@ -1,0 +1,10 @@
+# Line of a return order sent to the custom salesReturnOrders page (deep insert).
+# GAP: request-only shape held by a request: lineage can only be written as from, though data flows into the table
+id: zm3yeyn1gr
+ownedBy: efcxalw7mu
+name: salesReturnOrderLine (API)
+fields:
+  - { id: lx3temyyky, name: invoiceLineSequence, type: int, from: [doxr42wz6j], derived: "the invoice line being returned" }
+  - { id: x4is49u0h2, name: itemNumber, type: string, from: [rb6xm6b02o] }
+  - { id: t7ncugeu4p, name: variantCode, type: string, from: [ca4tdaa49z] }
+  - { id: vh9zsz605z, name: quantity, type: decimal, from: [u90z8jq9o9] }

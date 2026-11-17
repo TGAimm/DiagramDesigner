@@ -1,0 +1,9 @@
+id: ig0ju0zjyy
+parent: ktxxdlpyeb
+name: getTask
+handles: [qtljdrl4k8]
+inputs:
+  - { id: x71pcpd3ow, name: indexName, type: string, required: true }
+  - { id: wt0r2dbqa8, name: taskID, type: long, required: true }
+outputs:
+  - { id: hcxwd3nxrd, name: task, model: uy48nlidqz }

@@ -1,0 +1,22 @@
+id: stldv1ywxc
+parent: d8hyu4qiq7
+name: cancelShipment
+handles: [iha3prs5iy]
+inputs:
+  - { id: hqtq9ekwq2, name: id, type: int, required: true }
+outputs: []
+fails:
+  - { name: notFound }
+  - { name: handedOver, description: a parcel has a carrier scan already }
+steps:
+  - { read: o96th79s8y, with: id, gets: shipment }
+  - if: no shipment
+    then:
+      - { fail: notFound }
+  - { read: e2ken4rl8u, with: shipment's parcels, gets: events }
+  - if: any event past created
+    then:
+      - { fail: handedOver }
+  # GAP: external API with no system in the design (the carriers' booking APIs)
+  - { note: void the booking at the carrier }
+  - { write: dsfx8xs8om, note: cancelled }

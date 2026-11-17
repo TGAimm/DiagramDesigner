@@ -1,0 +1,5 @@
+# Raw copies of source tables, column for column, plus load metadata. Merged on the source key.
+id: ar9pfoadj7
+parent: qubihx15dl
+name: Bronze lakehouse
+meta: { lakehouse: lh_bronze, format: Delta, retention: "raw files kept 90 days under Files/landing" }

@@ -1,0 +1,18 @@
+# GAP: triggered by subscription order-created/marketing
+id: iosi0elpz7
+parent: w8lrzinusw
+name: sendPlacedOrderToMarketing
+inputs:
+  - { id: tgad69xn4x, name: event, model: lf76fuj5g0, required: true }
+outputs: []
+steps:
+  - { note: "subscription order-created/marketing" }
+  - { call: v2gmil25dl, with: "event.orderId, expand lineItems[*].variant", gets: order }
+  - { call: na6iutswge, with: "metric Placed Order: profile email + external_id = customerId, value = totalPrice / 100, value_currency, unique_id = order number, properties (OrderId, ItemNames, Brands, Categories, DiscountCode, Items)" }
+  - each: line item
+    do:
+      - { call: na6iutswge, with: "metric Ordered Product, unique_id = <order number>-<line item id>" }
+  - if: 429
+    then:
+      - { note: "abandon: Service Bus redelivers after the lock; unique_id makes a resend harmless" }
+  - { write: yguluhbf6w, note: "processed, targetSystem marketing" }

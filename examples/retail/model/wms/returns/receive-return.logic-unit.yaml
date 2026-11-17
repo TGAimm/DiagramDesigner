@@ -1,0 +1,40 @@
+# Started at the returns bench: the inspector scans the RMA on the label, then each item, and grades it.
+id: f14a5mppwr
+parent: oidhle7bm8
+name: receiveReturn
+inputs:
+  - { id: oex3fna6uu, name: rmaNumber, type: string, nullable: true, description: "empty when the parcel has no RMA label" }
+  - { id: rrjbvf08l9, name: ean, type: string, required: true }
+  - { id: jjhnc4c1yk, name: qty, type: int, required: true }
+  - { id: xo443wbjs3, name: grade, type: string, required: true, description: "A, B, C or D" }
+  - { id: o0ihyd7uio, name: note, type: string, nullable: true }
+  - { id: l9m3du673q, name: inspectorId, type: string, required: true }
+outputs:
+  - { id: rriwqf4bpx, name: receipt, model: nurgawwrcn }
+fails:
+  - { name: unknownItem, description: the EAN is not a FJELD item }
+steps:
+  - { read: qn8wrhmtu1, with: ean, gets: item }
+  - if: no item
+    then:
+      - { fail: unknownItem }
+  - { read: qmh1m8eyjv, with: rmaNumber, gets: return order }
+  - if: no return order
+    then:
+      - { note: "unannounced return: received without a line; the client matches it from the file" }
+    else:
+      - { read: nc62fwb9eg, with: "return order, item", gets: return line }
+  - if: grade is A
+    then:
+      - { read: emtjsw8emx, with: item's pick bin, gets: bin }
+      - { write: cyvap5gucu, note: "qtyOnHand + qty, status available" }
+      - { write: slboeel66i, note: "reasonCode return_restock" }
+    else:
+      - { read: emtjsw8emx, with: "returns zone bin for the disposition (outlet, refurbish, scrap cage)", gets: bin }
+      - { write: cyvap5gucu, note: "qtyOnHand + qty, status blocked: not sellable from the webshop stock" }
+  - { write: nurgawwrcn, note: "insert, disposition from grade and reason" }
+  - { write: uup96smmws }
+  - { write: c1mrwgrbcy, note: "received when every line is in" }
+  - { write: gkqoftgixd, note: "one row, file RETURNRCPT_<ts>.csv in /out (one file per bench session)" }
+  - { write: rq3fe9rjna }
+  - { return: receipt }

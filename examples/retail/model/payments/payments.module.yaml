@@ -1,0 +1,8 @@
+id: v4gnz1sgts
+name: Payments
+meta: { vendor: Stripe, product: Stripe Payments, kind: saas, owner: commerce-team }
+links:
+  - { label: Stripe API reference, url: https://docs.stripe.com/api }
+  - { label: PaymentIntents, url: https://docs.stripe.com/api/payment_intents }
+  - { label: Webhooks, url: https://docs.stripe.com/webhooks }
+  - { label: Payouts reconciliation, url: https://docs.stripe.com/reports/payout-reconciliation }

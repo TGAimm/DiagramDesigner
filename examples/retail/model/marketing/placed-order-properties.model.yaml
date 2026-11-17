@@ -1,0 +1,17 @@
+# Event properties of Placed Order (and, per line, Ordered Product), as Integration sends them from the Commerce order.
+id: d1iw1a9cct
+ownedBy: dtgcjgjtna
+name: Placed Order properties
+fields:
+  - { id: r8d8pthz9s, name: OrderId, type: string, required: true, from: [lulkapcaa0] }
+  - { id: kdxv6azjeb, name: ItemNames, type: string, many: true, from: [tzgfqq0q8b], derived: "distinct line item names" }
+  - { id: s6da8mkqgx, name: Brands, type: string, many: true, from: [b5zlg7995z], derived: "distinct values of the lines' brand attribute" }
+  - { id: lpdgv6po3b, name: Categories, type: string, many: true, from: [jk1nv0r5mp,fvgx6wpgyf], derived: "distinct names of the lines' product categories" }
+  - { id: myxv3omryh, name: DiscountCode, type: string, nullable: true, from: [o7rh76kw30], derived: "code of the order's first discount code" }
+  - { id: xsylse0mu4, name: DiscountValue, type: decimal, nullable: true, from: [jl5a720ws2], derived: "discountedAmount / 100" }
+  - { id: q8gdf974pf, name: Country, type: string, required: true, from: [e5lts0g7ke] }
+  # GAP: enum
+  - { id: cbbrpjn68p, name: Channel, type: string, required: true, constraints: ["one of: web, store, click_and_collect"] }
+  - { id: yiyto22ih4, name: TrackingNumber, type: string, nullable: true, from: [bq0e1j92yw], derived: "first parcel's package number" }
+  - { id: zwj0o2mhcr, name: TrackingUrl, type: string, nullable: true }
+  - { id: oikuey2q3y, name: Items, model: v0zoqpfd4q, many: true }

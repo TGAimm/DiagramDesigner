@@ -1,0 +1,21 @@
+id: wlcd5j8z28
+ownedBy: yrxcxi1txk
+storedIn: mm9tmyhvey
+name: Catalog item
+fields:
+  - { id: kpuvox45iy, name: id, type: string, pk: true, from: [elpd9r0dut], derived: "$custom:::$default:::<external_id>" }
+  - { id: elpd9r0dut, name: external_id, type: string, required: true, from: [caehs975j2], derived: "the PIM SKU, via Integration" }
+  - { id: evfk5tjlv2, name: title, type: string, required: true, from: [ak4lwfuxfc], derived: "value of attribute name in the locale of the shop's main market" }
+  - { id: i2tvl2dep4, name: description, type: string, required: true, from: [ak4lwfuxfc], derived: "value of attribute description, HTML stripped" }
+  - { id: enc3yjqm6q, name: url, type: string, required: true, from: [qyertactmp], derived: "the Storefront product page of the shop's main market" }
+  - { id: esswql30n5, name: image_full_url, type: string, nullable: true, from: [qz9o3h3mq4], derived: "CDN URL of the product's main image (the asset family's main media)" }
+  - { id: jk5fx2xr4o, name: price, type: decimal, nullable: true, from: [oylo8sfbus], derived: "the DK price (country DK, no channel) / 100" }
+  - { id: kro1okl1fr, name: catalog_type, type: string, required: true, constraints: ["always $default"] }
+  - { id: xpqrn51uqm, name: integration_type, type: string, required: true, constraints: ["always $custom"] }
+  - { id: sbpbfmpbyi, name: published, type: bool, required: true }
+  # GAP: free-form properties (custom_metadata is an open map; Fjeld sends brand, category_path, in_stock)
+  - { id: caj6r95zbg, name: custom_metadata, type: json, nullable: true }
+  - { id: hbzshrnro2, name: created, type: datetime, required: true }
+  - { id: vzk892cqnh, name: updated, type: datetime, required: true }
+indexes:
+  - { id: or1hnldnb9, name: ux_catalog_item_external_id, fields: [elpd9r0dut], unique: true }

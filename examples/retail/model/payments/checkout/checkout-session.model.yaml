@@ -1,0 +1,30 @@
+# A Stripe-hosted payment page. Fjeld uses it only for the legacy redirect checkout
+# (new-checkout off); the session makes a PaymentIntent when the shopper pays.
+id: jlokrbulgw
+ownedBy: pbv5f8a0tz
+storedIn: sox2v1ykga
+name: CheckoutSession
+fields:
+  - { id: gu5ykin2q2, name: id, type: string, pk: true, constraints: ["prefix cs_"] }
+  - { id: p1xs7e26aq, name: mode, type: string, required: true, constraints: ["one of: payment, setup, subscription", "Fjeld: payment"] }   # GAP: enum
+  - { id: fr0xp36y7h, name: status, type: string, required: true, constraints: ["one of: open, complete, expired"] }   # GAP: enum
+  - { id: ejm7qq9nlr, name: payment_status, type: string, required: true, constraints: ["one of: paid, unpaid, no_payment_required"] }   # GAP: enum
+  - { id: kjheffvem6, name: amount_subtotal, type: int, constraints: ["minor units"] }
+  - { id: ou5i8881vs, name: amount_total, type: int, constraints: ["minor units"] }
+  - { id: klw2arrr9p, name: currency, type: string, required: true, constraints: ["ISO 4217 lowercase"] }
+  - { id: o7pg28qn84, name: customer, type: string, nullable: true, ref: b55i3wbaym }
+  - { id: wq6a5daccl, name: customer_email, type: string, nullable: true }
+  - { id: k7o2zlei5c, name: payment_intent, type: string, nullable: true, ref: g8pq0m68jp, constraints: [set once the shopper pays] }
+  - { id: rkvwqvtojv, name: payment_method_types, type: string, many: true, constraints: ["Fjeld: card, klarna, mobilepay"] }
+  - { id: rci92cdr23, name: client_reference_id, type: string, nullable: true }
+  - { id: w0kcn8qqsu, name: locale, type: string, nullable: true, constraints: ["e.g. da, sv, nb, de"] }
+  - { id: zkud2thpbo, name: url, type: string, nullable: true, constraints: ["the hosted page, https://checkout.stripe.com/c/pay/cs_...; null once complete or expired"] }
+  - { id: tas31ad9tr, name: success_url, type: string, required: true }
+  - { id: dms5izluwa, name: cancel_url, type: string, nullable: true }
+  # GAP: free-form key/value map (metadata): written as the fixed keys Fjeld sets, dotted
+  - { id: k8jbxlswy2, name: metadata.commerce_cart_id, type: string, from: [zin8vxu1v5], derived: uuid as text }
+  - { id: kzy64onj7a, name: expires_at, type: timestamp, required: true, constraints: ["default 24 h after created"] }
+  - { id: eh6sd98b3z, name: created, type: timestamp, required: true }
+  - { id: a1qtb98zk2, name: livemode, type: bool }
+indexes:
+  - { id: gh3ochwjl0, name: ix_cs_payment_intent, fields: [k7o2zlei5c] }

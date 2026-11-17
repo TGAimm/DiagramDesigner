@@ -1,0 +1,24 @@
+id: q6xacaktb8
+parent: dodjtgoau2
+name: Create ticket
+method: POST
+path: /api/v2/tickets
+auth: "basic (agent e-mail/token + API token) or OAuth bearer"
+# GAP: nested body (the fields sit under ticket.*; own-shape fields are flat, so the path is written in the name)
+request:
+  fields:
+    - { id: hr83hpuq5x, name: ticket.subject, type: string, to: [fzltpmlpbj] }
+    - { id: s6uhoq5zos, name: ticket.comment.body, type: string, required: true, to: [bk1ohm0lpm] }
+    - { id: m9o4m2u6ly, name: ticket.comment.public, type: bool, to: [tk1mnunpmq] }
+    - { id: kj9hqa3394, name: ticket.requester.name, type: string, to: [c4oj8pr2yl] }
+    - { id: i7ald6gxzh, name: ticket.requester.email, type: string, required: true, to: [fvt97h71xi], description: creates the end-user if new }
+    - { id: s1fpx384gp, name: ticket.priority, type: string, to: [zkrrsnbrh2] }
+    - { id: kfvb4k2udg, name: ticket.group_id, type: int, to: [k08deeouym] }
+    - { id: ouetrtv4oo, name: ticket.tags, type: string, many: true, to: [maigyjjtjt] }
+    - { id: q45btms85h, name: ticket.custom_fields, model: ld3q0h95p5, many: true }
+responses:
+  - status: 201
+    fields:
+      - { id: uwrr6yzhfj, name: ticket, model: cd3t7bjar1 }
+  - { status: 422, model: zkkh7sjnsz, description: RecordInvalid }
+  - { status: 429, description: rate limited; Retry-After header }

@@ -1,0 +1,31 @@
+id: j538ko098o
+parent: vsn79avah8
+name: issueToken
+handles: [qq1hzhaotk]
+inputs:
+  - { id: abyqjaiaa2, name: clientId, type: string, required: true }
+  - { id: n3ou8cmc0i, name: secret, type: string, required: true }
+  - { id: mpe1zsm54g, name: request, model: usfaesrwyh, required: true }
+outputs:
+  - { id: jdr3efevrl, name: token, model: c4vt77sgj8 }
+fails:
+  - { name: invalidClient, description: "400 invalid_client" }
+  - { name: invalidGrant, description: "400 invalid_grant: wrong user/password or unknown, expired refresh token" }
+steps:
+  - { note: "check clientId and secret against the Connection" }
+  - if: no Connection matches
+    then:
+      - { fail: invalidClient }
+  - if: grant_type is refresh_token
+    then:
+      - { read: gqykle1ev0, with: refresh_token, gets: old token }
+      - if: none, or refresh token expired (14 days)
+        then:
+          - { fail: invalidGrant }
+    else:
+      - { note: "check username/password of the Connection's API user" }
+      - if: wrong credentials
+        then:
+          - { fail: invalidGrant }
+  - { write: c4vt77sgj8, note: "new token and refresh token, expiresAt = now + 3600 s" }
+  - { return: token }

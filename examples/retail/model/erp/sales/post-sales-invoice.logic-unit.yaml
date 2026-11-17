@@ -1,0 +1,41 @@
+# Codeunit 80 Sales-Post with Invoice: invoices what is shipped and posts it to the customer
+# ledger and the G/L.
+id: phjm212yw2
+parent: vss7pk1oh5
+name: postSalesInvoice
+inputs:
+  - { id: duc0avmz29, name: orderNo, type: string, required: true }
+outputs:
+  - { id: bbq2tb7z1d, name: invoice, model: v9er9w3t9v }
+fails:
+  - { name: nothingToInvoice, description: no line has shipped quantity not yet invoiced }
+  - { name: postingDateNotAllowed, description: posting date outside the allowed posting period }
+  - { name: setupMissing, description: no VAT or general posting setup for a line's group combination }
+steps:
+  - { read: ejg622chhy, with: "Order, orderNo", gets: header }
+  - { read: i09cr44p1c, with: "Order, orderNo, qtyToInvoice > 0", gets: lines }
+  - if: lines is empty
+    then:
+      - { fail: nothingToInvoice }
+  - if: header.postingDate outside allowed posting from..to
+    then:
+      - { fail: postingDateNotAllowed }
+  - { read: py7z6es3q5, with: "header VAT bus. group, each line's VAT prod. group", gets: VAT rates and accounts }
+  - { read: wz926i6uhd, with: "header gen. bus. group, each line's gen. prod. group", gets: sales accounts }
+  - if: a combination has no setup
+    then:
+      - { fail: setupMissing }
+  # GAP: transaction boundary: the invoice, value entries, customer ledger and G/L commit together
+  - { write: v9er9w3t9v, note: "insert, no. from series SINV, due date from payment terms" }
+  - each: line in lines
+    do:
+      - { write: rd7sjmorm0, note: "insert with the shipment no. and line it invoices" }
+      - { write: qq1p83ss5p, note: "actual sales amount and cost on the shipment's item ledger entry" }
+      - { write: z86s14bjrr, note: "add qtyToInvoice" }
+  - { call: g7nfkzjdkj, with: "Customer line: amount incl. VAT to the bill-to customer, document type Invoice", gets: custLedgerEntryNo }
+  - { call: g7nfkzjdkj, with: "per posting group combination: sales account (credit), VAT account (credit)" }
+  - { write: hcldy652fe, note: custLedgerEntryNo }
+  - if: every line is fully shipped and invoiced
+    then:
+      - { write: ejg622chhy, note: "delete header and lines; the order is done" }
+  - { return: invoice }

@@ -41,16 +41,59 @@ Open goals only. **Remove a goal once it is achieved**; keep this list lean.
 
 ## Modelling gaps
 
-Things real landscapes have that the schema cannot express yet. Found by checking the schema
-against TrainTicket, eShop, the OpenTelemetry demo and typical ERP/PIM/shop landscapes.
+Things real landscapes have that the schema cannot express yet, found by modelling
+`examples/retail` (15 systems). Each is marked there with a `# GAP:` comment (about 500);
+`grep -rn "# GAP" examples/retail` finds the concrete cases. The workarounds in use are in
+`examples/retail/README.md`.
 
-- Async messaging: events, topics and queues, with who publishes and who subscribes (`method`
-  is HTTP only).
-- Other interfaces: gRPC, GraphQL, SOAP, EDI and file drops, batch exports.
-- Triggers beyond apis: a unit started by a schedule (cron) or by an event, not only `handles`.
-- Third-party SaaS consumed but not owned (payment provider, carrier), distinct from
-  `external: true` (callers the design doesn't show).
-- Enums and value sets for fields; lifecycles/state machines (order status).
-- Copies of data at landscape scale: caches, search indexes, data warehouse, checked against
-  `from`.
-- Ownership, teams and environments as first-class, not free `meta`.
+Interfaces and triggers:
+
+- Async messaging: topics and queues, publishers and subscribers, subscription filters,
+  batch receive, retry/dead-letter (now faked as `POST /topics/...` apis).
+- Interfaces beyond HTTP: GraphQL operations, SQL endpoints, file exchange (CSV over SFTP:
+  one row per line grouped into orders, error and archive files, folders owned by another
+  system), hardware (card terminals, fiscal signing units).
+- Triggers beyond `handles`: schedules, topic subscriptions, row changes (Dataverse plugins,
+  Zendesk triggers), user actions in a product's own UI or on a device (Post › Receive,
+  handheld scans, till), a vendor-hosted page; several triggers on one unit.
+- Endpoints outside the landscape (carrier APIs) with no system to point at.
+- Browser redirects that carry results in the Location query (OAuth `code`, `state`).
+- Batch requests (`$batch`, multipart) holding other api calls; async work after the
+  response (task ids); a call target held in data (retry re-send).
+- Transaction boundaries: steps that commit or roll back together (ERP posting).
+- A unit returning several outputs together.
+
+Shapes:
+
+- Embedded objects stored in a JSON column of their holder (a held model is always its own
+  table today); keyed maps and free-form properties (`metadata`, attribute values).
+- Unions: polymorphic payloads by discriminator (webhook events, update actions, messages),
+  polymorphic references (`{typeId, id}`, `regardingobjectid`, `source` ch_/re_/po_).
+- Enums, and state machines with allowed transitions.
+- Envelopes: list/paging (`{data, has_more}`, OData `value`/`nextLink`), batch envelopes;
+  response projection (`$select`, `$expand`); partial bodies (any subset of a model).
+- Nested inline objects without a model of their own (now dotted field names); sub-fields of
+  them can't be lineage targets.
+- Table inheritance; one table holding several document kinds (Sales Header: order, return).
+- Runtime-typed custom fields; field names that vary per tenant; config records that drive
+  behaviour (flows, segments, rules) as instances, not types.
+- Constant fields; request fields checked but never stored (`client_secret`, `code`).
+- A model field `description` key (api fields have one).
+- Storage: split storage (metadata in DB, bytes in blob), caches with expiry (counted as a
+  second source of truth), one shape in many indices/replicas, parameterised computed fields
+  (FlowFields).
+
+Lineage and impact:
+
+- Request fields can't carry `from`, and `from` can't name api own-shape fields, so lineage
+  breaks at every call between systems (Integration's ERP order draft, deep inserts).
+- Lineage is per field, not per path or row: shared value types (`Money.centAmount`) and EAV
+  attribute values collapse many sources into one; no row filters (`where locale = en_GB`),
+  no union/survivorship rules, no grouping keys in aggregates, false cycles between a total
+  and its rows; no route (via Integration, via ERP).
+- Fields named by string in config (search `facets`, `filters`) aren't reached by renames.
+- Warehouse semantics: SCD2 history, as-of joins, grain, semi-additive measures, measures in
+  filter context, row-level security, which fields a report uses.
+- Ownership: two writers of one field; third-party SaaS vs own-built; teams and
+  environments only in `meta`.
+- Mentions of old names match common words: renaming `no` rewrites every "no." in notes.

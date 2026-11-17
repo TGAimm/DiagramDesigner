@@ -1,0 +1,28 @@
+# GAP: scheduled trigger
+id: gso7uli5m9
+parent: yvrhh8zk8f
+name: planWaves
+meta: { schedule: "*/30 6-20 * * 1-6" }
+inputs: []
+outputs: []
+steps:
+  - { read: zitqiyfbjs, with: "status received or on_hold (no stock), by priority then createdAt", gets: open orders }
+  - each: carrier in open orders by carrierProduct's carrier, next cutoff first
+    do:
+      - { write: du7403qqrh, note: "insert, status planned, cutoffAt = carrier's next collection" }
+      - each: order of that carrier
+        do:
+          - each: line in order.lines
+            do:
+              - { read: cyvap5gucu, with: "item, status available, zone pick then reserve, oldest lot first, by pickSequence", gets: balances }
+              - if: available < qtyOrdered
+                then:
+                  - { write: gfhtt2sknp, note: "on_hold, holdReason no stock; the order waits for the whole quantity (no part shipments for B2C)" }
+                else:
+                  - { write: d0v5nns9ar, note: "+ qty per bin used" }
+                  - { write: h8jsrfryjc, note: "one per bin used, status open, sequence from the bin's pickSequence" }
+                  - { write: r7pnhw4yz1 }
+          - if: every line allocated
+            then:
+              - { write: zitqiyfbjs, note: "status allocated, waveId" }
+      - { write: emon33xg03, note: "released when it holds orders, else delete" }

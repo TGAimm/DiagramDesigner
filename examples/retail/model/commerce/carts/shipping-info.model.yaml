@@ -1,0 +1,12 @@
+id: fsxk836i4v
+ownedBy: b1ptklldw3
+name: Shipping Info
+fields:
+  - { id: pxrwtg5dmg, name: shippingMethodName, type: string, required: true, from: [w2u7m66odj] }
+  - { id: j6aeqj954u, name: price, model: ik7usc5zp1, required: true, from: [pxe9c1gsek, n05x4zxsy9], derived: "0 when the cart total reaches freeAbove" }
+  - { id: qhny9y9480, name: shippingRate, model: j296qp1l8u, required: true }
+  - { id: lnhgeacwzp, name: taxRate, model: oxv3h61cni, nullable: true }
+  - { id: ng46t7u0xt, name: taxCategory, type: uuid, nullable: true, ref: yzii05r372 }
+  - { id: nsd27ppf5i, name: shippingMethod, type: uuid, nullable: true, ref: o9qqaz63dc }
+  - { id: f5tnxhbc78, name: shippingMethodState, type: string, required: true, constraints: ["one of: MatchesCart, DoesNotMatchCart"] }  # GAP: enum
+  - { id: jk30p6swt9, name: deliveries, model: tqdi590eeu, many: true, constraints: [only on orders] }

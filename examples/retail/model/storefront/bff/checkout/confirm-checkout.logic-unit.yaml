@@ -1,0 +1,22 @@
+id: xogy1dxryn
+parent: a2x6k1ux7z
+name: confirmCheckout
+handles: [p24mectfxj]
+when: { flag: p9sg006xy9, is: on }
+inputs:
+  - { id: yfkw926kfy, name: paymentIntentId, type: string, required: true }
+outputs:
+  - { id: vw78b2fpb2, name: order, model: g5tcad7xx0 }
+fails:
+  - { name: notAuthorised, description: "402" }
+  - { name: cartChanged, description: "409: out of stock or price changed" }
+steps:
+  - { call: by4f2wsisq, with: paymentIntentId, gets: intent }
+  - if: "intent.metadata.commerce_cart_id isn't the session's cart, or status isn't requires_capture"
+    then:
+      - { fail: notAuthorised }
+  - { call: ol06c5ybgi, with: "cart, intent", gets: order }
+  - if: placeOrder failed
+    then:
+      - { fail: cartChanged }
+  - { return: order }

@@ -1,0 +1,19 @@
+id: id3wj2m0zi
+parent: woc2py521s
+name: Update product
+method: POST
+path: /{projectKey}/products/{id}
+auth: "bearer (manage_products)"
+params:
+  - { id: wsqqe0tzt5, name: projectKey, in: path, type: string, description: fjeld-prod }
+  - { id: trfbdwfrbb, name: id, in: path, type: uuid }
+request:
+  fields:
+    - { id: mjd1tne0rb, name: version, type: long, required: true, description: expected current version, to: [el6553deun] }
+    # GAP: polymorphic update action union (setAttribute, setPrices, addPrice, changePrice, addVariant, addExternalImage, addToCategory, changeName, setDescription, publish, unpublish...); written as one field going into everything they touch
+    - { id: mfi8he422y, name: actions, type: "UpdateAction {action, ...}", many: true, required: true, description: "max 500 per request; staged by default", to: [huyilro2b9, v6uo25nnmi, gw8rv1dzbo, jk1nv0r5mp, mhv7ikbma4, mbj3f7j4vf, c1uzjurwuu, o4853v7a28, y45wgfaxfe, rhrjn22iuo, f548hthtkr, rf3rftt13r, bxu1wv8v2t, rv5v4pxlnd, b5zlg7995z, aun8w1fli3, s4wl996ngt] }
+responses:
+  - { status: 200, model: w1g1lt9yyv }
+  - { status: 400, description: "InvalidOperation, DuplicateField (sku), DuplicatePriceScope" }
+  - { status: 404, description: ResourceNotFound }
+  - { status: 409, description: ConcurrentModification (version is stale) }

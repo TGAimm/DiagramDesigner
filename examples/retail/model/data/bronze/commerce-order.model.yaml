@@ -1,0 +1,39 @@
+# One row per order; money flattened from Money (centAmount, currencyCode).
+# GAP: lineage into a shared held model - Money and Address are held by many fields, so
+# `from: [centAmount]` alone would mean every Money in Commerce; each column names the holding
+# field too, and which path (totalPrice.centAmount) is only said in `derived`.
+id: xxiv4r3zd7
+ownedBy: ar9pfoadj7
+storedIn: ar9pfoadj7
+name: commerce_order
+tags: [pii]
+fields:
+  - { id: wcuyzzwo11, name: id, type: uuid, pk: true, from: [qazi456zfm] }
+  - { id: p00dw79fsw, name: orderNumber, type: string, nullable: true, from: [lulkapcaa0] }
+  - { id: wra4ebvayq, name: customerId, type: uuid, nullable: true, from: [zs9b3f85u9] } # null for guest checkout
+  - { id: w7j5jbzpyz, name: customerEmail, type: string, nullable: true, from: [b5ftkjr0y9] }
+  - { id: tdoybc1nhn, name: store, type: string, from: [l4uantreae], constraints: ["one of: fjeld-dk, fjeld-se, fjeld-no, fjeld-de"] } # GAP: enum
+  - { id: qtfjwi1yfr, name: country, type: string, from: [e5lts0g7ke] }
+  - { id: h1gumenf97, name: locale, type: string, from: [gvk3486s33] }
+  - { id: imfwvmkzlt, name: orderState, type: string, from: [eg3umbi5el] }
+  - { id: mgsgddbs3y, name: shipmentState, type: string, nullable: true, from: [r29wqfepvb] }
+  - { id: y2126jlybe, name: paymentState, type: string, nullable: true, from: [b0edsryzw7] }
+  - { id: pj9vdgib5w, name: total_cent_amount, type: long, from: [pxcdgn4yd5, oylo8sfbus], derived: totalPrice.centAmount }
+  - { id: jot79csopc, name: currency_code, type: string, from: [pxcdgn4yd5, n8mwhpvdh9], derived: totalPrice.currencyCode }
+  - { id: i1h8heq9xg, name: total_net_cent_amount, type: long, nullable: true, from: [qm8k0kk56q, o65b6zniu9, oylo8sfbus], derived: taxedPrice.totalNet.centAmount }
+  - { id: v3cgj6zaiu, name: total_tax_cent_amount, type: long, nullable: true, from: [qm8k0kk56q, o7bjoxmffq, oylo8sfbus], derived: taxedPrice.totalTax.centAmount }
+  - { id: d0t0jppbwc, name: shipping_cent_amount, type: long, nullable: true, from: [lwgxpams2f, j6aeqj954u, oylo8sfbus], derived: shippingInfo.price.centAmount }
+  - { id: e0okupakbx, name: shipping_method_name, type: string, nullable: true, from: [lwgxpams2f, pxrwtg5dmg], derived: shippingInfo.shippingMethodName }
+  - { id: zlo6r0dabm, name: ship_to_postal_code, type: string, nullable: true, from: [sr3l239ybl, qromjahmgy], derived: shippingAddress.postalCode }
+  - { id: wuqh2d8dzd, name: ship_to_city, type: string, nullable: true, from: [sr3l239ybl, u8pwxyruqv], derived: shippingAddress.city }
+  - { id: qgrbuks7gb, name: erp_order_no, type: string, nullable: true, from: [m73mrjedkn, nppz22af3p], derived: custom.fields.erpOrderNo }
+  - { id: qwqvqzkrxn, name: collect_store_key, type: string, nullable: true, from: [m73mrjedkn, k5u5kiw2fk], derived: "custom.fields.collectStoreKey; set for click & collect" }
+  - { id: u18jjv8t06, name: origin, type: string, from: [jh92a57fc6] }
+  - { id: tx9n22lb28, name: createdAt, type: datetime, from: [ifyxx7dooz] }
+  - { id: wlbh99pohm, name: completedAt, type: datetime, nullable: true, from: [cqbmiwr5ee] }
+  - { id: p6ad495qfp, name: lastModifiedAt, type: datetime, from: [tqzli8reqt] }
+  - { id: nmml02jea0, name: _loaded_at, type: datetime, required: true }
+  - { id: brolgrp01z, name: _source, type: string, required: true, constraints: ["commerce/orders"] }
+  - { id: l99ohik0r8, name: _batch_id, type: string, required: true }
+indexes:
+  - { id: vd3renytxx, name: ix_commerce_order_number, fields: [p00dw79fsw] }

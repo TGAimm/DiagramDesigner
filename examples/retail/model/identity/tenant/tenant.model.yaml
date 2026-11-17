@@ -1,0 +1,11 @@
+id: pqkdfvra6c
+ownedBy: bpgo7ehinh
+storedIn: ji6igng4bi
+name: Tenant
+fields:
+  - { id: rknpht5c6k, name: tenantId, type: uuid, pk: true }
+  - { id: kevw5pvtr5, name: displayName, type: string, required: true, constraints: ["Fjeld Outdoor customers"] }
+  - { id: xsyas51lgm, name: primaryDomain, type: string, required: true, constraints: ["fjeldid.onmicrosoft.com"] }
+  - { id: qe1t6n2v9f, name: ciamDomain, type: string, required: true, constraints: ["fjeldid.ciamlogin.com; custom domain login.fjeld.com"] }
+  - { id: gcu3ue2h17, name: issuer, type: string, required: true, from: [rknpht5c6k], derived: "https://{tenantId}.ciamlogin.com/{tenantId}/v2.0" }
+  - { id: vniphkir7b, name: countryLetterCode, type: string, constraints: ["DK; sets the data location (EU)"] }

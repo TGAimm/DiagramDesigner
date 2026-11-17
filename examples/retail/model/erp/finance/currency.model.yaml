@@ -1,0 +1,13 @@
+# Table 4 Currency: EUR, SEK, NOK (DKK is LCY, written as blank).
+id: xau5axn59s
+ownedBy: gob5rrh7wh
+storedIn: q43aprn5l0
+name: Currency
+fields:
+  - { id: nirn4ae2ma, name: code, type: string, pk: true, constraints: ["one of: EUR, SEK, NOK"] }   # GAP: enum
+  - { id: bm6jfzwcnh, name: systemId, type: guid, required: true }
+  - { id: cmx6tywvl0, name: description, type: string }
+  - { id: smwvb4si7e, name: isoCode, type: string }
+  - { id: swlin84gjm, name: amountRoundingPrecision, type: decimal }
+  - { id: hwovubz0n6, name: invoiceRoundingPrecision, type: decimal }
+  - { id: conwfufcvc, name: systemModifiedAt, type: datetime, required: true }

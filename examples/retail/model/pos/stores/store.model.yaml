@@ -1,0 +1,26 @@
+id: h3qlberi23
+ownedBy: kw2jlrdqza
+storedIn: hykg6pt8u2
+name: Store
+fields:
+  - { id: hvpe1ot6lm, name: id, type: int, pk: true }
+  - { id: ta0yzi1b46, name: storeNo, type: string, required: true, constraints: ["city-seq, e.g. cph-01; Commerce channel key is store-<storeNo>"] }
+  - { id: gtt4ohjqdi, name: name, type: string, required: true, constraints: ["e.g. Fjeld København Nørrebro"] }
+  - { id: g6s8welf7y, name: erpLocationCode, type: string, required: true, from: [gsrr00mc9x], constraints: ["e.g. S-CPH01"] }
+  - { id: iwtx1ky2fz, name: street, type: string, required: true }
+  - { id: lw90l5eb4j, name: zip, type: string, required: true }
+  - { id: fihlkzaai2, name: city, type: string, required: true }
+  # GAP: enum
+  - { id: ygf3qzp7tm, name: country, type: string, required: true, constraints: ["one of: DK, SE, NO, DE"] }
+  # GAP: enum
+  - { id: ainz12ukbb, name: currency, type: string, required: true, constraints: ["one of: DKK, SEK, NOK, EUR"] }
+  - { id: ix5o2jm5h2, name: timezone, type: string, required: true, constraints: ["Europe/Copenhagen, Europe/Stockholm, Europe/Oslo, Europe/Berlin"] }
+  - { id: eunzwea27w, name: phone, type: string, nullable: true }
+  - { id: klgrd09bqa, name: email, type: string, nullable: true }
+  - { id: phdzjhryyl, name: openingHours, type: string, nullable: true, constraints: ["e.g. Mo-Fr 10-19, Sa 10-16"] }
+  - { id: mkctz5x6te, name: clickCollectEnabled, type: bool, required: true }
+  # GAP: enum
+  - { id: ttn3wxft0b, name: status, type: string, required: true, constraints: ["one of: active, closed"] }
+indexes:
+  - { id: k92bu6opvw, name: ux_store_no, fields: [ta0yzi1b46], unique: true }
+  - { id: t0d0xu8cdn, name: ux_store_erp_location, fields: [g6s8welf7y], unique: true }

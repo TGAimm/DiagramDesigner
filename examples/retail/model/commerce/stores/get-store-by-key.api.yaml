@@ -1,0 +1,12 @@
+id: fy1ab7dar4
+parent: g249oo5ag4
+name: Get store by key
+method: GET
+path: /{projectKey}/stores/key={key}
+auth: "bearer (view_stores)"
+params:
+  - { id: w3plkixbf5, name: projectKey, in: path, type: string, description: fjeld-prod }
+  - { id: vm15g0yylv, name: key, in: path, type: string, description: "fjeld-dk, fjeld-se, fjeld-no or fjeld-de" }
+responses:
+  - { status: 200, model: zb70kb1he1 }
+  - { status: 404, description: ResourceNotFound }

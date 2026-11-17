@@ -1,0 +1,12 @@
+# Table 5404 Item Unit of Measure: PCS for all; PACK for multi-packs (socks, gas cartridges).
+id: vm9ood7jac
+ownedBy: x2x0s3utl1
+storedIn: q43aprn5l0
+name: Item Unit of Measure
+fields:
+  - { id: azicvwhsfl, name: itemNo, type: string, pk: true, ref: yu6wdxgb8q }
+  - { id: oqoid63vr5, name: code, type: string, pk: true, constraints: ["one of: PCS, PACK"] }   # GAP: enum
+  - { id: bkuavebtnt, name: qtyPerUnitOfMeasure, type: decimal, required: true, constraints: [positive] }
+  - { id: dfegcmpruh, name: length, type: decimal, nullable: true, constraints: [cm] }
+  - { id: tkurmtv57k, name: width, type: decimal, nullable: true, constraints: [cm] }
+  - { id: blnifv4jg3, name: height, type: decimal, nullable: true, constraints: [cm] }

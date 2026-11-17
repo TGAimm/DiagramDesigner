@@ -1,0 +1,12 @@
+id: no6pifpr62
+ownedBy: g55sb0eqd6
+name: ProductChangedEvent
+fields:
+  - { id: wmvz0vhd73, name: pimUuid, type: uuid, required: true, from: [a3ahi9xtp3, ea4ojm7zz9] }
+  - { id: trxnvxlcg6, name: sku, type: string, nullable: true, from: [caehs975j2, t9n72fi01e] }
+  # GAP: enum
+  - { id: bfzxfhec07, name: action, type: string, required: true, from: [b3zc3zn050], derived: "created, updated or removed (last part of the type)" }
+  # GAP: enum
+  - { id: pyuzsunov0, name: trigger, type: string, required: true, constraints: ["one of: pim-event, nightly-full, manual"] }
+  - { id: migt1u33jx, name: eventDateTime, type: datetime, required: true, from: [n3souttruc, grf6lk2vlx] }
+  - { id: zdab45yumw, name: author, type: string, nullable: true, from: [dkljos92at] }

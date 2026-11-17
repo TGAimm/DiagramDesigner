@@ -1,0 +1,4 @@
+id: w8lrzinusw
+parent: mleccno0ev
+name: Order sync
+meta: { functionApp: func-fjeld-orders, runtime: ".NET 8 isolated", plan: Flex Consumption }

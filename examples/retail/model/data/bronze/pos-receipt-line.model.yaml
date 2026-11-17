@@ -1,0 +1,20 @@
+id: xhhmfktmbw
+ownedBy: ar9pfoadj7
+storedIn: ar9pfoadj7
+name: pos_receipt_line
+fields:
+  - { id: ewnnodqiwp, name: id, type: uuid, pk: true, from: [wd5tvyecqo] }
+  - { id: w32durq49f, name: receiptId, type: uuid, ref: pvtiaf6yea, from: [x5ezismojm] }
+  - { id: q61vfq68w8, name: lineNo, type: int, from: [gfl3wp2uwr] }
+  - { id: gqqvzs3hu4, name: sku, type: string, from: [spogg3guvr] }
+  - { id: tf8l8qirmg, name: ean, type: string, nullable: true, from: [x31qe2g2oq] }
+  - { id: g2h8bhjcu9, name: quantity, type: int, from: [jnw4tryjno], constraints: [negative on return lines] }
+  - { id: c69b0pcrcr, name: unitPrice, type: decimal, from: [ryfe5kxqtl] }
+  - { id: owg1kas6g4, name: discountAmount, type: decimal, from: [kzmhww5hax] }
+  - { id: indep93uc6, name: vatRate, type: decimal, from: [hcgava4jct] }
+  - { id: wrew270gti, name: lineTotal, type: decimal, from: [x871oi7nj9], constraints: [incl. VAT] }
+  - { id: gaizfxn2cu, name: returnReason, type: string, nullable: true, from: [zp1hr9xak1] }
+  - { id: nigz1s61bi, name: originalLineId, type: uuid, nullable: true, from: [hp2pgmn7fi] }
+  - { id: jsk4qq7rsx, name: _loaded_at, type: datetime, required: true }
+  - { id: xmkiwbk7wx, name: _source, type: string, required: true, constraints: ["pos/receipts.lines"] }
+  - { id: mqu4vg7kpi, name: _batch_id, type: string, required: true }

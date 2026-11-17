@@ -1,0 +1,19 @@
+id: lzgefs75au
+parent: z4a8fcfwai
+name: OpenID configuration
+method: GET
+path: /{tenant}/v2.0/.well-known/openid-configuration
+auth: none
+params:
+  - { id: sgfr1xue1t, name: tenant, in: path, type: string }
+responses:
+  - status: 200
+    description: discovery document; clients cache it
+    fields:
+      - { id: dbv9esbkl1, name: issuer, type: string, from: [gcu3ue2h17] }
+      - { id: wxpwdrkxmk, name: authorization_endpoint, type: string, from: [qe1t6n2v9f, rknpht5c6k], derived: "https://{ciamDomain}/{tenantId}/oauth2/v2.0/authorize" }
+      - { id: cewj5ti8lw, name: token_endpoint, type: string, from: [qe1t6n2v9f, rknpht5c6k], derived: ".../oauth2/v2.0/token" }
+      - { id: tpt625h0g8, name: end_session_endpoint, type: string, from: [qe1t6n2v9f, rknpht5c6k], derived: ".../oauth2/v2.0/logout" }
+      - { id: qx2jqgzzw4, name: jwks_uri, type: string, from: [qe1t6n2v9f, rknpht5c6k], derived: ".../discovery/v2.0/keys" }
+      - { id: xesa42c4lg, name: claims_supported, type: string, many: true, from: [bjin99rbt4, aotdzxokwb, fbdxbz2s0z, amummm21bl], derived: names of the ID token claims }
+  - { status: 404, description: Unknown tenant }

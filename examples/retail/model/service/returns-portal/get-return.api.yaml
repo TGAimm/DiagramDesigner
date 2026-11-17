@@ -1,0 +1,11 @@
+id: ti1x2twrbg
+parent: t6al4kcu16
+name: Get return
+method: GET
+path: /returns/{returnId}
+auth: "portal session, or API key (Integration, agents' Zendesk app)"
+params:
+  - { id: tamnaqnqkz, name: returnId, in: path, type: string, description: id or RMA number }
+responses:
+  - { status: 200, model: dntnqyedil }
+  - { status: 404 }

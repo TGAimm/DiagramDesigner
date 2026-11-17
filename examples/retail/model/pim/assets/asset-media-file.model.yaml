@@ -1,0 +1,15 @@
+# akeneo_file_storage_file_info row; the binary itself is in File Storage.
+# GAP: split storage - metadata in MySQL, bytes in object storage; a model has one storedIn.
+id: g0etyo2vbn
+ownedBy: t9ah36fepl
+storedIn: r1xvgi7bie
+name: Asset Media File
+fields:
+  - { id: qz9o3h3mq4, name: code, type: string, pk: true, required: true, constraints: ["hashed path, e.g. 1/2/3/4/a1b2c3_name.jpg"] }
+  - { id: dfad6hvz10, name: original_filename, type: string, required: true }
+  - { id: mrh7qy90fh, name: mime_type, type: string, required: true }
+  - { id: qs0nuebrrc, name: size, type: int, required: true, constraints: [bytes] }
+  - { id: b1aa9olacq, name: extension, type: string, required: true }
+  - { id: vrggkvyyax, name: hash, type: string, required: true, constraints: [sha1] }
+  - { id: vj4awfj4ya, name: storage, type: string, required: true, constraints: ["one of: assetStorage, catalogStorage"] }
+  - { id: i27izaq2x9, name: content, type: binary, stored: false, constraints: [held in File Storage under code] }

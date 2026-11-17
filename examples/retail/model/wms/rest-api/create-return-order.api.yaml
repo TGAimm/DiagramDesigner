@@ -1,0 +1,13 @@
+id: h14t5yh29l
+parent: m149ml603p
+name: Announce return
+method: POST
+path: /v1/return-orders
+auth: bearer (OAuth 2.0 client credentials)
+when: { flag: j5jo9lc089, is: on }
+request: { model: otm133ip2y, pick: [ehqa9kdbss, qmh1m8eyjv, rdcg3o2fb4, ecej5d5c7k, by28ma23c9, g1kr0u8oo6] }
+responses:
+  - { status: 201, model: otm133ip2y, pick: [a49uxsb7ss, ehqa9kdbss, c1mrwgrbcy], description: Expected }
+  - { status: 401, description: Missing or expired token }
+  - { status: 409, description: returnNo or rmaNumber already announced }
+  - { status: 422, description: Unknown item no. }

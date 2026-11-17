@@ -1,0 +1,20 @@
+id: gqrhpmn4ti
+parent: m149ml603p
+name: Get order status
+method: GET
+path: /v1/orders/{id}/status
+auth: bearer (OAuth 2.0 client credentials)
+when: { flag: j5jo9lc089, is: on }
+params:
+  - { id: bi37hvusbm, name: id, in: path, type: string, description: "the client's order number (orderNumber)" }
+responses:
+  - status: 200
+    fields:
+      - { id: j27pram3wt, name: orderNumber, type: string, from: [epw5zsq6wa] }
+      - { id: cyoto021ws, name: status, type: string, from: [gfhtt2sknp] }
+      - { id: l37d52rj85, name: holdReason, type: string, nullable: true, from: [ikc8l93lz5] }
+      - { id: bg7vqkhipy, name: shippedAt, type: datetime, nullable: true, from: [c3ykqmv15w] }
+      - { id: tu0607cyak, name: lines, type: "{lineNo, itemNo, qtyOrdered, qtyPicked, qtyShipped}", many: true, from: [o7nssjtox1, chzzyp8d3x, hl4ib4prci, dujuwqrmkr, ho2dd2dzrw] }
+      - { id: gfmplx8fux, name: shipments, model: nz3evtxf52, many: true }
+  - { status: 401, description: Missing or expired token }
+  - { status: 404, description: No order with this number }

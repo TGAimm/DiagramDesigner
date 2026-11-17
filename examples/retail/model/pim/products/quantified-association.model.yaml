@@ -1,0 +1,11 @@
+# A quantified link, e.g. Fjeld's tent bundle PACK: tent x1, footprint x1, pegs x2.
+# GAP: nested lists - the wire nests {products: [{uuid, quantity}], product_models: [{identifier, quantity}]}
+# under the type code; written as one row per linked item.
+id: qa6jdf6hzp
+ownedBy: tuvm3c6m5l
+name: Quantified Association
+fields:
+  - { id: wo4bxbzyhq, name: associationType, type: string, required: true, ref: lbon5jq95g, constraints: [type must have is_quantified true] }
+  - { id: j71slvyqhg, name: uuid, type: uuid, nullable: true, ref: gziztcdf03 }
+  - { id: bblg7nyjgx, name: identifier, type: string, nullable: true, ref: bjqn3xm3lr }
+  - { id: tr66d16ipf, name: quantity, type: int, required: true, constraints: [min 1] }

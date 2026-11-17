@@ -1,0 +1,29 @@
+# Codeunit 90 Purch.-Post, receive only. A buyer runs Post > Receive on the Purchase Order
+# page after the 3PL's inbound receipt e-mail.
+# GAP: user action in the product's own client as the trigger (no api, no schedule)
+id: oovav3xq45
+parent: si82yvapze
+name: postPurchaseReceipt
+inputs:
+  - { id: qa3w21zn6y, name: purchaseOrderNo, type: string, required: true }
+outputs:
+  - { id: s64wxpdkfu, name: receipt, model: x3cwlhi48w }
+fails:
+  - { name: nothingToReceive, description: no line has a qty. to receive }
+  - { name: notReleased, description: the order is not released }
+steps:
+  - { read: y2y8ts9tdh, with: purchaseOrderNo, gets: header }
+  - if: header.status <> Released
+    then:
+      - { fail: notReleased }
+  - { read: jr1sw83gnm, with: "document type Order, purchaseOrderNo", gets: lines }
+  - if: no line has qtyToReceive > 0
+    then:
+      - { fail: nothingToReceive }
+  - { write: x3cwlhi48w, note: "insert receipt header copied from the order" }
+  - each: line with qtyToReceive > 0
+    do:
+      - { call: dfac9bllv7, with: "entry type Purchase, item, variant, location, qtyToReceive, directUnitCost", gets: itemLedgerEntryNo }
+      - { write: qtkzpmml7p, note: "insert receipt line with itemRcptEntryNo" }
+      - { write: gq7kaou8x3, note: "add qtyToReceive; reset qtyToReceive" }
+  - { return: receipt }

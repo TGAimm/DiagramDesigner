@@ -1,0 +1,10 @@
+# Options of simple and multi selects, e.g. colour: red, forest_green; size: xs..xxl, 36..47.
+id: ftmepi2ion
+ownedBy: mt2wjcx7nj
+storedIn: r1xvgi7bie
+name: Attribute Option
+fields:
+  - { id: wa87n8vequ, name: code, type: string, pk: true, required: true }
+  - { id: fok3ocy8y9, name: attribute, type: string, pk: true, ref: z66zy4j2n8 }
+  - { id: lzhi5vk6b7, name: sort_order, type: int }
+  - { id: k81itv2t6e, name: labels, type: "map<locale, string>" }

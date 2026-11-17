@@ -1,0 +1,14 @@
+id: tzc68qcqx4
+ownedBy: mnu2zqtqzh
+storedIn: u4435mqo47
+name: Synonym
+fields:
+  - { id: xe1enoffbg, name: indexName, type: string, pk: true, ref: fwm01mcigb }
+  - { id: cqfn250l6c, name: objectID, type: string, pk: true }
+  - { id: k0m6blvuy2, name: type, type: string, required: true, constraints: ["one of: synonym, oneWaySynonym, altCorrection1, altCorrection2, placeholder"] }  # GAP: enum
+  - { id: vprg941g9l, name: synonyms, type: string, many: true, constraints: ["synonym, oneWaySynonym: e.g. regnjakke, regnfrakke, skaljakke"] }
+  - { id: md8v8ieejs, name: input, type: string, nullable: true, constraints: ["oneWaySynonym: e.g. gore-tex -> membrane"] }
+  - { id: z8of2mhati, name: word, type: string, nullable: true, constraints: [altCorrection1/2] }
+  - { id: wi6dqls02j, name: corrections, type: string, many: true }
+  - { id: lu12z27dj9, name: placeholder, type: string, nullable: true, constraints: ["placeholder: e.g. <size>"] }
+  - { id: eew3fgcat3, name: replacements, type: string, many: true }

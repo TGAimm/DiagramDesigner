@@ -1,0 +1,31 @@
+id: hok4cjg7tt
+parent: jzcljy1080
+name: addLine
+handles: [hxzqf0nk71]
+inputs:
+  - { id: qhhjscrxho, name: sku, type: string, required: true }
+  - { id: v1m1ivw6dd, name: quantity, type: int, required: true }
+  - { id: dpy0kgklrx, name: storeKey, type: string, nullable: true }
+outputs:
+  - { id: euckdykdgo, name: cart, model: lq4foj9308 }
+fails:
+  - { name: outOfStock, description: "409" }
+  - { name: noPrice, description: "400: unknown SKU or no price for the country" }
+steps:
+  - { call: vhts24past, gets: cart }
+  - if: no cart
+    then:
+      - { call: cwh4uwg3f8, with: "currency, country, store, locale, inventoryMode ReserveOnOrder", gets: cart }
+      - { write: r40by5rpuu, note: the new cart id }
+  - { call: nliulbw7pi, with: "sku, supplyChannel = the store's channel (click & collect) or none (webshop)", gets: entry }
+  - if: entry.availableQuantity < quantity + what the cart already holds
+    then:
+      - { fail: outOfStock }
+  - { call: r8uoh3ve5d, with: "version, addLineItem sku quantity supplyChannel", gets: cart }
+  - if: 409 ConcurrentModification
+    then:
+      - { call: r8uoh3ve5d, with: "again with the version from the error", gets: cart }
+  - if: 400 MatchingPriceNotFound or no such SKU
+    then:
+      - { fail: noPrice }
+  - { return: cart }

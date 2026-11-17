@@ -1,0 +1,6 @@
+id: vhafikux7j
+ownedBy: b1ptklldw3
+name: Discount Code Info
+fields:
+  - { id: dj7i20mwas, name: discountCode, type: uuid, required: true, ref: hc4uytye8h }
+  - { id: ct25r6vwlx, name: state, type: string, required: true, constraints: ["one of: NotActive, NotValid, DoesNotMatchCart, MatchesCart, MaxApplicationReached, ApplicationStoppedByPreviousDiscount"] }  # GAP: enum

@@ -1,0 +1,24 @@
+# Started at the dock when the carrier's driver signs for the cage (gate scan of every SSCC).
+id: sv5wzexsb4
+parent: yvrhh8zk8f
+name: dispatchCarrierLoad
+inputs:
+  - { id: pogqkz1cew, name: carrierCode, type: string, required: true }
+  - { id: ave880wyiu, name: scannedSscc, type: string, many: true, required: true }
+outputs:
+  - { id: pg4lxfxcj7, name: shipments, model: nz3evtxf52, many: true }
+fails:
+  - { name: unknownParcel, description: a scanned SSCC is not a booked package of this carrier }
+steps:
+  - each: sscc in scannedSscc
+    do:
+      - { read: xykmbpklz4, with: sscc, gets: package }
+      - if: no package, or its shipment's carrier != carrierCode
+        then:
+          - { fail: unknownParcel }
+  - each: shipment whose packages are all scanned
+    do:
+      - { write: nz3evtxf52, note: "status dispatched, dispatchedAt" }
+      - { write: zitqiyfbjs, note: "status shipped, shippedAt" }
+  - { note: "a shipment with a package left behind stays booked and shows on the dock's exception list" }
+  - { return: shipments }

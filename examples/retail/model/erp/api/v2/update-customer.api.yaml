@@ -1,0 +1,16 @@
+id: xyxqlr3l4f
+parent: wyb51ibopv
+name: Update customer
+method: PATCH
+path: /api/v2.0/companies({companyId})/customers({id})
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: x8jsoro4dp, name: companyId, in: path, type: guid }
+  - { id: jvzk6sa954, name: id, in: path, type: guid }
+  - { id: cy7k9ajjo5, name: If-Match, in: header, type: string, required: true, description: "the @odata.etag last read, or * " }
+request: { model: ocn983ouak, pick: [hs38b34z61, hvqgzjo28z, xpthszwcsg, x7mjfnnp9r, hvj8wc9ett, kvfjtnmhve, qqszy48xvs, iaweh258mk] }
+responses:
+  - { status: 200, model: ocn983ouak }
+  - { status: 400, description: "BadRequest: a field fails validation" }
+  - { status: 404, description: no customer with this id }
+  - { status: 412, description: "Precondition failed: the record changed since it was read" }

@@ -1,0 +1,33 @@
+id: cd3t7bjar1
+ownedBy: dodjtgoau2
+storedIn: kulzyfespz
+name: Ticket
+fields:
+  - { id: ksaqjqmrmp, name: id, type: int, pk: true }
+  - { id: fzltpmlpbj, name: subject, type: string, nullable: true }
+  - { id: n6d3ojvteh, name: description, type: string, stored: false, from: [bk1ohm0lpm], derived: the first comment's body (read-only) }
+  # GAP: enum
+  - { id: i64dk7x0dr, name: status, type: string, required: true, constraints: ["one of: new, open, pending, hold, solved, closed"] }
+  # GAP: enum
+  - { id: zkrrsnbrh2, name: priority, type: string, nullable: true, constraints: ["one of: low, normal, high, urgent"] }
+  # GAP: enum
+  - { id: zb0d3i3jjk, name: type, type: string, nullable: true, constraints: ["one of: question, incident, problem, task"] }
+  - { id: djurmyoomn, name: requester_id, type: int, required: true, ref: ekcor3oja3 }
+  - { id: lfdx8fa5qp, name: submitter_id, type: int, required: true, ref: ekcor3oja3 }
+  - { id: dmzfzbuase, name: assignee_id, type: int, nullable: true, ref: ekcor3oja3 }
+  - { id: tzu0ibtvp9, name: organization_id, type: int, nullable: true, ref: mqgsqrl464 }
+  - { id: k08deeouym, name: group_id, type: int, nullable: true, ref: lck4mzgmuz }
+  - { id: maigyjjtjt, name: tags, type: string, many: true }
+  # GAP: enum
+  - { id: bo6b8pvrru, name: via.channel, type: string, required: true, constraints: ["one of: email, web, api, chat, voice"] }
+  - { id: tz4qa3z1iz, name: external_id, type: string, nullable: true, constraints: ["the RMA number when the returns portal opened it"] }
+  # GAP: keyed custom fields (custom_fields is a list of {id, value}; the id names a Ticket field row, e.g. Order number)
+  - { id: lqw4q6rjeh, name: custom_fields, model: ld3q0h95p5, many: true }
+  - { id: mouejh5f1g, name: satisfaction_rating.score, type: string, nullable: true, from: [toxjb45ooh] }
+  - { id: yhnrmpcz7e, name: brand_id, type: int, required: true, constraints: ["one brand per shop: fjeld.dk, fjeld.se, fjeld.no, fjeld.de"] }
+  - { id: jaocito1vj, name: created_at, type: datetime, required: true }
+  - { id: ytmk9d60kw, name: updated_at, type: datetime, required: true }
+indexes:
+  - { id: ll17vtax4b, name: ix_ticket_requester, fields: [djurmyoomn] }
+  - { id: t0mxnh2qyd, name: ix_ticket_status_group, fields: [i64dk7x0dr, k08deeouym] }
+  - { id: hnzg032sa8, name: ix_ticket_updated, fields: [ytmk9d60kw] }

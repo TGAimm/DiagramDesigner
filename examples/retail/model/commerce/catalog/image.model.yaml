@@ -1,0 +1,7 @@
+id: soxf9u41at
+ownedBy: woc2py521s
+name: Image
+fields:
+  - { id: aun8w1fli3, name: url, type: string, required: true, constraints: [PIM asset CDN url] }
+  - { id: ptazxgwc3h, name: dimensions, type: "{w: int, h: int}", required: true }
+  - { id: lkemz6w668, name: label, type: string, nullable: true }

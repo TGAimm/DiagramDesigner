@@ -1,0 +1,19 @@
+id: fsdygpvm9i
+ownedBy: lzm2qjgaov
+storedIn: rrg5e7natg
+name: Inventory Entry
+fields:
+  - { id: manbwnp2uv, name: id, type: uuid, pk: true }
+  - { id: hu3pb2kbi4, name: version, type: long, required: true }
+  - { id: wv6nmudwhq, name: key, type: string, nullable: true, constraints: ["<sku>@<channel key>"] }
+  - { id: bhg7tr499g, name: sku, type: string, required: true, ref: c1uzjurwuu }
+  - { id: jpfyutcqja, name: supplyChannel, type: uuid, nullable: true, ref: yi0uf2c9tg, constraints: [none = webshop stock without channel] }
+  - { id: az9eabg78b, name: quantityOnStock, type: long, required: true }
+  - { id: z6tv7i6g31, name: availableQuantity, type: long, required: true, from: [az9eabg78b, ae7tr09nmb], derived: quantityOnStock minus quantities reserved by orders with inventoryMode ReserveOnOrder }
+  - { id: ws2iqpk3rv, name: restockableInDays, type: int, nullable: true }
+  - { id: ox57jp7kkm, name: expectedDelivery, type: datetime, nullable: true }
+  - { id: w4y64555xs, name: createdAt, type: datetime, required: true }
+  - { id: aabm79sji8, name: lastModifiedAt, type: datetime, required: true }
+indexes:
+  - { id: bg1m6trdew, name: ux_inventory_sku_channel, fields: [bhg7tr499g, jpfyutcqja], unique: true }
+  - { id: afm6vpmta9, name: ux_inventory_key, fields: [wv6nmudwhq], unique: true }

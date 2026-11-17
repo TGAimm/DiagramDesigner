@@ -1,0 +1,17 @@
+id: srwurvv7kf
+parent: r3utcx4a06
+name: listOrders
+handles: [mc8t8ucb9l]
+inputs:
+  - { id: dg1qfkcgas, name: page, type: int, nullable: true }
+outputs:
+  - { id: th6nw3vsv7, name: orders, model: u2alh1f0hd, many: true }
+fails:
+  - { name: notSignedIn, description: "401" }
+steps:
+  - { call: cylyc9xl5m, gets: session }
+  - if: no identityUserId
+    then:
+      - { fail: notSignedIn }
+  - { call: don6d0cx4q, with: "sort createdAt desc, limit 20, offset (page - 1) * 20", gets: orders }
+  - { return: orders }

@@ -1,0 +1,12 @@
+id: du1t02r2dk
+parent: scelhoohob
+name: Create subscription
+method: POST
+path: /{projectKey}/subscriptions
+auth: "bearer (manage_subscriptions)"
+params:
+  - { id: r022x6qkp4, name: projectKey, in: path, type: string, description: fjeld-prod }
+request: { model: iilvycwlpt, pick: [gd0hba7150, r7g6n0f52w, kj9qbokf5l, wc9glrk1hx, gkqo6m5msp] }
+responses:
+  - { status: 201, model: iilvycwlpt }
+  - { status: 400, description: "ConfigurationError: commercetools could not send a test message to the topic" }

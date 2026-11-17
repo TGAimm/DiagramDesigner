@@ -1,0 +1,45 @@
+# Started by the cashier scanning a receipt barcode (or a webshop order number) and picking lines to return.
+id: jogquz8fdi
+parent: cael6ntd06
+name: returnAtTill
+inputs:
+  - { id: xcgknoyrvu, name: registerId, type: int, required: true }
+  - { id: zujd0aprqp, name: staffId, type: int, required: true }
+  - { id: rn4a0ca9aj, name: originalReceiptNo, type: string, nullable: true, description: "empty for a return without receipt" }
+  - { id: otyde8n38z, name: webshopOrderNumber, type: string, nullable: true, description: "a webshop order returned in a store" }
+  - { id: o88pu3orzw, name: lines, type: "{sku, quantity, returnReason, restockable}", many: true, required: true }
+outputs:
+  - { id: la1soh2jyn, name: receipt, model: uvat8do1ib }
+fails:
+  - { name: notOnReceipt, description: a returned sku or quantity is not on the original receipt }
+  - { name: alreadyReturned, description: the line was returned before }
+  - { name: tooLate, description: "more than 30 days (100 for members) since the sale" }
+steps:
+  - if: webshopOrderNumber given
+    then:
+      - { call: pp88xlfmmr, with: "webshopOrderNumber, the customer's e-mail", gets: webshop order }
+      - { call: lmic8gsioh, with: "webshopOrderNumber, storeNo, the return receipt's number, lines with returnReason", gets: rmaNumber, note: "Integration has ERP credit the online sale and refunds the online payment, not the till" }
+  - if: originalReceiptNo given
+    then:
+      - { read: uvat8do1ib, with: originalReceiptNo, gets: original }
+      - if: original older than the return window
+        then:
+          - { fail: tooLate }
+      - each: line
+        do:
+          - { read: mcg64yx3kn, with: "original, sku", gets: original line }
+          - if: no such line, or quantity over what was bought
+            then:
+              - { fail: notOnReceipt }
+          - if: original line already returned
+            then:
+              - { fail: alreadyReturned }
+      - { read: aq2g2gtebf, with: original, gets: original tenders }
+      - { note: "refund to the original tender: card refund on the terminal, wallet refund, cash for cash" }
+    else:
+      - { note: "no receipt: store credit (a gift card) only, at the current price; needs a store_manager PIN" }
+  - { write: uvat8do1ib, note: "insert, type return, originalReceiptId, negative total" }
+  - { write: mcg64yx3kn, note: "negative quantities, originalLineId, returnReason" }
+  - { write: aq2g2gtebf, note: negative amounts }
+  - { call: vgcz70cvds, with: "receipt (restockable lines only)", gets: nothing }
+  - { return: receipt }

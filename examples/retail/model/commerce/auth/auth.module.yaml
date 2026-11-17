@@ -1,0 +1,6 @@
+id: pg4yiapkrt
+parent: ygmbkn58fj
+name: Authorization
+links:
+  - { label: OAuth endpoints, url: "https://docs.commercetools.com/api/authorization" }
+  - { label: External OAuth, url: "https://docs.commercetools.com/api/authorization#requesting-an-access-token-using-an-external-oauth-server" }

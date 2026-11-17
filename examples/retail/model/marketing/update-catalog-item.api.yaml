@@ -1,0 +1,16 @@
+id: yvbyorx9g5
+parent: yrxcxi1txk
+name: Update catalog item
+method: PATCH
+path: /api/catalog-items/{id}
+auth: "Klaviyo-API-Key private key (scope catalogs:write)"
+params:
+  - { id: rtenwgus61, name: id, in: path, type: string, description: "$custom:::$default:::<SKU>" }
+  - { id: mbknslxt5p, name: revision, in: header, type: string, required: true }
+request:
+  contentType: application/vnd.api+json
+  model: wlcd5j8z28
+  omit: [kpuvox45iy, elpd9r0dut]
+responses:
+  - { status: 200, model: wlcd5j8z28 }
+  - { status: 404, model: s4w1d8x1z4 }

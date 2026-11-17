@@ -1,0 +1,17 @@
+id: k3slo13dhk
+parent: pfvgbz7fey
+name: Confirm a PaymentIntent
+method: POST
+path: /v1/payment_intents/{intent}/confirm
+auth: bearer (secret key) or publishable key + client_secret (Stripe.js)
+params:
+  - { id: z68x9ngapz, name: intent, in: path, type: string }
+request:
+  contentType: application/x-www-form-urlencoded
+  fields:
+    - { id: q2071agewi, name: payment_method, type: string, to: [i1gxbia3hg] }
+    - { id: ltyz2hw7cq, name: return_url, type: string, to: [fvca3dsn74], description: storefront checkout return page }
+responses:
+  - { status: 200, model: g8pq0m68jp, description: "requires_action (3DS, Klarna, MobilePay), requires_capture or processing" }
+  - { status: 400, model: pwpsr0fyli, description: payment_intent_unexpected_state }
+  - { status: 402, model: pwpsr0fyli, description: "card_error: card_declined, authentication_required" }

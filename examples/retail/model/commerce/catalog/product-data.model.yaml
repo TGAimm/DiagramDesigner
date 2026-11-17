@@ -1,0 +1,14 @@
+id: f4k1ljvlhl
+ownedBy: woc2py521s
+name: Product Data
+fields:
+  - { id: huyilro2b9, name: name, type: LocalizedString, required: true, constraints: ["locales: da-DK, sv-SE, nb-NO, de-DE, en"] }
+  - { id: v6uo25nnmi, name: description, type: LocalizedString, nullable: true }
+  - { id: gw8rv1dzbo, name: slug, type: LocalizedString, required: true, constraints: [unique per locale] }
+  - { id: jk1nv0r5mp, name: categories, type: uuid, many: true, ref: nfhbnrj8ng }
+  - { id: vd0cx6vs3q, name: categoryOrderHints, type: "map<categoryId, string>", nullable: true }
+  - { id: mhv7ikbma4, name: metaTitle, type: LocalizedString, nullable: true }
+  - { id: mbj3f7j4vf, name: metaDescription, type: LocalizedString, nullable: true }
+  - { id: ri06kq4cd6, name: searchKeywords, type: "map<locale, {text}[]>", nullable: true }
+  - { id: h1rdhrnd74, name: masterVariant, model: zey11c3zfk, required: true }
+  - { id: h4ytihxxz6, name: variants, model: zey11c3zfk, many: true }

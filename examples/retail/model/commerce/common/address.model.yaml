@@ -1,0 +1,20 @@
+id: mrllytyew7
+ownedBy: mptlxipd5n
+name: Address
+tags: [pii]
+fields:
+  - { id: bk4lcoskkv, name: id, type: string, nullable: true }
+  - { id: l00idwhpb7, name: key, type: string, nullable: true }
+  - { id: romyz4pfcf, name: firstName, type: string, nullable: true }
+  - { id: bsp6j20gsl, name: lastName, type: string, nullable: true }
+  - { id: a6f8fq31va, name: company, type: string, nullable: true }
+  - { id: igsvyvkfo3, name: streetName, type: string, nullable: true }
+  - { id: omcvn591ci, name: streetNumber, type: string, nullable: true }
+  - { id: ob7rb7es6y, name: additionalStreetInfo, type: string, nullable: true }
+  - { id: qromjahmgy, name: postalCode, type: string, nullable: true }
+  - { id: u8pwxyruqv, name: city, type: string, nullable: true }
+  - { id: czbauzymbt, name: country, type: string, required: true, constraints: ["ISO 3166-1 alpha-2", "one of: DK, SE, NO, DE"] }  # GAP: enum
+  - { id: zpxuly18oh, name: phone, type: string, nullable: true }
+  - { id: n8i6mdsagq, name: mobile, type: string, nullable: true }
+  - { id: zla33ac4c4, name: email, type: string, nullable: true }
+  - { id: n0jsg1u77c, name: externalId, type: string, nullable: true }

@@ -1,0 +1,20 @@
+id: cwh4uwg3f8
+parent: b1ptklldw3
+name: Create my cart
+method: POST
+path: /{projectKey}/me/carts
+auth: "bearer (customer or anonymous session token, manage_my_orders)"
+params:
+  - { id: cw67n5wo8d, name: projectKey, in: path, type: string, description: fjeld-prod }
+request:
+  fields:
+    - { id: gki49ut9ft, name: currency, type: string, required: true, to: [n8mwhpvdh9] }
+    - { id: zw69rmvdij, name: country, type: string, to: [q352ftjm2k] }
+    - { id: n3ck6n5849, name: store, type: "KeyReference {key}", to: [vkpb2ika6w] }
+    - { id: revuzw0q4y, name: locale, type: string, to: [qeov4vu4az] }
+    - { id: laqaybr61d, name: inventoryMode, type: string, to: [qay8apurvi] }
+    - { id: zzm82eqw09, name: lineItems, type: "{sku, quantity, supplyChannel}", many: true, to: [mfm2nwfwft, ae7tr09nmb, k1q2bof4we] }
+responses:
+  - { status: 201, model: w4i82sypi6, description: customerId or anonymousId taken from the token }
+  - { status: 400, description: "InvalidField, MatchingPriceNotFound" }
+  - { status: 403, description: insufficient_scope }

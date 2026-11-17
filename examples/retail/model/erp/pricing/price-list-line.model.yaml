@@ -1,0 +1,29 @@
+# Table 7001 Price List Line: a price or a line discount for an item (or variant) on a list.
+id: zk2ozptnx5
+ownedBy: g65jav6xwo
+storedIn: q43aprn5l0
+name: Price List Line
+fields:
+  - { id: m8xb6ceh1z, name: priceListCode, type: string, pk: true, ref: vafvzw52g1 }
+  - { id: hj1l0fggpt, name: lineNo, type: int, pk: true }
+  - { id: t4amrq5aak, name: systemId, type: guid, required: true }
+  - { id: vlfeymd0yo, name: sourceType, type: string, from: [suvh7hx2ew] }
+  - { id: aalc01ycu4, name: sourceNo, type: string, from: [wijskhecd6] }
+  - { id: e2ihgzc91y, name: assetType, type: string, constraints: ["one of: Item, Item Discount Group, Resource, G/L Account"] }   # GAP: enum
+  - { id: rkjvkv9x3b, name: assetNo, type: string, required: true, ref: yu6wdxgb8q }
+  - { id: wm2ctpbax6, name: variantCode, type: string, nullable: true, ref: u2mbyuw427, constraints: ["blank = all variants"] }
+  - { id: khvnw5kpz9, name: unitOfMeasureCode, type: string }
+  - { id: dr41csivdn, name: currencyCode, type: string, from: [i7o75328sn] }
+  - { id: ck1kd7z8q8, name: startingDate, type: date, nullable: true, from: [lw8xage4ob] }
+  - { id: frlq0a7tky, name: endingDate, type: date, nullable: true, from: [hvn53ds9hz] }
+  - { id: x027hk1fnr, name: minimumQuantity, type: decimal }
+  - { id: r74j51bn3t, name: amountType, type: string, from: [aacd4wqv07] }
+  - { id: kqip2xr4t7, name: unitPrice, type: decimal, constraints: [min 0] }
+  - { id: i80lhot82k, name: lineDiscountPct, type: decimal, constraints: [min 0, max 100] }
+  - { id: wiqy2eaw2b, name: priceIncludesVat, type: bool, from: [bhfa0m18wt] }
+  - { id: jftrbxw4xz, name: status, type: string, from: [s2uqop9oj0] }
+  - { id: jxvus70k0s, name: systemModifiedAt, type: datetime, required: true }
+indexes:
+  - { id: tztqcz5hc7, name: ux_price_list_line_systemid, fields: [t4amrq5aak], unique: true }
+  - { id: dogxkqhu3i, name: ix_price_list_line_lookup, fields: [e2ihgzc91y, rkjvkv9x3b, vlfeymd0yo, aalc01ycu4, dr41csivdn, ck1kd7z8q8] }
+  - { id: h81rj6k9x7, name: ix_price_list_line_modified, fields: [jxvus70k0s] }

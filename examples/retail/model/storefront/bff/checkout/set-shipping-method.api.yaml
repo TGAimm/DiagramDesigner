@@ -1,0 +1,14 @@
+id: dywxfforvn
+parent: a2x6k1ux7z
+name: Set delivery
+method: PUT
+path: /api/checkout/shipping-method
+auth: session cookie fj_sid
+request:
+  fields:
+    - { id: cgdhv2vwf8, name: shippingMethodId, type: uuid, required: true, to: [twlinw3u9c] }
+    - { id: oa9fpe7wyp, name: pickupPointId, type: string, nullable: true, to: [jh9i5rb85s] }
+    - { id: e54mtefefj, name: carrierCode, type: string, nullable: true, to: [cj6xff9bmv] }
+responses:
+  - { status: 200, model: c5wtilu6sm }
+  - { status: 400, description: "the method doesn't match the cart, or it needs a pickup point" }

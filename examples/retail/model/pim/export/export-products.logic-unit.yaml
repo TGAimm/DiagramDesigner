@@ -1,0 +1,20 @@
+# GAP: scheduled trigger
+id: fqs0vvbm44
+parent: lawdrrqrtr
+name: exportProducts
+meta: { schedule: "0 2 * * *", job: fjeld_webshop_products }
+inputs: []
+outputs: []
+steps:
+  - { read: wnhy05z81c, with: ecommerce, gets: "locales, category tree, conversion units" }
+  - { read: qitb6ezis6, with: "enabled, in tree fjeld_web", gets: products }
+  - each: product
+    do:
+      - { read: aukbkxsjc3, with: parent chain, gets: inherited values }
+      - { read: y3n2a1xjts, with: "uuid, ecommerce", gets: completeness per locale }
+      - { read: ftmepi2ion, with: "brand, colour, size, material codes", gets: labels }
+      - { read: v5w74hpvpy, with: "product_images, size_guide asset codes", gets: main media file codes }
+      - each: locale of ecommerce
+        do:
+          - { write: pw2ipvszgu, note: one CSV row }
+  - { write: z5lpcdc7h9, note: "upload over SFTP to Integration's storage account (pim/products/<yyyyMMdd>.csv), then delete the local copy" }

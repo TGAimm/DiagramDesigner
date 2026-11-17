@@ -1,0 +1,25 @@
+# One row per return from the returns portal (or a webshop order returned in a store).
+id: r1iwd1t2bt
+ownedBy: v38tj7w8bg
+storedIn: v38tj7w8bg
+name: xref.ReturnIds
+fields:
+  - { id: wemkaiqo65, name: returnId, type: uuid, pk: true, from: [x773wm1yhr], constraints: [a new uuid for an in-store return] }
+  - { id: wdwnsmdzyx, name: rmaNumber, type: string, required: true, from: [hrk1dbsomu] }
+  - { id: qa0oyb7vyh, name: orderNumber, type: string, required: true, ref: a0mf35pi6j }
+  - { id: yzdxyz1jnj, name: commerceReturnItemIds, type: uuid, many: true, from: [xwv3uj0wub] }
+  - { id: r38jds7j64, name: erpReturnOrderId, type: guid, nullable: true, from: [u8gwdhud9r] }
+  - { id: m5kz5j3aq1, name: erpReturnOrderNo, type: string, nullable: true, from: [rgkzrhf9cx] }
+  - { id: an153yi26l, name: wmsReturnId, type: int, nullable: true, from: [a49uxsb7ss] }
+  - { id: nt3qx0u6w2, name: erpCreditMemoNo, type: string, nullable: true, from: [ld3h1958zh] }
+  - { id: dhu05q2k2h, name: stripeRefundId, type: string, nullable: true, from: [pg4eb4bda5] }
+  - { id: orljurh56d, name: refundAmount, type: decimal, nullable: true, from: [qhc5urannw], constraints: [what the credit memo says; Stripe refunds exactly this] }
+  - { id: kb8wprm404, name: storeNo, type: string, nullable: true, constraints: [set for a webshop order returned in a store] }
+  # GAP: enum
+  - { id: abky2wbqrt, name: status, type: string, required: true, constraints: ["one of: announced, erp_created, expected_at_wms, received, credited, refunded, failed"] }
+  - { id: zog290qjij, name: createdAt, type: datetime, required: true }
+  - { id: ko55v0om7m, name: updatedAt, type: datetime, required: true }
+indexes:
+  - { id: zuv8fjrxyi, name: ux_returnids_rma, fields: [wdwnsmdzyx], unique: true }
+  - { id: acu6lc72xd, name: ix_returnids_erp_ro, fields: [m5kz5j3aq1] }
+  - { id: n45i4lk3bl, name: ix_returnids_order, fields: [qa0oyb7vyh] }

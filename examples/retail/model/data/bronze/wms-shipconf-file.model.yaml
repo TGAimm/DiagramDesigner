@@ -1,0 +1,21 @@
+# GAP: file interface (SHIPCONF_<ts>.csv shipment confirmations, read from the 3PL SFTP archive folder)
+id: uh4r6n0g75
+ownedBy: ar9pfoadj7
+storedIn: ar9pfoadj7
+name: wms_shipconf_file
+fields:
+  - { id: u7eet2580l, name: order_no, type: string, pk: true, from: [e7xle4v47a] } # ERP sales order number
+  - { id: ht6tg70k0y, name: erp_line_no, type: int, pk: true, from: [sjvr51l4l3] }
+  - { id: j9z9vrckwm, name: parcel_no, type: string, pk: true, from: [mccfkpq64k] }
+  - { id: hjiw00if1x, name: customer_ref, type: string, from: [lfr5843pxs] } # the Commerce order number
+  - { id: lwic0r73jh, name: item_no, type: string, from: [ixcmex2k46] }
+  - { id: ds6nthmxjc, name: qty_shipped, type: int, from: [n5j1wxd5ln] }
+  - { id: xlde0cj6np, name: ship_date, type: datetime, from: [zsgp3vkwox] }
+  - { id: yf94ouy2b9, name: carrier, type: string, from: [v1sctmofxm] }
+  - { id: n924u96icy, name: product_code, type: string, from: [fm6ku789nx] }
+  - { id: m9cazq8lig, name: tracking_no, type: string, from: [ws7pqfpvzk] }
+  - { id: bbyyc5m7vq, name: weight_g, type: int, from: [isutwlqah1] }
+  - { id: ysdkvjnmyr, name: _file_name, type: string, required: true, constraints: ["SHIPCONF_<yyyyMMddHHmmss>.csv"] }
+  - { id: iyu87thc4w, name: _loaded_at, type: datetime, required: true }
+  - { id: jxppno5htm, name: _source, type: string, required: true, constraints: ["wms/SHIPCONF"] }
+  - { id: hbpi7k5qol, name: _batch_id, type: string, required: true }

@@ -1,0 +1,11 @@
+id: t2l6i8nkh1
+parent: b1ptklldw3
+name: Get my active cart
+method: GET
+path: /{projectKey}/me/active-cart
+auth: "bearer (customer or anonymous session token, view_my_orders)"
+params:
+  - { id: p0rxptso5g, name: projectKey, in: path, type: string, description: fjeld-prod }
+responses:
+  - { status: 200, model: w4i82sypi6, description: most recently modified Active cart of the token's customer or anonymousId }
+  - { status: 404, description: no active cart }

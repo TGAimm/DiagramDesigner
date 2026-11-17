@@ -1,0 +1,24 @@
+id: eznh46l51c
+parent: wyb51ibopv
+name: List sales shipments
+method: GET
+path: /api/v2.0/companies({companyId})/salesShipments
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: lkfbcy99ee, name: companyId, in: path, type: guid }
+  - { id: szhj5l2gg9, name: $filter, in: query, type: string, required: false, description: "e.g. orderNumber eq 'SO104512'" }
+responses:
+  - status: 200
+    many: true
+    fields:
+      - { id: lwzdlcha2p, name: id, type: guid, from: [wluf8wirig] }
+      - { id: psssyvcqr0, name: number, type: string, from: [w9uf1h6oz1] }
+      - { id: cwecc16diq, name: externalDocumentNumber, type: string, from: [fkiklq4iis] }
+      - { id: uspit3owvc, name: orderNumber, type: string, from: [ygeu3nwrdy] }
+      - { id: c58ayo5o5r, name: postingDate, type: date, from: [gm0tfqpc0k] }
+      - { id: swcoc6ekf7, name: customerNumber, type: string, from: [s6hyuh0onz] }
+      - { id: x1sspv9yit, name: customerName, type: string, from: [eyprjxya1v] }
+      - { id: y9f99odtjh, name: shipToName, type: string, from: [a89bhzza18] }
+      - { id: n5vtmxfi9a, name: shipToCountry, type: string, from: [vl5jbht8ww] }
+      - { id: rh76vckjae, name: lastModifiedDateTime, type: datetime, from: [axfbmq6ehf] }
+  - { status: 401, description: Unauthorized }

@@ -1,0 +1,21 @@
+# Published on order-shipped once per parcel: by processShipmentConfirmations (3PL), or by
+# receivePickupEvent when a click & collect order is collected in the store.
+id: hzf00evl4i
+ownedBy: g55sb0eqd6
+name: OrderShippedEvent
+fields:
+  - { id: y41fsjufm0, name: orderNumber, type: string, required: true, from: [lfr5843pxs, lqil8hi4vu] }
+  - { id: tsegjsfzm5, name: commerceOrderId, type: uuid, required: true, from: [ucdgar74cb] }
+  - { id: ekxqbuiaag, name: erpSalesOrderNo, type: string, required: true, from: [e7xle4v47a, w8dzy2k42v] }
+  - { id: iaty315lvp, name: erpShipmentNo, type: string, nullable: true, from: [w9uf1h6oz1] }
+  # GAP: enum
+  - { id: fithabgw0z, name: source, type: string, required: true, constraints: ["one of: wms, store"] }
+  - { id: b2ngiy4i60, name: parcelNo, type: string, nullable: true, from: [mccfkpq64k] }
+  - { id: ke1nuh9h7f, name: carrier, type: string, nullable: true, from: [v1sctmofxm] }
+  - { id: z6jzp3mdj9, name: productCode, type: string, nullable: true, from: [fm6ku789nx] }
+  - { id: rv7nkttixq, name: trackingNo, type: string, nullable: true, from: [ws7pqfpvzk] }
+  - { id: btxvp7k7x3, name: trackingUrl, type: string, nullable: true, from: [cp5sif7tgk] }
+  - { id: t0qsow7mm1, name: shippingShipmentId, type: int, nullable: true, from: [retop3ymlw] }
+  - { id: xocodzt9uy, name: shippedAt, type: datetime, required: true, from: [zsgp3vkwox, ws02m2o6k1] }
+  - { id: pef1opdwwc, name: orderComplete, type: bool, required: true, from: [i93wwlh0fy], derived: "ERP salesOrder.fullyShipped after this shipment" }
+  - { id: tgii7h0pl3, name: lines, model: u3sxl67syz, many: true, required: true }

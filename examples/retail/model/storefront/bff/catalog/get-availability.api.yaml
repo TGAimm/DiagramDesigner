@@ -1,0 +1,17 @@
+id: troq0apfr4
+parent: lnizoffy7m
+name: Stock for a size
+method: GET
+path: /api/products/{sku}/availability
+auth: session cookie fj_sid
+params:
+  - { id: r1t8ou6uih, name: sku, in: path, type: string }
+  - { id: l7egbkwznh, name: near, in: query, type: string, required: false, description: "postal code or lat,lng to sort stores" }
+responses:
+  - status: 200
+    fields:
+      - { id: cfz0nj0km8, name: sku, type: string, from: [bhg7tr499g] }
+      - { id: whxy6ysm12, name: online, type: int, from: [z6tv7i6g31], description: "available on the webshop entry (3PL)" }
+      - { id: hj965zc9tm, name: restockableInDays, type: int, nullable: true, from: [ws2iqpk3rv] }
+      - { id: glq7nv6ur0, name: stores, model: r5c8x8etbs, many: true }
+  - { status: 404, description: unknown SKU }

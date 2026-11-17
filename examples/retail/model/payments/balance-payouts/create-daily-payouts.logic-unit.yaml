@@ -1,0 +1,27 @@
+# GAP: scheduled trigger
+id: o1d2rdx7hh
+parent: vuo50id8ln
+name: createDailyPayouts
+meta: { schedule: "0 0 * * *", note: "daily automatic payout, 2 business days delay (DK)" }
+inputs: []
+outputs: []
+fails:
+  - { name: payoutFailed, description: the bank rejected the transfer }
+steps:
+  - { read: te75334qto, with: "status available, no payout yet", gets: available }
+  - if: sum of available net <= 0
+    then:
+      - { note: no payout today }
+  - { write: uzfenyzyi8, note: "insert, automatic, amount = sum net, status pending, arrival_date" }
+  - { write: te75334qto, note: "insert type payout, amount = - payout amount, source = payout" }
+  - { write: ickiwbul7m, note: set on every swept transaction }
+  - { call: knbcqp1ram, with: "payout.created, payout" }
+  - { note: "send the transfer to the bank; status in_transit" }
+  - if: bank returns the transfer
+    then:
+      - { write: tddsscgbhz, note: failed }
+      - { call: knbcqp1ram, with: "payout.failed, payout" }
+      - { fail: payoutFailed }
+  - { write: tddsscgbhz, note: "paid, on arrival_date" }
+  - { write: ea9cm3m223, note: completed }
+  - { call: knbcqp1ram, with: "payout.paid, payout" }

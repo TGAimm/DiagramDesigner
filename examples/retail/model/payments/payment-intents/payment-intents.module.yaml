@@ -1,0 +1,4 @@
+id: pfvgbz7fey
+parent: v4gnz1sgts
+name: Payment Intents
+links: [{ label: PaymentIntents API, url: https://docs.stripe.com/api/payment_intents }]

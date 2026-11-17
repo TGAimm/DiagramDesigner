@@ -1,0 +1,16 @@
+id: u0yqufq4ls
+parent: wyb51ibopv
+name: List sales orders
+method: GET
+path: /api/v2.0/companies({companyId})/salesOrders
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: wy8rymz9un, name: companyId, in: path, type: guid }
+  - { id: p1pfh6p8h2, name: $filter, in: query, type: string, required: false, description: "e.g. externalDocumentNumber eq 'FJ-100234'" }
+  # GAP: $expand makes a held field (salesOrderLines) appear only when asked for
+  - { id: egxqo9567g, name: $expand, in: query, type: string, required: false, description: salesOrderLines }
+  - { id: o9oguj6tw7, name: $top, in: query, type: int, required: false }
+responses:
+  # GAP: OData collection envelope { value: [...], @odata.nextLink } written as many: true
+  - { status: 200, model: j4uwq30pr1, many: true }
+  - { status: 401, description: Unauthorized }

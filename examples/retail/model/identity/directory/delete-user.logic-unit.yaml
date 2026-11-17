@@ -1,0 +1,21 @@
+id: uadsi0dbol
+parent: xi92dufx8c
+name: deleteUser
+tags: [gdpr]
+handles: [svcw9dcoel]
+inputs:
+  - { id: f7xs3115v8, name: id, type: uuid, required: true }
+outputs: []
+fails:
+  - { name: notFound }
+steps:
+  - { read: nozb9f6rc0, with: id, gets: user }
+  - if: no user, or already deleted
+    then:
+      - { fail: notFound }
+  - { write: o8fzay5vas, note: "now: moved to deleted items; sign-in stops at once" }
+  - { write: vxfmzh1nps, note: "every refresh_token grant of the user; sign-in sessions end" }
+  - { note: "the identities stay with the deleted user, so the email cannot sign up again until the hard delete" }
+  - { note: "after 30 days: hard delete of the user and its identities (or at once via DELETE /directory/deletedItems/{id})" }
+  - { write: nozb9f6rc0, note: hard delete after 30 days }
+  - { write: u24xst6unw, note: hard delete after 30 days }

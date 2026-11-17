@@ -1,0 +1,25 @@
+# Table 38 Purchase Header
+id: y2y8ts9tdh
+ownedBy: si82yvapze
+storedIn: q43aprn5l0
+name: Purchase Header
+fields:
+  - { id: a5wk49os6n, name: documentType, type: string, pk: true, constraints: ["one of: Quote, Order, Invoice, Credit Memo, Blanket Order, Return Order"] }   # GAP: enum
+  - { id: d1cqu9qwzq, name: no, type: string, pk: true, constraints: ["No. Series PO"] }
+  - { id: mz15x69m93, name: systemId, type: guid, required: true }
+  - { id: oz0tu7wkiv, name: buyFromVendorNo, type: string, required: true, ref: bu20ykl7b9 }
+  - { id: sag0mx5oqd, name: buyFromVendorName, type: string, from: [mud12mv428] }
+  - { id: rto88cc3ga, name: orderDate, type: date, required: true }
+  - { id: yaoe5eghpc, name: expectedReceiptDate, type: date }
+  - { id: rfyxb7h3n7, name: postingDate, type: date }
+  - { id: vvp621iyoc, name: vendorOrderNo, type: string }
+  - { id: inyk6xitgm, name: vendorInvoiceNo, type: string, nullable: true }
+  - { id: jube5e3vdt, name: currencyCode, type: string, ref: nirn4ae2ma }
+  - { id: v111ujdo7j, name: pricesIncludingVat, type: bool }
+  - { id: nio9aggiw3, name: locationCode, type: string, ref: gsrr00mc9x, constraints: ["CENTRAL; stores are refilled by transfer"] }
+  - { id: acxuaypsvc, name: status, type: string, required: true, constraints: ["one of: Open, Released, Pending Approval, Pending Prepayment"] }   # GAP: enum
+  - { id: kj4boe38yc, name: lines, model: jr1sw83gnm, many: true }
+  - { id: xnlh2v7h38, name: systemModifiedAt, type: datetime, required: true }
+indexes:
+  - { id: jivkw1gbwu, name: ux_purchase_header_systemid, fields: [mz15x69m93], unique: true }
+  - { id: lmirkt1df4, name: ix_purchase_header_vendor, fields: [a5wk49os6n, oz0tu7wkiv] }

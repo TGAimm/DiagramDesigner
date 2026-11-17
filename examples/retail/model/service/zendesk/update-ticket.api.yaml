@@ -1,0 +1,24 @@
+id: lnhwwacvj0
+parent: dodjtgoau2
+name: Update ticket
+method: PUT
+path: /api/v2/tickets/{ticket_id}
+auth: "basic (agent e-mail/token + API token) or OAuth bearer"
+params:
+  - { id: go23mh6hrj, name: ticket_id, in: path, type: int }
+request:
+  fields:
+    - { id: osela1qtif, name: ticket.status, type: string, to: [i64dk7x0dr] }
+    - { id: f36bd68g4e, name: ticket.comment.body, type: string, to: [bk1ohm0lpm], description: adds a comment }
+    - { id: dj4r8iymz6, name: ticket.comment.public, type: bool, to: [tk1mnunpmq] }
+    - { id: fw2xqn6usv, name: ticket.assignee_id, type: int, to: [dmzfzbuase] }
+    - { id: tw4ixhhxro, name: ticket.custom_fields, model: ld3q0h95p5, many: true }
+    - { id: t6jbccclhl, name: ticket.additional_tags, type: string, many: true, to: [maigyjjtjt] }
+    - { id: lq40fdwb5i, name: ticket.safe_update, type: bool, to: [ytmk9d60kw], description: "with updated_stamp: 409 if changed meanwhile" }
+responses:
+  - status: 200
+    fields:
+      - { id: qws0kf0k2m, name: ticket, model: cd3t7bjar1 }
+  - { status: 404, model: zkkh7sjnsz }
+  - { status: 409, model: zkkh7sjnsz, description: safe update conflict }
+  - { status: 422, model: zkkh7sjnsz, description: "e.g. a closed ticket cannot be updated" }

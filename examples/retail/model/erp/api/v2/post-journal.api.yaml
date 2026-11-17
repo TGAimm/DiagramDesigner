@@ -1,0 +1,13 @@
+id: xris3u29wu
+parent: wyb51ibopv
+name: Post journal
+method: POST
+path: /api/v2.0/companies({companyId})/journals({id})/Microsoft.NAV.post
+auth: "bearer (Entra ID, client credentials)"
+params:
+  - { id: d0mt40j938, name: companyId, in: path, type: guid }
+  - { id: iaeypcv4gu, name: id, in: path, type: guid }
+responses:
+  - { status: 204, description: "Posted; the batch is empty again" }
+  - { status: 400, description: "BadRequest: a document does not balance, or a line fails posting (nothing is posted)" }
+  - { status: 404, description: no journal with this id }

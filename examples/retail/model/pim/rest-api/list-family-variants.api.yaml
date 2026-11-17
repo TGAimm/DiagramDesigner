@@ -1,0 +1,15 @@
+# GAP: pagination envelope.
+id: vs2j39cgml
+parent: vsn79avah8
+name: List family variants
+method: GET
+path: /api/rest/v1/families/{family_code}/variants
+auth: bearer
+params:
+  - { id: b5fwkkn8la, name: family_code, in: path, type: string }
+  - { id: wb63ii9s9s, name: page, in: query, type: int, required: false }
+  - { id: bak8n562un, name: limit, in: query, type: int, required: false }
+responses:
+  - { status: 200, model: ecl4ha0e3z, many: true }
+  - { status: 401, description: Missing or expired token }
+  - { status: 404, description: No family with this code }

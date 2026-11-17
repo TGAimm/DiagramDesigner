@@ -1,0 +1,19 @@
+id: mwrogcwqle
+ownedBy: ar9pfoadj7
+storedIn: ar9pfoadj7
+name: stripe_payout
+fields:
+  - { id: b1yizdejvt, name: id, type: string, pk: true, from: [n6liyrhotq] }
+  - { id: tnda1rjalh, name: amount, type: long, from: [q8qe9p2acw] }
+  - { id: w4u2wu0hn3, name: currency, type: string, from: [pjam9rytz1] }
+  - { id: bf2bguqkkt, name: arrival_date, type: timestamp, from: [dvmx85wcau] }
+  - { id: l67puxngi5, name: status, type: string, from: [tddsscgbhz] }
+  - { id: r1oknzon4i, name: method, type: string, from: [ldidzgrlxq] }
+  - { id: mjrsrpdrcl, name: type, type: string, from: [ihvtcyjwz5] }
+  - { id: h3qmcm5dgt, name: balance_transaction, type: string, from: [hs0ln9ib71] }
+  - { id: b67cafl07s, name: failure_code, type: string, nullable: true, from: [t7zsm0h5hj] }
+  - { id: ofj4wcr1i0, name: reconciliation_status, type: string, from: [ea9cm3m223] }
+  - { id: qfqbu2ma4h, name: created, type: timestamp, from: [uiexcznhwr] }
+  - { id: h5ub865anu, name: _loaded_at, type: datetime, required: true }
+  - { id: bpggw7yx5x, name: _source, type: string, required: true, constraints: ["stripe/payouts"] }
+  - { id: ypy9wn0jun, name: _batch_id, type: string, required: true }
