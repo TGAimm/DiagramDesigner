@@ -5,6 +5,7 @@ import { runOf } from '../../src/lib/landscape/play';
 import { searchLandscape } from '../../src/lib/landscape/search';
 import { sequenceOf } from '../../src/lib/landscape/sequence';
 import { nextRuns, scheduleWords } from '../../src/lib/model/schedule';
+import { messageWords } from '../../src/lib/model/message';
 import { loadStrings } from './helpers';
 
 const base = {
@@ -129,5 +130,113 @@ describe('triggers', () => {
 			'purge',
 			'carts older than 30 days'
 		]);
+	});
+});
+
+describe('message triggers', () => {
+	const msg = {
+		...base,
+		's/stock.trigger.yaml': [
+			'id: stock',
+			'parent: m',
+			'name: stockChanged',
+			'message: { queue: sbq-ax-stock, via: pbc-product-sbq-component }',
+			'with: AX stock lines',
+			'retries: 3'
+		].join('\n'),
+		's/apply.logic-unit.yaml': [
+			'id: apply',
+			'parent: m',
+			'name: applyStock',
+			'handles: [stock]',
+			'inputs: []',
+			'outputs: []',
+			'steps: [{ write: cart }]'
+		].join('\n'),
+		's/o.module.yaml': 'id: o\nparent: s\nname: Other\n',
+		's/push.logic-unit.yaml': [
+			'id: push',
+			'parent: o',
+			'name: pushStock',
+			'inputs: []',
+			'outputs: []',
+			'steps: [{ call: stock, with: lines }, { note: done }]'
+		].join('\n')
+	};
+	const loadM = (extra: Record<string, string> = {}) => loadStrings({ ...msg, ...extra }).model;
+	const codesM = (extra: Record<string, string>) => loadM(extra).diagnostics.map((d) => d.code);
+	const trigger = (body: string) => ({ 's/stock.trigger.yaml': `id: stock\nparent: m\n${body}\n` });
+
+	it('are sent by the units calling them', () => {
+		const model = loadM();
+		expect(model.diagnostics).toEqual([]);
+		expect(model.elements.get('push')!.logic!.calls).toEqual(['stock']);
+		expect(edgesOf(model)).toContainEqual({ kind: 'calls', from: 'push', to: 'stock' });
+		expect(edgesOf(model)).toContainEqual({ kind: 'handles', from: 'stock', to: 'apply' });
+	});
+
+	it('need exactly one source, and exactly one of queue and topic', () => {
+		expect(codesM(trigger('message: { queue: q }\nschedule: { every: 1h }'))).toContain(
+			'trigger-source'
+		);
+		expect(codesM(trigger('retries: 1'))).toContain('trigger-source');
+		for (const bad of ['{ via: dapr }', '{ queue: q, topic: t }', '{ queue: q, subscription: s }'])
+			expect(codesM(trigger(`message: ${bad}`)), bad).toContain('trigger-message');
+		expect(codesM(trigger('message: { topic: t, subscription: s }'))).toEqual([]);
+		expect(codesM(trigger('message: { queue: q }\noverlap: skip'))).toContain('trigger-overlap');
+		expect(codesM({ 's/m.module.yaml': 'id: m\nparent: s\nmessage: { queue: q }\n' })).toContain(
+			'trigger-only'
+		);
+	});
+
+	it('can be called; a schedule cannot, and a message gets nothing back', () => {
+		const push = (step: string) => ({
+			's/push.logic-unit.yaml': `id: push\nparent: o\ninputs: []\noutputs: []\nsteps: [${step}]\n`
+		});
+		expect(codesM(push('{ call: nightly }'))).toContain('trigger-call');
+		expect(codesM(push('{ call: stock, gets: ack }'))).toContain('trigger-call');
+		expect(codesM(push('{ call: stock }'))).not.toContain('trigger-call');
+	});
+
+	it('read as their queue or topic, with an envelope on their row', () => {
+		expect(messageWords({ queue: 'sbq-ax-stock' })).toBe('Queue sbq-ax-stock');
+		expect(messageWords({ topic: 'orders', subscription: 'billing' })).toBe(
+			'Topic orders › billing'
+		);
+		const card = layoutLandscape(loadM()).find((b) => b.id === 'm#triggers')!;
+		expect(card.triggers!.rows).toEqual([
+			{ id: 'nightly', name: 'purgeOldCarts', signature: 'At 03:00' },
+			{ id: 'stock', name: 'stockChanged', signature: 'Queue sbq-ax-stock', message: true }
+		]);
+	});
+
+	it('are sent async in a sender’s sequence, and Play goes on without waiting', () => {
+		const model = loadM();
+		const seq = sequenceOf(model, 'push');
+		const send = seq.messages[1];
+		expect(seq.lifelines[send.to].name).toBe('m');
+		expect([send.tone, send.async, send.text, send.target]).toEqual([
+			'call',
+			true,
+			'sends stockChanged (lines)',
+			'stock'
+		]);
+		expect(seq.messages.filter((m) => m.tone === 'return')).toEqual([]);
+		const steps = runOf(model, 'push', {}, new Set()).steps;
+		expect(steps.map((s) => [s.kind, s.to])).toEqual([
+			['input', 'push'],
+			['call', 'stock'],
+			['note', 'push']
+		]);
+		expect(steps[1].into).toBeUndefined();
+	});
+
+	it('are the caller of their handler, which lists who sends them', () => {
+		const seq = sequenceOf(loadM(), 'apply');
+		expect(seq.lifelines[0].subs).toEqual([
+			{ text: 'stockChanged · Queue sbq-ax-stock', trigger: true, message: true, target: 'stock' },
+			{ text: 'ƒ pushStock', target: 'push' }
+		]);
+		expect(seq.messages[0].text).toBe('AX stock lines');
 	});
 });

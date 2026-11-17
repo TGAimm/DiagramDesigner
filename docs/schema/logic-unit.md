@@ -30,7 +30,8 @@ steps:                           # the sequence, top to bottom
 - `inputs` and `outputs` are fields with the keys of an api's own-shape field: `id`, `name`,
   `type` or `model`, `many`, `required`, `nullable`, `description`. Ids share the design's
   id namespace (`sdv id`).
-- Step kinds, one per step: `call` (a unit or api, in any system), `read` and `write` (a
+- Step kinds, one per step: `call` (a unit or api, in any system, or a message
+  [trigger](trigger.md), which sends that message: no `gets`), `read` and `write` (a
   model, or one field), `if` with `then`/`else`, `each` with `do`, `flag` with `on`/`off`
   (see [flag](flag.md)), `return` (an output's name), `fail` (a fail's name). A step with only `note` is work the unit does itself; on
   other steps `note` adds a remark. `with` and `gets` go on `call` and `read`; they, and
@@ -54,7 +55,8 @@ steps:                           # the sequence, top to bottom
   with typed inputs, outputs and fails, then the steps as a **sequence diagram**. Lifelines:
   the caller (apis and [triggers](trigger.md) it handles, units calling it), the unit, then
   each unit, api owner or model it touches, in first-use order; a model shows the store
-  holding it. Calls are solid with their `gets` returned dashed; reads and writes go to the
+  holding it. Calls are solid with their `gets` returned dashed, and a message sent (a call to a
+  message trigger) has an open arrowhead and nothing back; reads and writes go to the
   model; returns and fails go back to the caller; `if` and `each` draw alt and loop boxes.
   Click a name or message to go there.
 - **Play** beside the card's Sequence heading walks the board one step at a time: the card

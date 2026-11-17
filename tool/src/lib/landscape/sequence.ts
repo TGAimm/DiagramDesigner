@@ -1,6 +1,6 @@
 import { flagOn, type Model } from '../model/model';
 import type { LogicStep } from '../model/schema';
-import { scheduleWords } from '../model/schedule';
+import { triggerWords } from '../model/message';
 
 /** A line of text under a lifeline's name; clicking one with a target goes there. */
 export interface LifelineSub {
@@ -9,6 +9,8 @@ export interface LifelineSub {
 	method?: string;
 	/** A trigger, marked with its glyph. */
 	trigger?: boolean;
+	/** A message trigger, marked with an envelope rather than a clock. */
+	message?: boolean;
 	/** Id of the api or element it stands for. */
 	target?: string;
 }
@@ -38,6 +40,8 @@ export interface SeqMessage {
 	target?: string;
 	/** In a flag branch the shown state doesn't take. */
 	dim?: boolean;
+	/** Sent without waiting (a message): an open arrowhead, and nothing comes back. */
+	async?: boolean;
 }
 
 /** An alt, loop or flag box, from its header row to its last row. */
@@ -86,22 +90,31 @@ export function sequenceOf(model: Model, unitId: string): Sequence {
 	};
 	const route = (id: string) => `${el(id)!.def.method} ${el(id)!.def.path}`;
 	const callers = [...model.elements.values()].filter((e) => e.logic?.calls.includes(unitId));
+	const handles = info.logic?.handles ?? [];
+	// Units sending a message trigger that starts this one call it too, by way of the broker.
+	const senders = [...model.elements.values()].filter((e) =>
+		e.logic?.calls.some((t) => handles.includes(t) && el(t)?.def.kind === 'trigger')
+	);
 	const lifelines: Lifeline[] = [
 		{
 			key: 'caller',
 			kind: 'caller',
 			name: 'Caller',
 			subs: [
-				...(info.logic?.handles ?? []).map((id) =>
+				...handles.map((id) =>
 					el(id)!.def.kind === 'trigger'
 						? {
-								text: `${el(id)!.name} · ${scheduleWords(el(id)!.def.schedule)}`,
+								text: `${el(id)!.name} · ${triggerWords(el(id)!.def)}`,
 								trigger: true,
+								...(el(id)!.def.message ? { message: true } : {}),
 								target: id
 							}
 						: { text: route(id), method: el(id)!.def.method, target: id }
 				),
-				...callers.map((c) => ({ text: `ƒ ${c.name}`, target: c.id }))
+				...[...new Set([...callers, ...senders])].map((c) => ({
+					text: `ƒ ${c.name}`,
+					target: c.id
+				}))
 			]
 		},
 		{ key: 'self', kind: 'self', name: info.name, subs: [{ text: 'this unit' }] }
@@ -140,7 +153,8 @@ export function sequenceOf(model: Model, unitId: string): Sequence {
 			if (s.call !== undefined) {
 				const t = el(s.call);
 				if (!t) continue;
-				if (t.def.kind === 'api') {
+				if (t.def.kind === 'api' || t.def.kind === 'trigger') {
+					// An api is called, a message trigger sent: either goes to the module owning it.
 					const owner = t.parentId ?? t.id;
 					const to = lane(owner, () => ({
 						kind: 'owner',
@@ -148,14 +162,25 @@ export function sequenceOf(model: Model, unitId: string): Sequence {
 						subs: [{ text: path(el(owner)!.parentId) || 'api' }]
 					}));
 					const args = s.with ? ` (${s.with})` : '';
-					msg({
-						to,
-						tone: 'call',
-						text: withNote(route(t.id) + args, s),
-						method: t.def.method,
-						target: t.id
-					});
-					ret(to, s.gets);
+					if (t.def.kind === 'trigger')
+						// Sent without waiting: nothing comes back.
+						msg({
+							to,
+							tone: 'call',
+							async: true,
+							text: withNote(`sends ${t.name}${args}`, s),
+							target: t.id
+						});
+					else {
+						msg({
+							to,
+							tone: 'call',
+							text: withNote(route(t.id) + args, s),
+							method: t.def.method,
+							target: t.id
+						});
+						ret(to, s.gets);
+					}
 				} else {
 					const to = lane(t.id, () => ({
 						kind: 'unit',

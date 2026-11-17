@@ -528,6 +528,7 @@ export function impactOf(before: Model, after: Model, diff: Diff): ImpactReport 
 			}
 			if (kind === 'api') callers('breaking', 'calls an api that is gone');
 			if (kind === 'logic-unit') callers('breaking', 'calls a unit that is gone');
+			if (kind === 'trigger') callers('breaking', 'sends a message that is gone');
 			return;
 		}
 		if (e.change !== 'changed') return;

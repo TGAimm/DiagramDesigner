@@ -48,12 +48,14 @@ Things real landscapes have that the schema cannot express yet, found by modelli
 
 Interfaces and triggers:
 
-- Async messaging: topics and queues, publishers and subscribers, subscription filters,
-  batch receive, retry/dead-letter (now faked as `POST /topics/...` apis).
+- Async messaging: queue and topic subscriptions and their publishers are message triggers
+  now (see [trigger](schema/trigger.md)); still missing are subscription filters, batch
+  receive, and retry/dead-letter beyond a `retries` count.
+- Move `examples/retail`'s faked `POST /topics/...` apis to message triggers.
 - Interfaces beyond HTTP: GraphQL operations, SQL endpoints, file exchange (CSV over SFTP:
   one row per line grouped into orders, error and archive files, folders owned by another
   system), hardware (card terminals, fiscal signing units).
-- Triggers beyond apis and schedules: topic subscriptions, row changes (Dataverse plugins,
+- Triggers beyond apis, schedules and messages: row changes (Dataverse plugins,
   Zendesk triggers), user actions in a product's own UI or on a device (Post › Receive,
   handheld scans, till), a vendor-hosted page; several triggers on one unit.
 - Move `examples/retail`'s scheduled units from `meta: { schedule }` to trigger entities.

@@ -47,6 +47,7 @@ export interface Element {
 	default?: FlagValue;
 	when?: FlagGate;
 	schedule?: Schedule;
+	message?: Message;
 	overlap?: Overlap;
 	timeout?: string;
 	retries?: number;
@@ -68,7 +69,7 @@ export const PARENT_KINDS: Partial<Record<EntityFileKind, EntityFileKind[]>> = {
 
 /**
  * When a trigger runs: exactly one of a 5-field cron, an interval or a one-off local time. It is
- * a trigger's source; a later kind of trigger gets a source key of its own beside it.
+ * one of a trigger's two sources; `message` is the other.
  */
 export const Schedule = z
 	.strictObject({
@@ -79,6 +80,20 @@ export const Schedule = z
 	})
 	.describe('Triggers only: when it runs; exactly one of cron, every and at');
 export type Schedule = z.infer<typeof Schedule>;
+
+/**
+ * What a trigger receives: each message on a queue, or on a topic through a subscription. A
+ * logic unit step that calls the trigger sends one.
+ */
+export const Message = z
+	.strictObject({
+		queue: Text.optional().describe('The queue it receives from'),
+		topic: Text.optional().describe('The topic it receives from'),
+		subscription: Text.optional().describe('With topic: the subscription it receives through'),
+		via: Text.optional().describe('Free text: the broker or component, e.g. a Dapr pub/sub')
+	})
+	.describe('Triggers only: the messages it receives; exactly one of queue and topic');
+export type Message = z.infer<typeof Message>;
 
 export const Overlap = z.enum(['skip', 'queue', 'allow']);
 export type Overlap = z.infer<typeof Overlap>;
@@ -256,7 +271,9 @@ export interface LogicStep {
 }
 export const LogicStep: z.ZodType<LogicStep> = z
 	.strictObject({
-		call: Id.optional().describe('Id of the logic unit or api it calls'),
+		call: Id.optional().describe(
+			'Id of the logic unit or api it calls, or message trigger it sends'
+		),
 		read: Id.optional().describe('Id of the model, or single model field, it reads'),
 		write: Id.optional().describe('Id of the model, or single model field, it writes'),
 		with: Text.optional().describe('With call or read: what it passes, free text'),
@@ -337,8 +354,9 @@ export const EntityFile = z
 		default: FlagValue.optional().describe('Flags only: the value production runs; default off'),
 		when: FlagGate.optional(),
 		schedule: Schedule.optional(),
+		message: Message.optional(),
 		overlap: Overlap.optional().describe(
-			'Triggers only: a run due while the last is going is skipped (default), queued or allowed'
+			'Schedule triggers only: a run due while the last is going is skipped (default), queued or allowed'
 		),
 		timeout: z.string().optional().describe('Triggers only: how long a run may take, e.g. 10m'),
 		retries: z.number().int().min(0).optional().describe('Triggers only: retries of a failed run'),

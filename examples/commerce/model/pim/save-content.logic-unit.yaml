@@ -11,3 +11,4 @@ outputs: []
 steps:
   - { note: an editor submits the content form }
   - { write: v5kp3b4k9m, note: "insert, or replace the sku and locale" }
+  - { call: z36jwku4qe, with: "sku, locale" }

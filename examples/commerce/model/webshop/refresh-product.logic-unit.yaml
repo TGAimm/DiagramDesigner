@@ -1,0 +1,8 @@
+id: g9xihxw78d
+parent: wajh6e6nvm
+name: refreshProduct
+handles: [z36jwku4qe]
+inputs: []
+outputs: []
+steps:
+  - { note: drop the cached product page for the sku and locale }

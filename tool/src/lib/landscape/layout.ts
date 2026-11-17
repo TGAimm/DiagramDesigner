@@ -1,7 +1,7 @@
 import { LOGIC_KEYS, type Model } from '../model/model';
 import type { Element, ModelField, ModelIndex } from '../model/schema';
 import { GLYPH, textWidth } from '../render/text';
-import { scheduleWords } from '../model/schedule';
+import { triggerWords } from '../model/message';
 import { railGroups, railOf } from './apis';
 import { edgesOf } from './connections';
 import type { ElkExtendedEdge, ElkNode, ElkPort } from 'elkjs/lib/elk-api';
@@ -446,9 +446,11 @@ export interface LogicRow {
 	name: string;
 	/**
 	 * A unit's `(productId, quantity) → Cart Line`, an output that is a model by the model's
-	 * name; a trigger's schedule in words.
+	 * name; a trigger's schedule or message in words.
 	 */
 	signature: string;
+	/** A trigger row whose source is a message, marked with an envelope instead of a clock. */
+	message?: true;
 }
 
 export function logicRow(model: Model, id: string): LogicRow {
@@ -466,15 +468,19 @@ export function logicRow(model: Model, id: string): LogicRow {
 /** Room for the ƒ before a unit's name. */
 const FN_GLYPH = 14;
 
-export const triggerRow = (model: Model, id: string): LogicRow => ({
-	id,
-	name: model.elements.get(id)!.name,
-	signature: scheduleWords(model.elements.get(id)!.def.schedule)
-});
+export const triggerRow = (model: Model, id: string): LogicRow => {
+	const def = model.elements.get(id)!.def;
+	return {
+		id,
+		name: model.elements.get(id)!.name,
+		signature: triggerWords(def),
+		...(def.message ? { message: true as const } : {})
+	};
+};
 
 /**
  * A module's logic or triggers card: a name bar, then one row per unit (its name and
- * signature) or trigger (its name and schedule).
+ * signature) or trigger (its name and source).
  */
 function rowsLayout(
 	rows: LogicRow[],
