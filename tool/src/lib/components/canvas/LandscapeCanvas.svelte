@@ -215,44 +215,6 @@
 		};
 	});
 	$effect(() => zoomRule.style.setProperty('--z', String(viewport.current.zoom)));
-	/**
-	 * An open module's name, a system's too, keeps NAME_PX on screen as the canvas zooms out.
-	 * Past where that fits the room above its children (half of HEADER), it is drawn here, in
-	 * front of everything, never wider than its box nor taller than half of it; until then its
-	 * box draws it (see LandscapeNode's `.header`). `em` is the name's width in ems: the text,
-	 * its glyph and its backing's padding and margin (1.2em); it is 1.6em tall with its margin.
-	 * `max` is the cap, in canvas px.
-	 */
-	const NAME_PX = 13;
-	const namesInFront = $derived(viewport.current.zoom < NAME_PX / (HEADER / 2));
-	const moduleNames = $derived(
-		boxes.flatMap((b) => {
-			const info = el(b.elementId)!;
-			if (!b.group) return [];
-			const system = !b.boundary && info.def.kind === 'module' && !info.parentId;
-			const em = textWidth(info.name, 100, true) / 100 + GLYPH + 1.2;
-			const max = Math.min(b.width / em, b.height / 2 / 1.6);
-			const glyph = system ? 'system' : b.boundary ? 'class' : 'module';
-			return [{ b, name: info.name, system, glyph, em, max }] as const;
-		})
-	);
-	/** The names drawn in front: the larger box's first, then each one clear of those drawn. */
-	const namesShown = $derived.by(() => {
-		if (!namesInFront) return [];
-		const z = viewport.current.zoom;
-		const placed: { x: number; y: number; w: number; h: number }[] = [];
-		return [...moduleNames]
-			.sort((a, b) => b.b.width * b.b.height - a.b.width * a.b.height)
-			.filter((m) => {
-				const f = Math.min(NAME_PX / z, m.max);
-				const r = { x: m.b.absX, y: m.b.absY - (m.system ? 1.6 * f : 0), w: f * m.em, h: 1.6 * f };
-				const hit = placed.some(
-					(p) => r.x < p.x + p.w && p.x < r.x + r.w && r.y < p.y + p.h && p.y < r.y + r.h
-				);
-				if (!hit) placed.push(r);
-				return !hit;
-			});
-	});
 	/** The rail on box `id` lists its endpoints: they read near the screen, or are looked at. */
 	const listed = (id: string) => !!view.near[id] || !!view.full[id];
 
@@ -280,6 +242,73 @@
 		return s;
 	};
 
+	/**
+	 * An open module's name keeps NAME_PX on screen as the canvas zooms out, and so does a
+	 * closed rail's. Past where a module's fits the room above its children (half of HEADER),
+	 * both are drawn here, in front of everything, never wider than their box nor taller than
+	 * half of it; until then the box draws them (see LandscapeNode's `.header` and `.rail-name`).
+	 * A module's sits in its top-left corner, a rail's on the rail's middle. `em` is the name's
+	 * width in ems: the text, its glyph and its backing's padding and margin (1.2em); it is
+	 * 1.6em tall with its margin. `max` is the cap, in canvas px.
+	 */
+	const NAME_PX = 13;
+	const namesInFront = $derived(viewport.current.zoom < NAME_PX / (HEADER / 2));
+	const fitIn = (b: LandscapeBox, em: number) => Math.min(b.width / em, b.height / 2 / 1.6);
+	const frontNames = $derived([
+		...boxes.flatMap((b) => {
+			const info = el(b.elementId)!;
+			if (!b.group) return [];
+			const system = !b.boundary && info.def.kind === 'module' && !info.parentId;
+			const em = textWidth(info.name, 100, true) / 100 + GLYPH + 1.2;
+			const glyph = system
+				? ('system' as const)
+				: b.boundary
+					? ('class' as const)
+					: ('module' as const);
+			return [{ id: b.id, b, name: info.name, glyph, em, max: fitIn(b, em), x: b.absX, y: b.absY }];
+		}),
+		...[...rails].map(([id, r]) => {
+			const b = boxById.get(id)!;
+			const em = textWidth('APIs', 100, true) / 100 + GLYPH + 1.2;
+			const y = b.absY + r.top + r.height / 2;
+			return {
+				id: `rail:${id}`,
+				b,
+				name: 'APIs',
+				glyph: 'api' as const,
+				em,
+				max: fitIn(b, em),
+				x: b.absX + b.width,
+				y
+			};
+		})
+	]);
+	/**
+	 * The names drawn in front, the larger box's first (a box's own before its rail's), then each
+	 * one clear of those drawn. A rail's goes while the rail lists its endpoints.
+	 */
+	const namesShown = $derived.by(() => {
+		if (!namesInFront) return [];
+		const z = viewport.current.zoom;
+		const placed: { x: number; y: number; w: number; h: number }[] = [];
+		return [...frontNames]
+			.sort((a, b) => b.b.width * b.b.height - a.b.width * a.b.height)
+			.filter((m) => {
+				const rail = m.id.startsWith('rail:');
+				if (rail && (listed(m.b.id) || view.railHover === m.b.id)) return false;
+				const f = Math.min(NAME_PX / z, m.max);
+				// What is drawn: without the margin and spare width `em` keeps, 1.2em tall.
+				const w = f * (m.em - 0.6);
+				const r = rail
+					? { x: m.x - w / 2, y: m.y - 0.6 * f, w, h: 1.2 * f }
+					: { x: m.x + 0.3 * f, y: m.y + 0.4 * f, w, h: 1.2 * f };
+				const hit = placed.some(
+					(p) => r.x < p.x + p.w && p.x < r.x + r.w && r.y < p.y + p.h && p.y < r.y + r.h
+				);
+				if (!hit) placed.push(r);
+				return !hit;
+			});
+	});
 	// ------------------------------------------------------------ connections
 	/** The key entry each kind of connection is listed and hidden under. */
 	const KEY_OF: Record<LinkKind, string> = {
@@ -572,7 +601,6 @@
 		};
 	}
 
-	/** Zooms in on a closed rail until its rows read, centred on it. */
 	// Boxes the picked api's bodies use, outlined with the parts using them, and the rows a
 	// trimmed body leaves out, dimmed. A model in a hidden box outlines the box that shows.
 	$effect(() => {
@@ -2119,15 +2147,15 @@
 		</Controls>
 		{#if namesInFront}
 			<ViewportPortal target="front">
-				{#each namesShown as m (m.b.id)}
+				{#each namesShown as m (m.id)}
 					<!-- svelte-ignore a11y_click_events_have_key_events -->
 					<div
-						class="module-name screen-sized"
-						class:system={m.system}
+						class="front-name screen-sized"
+						class:rail={m.glyph === 'api'}
 						role="button"
 						tabindex="-1"
-						style:left="{m.b.absX}px"
-						style:top="{m.b.absY}px"
+						style:left="{m.x}px"
+						style:top="{m.y}px"
 						style:font-size="min(calc({NAME_PX}px / var(--z)), {m.max}px)"
 						onmouseenter={() => {
 							overBox = m.b.id;
@@ -2764,7 +2792,7 @@
 	}
 	/* Drawn over the module's children, as its in-box name is (see LandscapeNode's `.header`),
 	   on a backing so it reads over them. */
-	.module-name {
+	.front-name {
 		position: absolute;
 		display: flex;
 		align-items: center;
@@ -2773,21 +2801,25 @@
 		padding: 0 0.3em;
 		border-radius: 0.3em;
 		line-height: 1.2;
-		font-weight: 500;
+		font-weight: 600;
 		white-space: nowrap;
-		color: var(--sdv-text-muted);
+		color: var(--ui-text);
 		background: color-mix(in srgb, var(--sdv-canvas-bg) 85%, transparent);
 		pointer-events: auto;
 		cursor: pointer;
 		/* Over the boxes (z-index up to 2), lit lines (1000) and an expanded card (999). */
 		z-index: 1001;
 	}
-	/* A system's name sits above its frame, as its in-box name does. */
-	.module-name.system {
-		transform: translateY(-100%);
-		margin: -0.2em 0 0 -0.3em;
-		font-weight: 600;
-		color: var(--ui-text);
+	/* A rail's name, on the rail's middle, drawn as the rail is. Hovering goes through to the
+	   rail, which then lists its endpoints. */
+	.front-name.rail {
+		transform: translate(-50%, -50%);
+		margin: 0;
+		padding: 0 0.4em;
+		border: 1px solid var(--sdv-system-stroke);
+		background: var(--sdv-api-fill);
+		color: var(--sdv-api-text);
+		pointer-events: none;
 	}
 	.canvas :global(.svelte-flow__node) {
 		border: none;

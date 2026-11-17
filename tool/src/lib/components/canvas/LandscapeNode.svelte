@@ -129,8 +129,9 @@
 	// Otherwise a card is its frame and name, a rail its name. Hovered, a rail lists its
 	// endpoints at any zoom, as a hovered card draws its rows.
 	const full = $derived(!!d.peek || !!d.state.near[id] || !!d.state.full[id]);
-	let railHover = $state(false);
-	const railListed = $derived(!!d.rail && (railHover || !!d.state.near[id] || !!d.state.full[id]));
+	const railListed = $derived(
+		!!d.rail && (d.state.railHover === id || !!d.state.near[id] || !!d.state.full[id])
+	);
 	const updateNodeInternals = useUpdateNodeInternals();
 	// Handles move with their rows, come with them, and move as rails open; Svelte Flow measures
 	// them only when told. Nodes changing together are measured together (see `measureLater`).
@@ -231,7 +232,7 @@
 	style:--hdrn={hdr}
 >
 	{#if d.group}
-		<!-- Open, a module's name sits inside its top-left corner; a system's above its frame. -->
+		<!-- Open, a module's name sits inside its top-left corner, a system's too. -->
 		<div
 			class="header screen-sized"
 			role="presentation"
@@ -569,8 +570,10 @@
 			style:width="{r.width}px"
 			style:height="{r.height}px"
 			role="presentation"
-			onmouseenter={() => (railHover = true)}
-			onmouseleave={() => (railHover = false)}
+			onmouseenter={() => (d.state.railHover = id)}
+			onmouseleave={() => {
+				if (d.state.railHover === id) d.state.railHover = null;
+			}}
 		>
 			<!-- An api's line ends on its row, or the rail's middle while the rail is closed. -->
 			{#each r.groups.flatMap((g) => g.apis) as a (a.id)}
@@ -688,8 +691,9 @@
 		/* Open, the name is the box's name bar: hovering it draws the box's connections. */
 		pointer-events: auto;
 	}
-	/* Zoomed out past where a module's (or system's) name fits its header room, the canvas draws
-	   it in front of them instead (see `moduleNames` in LandscapeCanvas). */
+	/* Zoomed out past where a module's name fits its header room, the canvas draws
+	   it in front of them instead (see `frontNames` in LandscapeCanvas). A closed rail's name
+	   stays: the one drawn in front covers it, and where that one is left out it still shows. */
 	:global(.svelte-flow__node.open) > .node.group > .header {
 		opacity: clamp(0, calc((var(--z) - 13 / var(--hdrn)) * 10000), 1);
 	}
@@ -1188,7 +1192,7 @@
 		height: 100%;
 		font-weight: 600;
 	}
-	/* An open module's name: inside its top-left corner, muted, no tab. */
+	/* An open module's name, a system's too: inside its top-left corner, no tab. */
 	.header {
 		position: absolute;
 		left: 0.6em;
@@ -1199,18 +1203,9 @@
 		font-size: min(calc(13px / var(--z)), var(--hdr));
 		line-height: 1.2;
 		--glyph-opacity: clamp(0, calc((min(13, var(--hdrn) * var(--z)) - 8) * 0.75), 0.75);
-		font-weight: 500;
-		color: var(--sdv-text-muted);
+		font-weight: 600;
+		color: var(--ui-text);
 		white-space: nowrap;
 		pointer-events: none;
-	}
-	/* An open system's name: above its frame, in the room between systems. */
-	.node.system > .header {
-		top: auto;
-		bottom: 100%;
-		left: 0;
-		padding-bottom: 0.35em;
-		font-weight: 600;
-		color: var(--text);
 	}
 </style>

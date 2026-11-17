@@ -55,6 +55,8 @@ export class ViewState {
 	/** Boxes drawn in full however far out: what is looked at, picked or played, and the far
 	 *  ends of its lines. A card shows its rows, a box its rail's endpoints. */
 	full = $state.raw<Record<string, true>>({});
+	/** The box whose rail is under the pointer: the rail lists its endpoints at any zoom. */
+	railHover = $state<string | null>(null);
 	/** A unit being played: the choices made, the calls stepped into and those stepped over on
 	 *  purpose, and the step shown. */
 	play = $state.raw<{
