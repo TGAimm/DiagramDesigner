@@ -42,7 +42,7 @@ steps:
   (a number and `s`, `m`, `h` or `d`: `15m`) and `at` (once, a local time:
   `2026-12-01T00:00`). `tz` is the IANA zone of `cron` and `at`; default UTC.
 - `message` holds exactly one of `queue` and `topic`; `subscription` goes with `topic` only.
-  `via` is free text: the broker or component it comes through (`pbc-product-sbq-component`,
+  `via` is free text: the broker or component it comes through (`erp-bus`,
   a Dapr pub/sub). The trigger sits in the module that receives the message.
 - Sending: a unit's step `call: <message trigger>` sends that message, without waiting; it
   gets nothing back. A schedule can't be called.
@@ -69,7 +69,7 @@ steps:
 - A module's triggers share one **Triggers** card, the first box inside it, above the Logic
   card: one row per trigger, its name and its source in words: a schedule (`At 03:00`, `Every
   15 minutes`, `Once, 1 Dec 2026 at 00:00`; cron in words comes from cronstrue, 24-hour clock)
-  or a message (`Queue sbq-ax-stock`, `Topic orders › billing`).
+  or a message (`Queue erp-stock`, `Topic orders › billing`).
 - Not on the border: that is where a module meets its outside callers (apis). A trigger starts
   work from inside the system.
 - Identity: 6 px corners, a 1.5 px violet line and a tinted name bar ruled off in it, which

@@ -19,7 +19,7 @@ export function messageProblems(m: Message): { key: string; message: string }[] 
 	return out;
 }
 
-/** A message source in words: `Queue sbq-ax-stock`, `Topic orders › billing`. */
+/** A message source in words: `Queue erp-stock`, `Topic orders › billing`. */
 export function messageWords(m: Message | undefined): string {
 	if (!m) return '';
 	if (m.queue !== undefined) return `Queue ${m.queue}`;

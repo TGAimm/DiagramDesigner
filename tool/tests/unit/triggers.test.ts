@@ -140,7 +140,7 @@ describe('message triggers', () => {
 			'id: stock',
 			'parent: m',
 			'name: stockChanged',
-			'message: { queue: sbq-ax-stock, via: pbc-product-sbq-component }',
+			'message: { queue: erp-stock, via: erp-bus }',
 			'with: AX stock lines',
 			'retries: 3'
 		].join('\n'),
@@ -199,14 +199,14 @@ describe('message triggers', () => {
 	});
 
 	it('read as their queue or topic, with an envelope on their row', () => {
-		expect(messageWords({ queue: 'sbq-ax-stock' })).toBe('Queue sbq-ax-stock');
+		expect(messageWords({ queue: 'erp-stock' })).toBe('Queue erp-stock');
 		expect(messageWords({ topic: 'orders', subscription: 'billing' })).toBe(
 			'Topic orders › billing'
 		);
 		const card = layoutLandscape(loadM()).find((b) => b.id === 'm#triggers')!;
 		expect(card.triggers!.rows).toEqual([
 			{ id: 'nightly', name: 'purgeOldCarts', signature: 'At 03:00' },
-			{ id: 'stock', name: 'stockChanged', signature: 'Queue sbq-ax-stock', message: true }
+			{ id: 'stock', name: 'stockChanged', signature: 'Queue erp-stock', message: true }
 		]);
 	});
 
@@ -234,7 +234,7 @@ describe('message triggers', () => {
 	it('are the caller of their handler, which lists who sends them', () => {
 		const seq = sequenceOf(loadM(), 'apply');
 		expect(seq.lifelines[0].subs).toEqual([
-			{ text: 'stockChanged · Queue sbq-ax-stock', trigger: true, message: true, target: 'stock' },
+			{ text: 'stockChanged · Queue erp-stock', trigger: true, message: true, target: 'stock' },
 			{ text: 'ƒ pushStock', target: 'push' }
 		]);
 		expect(seq.messages[0].text).toBe('AX stock lines');
