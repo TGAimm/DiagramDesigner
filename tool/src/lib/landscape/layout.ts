@@ -3,8 +3,7 @@ import type { Element, ModelField, ModelIndex } from '../model/schema';
 import { GLYPH, textWidth } from '../render/text';
 import { triggerWords } from '../model/message';
 import { railGroups, railOf } from './apis';
-import { edgesOf } from './connections';
-import type { ElkExtendedEdge, ElkNode, ElkPort } from 'elkjs/lib/elk-api';
+import { edgeKey, edgesOf, type Edge } from './connections';
 import { elkLayout } from './elk';
 import { ROUTE } from './route';
 
@@ -82,16 +81,13 @@ export interface LayoutOptions {
 	placement: 'NETWORK_SIMPLEX' | 'BRANDES_KOEPF' | 'LINEAR_SEGMENTS' | 'SIMPLE';
 	/** Width over height that unconnected groups are packed into. */
 	aspect: number;
-	/** File order breaks ties between equally good layouts. */
-	fileOrder: boolean;
 }
 
 export const DEFAULT_LAYOUT: LayoutOptions = {
 	direction: 'RIGHT',
 	spacing: 1,
 	placement: 'NETWORK_SIMPLEX',
-	aspect: 1.6,
-	fileOrder: true
+	aspect: 1.6
 };
 const PAD = 32;
 /** Room above the children for the open box's header. */
@@ -526,7 +522,7 @@ interface Block extends Size {
 
 /**
  * ELK's spacing at one level: `gap` between boxes, and lines spaced as the canvas routes them
- * (see route.ts), so ELK keeps room between layers for as many lines as run there.
+ * (see route.ts), so ELK keeps room between boxes for as many lines as run there.
  */
 const spacing = (gap: number) => ({
 	'elk.spacing.nodeNode': String(gap),
@@ -539,14 +535,43 @@ const spacing = (gap: number) => ({
 	'elk.layered.spacing.edgeNodeBetweenLayers': String(2 * ROUTE.buffer)
 });
 
+/** By id, so the order of the files changes nothing. */
+const idOrder = (a: { id: string }, b: { id: string }) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+
 /**
- * Lays out the whole element tree as one graph by ELK's layered algorithm, as if every box
- * were open and every connection drawn between the cards holding its ends: what is depended
- * on before what depends on it (in `opts.direction`), crossings few, file order breaking ties
- * if `opts.fileOrder`. Run sideways, a line leaves and enters a card at its row's height, so
- * the cards are ordered by where their lines really are. Leaves are fitted to their content,
- * groups round their children; each box keeps room right of it for its rail. Parents precede
- * their children in the result, as Svelte Flow requires.
+ * A line between two sibling boxes standing for every connection between their insides: each
+ * end of a connection lifted to the child of the box both ends share, the connections landing
+ * on one pair, one way, merged. A line never crosses a border.
+ */
+export interface LaidLine {
+	/** `<source>><target>`. */
+	id: string;
+	/** The box whose inside depends on the other's; the line starts here. */
+	source: string;
+	/** The box depended on; the arrow points here. */
+	target: string;
+	/** The box both sit in; none for two top-level boxes. */
+	parentId?: string;
+	/** The connections it merges, each once. */
+	edges: Edge[];
+}
+
+/** The boxes, parents before their children as Svelte Flow requires, and the lines between them. */
+export interface Landscape {
+	boxes: LandscapeBox[];
+	lines: LaidLine[];
+}
+
+/**
+ * Lays out the element tree by ELK's layered algorithm, with every connection as a line between
+ * siblings (see `LaidLine`): what is depended on before what depends on it (in
+ * `opts.direction`), crossings few, the more connections a line merges the shorter and
+ * straighter. The lines only place the boxes; the canvas routes every line it draws itself
+ * (see route.ts), so lines at rest and lit lines follow the same rules. Siblings no line joins
+ * are laid out apart and packed. Each box is laid out inside first, then among its siblings as
+ * one box of its size. Leaves are fitted to their content, groups round their
+ * children; each box keeps room right of it for its rail. Boxes are taken in id order, so the
+ * order of the files changes nothing.
  *
  * A model is a class card in its owner, inside a boundary with the models only it holds, and
  * a table card in the entity storing it. A model stored where it is owned is one table card.
@@ -557,7 +582,7 @@ export function layoutLandscape(
 	model: Model,
 	opts: LayoutOptions = DEFAULT_LAYOUT,
 	foldAt = new Map<string, number>()
-): LandscapeBox[] {
+): Landscape {
 	const gap = 32 * opts.spacing;
 	const systemGap = 120 * opts.spacing;
 	const out: LandscapeBox[] = [];
@@ -641,14 +666,18 @@ export function layoutLandscape(
 			...[...model.apiFields].filter(([, f]) => apis.includes(f.apiId)).map(([id]) => id)
 		];
 	};
+	// A module's triggers card first, then its logic card, then the rest.
+	const rank = (k: Item) => (k.card === 'triggers' ? 0 : k.card === 'logic' ? 1 : 2);
 	const walk = (item: Item, parent?: string) => {
-		const kids = kidsOf(item);
+		const kids = kidsOf(item).sort((a, b) => rank(a) - rank(b) || idOrder(a, b));
 		kidsBy.set(item.id, kids);
 		if (parent) parentOf.set(item.id, parent);
 		for (const leaf of leavesOf(item)) homes.set(leaf, [...(homes.get(leaf) ?? []), item]);
 		for (const k of kids) walk(k, item.id);
 	};
-	const roots: Item[] = model.rootElementIds.map((id) => ({ id, el: id, ref: false }));
+	const roots: Item[] = model.rootElementIds
+		.map((id) => ({ id, el: id, ref: false }))
+		.sort(idOrder);
 	for (const r of roots) walk(r);
 
 	const chain = (id: string) => {
@@ -751,80 +780,43 @@ export function layoutLandscape(
 		}
 	}
 
-	if (!roots.length) return out;
+	if (!roots.length) return { boxes: out, lines: [] };
 	const items = new Map<string, Item>();
 	for (const kids of kidsBy.values()) for (const k of kids) items.set(k.id, k);
 	for (const r of roots) items.set(r.id, r);
 	for (const item of items.values()) if (!kidsBy.get(item.id)!.length) measure(item);
 
-	/** Height of a leaf's row in its card: a field or unit row, else the name bar's middle. */
-	const rowHeight = (home: Item, leaf: string) => {
-		const card = cards.get(home.id);
-		const i = card ? card.fields.findIndex((f) => f.id === leaf) : -1;
-		if (card && i >= 0) return fieldRowY(i, card.fields.length, false, foldAt.get(home.el) ?? FOLD);
-		const u = logicCards.get(home.id)?.rows.findIndex((r) => r.id === leaf) ?? -1;
-		if (u >= 0) return logicRowY(u);
-		return home.view || home.card ? TABLE.head / 2 : sizes.get(home.id)!.height / 2;
-	};
-
-	// Run sideways, a line leaves a box toward what depends on it, by a port at its row.
-	const [outSide, inSide] =
-		opts.direction === 'RIGHT'
-			? ['EAST', 'WEST']
-			: opts.direction === 'LEFT'
-				? ['WEST', 'EAST']
-				: [];
-	const ports = new Map<string, ElkPort[]>();
-	const port = (home: Item, side: string | undefined, leaf: string) => {
-		if (!side || kidsBy.get(home.id)!.length) return home.id;
-		const size = sizes.get(home.id)!;
-		const y = rowHeight(home, leaf);
-		const id = `${home.id}|${side}|${y}`;
-		const list = ports.get(home.id) ?? [];
-		ports.set(home.id, list);
-		if (!list.some((p) => p.id === id))
-			list.push({
-				id,
-				x: side === 'EAST' ? size.width + (size.right ?? 0) : 0,
-				y,
-				width: 0,
-				height: 0,
-				layoutOptions: { 'elk.port.side': side }
-			});
-		return id;
-	};
-	// Every connection, between the boxes holding its ends; `to` is what is depended on. One
-	// between a box and what is inside it has no line.
-	const conns: { from: Item; to: Item; fromLeaf: string; toLeaf: string }[] = [];
+	// Every connection lifted to the two siblings holding its ends (see `LaidLine`). One between
+	// a box and what is inside it, or inside one box, has no line.
+	const laid = new Map<string, LaidLine>();
+	const merged = new Set<string>();
 	for (const e of edgesOf(model))
 		for (const a of homes.get(e.from) ?? []) {
 			const b = nearest(a, e.to);
-			if (!b || b === a || chain(a.id).includes(b.id) || chain(b.id).includes(a.id)) continue;
-			conns.push({ from: a, to: b, fromLeaf: e.from, toLeaf: e.to });
+			if (!b || b === a) continue;
+			const ca = chain(a.id);
+			const cb = chain(b.id);
+			const shared = ca.find((id) => cb.includes(id));
+			if (shared === a.id || shared === b.id) continue;
+			const source = shared ? ca[ca.indexOf(shared) - 1] : ca.at(-1)!;
+			const target = shared ? cb[cb.indexOf(shared) - 1] : cb.at(-1)!;
+			const id = `${source}>${target}`;
+			const l = laid.get(id) ?? { id, source, target, parentId: shared, edges: [] };
+			laid.set(id, l);
+			if (merged.has(`${id}|${edgeKey(e)}`)) continue;
+			merged.add(`${id}|${edgeKey(e)}`);
+			l.edges.push(e);
 		}
+	const lines = [...laid.values()].sort(idOrder);
 
-	/**
-	 * Siblings in groups joined by their connections: those a line ties to outside their
-	 * parent (`tied`), and each group no line leaves (`loose`).
-	 */
-	const components = (kids: Item[]) => {
-		const kidOf = (x: Item) => {
-			const c = chain(x.id);
-			return kids.find((k) => c.includes(k.id));
-		};
+	/** Siblings in `parent` (none for the top level) in groups joined by lines. */
+	const components = (parent: string | undefined, kids: Item[]) => {
 		const up = new Map(kids.map((k) => [k.id, k.id]));
 		const find = (id: string): string => (up.get(id) === id ? id : find(up.get(id)!));
-		const tiedIds = new Set<string>();
-		for (const c of conns) {
-			const f = kidOf(c.from);
-			const t = kidOf(c.to);
-			if (f && t) up.set(find(f.id), find(t.id));
-			else if (f || t) tiedIds.add((f ?? t)!.id);
-		}
+		for (const l of lines) if (l.parentId === parent) up.set(find(l.source), find(l.target));
 		const groups = new Map<string, Item[]>();
 		for (const k of kids) groups.set(find(k.id), [...(groups.get(find(k.id)) ?? []), k]);
-		const loose = [...groups.values()].filter((g) => !g.some((k) => tiedIds.has(k.id)));
-		return { tied: kids.filter((k) => !loose.some((g) => g.includes(k))), loose };
+		return [...groups.values()];
 	};
 
 	/** Blocks in rows, in order, packed to about `opts.aspect`, `g` apart. */
@@ -851,106 +843,71 @@ export function layoutLandscape(
 		return Math.max(own, railWidth(item.el, deep, Infinity) / 2);
 	};
 
-	// Each group's children, relative to the room inside it ('' for the top level), and its size.
+	// Each group's children, relative to the room inside it ('' for the top level).
 	const blocks = new Map<string, Block>();
 	/**
-	 * Boxes `top`, `g` apart, and everything inside them, as one ELK graph. In a box, siblings
-	 * no line ties to the rest are laid out apart and packed (ELK does not pack a graph with
-	 * lines across borders), standing in the graph as one box.
+	 * Siblings `parent` holds (none for the top level), `g` apart: those lines join laid out
+	 * together, the groups no line joins packed. Every group among them is laid out inside first
+	 * and then stands as one box of its size.
 	 */
-	const run = (top: Item[], g: number): Block => {
-		const shown = new Set<string>();
-		const packed = new Map<string, Block>();
-		const visit = (item: Item) => {
-			shown.add(item.id);
-			const kids = kidsBy.get(item.id)!;
-			if (!kids.length) return;
-			const { tied, loose } = components(kids);
-			if (!tied.length && loose.length === 1) return kids.forEach(visit);
-			tied.forEach(visit);
-			if (loose.length)
-				packed.set(
-					item.id,
-					pack(
-						loose.map((c) => run(c, gap)),
-						gap
-					)
+	const layout = (parent: string | undefined, kids: Item[], g: number): Block => {
+		const parts = components(parent, kids);
+		return parts.length === 1
+			? run(kids, g)
+			: pack(
+					parts.map((c) => run(c, g)),
+					g
 				);
-		};
-		top.forEach(visit);
-		const edges: ElkExtendedEdge[] = conns
-			.filter((c) => shown.has(c.from.id) && shown.has(c.to.id))
-			.map((c, i) => ({
-				id: `e${i}`,
-				sources: [port(c.to, outSide, c.toLeaf)],
-				targets: [port(c.from, inSide, c.fromLeaf)]
-			}));
-		const node = (item: Item): ElkNode => {
+	};
+	/** Siblings `top`, `g` apart, as one ELK graph. */
+	const run = (top: Item[], g: number): Block => {
+		for (const item of top) {
 			const kids = kidsBy.get(item.id)!;
-			if (!kids.length) {
-				const size = sizes.get(item.id)!;
-				return {
-					id: item.id,
-					width: size.width + (size.right ?? 0),
-					height: size.height,
-					layoutOptions: { 'elk.portConstraints': 'FIXED_POS' },
-					ports: ports.get(item.id) ?? []
-				};
-			}
+			if (!kids.length) continue;
 			const right = fullRail(item);
-			if (right) sizes.set(item.id, { width: 0, height: 0, right });
-			const padRight = PAD + (inner.get(item.id) ?? 0) + right;
-			const loose = packed.get(item.id);
-			return {
-				id: item.id,
-				layoutOptions: {
-					...spacing(gap),
-					'elk.padding': `[top=${HEADER},left=${PAD},bottom=${PAD},right=${padRight}]`
-				},
-				children: [
-					...kids.filter((k) => shown.has(k.id)).map(node),
-					...(loose ? [{ id: `${item.id}#loose`, width: loose.width, height: loose.height }] : [])
-				]
-			};
-		};
+			const block = layout(item.id, kids, gap);
+			blocks.set(item.id, block);
+			sizes.set(item.id, {
+				width: block.width + 2 * PAD + (inner.get(item.id) ?? 0),
+				height: block.height + HEADER + PAD,
+				right: right || undefined
+			});
+		}
+		const ids = new Set(top.map((i) => i.id));
 		const graph = elkLayout({
 			id: 'root',
 			layoutOptions: {
 				...spacing(g),
 				'elk.algorithm': 'layered',
-				'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
 				'elk.direction': opts.direction,
 				'elk.padding': '[top=0,left=0,bottom=0,right=0]',
 				// The canvas routes its own lines, but ELK routing them the same way keeps room for them.
 				'elk.edgeRouting': 'ORTHOGONAL',
-				'elk.layered.considerModelOrder.strategy': opts.fileOrder ? 'NODES_AND_EDGES' : 'NONE',
-				'elk.layered.nodePlacement.strategy': opts.placement
+				'elk.layered.nodePlacement.strategy': opts.placement,
+				// Pulls boxes in along the flow where the lines allow, to shorten them.
+				'elk.layered.compaction.postCompaction.strategy': 'EDGE_LENGTH'
 			},
-			children: top.map(node),
-			edges
+			children: top.map((item) => {
+				const size = sizes.get(item.id)!;
+				return {
+					id: item.id,
+					width: size.width + (size.right ?? 0),
+					height: size.height
+				};
+			}),
+			edges: lines
+				.filter((l) => ids.has(l.source))
+				.map((l) => ({
+					id: l.id,
+					sources: [l.target],
+					targets: [l.source],
+					layoutOptions: {
+						'elk.layered.priority.shortness': String(l.edges.length),
+						'elk.layered.priority.straightness': String(l.edges.length)
+					}
+				}))
 		});
-		const read = (n: ElkNode) => {
-			const kids = n.children ?? [];
-			if (!kids.length) return;
-			const right = sizes.get(n.id)?.right ?? 0;
-			const at = new Map(kids.map((c) => [c.id, { x: c.x! - PAD, y: c.y! - HEADER }]));
-			// The packed siblings go where their stand-in went.
-			const loose = packed.get(n.id);
-			const p = at.get(`${n.id}#loose`);
-			if (loose && p) {
-				at.delete(`${n.id}#loose`);
-				for (const [id, q] of loose.at) at.set(id, { x: p.x + q.x, y: p.y + q.y });
-			}
-			blocks.set(n.id, {
-				width: n.width! - right - 2 * PAD - (inner.get(n.id) ?? 0),
-				height: n.height! - HEADER - PAD,
-				at
-			});
-			sizes.set(n.id, { width: n.width! - right, height: n.height!, right: right || undefined });
-			for (const c of kids) read(c);
-		};
 		const kids = graph.children!;
-		kids.forEach(read);
 		const x0 = Math.min(...kids.map((c) => c.x!));
 		const y0 = Math.min(...kids.map((c) => c.y!));
 		return {
@@ -959,19 +916,10 @@ export function layoutLandscape(
 			at: new Map(kids.map((c) => [c.id, { x: c.x! - x0, y: c.y! - y0 }]))
 		};
 	};
-	const loose = components(roots).loose;
-	blocks.set(
-		'',
-		loose.length === 1
-			? run(roots, systemGap)
-			: pack(
-					loose.map((c) => run(c, systemGap)),
-					systemGap
-				)
-	);
+	blocks.set('', layout(undefined, roots, systemGap));
 
 	place(roots, { x: 0, y: 0, ...blocks.get('')! });
-	return out;
+	return { boxes: out, lines };
 }
 
 const modelOf = (model: Model, id: string) => model.fields.get(id)?.modelId ?? id;

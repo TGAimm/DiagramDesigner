@@ -101,7 +101,7 @@ describe('triggers', () => {
 	});
 
 	it('share one card, first in their module, a row each with its schedule', () => {
-		const boxes = layoutLandscape(load());
+		const boxes = layoutLandscape(load()).boxes;
 		const inM = boxes.filter((b) => b.parentId === 'm');
 		expect(inM.map((b) => b.id)).toEqual(['m#triggers', 'm#logic', 'cart']);
 		expect(inM[0].triggers!.rows).toEqual([
@@ -203,7 +203,7 @@ describe('message triggers', () => {
 		expect(messageWords({ topic: 'orders', subscription: 'billing' })).toBe(
 			'Topic orders › billing'
 		);
-		const card = layoutLandscape(loadM()).find((b) => b.id === 'm#triggers')!;
+		const card = layoutLandscape(loadM()).boxes.find((b) => b.id === 'm#triggers')!;
 		expect(card.triggers!.rows).toEqual([
 			{ id: 'nightly', name: 'purgeOldCarts', signature: 'At 03:00' },
 			{ id: 'stock', name: 'stockChanged', signature: 'Queue erp-stock', message: true }

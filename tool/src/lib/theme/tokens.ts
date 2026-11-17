@@ -7,6 +7,8 @@ const light = {
 	grid: '#e4e1da',
 	'text-muted': '#6e6c66',
 	edge: '#8d8a83',
+	/** Lines at rest: a step darker than `edge`, so they read zoomed out. */
+	'edge-rest': '#5f5c56',
 	selection: '#5468d4',
 
 	// Systems and modules: neutral, told apart by form (see the Entity identity board).
@@ -74,6 +76,7 @@ const dark: Record<Token, string> = {
 	grid: '#222328',
 	'text-muted': '#9b9993',
 	edge: '#76746f',
+	'edge-rest': '#b3b0aa',
 	selection: '#7b8cf0',
 
 	'system-fill': 'rgba(255, 255, 255, 0.015)',

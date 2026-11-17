@@ -38,7 +38,7 @@ describe('layout options', () => {
 		'c/c.module.yaml': 'id: c\n'
 	}).model;
 	const at = (opts: Partial<typeof DEFAULT_LAYOUT>) => {
-		const boxes = layoutLandscape(linked, { ...DEFAULT_LAYOUT, ...opts });
+		const boxes = layoutLandscape(linked, { ...DEFAULT_LAYOUT, ...opts }).boxes;
 		return (id: string) => boxes.find((b) => b.id === id)!;
 	};
 
@@ -51,26 +51,49 @@ describe('layout options', () => {
 		expect(left('b').absX + left('b').width).toBeLessThanOrEqual(left('a').absX);
 	});
 
-	it('lays out as if every box were open and every line drawn, across borders too', () => {
-		// In each system one model refers to another, so it has two layers. b's y refers to a's q.
-		const model = loadStrings({
-			'a/a.module.yaml': 'id: a\n',
-			'a/m1.model.yaml': 'id: m1\nownedBy: a\nfields: [{ id: m1-id, name: id, type: uuid }]\n',
-			'a/m2.model.yaml':
-				'id: m2\nownedBy: a\nfields: [{ id: m2-m1, name: m1, type: uuid, ref: m1-id }]\n',
-			'a/q.model.yaml': 'id: q\nownedBy: a\nfields: [{ id: q-id, name: id, type: uuid }]\n',
-			'b/b.module.yaml': 'id: b\n',
-			'b/n1.model.yaml': 'id: n1\nownedBy: b\nfields: [{ id: n1-id, name: id, type: uuid }]\n',
-			'b/n2.model.yaml':
-				'id: n2\nownedBy: b\nfields: [{ id: n2-n1, name: n1, type: uuid, ref: n1-id }]\n',
-			'b/y.model.yaml': 'id: y\nownedBy: b\nfields: [{ id: y-q, name: q, type: uuid, ref: q-id }]\n'
-		}).model;
-		const boxes = layoutLandscape(model);
+	// In each system one model refers to another; b's y refers to a's q.
+	const files: Record<string, string> = {
+		'a/a.module.yaml': 'id: a\n',
+		'a/m1.model.yaml': 'id: m1\nownedBy: a\nfields: [{ id: m1-id, name: id, type: uuid }]\n',
+		'a/m2.model.yaml':
+			'id: m2\nownedBy: a\nfields: [{ id: m2-m1, name: m1, type: uuid, ref: m1-id }]\n',
+		'a/q.model.yaml': 'id: q\nownedBy: a\nfields: [{ id: q-id, name: id, type: uuid }]\n',
+		'b/b.module.yaml': 'id: b\n',
+		'b/n1.model.yaml': 'id: n1\nownedBy: b\nfields: [{ id: n1-id, name: id, type: uuid }]\n',
+		'b/n2.model.yaml':
+			'id: n2\nownedBy: b\nfields: [{ id: n2-n1, name: n1, type: uuid, ref: n1-id }]\n',
+		'b/y.model.yaml': 'id: y\nownedBy: b\nfields: [{ id: y-q, name: q, type: uuid, ref: q-id }]\n'
+	};
+
+	it('lays out by lines between siblings, what is depended on first', () => {
+		const { boxes, lines } = layoutLandscape(loadStrings(files).model);
 		const box = (id: string) => boxes.find((b) => b.id === id)!;
-		// q sits on the side of a its line leaves by, y on the side of b it enters by.
-		expect(box('q').absX).toBeGreaterThan(box('m1').absX + box('m1').width);
-		expect(box('y').absX + box('y').width).toBeLessThan(box('n2').absX);
+		// y's ref to q is lifted to its systems.
+		expect(lines.map((l) => [l.id, l.parentId, l.edges.length])).toEqual([
+			['b>a', undefined, 1],
+			['m2>m1', 'a', 1],
+			['n2>n1', 'b', 1]
+		]);
+		// What is depended on comes first.
+		for (const l of lines)
+			expect(box(l.target).absX + box(l.target).width).toBeLessThan(box(l.source).absX);
 		for (const id of ['m1', 'm2', 'q']) expect(inside(box(id), box('a'))).toBe(true);
+	});
+
+	it('lays out the same whatever order the files are in', () => {
+		// Files load in path order, so numbering them the other way round reverses it.
+		const laid = (order: (i: number) => number) => {
+			const fs = Object.entries(files).map(([p, text], i) => [
+				`${String(order(i)).padStart(2, '0')}-${p.replace('/', '-')}`,
+				text
+			]);
+			const { boxes, lines } = layoutLandscape(loadStrings(Object.fromEntries(fs)).model);
+			return {
+				boxes: boxes.map((b) => [b.id, b.absX, b.absY, b.width, b.height]).sort(),
+				lines: lines.map((l) => l.id)
+			};
+		};
+		expect(laid((i) => 99 - i)).toEqual(laid((i) => i));
 	});
 
 	it('packs boxes no line ties together to the shape asked', () => {
@@ -78,7 +101,7 @@ describe('layout options', () => {
 		for (const id of 'abcdefgh') files[`${id}/${id}.module.yaml`] = `id: ${id}\n`;
 		const loose = loadStrings(files).model;
 		const extent = (aspect: number) => {
-			const boxes = layoutLandscape(loose, { ...DEFAULT_LAYOUT, aspect });
+			const boxes = layoutLandscape(loose, { ...DEFAULT_LAYOUT, aspect }).boxes;
 			return {
 				w: Math.max(...boxes.map((b) => b.absX + b.width)),
 				h: Math.max(...boxes.map((b) => b.absY + b.height))
@@ -96,7 +119,7 @@ describe('layout options', () => {
 		// The fixture's two erp modules share no connection, so ELK packs them, a gap apart.
 		const { model } = loadFixture();
 		for (const spacing of [1, 2]) {
-			const boxes = layoutLandscape(model, { ...DEFAULT_LAYOUT, spacing });
+			const boxes = layoutLandscape(model, { ...DEFAULT_LAYOUT, spacing }).boxes;
 			const [i, o] = ['inventory', 'orders'].map((id) => boxes.find((b) => b.id === id)!);
 			const [first, second] = i.absX < o.absX || i.absY < o.absY ? [i, o] : [o, i];
 			expect(
@@ -107,7 +130,7 @@ describe('layout options', () => {
 });
 
 describe('landscape layout', () => {
-	const boxes = layoutLandscape(model);
+	const boxes = layoutLandscape(model).boxes;
 	const box = (id: string) => boxes.find((b) => b.id === id)!;
 
 	const notApi = (id: string) => model.elements.get(id)!.def.kind !== 'api';
@@ -160,7 +183,7 @@ describe('landscape layout', () => {
 			's/n.module.yaml': 'id: n\nparent: s\nname: N\n',
 			's/a.api.yaml': 'id: a\nparent: m\nmethod: DELETE\npath: /a/very/long/route/to/something\n'
 		});
-		const boxes = layoutLandscape(model);
+		const boxes = layoutLandscape(model).boxes;
 		const [s, m, n] = ['s', 'm', 'n'].map((id) => boxes.find((b) => b.id === id)!);
 		const rail = railOf(model, railGroups(model, 'm', ['a']), m.height);
 		expect([m.group, m.apis]).toEqual([false, ['a']]);
@@ -191,7 +214,7 @@ describe('landscape layout', () => {
 	});
 
 	it('is empty for an empty model', () => {
-		expect(layoutLandscape(loadStrings({}).model)).toEqual([]);
+		expect(layoutLandscape(loadStrings({}).model).boxes).toEqual([]);
 	});
 
 	it('draws a referenced model inside the referencing entity too, sized as a table', () => {
@@ -206,7 +229,7 @@ describe('landscape layout', () => {
 				's/db.module.yaml': 'id: db\nparent: s\nmodels: [a]\n',
 				's/a.model.yaml': ['id: a', 'ownedBy: m', 'fields:', ...fields].join('\n')
 			}).model
-		);
+		).boxes;
 		const owned = boxes.find((b) => b.id === 'a')!;
 		const ref = boxes.find((b) => b.id === 'db>a')!;
 		expect([owned.parentId, owned.ref]).toEqual(['m', false]);
@@ -240,7 +263,7 @@ describe('landscape layout', () => {
 			's/t.model.yaml':
 				'id: t\nownedBy: db\nstoredIn: db\nfields: [{ id: t-x, name: x, type: int }]\n'
 		}).model;
-		const boxes = layoutLandscape(m);
+		const boxes = layoutLandscape(m).boxes;
 		const box = (id: string) => boxes.find((b) => b.id === id)!;
 		const names = (id: string) => box(id).fields!.map((f) => f.name);
 		// The owner shows one boundary round the holder and the part it alone holds.
@@ -259,7 +282,7 @@ describe('landscape layout', () => {
 			['orderId', 'qty']
 		]);
 		expect([box('t').view, boxes.filter((b) => b.elementId === 't').length]).toEqual(['table', 1]);
-		expect(restLines(m, boxes, edgesOf(m)).map((l) => [l.id, l.kinds])).toEqual([
+		expect(restLines(layoutLandscape(m).lines, edgesOf(m)).map((l) => [l.id, l.kinds])).toEqual([
 			['db>l>db>o', ['ref']],
 			['o>l', ['model']]
 		]);
@@ -274,7 +297,7 @@ describe('landscape layout', () => {
 		}).model;
 		expect(
 			layoutLandscape(m)
-				.filter((b) => b.parentId === 's')
+				.boxes.filter((b) => b.parentId === 's')
 				.map((b) => b.id)
 		).toEqual(['a', 'b', 'x']);
 	});
@@ -303,7 +326,7 @@ describe('landscape layout', () => {
 	}).model;
 
 	it('lays out a level along its connections, what is depended on left, each card at its own size', () => {
-		const boxes = layoutLandscape(tables);
+		const boxes = layoutLandscape(tables).boxes;
 		const box = (id: string) => boxes.find((b) => b.id === id)!;
 		// b and d refer to a and hold c.
 		for (const from of ['b', 'd'])
@@ -315,7 +338,7 @@ describe('landscape layout', () => {
 	});
 
 	it('joins sibling cards at rest, one line per pair and direction', () => {
-		const lines = restLines(tables, layoutLandscape(tables), edgesOf(tables));
+		const lines = restLines(layoutLandscape(tables).lines, edgesOf(tables));
 		// b's ref to its own model is inside one card, so it has no line.
 		expect(lines.map((l) => [l.id, l.kinds, l.count, l.parentId])).toEqual([
 			['b>a', ['ref'], 1, 's'],
@@ -345,7 +368,7 @@ describe('landscape layout', () => {
 	}).model;
 
 	it('replaces the reference and source columns with a link strip', () => {
-		const boxes = layoutLandscape(lineage);
+		const boxes = layoutLandscape(lineage).boxes;
 		const cols = (id: string) => boxes.find((b) => b.id === id)!.table!;
 		expect(cols('copy').map((c) => c.key)).toEqual([
 			'name',
@@ -365,7 +388,7 @@ describe('landscape layout', () => {
 	});
 
 	it('merges connections at rest, lifted to siblings, so no line crosses a border', () => {
-		const lines = restLines(lineage, layoutLandscape(lineage), edgesOf(lineage));
+		const lines = restLines(layoutLandscape(lineage).lines, edgesOf(lineage));
 		// copy's ref and lineage merge; lineage inside copy has no line; dto in module api
 		// derives from src in module db, so the two modules are joined.
 		expect(lines.map((l) => [l.id, l.kinds, l.count, l.parentId])).toEqual([
@@ -384,7 +407,7 @@ describe('folded model cards', () => {
 				's/m.module.yaml': 'id: m\nparent: s\n',
 				's/a.model.yaml': ['id: a', 'ownedBy: m', 'fields:', ...fields].join('\n')
 			}).model
-		).find((b) => b.id === 'a')!;
+		).boxes.find((b) => b.id === 'a')!;
 	};
 
 	it(`lays out a card of over ${FOLD} fields as ${FOLD} rows and a toggle row`, () => {
@@ -437,7 +460,7 @@ describe('logic cards', () => {
 			'steps: [{ read: cart }]'
 		].join('\n')
 	}).model;
-	const boxes = layoutLandscape(shop);
+	const boxes = layoutLandscape(shop).boxes;
 	const box = (id: string) => boxes.find((b) => b.id === id)!;
 
 	it('draws a module’s units as rows of one card: name and signature, no header', () => {

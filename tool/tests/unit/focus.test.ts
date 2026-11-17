@@ -99,7 +99,7 @@ describe('focusOn', () => {
 		expect(f.model.elements.get('c')!.def.fields!.map((x) => x.id)).toEqual(['c-id', 'c-name']);
 		expect(f.foldAt.get('c')).toBe(1);
 		expect(f.foldAt.has('o')).toBe(false);
-		const boxes = layoutLandscape(f.model, undefined, f.foldAt);
+		const boxes = layoutLandscape(f.model, undefined, f.foldAt).boxes;
 		const card = boxes.find((b) => b.id === 'c')!;
 		expect(card.foldAt).toBe(1);
 		// The name bar, the header row, one field row and the fold row.
@@ -126,7 +126,7 @@ describe('focusOn', () => {
 			{ id: 'a', mode: 'all', depth: 1 }
 		);
 		expect(f.foldAt.get('b')).toBe(FOLD);
-		const card = layoutLandscape(f.model, undefined, f.foldAt).find((b) => b.id === 'b')!;
+		const card = layoutLandscape(f.model, undefined, f.foldAt).boxes.find((b) => b.id === 'b')!;
 		// The name bar, the header row, FOLD field rows and the fold row.
 		expect(card.height).toBe(TABLE.head + (FOLD + 2) * TABLE.rowHeight + 2);
 	});

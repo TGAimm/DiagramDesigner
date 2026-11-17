@@ -1,6 +1,6 @@
 import { LOGIC_KEYS, type Model } from '../model/model';
 import { bodyModels } from './apis';
-import { cardRows, linkTarget, type LandscapeBox } from './layout';
+import { cardRows, linkTarget, type LaidLine, type LandscapeBox } from './layout';
 
 /**
  * Every kind of connection. A field refers to a key (`ref`), holds a model (`model`) or
@@ -94,7 +94,7 @@ export function within(boxes: LandscapeBox[], id: string): LandscapeBox[] {
 	return boxes.filter((b) => ids.has(b.id));
 }
 
-/** A line between two sibling boxes standing for every connection between their insides. */
+/** A line drawn at rest: a laid out line (see `LaidLine`) with only the connections shown. */
 export interface RestLine {
 	id: string;
 	source: string;
@@ -107,41 +107,13 @@ export interface RestLine {
 	count: number;
 }
 
-/**
- * The lines drawn at rest. Each end of every connection is lifted to the child of the box
- * both ends share, so a line always joins two siblings and never crosses a border; the
- * connections landing on one pair, one way, merge into one line. A connection between a box
- * and something inside it, or inside one box, has no line at rest.
- */
-export function restLines(model: Model, boxes: LandscapeBox[], edges: Edge[]): RestLine[] {
-	const byId = new Map(boxes.map((b) => [b.id, b]));
-	const chain = (b: LandscapeBox) => {
-		const out = [b.id];
-		for (let p = b.parentId; p; p = byId.get(p)?.parentId) out.push(p);
-		return out;
-	};
-	const from = new Map<string, Edge[]>();
-	for (const e of edges) from.set(e.from, [...(from.get(e.from) ?? []), e]);
-	const lines = new Map<string, RestLine & { keys: Set<string> }>();
-	for (const a of boxes)
-		for (const leaf of leavesOf(model, a))
-			for (const e of from.get(leaf) ?? []) {
-				const b = homeOf(model, boxes, a, e.to);
-				if (!b || b === a) continue;
-				const ca = chain(a);
-				const cb = chain(b);
-				const shared = ca.find((id) => cb.includes(id));
-				if (shared === a.id || shared === b.id) continue;
-				const source = shared ? ca[ca.indexOf(shared) - 1] : ca.at(-1)!;
-				const target = shared ? cb[cb.indexOf(shared) - 1] : cb.at(-1)!;
-				const id = `${source}>${target}`;
-				let l = lines.get(id);
-				if (!l) {
-					l = { id, source, target, parentId: shared, kinds: [], count: 0, keys: new Set() };
-					lines.set(id, l);
-				}
-				l.keys.add(edgeKey(e));
-				if (!l.kinds.includes(e.kind)) l.kinds.push(e.kind);
-			}
-	return [...lines.values()].map(({ keys, ...l }) => ({ ...l, count: keys.size }));
+/** The laid out lines holding any of `edges`, each with only those. */
+export function restLines(laid: LaidLine[], edges: Edge[]): RestLine[] {
+	const shown = new Set(edges.map(edgeKey));
+	return laid.flatMap(({ edges: all, ...l }) => {
+		const es = all.filter((e) => shown.has(edgeKey(e)));
+		return es.length
+			? [{ ...l, kinds: [...new Set(es.map((e) => e.kind))], count: es.length }]
+			: [];
+	});
 }

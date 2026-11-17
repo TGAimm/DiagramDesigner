@@ -146,9 +146,10 @@
 	const focusKey = $derived(playing ? `run:${playing}` : view.focused);
 	const model = $derived(focused?.model ?? changes.shown);
 	// Laid out with every flag branch and gated item in, so setting a flag moves nothing.
-	const boxes = $derived(
+	const laid = $derived(
 		layoutLandscape(focused?.model ?? changes.layoutModel, settings.layout, focused?.foldAt)
 	);
+	const boxes = $derived(laid.boxes);
 	const rels = $derived(relationsOf(model));
 	// The minimap draws the root boxes, named, and the modules directly in them.
 	const mapBoxes = $derived(
@@ -786,8 +787,7 @@
 	// and bodies light up on hover.
 	const rest = $derived(
 		restLines(
-			model,
-			boxes,
+			laid.lines,
 			shownEdges.filter((e) => ['calls', 'handles', 'reads', 'writes'].includes(e.kind))
 		)
 	);
@@ -888,8 +888,6 @@
 	/** A line at rest: grey, on the two boxes' name bars, wider the more it merges. */
 	function restEdge(l: RestLine, dim: boolean) {
 		const [ss, ts] = sides(headEnd(boxById.get(l.source)!), headEnd(boxById.get(l.target)!));
-		const only = (ks: LinkKind[]) => l.kinds.every((k) => ks.includes(k));
-		const pattern = only(['calls', 'handles']) ? 'calls' : '';
 		return {
 			id: `rest:${l.id}`,
 			source: l.source,
@@ -902,9 +900,10 @@
 			zIndex: -1,
 			data: {
 				points: restRoutes?.get(l.id),
+				halo: true,
 				title: `${l.count} connection${l.count > 1 ? 's' : ''}: ${l.kinds.map((k) => KIND_NAME[k]).join(', ')}`
 			},
-			class: ['conn rest', pattern, l.count >= 10 ? 'w3' : l.count > 1 ? 'w2' : 'w1', dim && 'dim']
+			class: ['conn rest', l.count >= 10 ? 'w3' : l.count > 1 ? 'w2' : 'w1', dim && 'dim']
 				.filter(Boolean)
 				.join(' '),
 			markerEnd: 'sdv-arrow-rest'
@@ -939,7 +938,7 @@
 
 	/** Arrowheads and diamonds, grey for lines at rest and in each kind's colour when lit. */
 	const MARKS = [
-		['rest', 'var(--sdv-edge)'],
+		['rest', 'var(--sdv-edge-rest)'],
 		...['ref', 'from', 'write', 'call'].map((t) => [t, `var(--sdv-link-${t})`])
 	];
 	/** Line ends are 10px on screen. */
@@ -2864,20 +2863,37 @@
 			opacity: 0;
 		}
 	}
-	/* Every line keeps its width on screen at any zoom: at rest 1, 1.75 or 2.5px by how many
-	   connections it merges (hover one for the count), lit 2px. Solid is structure, dashed
-	   lineage, dotted control. */
+	/* Every line keeps its width on screen at any zoom: at rest 1.5, 2.5 or 3.5px by how many
+	   connections it merges (hover one for the count), solid, over a halo in the canvas colour;
+	   lit 2px. Lit, solid is structure, dashed lineage, dotted control. */
 	.canvas :global(.conn .svelte-flow__edge-path) {
 		stroke: var(--sdv-edge);
 		stroke-width: 1;
 		vector-effect: non-scaling-stroke;
 		transition: opacity 0.12s;
 	}
-	.canvas :global(.conn.w2 .svelte-flow__edge-path) {
-		stroke-width: 1.75;
+	.canvas :global(.conn.rest .svelte-flow__edge-path) {
+		stroke: var(--sdv-edge-rest);
+		stroke-width: 1.5;
 	}
-	.canvas :global(.conn.w3 .svelte-flow__edge-path) {
+	.canvas :global(.conn.rest.w2 .svelte-flow__edge-path) {
 		stroke-width: 2.5;
+	}
+	.canvas :global(.conn.rest.w3 .svelte-flow__edge-path) {
+		stroke-width: 3.5;
+	}
+	.canvas :global(.conn .halo) {
+		fill: none;
+		stroke: var(--sdv-canvas-bg);
+		stroke-width: 5.5;
+		vector-effect: non-scaling-stroke;
+		transition: opacity 0.12s;
+	}
+	.canvas :global(.conn.w2 .halo) {
+		stroke-width: 6.5;
+	}
+	.canvas :global(.conn.w3 .halo) {
+		stroke-width: 7.5;
 	}
 	.canvas :global(.conn.from .svelte-flow__edge-path) {
 		stroke-dasharray: 5 4;
@@ -2886,7 +2902,8 @@
 	.canvas :global(.conn.handles .svelte-flow__edge-path) {
 		stroke-dasharray: 2 3;
 	}
-	.canvas :global(.conn.dim .svelte-flow__edge-path) {
+	.canvas :global(.conn.dim .svelte-flow__edge-path),
+	.canvas :global(.conn.dim .halo) {
 		opacity: 0.25;
 	}
 	/* Lit lines are over the cards, so they never take the pointer from a row. */

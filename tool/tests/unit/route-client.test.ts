@@ -66,7 +66,7 @@ function example() {
 			text: readFileSync(abs, 'utf8')
 		}))
 	);
-	const laid = layoutLandscape(model);
+	const { boxes: laid, lines: laidLines } = layoutLandscape(model);
 	const byId = new Map(laid.map((b) => [b.id, b]));
 	const boxes = new Map(
 		laid.filter((b) => !b.group).map((b) => [b.id, rect(b.absX, b.absY, b.width, b.height)])
@@ -76,7 +76,7 @@ function example() {
 		const r = rect(b.absX, b.absY, b.width, b.height);
 		return boxes.has(id) ? on(id, r) : { ...on(id, r), on: undefined, sides: ['r'] };
 	};
-	const lines: RouteLine[] = restLines(model, laid, edgesOf(model)).map((l) => ({
+	const lines: RouteLine[] = restLines(laidLines, edgesOf(model)).map((l) => ({
 		id: l.id,
 		s: end(l.source),
 		t: end(l.target)

@@ -130,13 +130,6 @@
 			</select>
 			<span class="hint">Shape the packed groups fill.</span>
 		</label>
-		<label class="chk">
-			<input
-				type="checkbox"
-				checked={settings.layout.fileOrder}
-				onchange={(e) => settings.setLayout({ fileOrder: e.currentTarget.checked })}
-			/>Keep file order where the connections allow
-		</label>
 	</section>
 	<footer>Saved in this browser.</footer>
 </section>
@@ -310,14 +303,6 @@
 		background: var(--ui-panel);
 		border: 1px solid var(--ui-border);
 		padding: 5px 6px;
-	}
-	.layout label.chk {
-		align-items: center;
-		gap: 8px;
-		font-size: 12px;
-	}
-	.chk input {
-		margin: 0;
 	}
 	footer {
 		padding: 10px 14px;
