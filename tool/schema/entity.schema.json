@@ -657,8 +657,43 @@
       "additionalProperties": false,
       "description": "Triggers only: when it runs; exactly one of cron, every and at"
     },
+    "message": {
+      "type": "object",
+      "properties": {
+        "queue": {
+          "description": "The queue it receives from",
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "topic": {
+          "description": "The topic it receives from",
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "subscription": {
+          "description": "With topic: the subscription it receives through",
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "via": {
+          "description": "Free text: the broker or component, e.g. a Dapr pub/sub",
+          "type": [
+            "string",
+            "number"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "description": "Triggers only: the messages it receives; exactly one of queue and topic"
+    },
     "overlap": {
-      "description": "Triggers only: a run due while the last is going is skipped (default), queued or allowed",
+      "description": "Schedule triggers only: a run due while the last is going is skipped (default), queued or allowed",
       "type": "string",
       "enum": [
         "skip",
@@ -741,7 +776,7 @@
       "type": "object",
       "properties": {
         "call": {
-          "description": "Id of the logic unit or api it calls",
+          "description": "Id of the logic unit or api it calls, or message trigger it sends",
           "type": "string",
           "pattern": "^[a-z][a-z0-9-]*$"
         },

@@ -505,7 +505,7 @@
 					>
 						<div class="cell first">
 							{#if d.logic}<i class="fn">ƒ</i>{:else}<EntityGlyph
-									kind="trigger"
+									kind={u.message ? 'message' : 'trigger'}
 								/>{/if}{#if marks.glyph.has(u.id)}<span class="op">{marks.glyph.get(u.id)}</span
 								>{/if}<span class="fname">{u.name}</span>
 						</div>

@@ -12,6 +12,7 @@ import type { DataPath, Diagnostic, Severity } from './diagnostics';
 import { entityKind, fileKind } from './parse';
 import { toDiagnostic, validateEntityFile } from './validate-file';
 import { isDuration, scheduleProblems } from './schedule';
+import { messageProblems } from './message';
 
 /** Where an entity lives: design-root-relative file and data path inside it. */
 export interface Loc {
@@ -249,7 +250,29 @@ export function buildModel(
 					if (s[sub] !== undefined && k !== 'call' && k !== 'read')
 						diag('error', 'logic-step', `${sub} goes with call or read`, stepLoc, sub);
 				if (k === 'call' || k === 'read' || k === 'write')
-					if (logicTarget(k, s[k]!, stepLoc, k)) add(`${k}s` as keyof LogicLinks, s[k]!);
+					if (logicTarget(k, s[k]!, stepLoc, k)) {
+						add(`${k}s` as keyof LogicLinks, s[k]!);
+						// Calling a trigger sends its message; a schedule has no sender.
+						const t = model.elements.get(s[k]!);
+						if (k === 'call' && t?.def.kind === 'trigger') {
+							if (!t.def.message)
+								diag(
+									'error',
+									'trigger-call',
+									`call names trigger "${t.name}": a schedule can't be called`,
+									stepLoc,
+									k
+								);
+							else if (s.gets !== undefined)
+								diag(
+									'error',
+									'trigger-call',
+									`sending "${t.name}" gets nothing back: a message has no reply`,
+									stepLoc,
+									'gets'
+								);
+						}
+					}
 				if (k === 'return') {
 					returned.add(s.return!);
 					if (!outputs.has(s.return!))
@@ -552,12 +575,25 @@ export function buildModel(
 		if (value.when && kind !== 'api' && kind !== 'logic-unit' && kind !== 'trigger')
 			diag('error', 'flag-gate', `only apis, logic units and triggers have when`, loc, 'when');
 		if (kind === 'trigger') {
-			// The source says what starts it; schedule is the only kind so far.
-			if (!value.schedule)
-				diag('error', 'trigger-source', `trigger "${info.name}" needs a schedule`, loc, 'id');
-			else
+			// The source says what starts it: a schedule or a message, never both.
+			if (!value.schedule === !value.message)
+				diag(
+					'error',
+					'trigger-source',
+					value.schedule
+						? `trigger "${info.name}" has schedule and message; give one`
+						: `trigger "${info.name}" needs a schedule or a message`,
+					loc,
+					value.schedule ? 'message' : 'id'
+				);
+			if (value.schedule)
 				for (const p of scheduleProblems(value.schedule))
 					diag('error', 'trigger-schedule', p.message, at(loc, 'schedule'), p.key);
+			if (value.message)
+				for (const p of messageProblems(value.message))
+					diag('error', 'trigger-message', p.message, at(loc, 'message'), p.key);
+			if (value.message && value.overlap !== undefined)
+				diag('error', 'trigger-overlap', `overlap goes with schedule, not message`, loc, 'overlap');
 			if (value.timeout !== undefined && !isDuration(value.timeout))
 				diag(
 					'error',
@@ -567,7 +603,7 @@ export function buildModel(
 					'timeout'
 				);
 		} else
-			for (const key of ['schedule', 'overlap', 'timeout', 'retries', 'with'] as const)
+			for (const key of ['schedule', 'message', 'overlap', 'timeout', 'retries', 'with'] as const)
 				if (value[key] !== undefined)
 					diag('error', 'trigger-only', `only triggers have ${key}`, loc, key);
 		if (kind === 'logic-unit')
@@ -940,7 +976,7 @@ export const STEP_KINDS = [
 /** What `handles` and each step kind may name: entity kinds, or `field` for a model field. */
 const LOGIC_TARGETS = {
 	handles: ['api', 'trigger'],
-	call: ['logic-unit', 'api'],
+	call: ['logic-unit', 'api', 'trigger'],
 	read: ['model', 'field'],
 	write: ['model', 'field'],
 	flag: ['flag']

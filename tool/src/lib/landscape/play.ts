@@ -82,13 +82,21 @@ export function runOf(
 					const t = el(s.call);
 					if (!t) continue;
 					const isApi = t.def.kind === 'api';
-					const target = intoOf(t.id, frame);
+					// A message trigger is sent, not called: the run goes on without stepping in or
+					// waiting for anything back.
+					const sends = t.def.kind === 'trigger';
+					const target = sends ? undefined : intoOf(t.id, frame);
+					const args = s.with ? ` (${s.with})` : '';
 					push(
 						{
 							key,
 							kind: 'call',
 							text: withNote(
-								isApi ? route(t.id) + (s.with ? ` (${s.with})` : '') : `${t.name}(${s.with ?? ''})`,
+								isApi
+									? route(t.id) + args
+									: sends
+										? `sends ${t.name}${args}`
+										: `${t.name}(${s.with ?? ''})`,
 								s
 							),
 							method: isApi ? t.def.method : undefined,
@@ -104,7 +112,7 @@ export function runOf(
 					);
 					// Stepped into, the inner unit's return stands for what the call gets.
 					if (target && into.has(key)) unit(target, self, [...frame, target], `${key}>`);
-					else if (s.gets)
+					else if (s.gets && !sends)
 						push({ key: `${key}<`, kind: 'gets', text: s.gets, from: t.id, to: self }, frame);
 				} else if (s.read !== undefined || s.write !== undefined) {
 					const target = (s.read ?? s.write)!;

@@ -1118,42 +1118,16 @@
 	const unitCard = $derived(unitCardOf(view.field?.field));
 
 	/**
-	 * The clicked trigger: its schedule in words and as written, its next runs, how a run
-	 * behaves, and the units it starts.
+	 * The clicked trigger: its schedule in words and as written, with its next runs, or the
+	 * queue or topic of its message; how a run behaves, the units sending it and those it starts.
 	 */
 	function triggerCardOf(id: string | undefined, near: LandscapeBox | undefined) {
 		const t = id && isTrigger(id) ? el(id) : undefined;
 		if (!t || !near) return undefined;
 		const d = t.def;
-		const s = d.schedule ?? {};
-		const zone = s.cron !== undefined || s.at !== undefined ? `, ${s.tz ?? 'UTC'}` : '';
-		const written = s.cron ?? (s.every !== undefined ? `every ${s.every}` : `at ${s.at}`);
-		const next = nextRuns(s, 3);
-		const gate = d.when && el(d.when.flag);
-		const OVERLAP = {
-			skip: 'skip a run due while one is going',
-			queue: 'queue a run due while one is going',
-			allow: 'let runs overlap'
-		};
-		const row = (label: string, text: string | undefined, mono = false) =>
-			text === undefined ? [] : [{ label, text, mono }];
-		return {
-			title: t.name,
-			sub: `Trigger · ${pathOf(t.parentId)}`,
-			schedule: [
-				...row('When', scheduleWords(s) + zone),
-				...row('As written', s.cron !== undefined ? `cron ${written}` : written, true),
-				...row('Next', next.length ? next.join(' · ') : undefined)
-			],
-			run: [
-				...row('Overlap', OVERLAP[d.overlap ?? 'skip']),
-				...row('Timeout', d.timeout && durationWords(d.timeout)),
-				...row('Retries', d.retries?.toString()),
-				...row('With', d.with),
-				...row('Exists when', gate ? `${gate.name} is ${d.when!.is}` : undefined)
-			],
-			handledBy: (rels.in.get(t.id) ?? [])
-				.filter((l) => l.kind === 'handles')
+		const units = (kind: 'handles' | 'calls') =>
+			(rels.in.get(t.id) ?? [])
+				.filter((l) => l.kind === kind)
 				.map((l) => {
 					const b = linkTarget(model, boxes, near, l.field);
 					return {
@@ -1162,7 +1136,61 @@
 						where: pathOf(el(l.field)!.parentId),
 						target: b && { box: b, field: l.field }
 					};
-				})
+				});
+		const row = (label: string, text: string | undefined, mono = false) =>
+			text === undefined ? [] : [{ label, text, mono }];
+		const gate = d.when && el(d.when.flag);
+		const shared = [
+			...row('Timeout', d.timeout && durationWords(d.timeout)),
+			...row('Retries', d.retries?.toString()),
+			...row('With', d.with),
+			...row('Exists when', gate ? `${gate.name} is ${d.when!.is}` : undefined)
+		];
+		if (d.message) {
+			const m = d.message;
+			return {
+				title: t.name,
+				sub: `Message trigger · ${pathOf(t.parentId)}`,
+				glyph: 'message' as const,
+				source: {
+					label: 'Message',
+					rows: [
+						...row('Kind', m.queue !== undefined ? 'Queue' : 'Topic'),
+						...row('Queue', m.queue, true),
+						...row('Topic', m.topic, true),
+						...row('Subscription', m.subscription, true),
+						...row('Via', m.via)
+					]
+				},
+				run: shared,
+				sentBy: units('calls'),
+				handledBy: units('handles')
+			};
+		}
+		const s = d.schedule ?? {};
+		const zone = s.cron !== undefined || s.at !== undefined ? `, ${s.tz ?? 'UTC'}` : '';
+		const written = s.cron ?? (s.every !== undefined ? `every ${s.every}` : `at ${s.at}`);
+		const next = nextRuns(s, 3);
+		const OVERLAP = {
+			skip: 'skip a run due while one is going',
+			queue: 'queue a run due while one is going',
+			allow: 'let runs overlap'
+		};
+		return {
+			title: t.name,
+			sub: `Trigger · ${pathOf(t.parentId)}`,
+			glyph: 'trigger' as const,
+			source: {
+				label: 'Schedule',
+				rows: [
+					...row('When', scheduleWords(s) + zone),
+					...row('As written', s.cron !== undefined ? `cron ${written}` : written, true),
+					...row('Next', next.length ? next.join(' · ') : undefined)
+				]
+			},
+			run: [...row('Overlap', OVERLAP[d.overlap ?? 'skip']), ...shared],
+			sentBy: undefined,
+			handledBy: units('handles')
 		};
 	}
 	const triggerCard = $derived(
@@ -2314,39 +2342,47 @@
 		pick: (at: PeekAt) => void,
 		open?: string
 	)}
-		{#each [{ label: 'Schedule', rows: t.schedule }, { label: 'Run', rows: t.run }] as s (s.label)}
-			<section>
-				<h4>{s.label}</h4>
-				{#each s.rows as r (r.label)}
-					<div class="api-field">
-						<span class="where">{r.label}</span><span class:mono={r.mono}>{r.text}</span>
-					</div>
-				{/each}
-			</section>
+		{#each [t.source, { label: 'Run', rows: t.run }] as s (s.label)}
+			{#if s.rows.length}
+				<section>
+					<h4>{s.label}</h4>
+					{#each s.rows as r (r.label)}
+						<div class="api-field">
+							<span class="where">{r.label}</span><span class:mono={r.mono}>{r.text}</span>
+						</div>
+					{/each}
+				</section>
+			{/if}
 		{/each}
-		{#if t.handledBy.length}
-			<section class="calls">
-				<h4>Handled by</h4>
-				{#each t.handledBy as e (e.id)}
-					<button
-						class="entry"
-						class:open={!!open && !!e.target && open === keyOf({ target: e.target })}
-						disabled={!e.target}
-						onclick={() => e.target && pick({ target: e.target })}
-						title={e.target ? 'Show here' : undefined}
-					>
-						<span class="text" data-glyph="ƒ">{e.text}</span>
-						<span class="where">{e.where}</span>
-					</button>
-				{/each}
-			</section>
-		{:else}
+		{#each [{ label: 'Sent by', units: t.sentBy ?? [] }, { label: 'Handled by', units: t.handledBy }] as g (g.label)}
+			{#if g.units.length}
+				<section class="calls">
+					<h4>{g.label}</h4>
+					{#each g.units as e (e.id)}
+						<button
+							class="entry"
+							class:open={!!open && !!e.target && open === keyOf({ target: e.target })}
+							disabled={!e.target}
+							onclick={() => e.target && pick({ target: e.target })}
+							title={e.target ? 'Show here' : undefined}
+						>
+							<span class="text" data-glyph="ƒ">{e.text}</span>
+							<span class="where">{e.where}</span>
+						</button>
+					{/each}
+				</section>
+			{/if}
+		{/each}
+		{#if t.sentBy && !t.sentBy.length}
+			<p class="empty">No logic unit here sends it; it comes from outside.</p>
+		{/if}
+		{#if !t.handledBy.length}
 			<p class="empty">No logic unit handles it, so it starts nothing.</p>
 		{/if}
 	{/snippet}
 	{#snippet triggerTitle(t: NonNullable<ReturnType<typeof triggerCardOf>>)}
 		<div class="head">
-			<div class="title"><EntityGlyph kind="trigger" /> {t.title}</div>
+			<div class="title"><EntityGlyph kind={t.glyph} /> {t.title}</div>
 			<div class="type">{t.sub}</div>
 		</div>
 	{/snippet}

@@ -63,12 +63,13 @@
 			{@const yy = y(m.row)}
 			<g class:dim={m.dim}>
 				<path
-					d="M{x1} {yy} H{x2 - dir * (m.dashed ? 1 : 9)}"
+					d="M{x1} {yy} H{x2 - dir * (m.dashed || m.async ? 1 : 9)}"
 					stroke={COLOR[m.tone]}
 					stroke-dasharray={m.dashed ? '4 3' : undefined}
 					class="msg"
 				/>
-				{#if m.dashed}
+				<!-- A return, or a message sent without waiting: an open arrowhead. -->
+				{#if m.dashed || m.async}
 					<path
 						d="M{x2 - dir * 8} {yy - 4} L{x2} {yy} L{x2 - dir * 8} {yy + 4}"
 						stroke={COLOR[m.tone]}
@@ -104,7 +105,7 @@
 					onclick={() => s.target && onpick(s.target)}
 					>{#if s.method}<b style:color="var(--sdv-method-{s.method.toLowerCase()})">{s.method}</b
 						>{s.text.slice(s.method.length + 1)}{:else if s.trigger}<EntityGlyph
-							kind="trigger"
+							kind={s.message ? 'message' : 'trigger'}
 						/>{s.text}{:else}{s.text}{/if}</button
 				>
 			{/each}

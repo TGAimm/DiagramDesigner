@@ -94,6 +94,7 @@ describe('sdv schema', () => {
 			'default',
 			'when',
 			'schedule',
+			'message',
 			'overlap',
 			'timeout',
 			'retries',

@@ -1,12 +1,12 @@
 <script lang="ts" module>
 	/** What a glyph stands for: entity kinds, plus a model's two views. */
 	export type GlyphKind =
-		'system' | 'module' | 'class' | 'table' | 'logic' | 'api' | 'triggers' | 'trigger';
+		'system' | 'module' | 'class' | 'table' | 'logic' | 'api' | 'triggers' | 'trigger' | 'message';
 </script>
 
 <script lang="ts">
 	// One small mark per entity type, beside its name (never alone): Lucide's app-window, box,
-	// braces, table, square-function, plug, zap (a triggers card) and clock (a schedule). Sized
+	// braces, table, square-function, plug, zap (a triggers card), clock (a schedule) and mail (a message). Sized
 	// in em, so it follows the name's font. A card kind's mark wears that kind's colour; the rest
 	// the name's, at reduced opacity.
 	let { kind }: { kind: GlyphKind } = $props();

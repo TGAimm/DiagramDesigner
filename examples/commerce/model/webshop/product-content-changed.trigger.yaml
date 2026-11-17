@@ -1,0 +1,6 @@
+id: z36jwku4qe
+parent: wajh6e6nvm
+name: productContentChanged
+message: { topic: product-content, subscription: webshop, via: Service Bus }
+retries: 5
+with: sku and locale of the content saved
