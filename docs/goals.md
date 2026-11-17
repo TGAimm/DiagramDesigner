@@ -53,9 +53,10 @@ Interfaces and triggers:
 - Interfaces beyond HTTP: GraphQL operations, SQL endpoints, file exchange (CSV over SFTP:
   one row per line grouped into orders, error and archive files, folders owned by another
   system), hardware (card terminals, fiscal signing units).
-- Triggers beyond `handles`: schedules, topic subscriptions, row changes (Dataverse plugins,
+- Triggers beyond apis and schedules: topic subscriptions, row changes (Dataverse plugins,
   Zendesk triggers), user actions in a product's own UI or on a device (Post › Receive,
   handheld scans, till), a vendor-hosted page; several triggers on one unit.
+- Move `examples/retail`'s scheduled units from `meta: { schedule }` to trigger entities.
 - Endpoints outside the landscape (carrier APIs) with no system to point at.
 - Browser redirects that carry results in the Location query (OAuth `code`, `state`).
 - Batch requests (`$batch`, multipart) holding other api calls; async work after the
