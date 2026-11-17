@@ -571,26 +571,36 @@ function spread(boxes: Placed[], g: number): Placed[] {
 }
 
 /**
- * Boxes pushed left as far as those beside them allow, then up, `g` apart, so the slack between
- * them goes. Boxes keep their order along each axis, and none can end up overlapping: a box
- * stops right of every box before it that shares its height, then below every box above it
- * that shares its width.
+ * Boxes pulled straight in toward the middle of them all, so the slack between them goes and the
+ * arrangement keeps its overall shape, round if it was round. The boxes nearest the middle move
+ * first, each as far along its way in as it can without coming closer than `g` to another box;
+ * a few rounds let the outer boxes follow the inner ones in.
  */
 function compact(boxes: Placed[], g: number): Placed[] {
-	const push = (bs: Placed[], ax: 'x' | 'y') => {
-		const [ay, w, h] =
-			ax === 'x' ? (['y', 'width', 'height'] as const) : (['x', 'height', 'width'] as const);
-		const done: Placed[] = [];
-		for (const b of [...bs].sort((p, q) => p[ax] - q[ax] || idOrder(p, q))) {
-			let to = 0;
-			for (const d of done)
-				if (d[ay] < b[ay] + b[h] + g && b[ay] < d[ay] + d[h] + g)
-					to = Math.max(to, d[ax] + d[w] + g);
-			done.push({ ...b, [ax]: to });
-		}
-		return done;
+	const bs = boxes.map((b) => ({ ...b }));
+	const mid = {
+		x: (Math.min(...bs.map((b) => b.x)) + Math.max(...bs.map((b) => b.x + b.width))) / 2,
+		y: (Math.min(...bs.map((b) => b.y)) + Math.max(...bs.map((b) => b.y + b.height))) / 2
 	};
-	return push(push(boxes, 'x'), 'y');
+	const off = (b: Placed) => ({ x: mid.x - b.x - b.width / 2, y: mid.y - b.y - b.height / 2 });
+	const far = (b: Placed) => Math.hypot(off(b).x, off(b).y);
+	for (let round = 0; round < 4; round++)
+		for (const b of [...bs].sort((p, q) => far(p) - far(q) || idOrder(p, q))) {
+			const { x, y } = off(b);
+			const moved = (t: number) => ({ ...b, x: b.x + x * t, y: b.y + y * t });
+			const clear = (t: number) => bs.every((o) => o === b || !near(moved(t), o, g));
+			// Already clear where it is; find how far in it can go, halving.
+			let [lo, hi] = [0, 1];
+			if (clear(1)) lo = 1;
+			else
+				for (let i = 0; i < 12; i++) {
+					const t = (lo + hi) / 2;
+					if (clear(t)) lo = t;
+					else hi = t;
+				}
+			Object.assign(b, moved(lo));
+		}
+	return bs;
 }
 
 /** By id, so the order of the files changes nothing. */

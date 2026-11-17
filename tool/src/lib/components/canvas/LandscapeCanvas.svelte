@@ -553,6 +553,51 @@
 	const pickedLines = $derived(linesOf(picked));
 	const lit = $derived(hoveredRow ? rowLines : hoveredBox ? boxLines : pickedLines);
 
+	/**
+	 * While something is looked at, the boxes it relates to: itself and everything in it, the
+	 * boxes its lit lines end on, and every box round those. The rest is toned down, so the lines
+	 * that matter stand out.
+	 */
+	const related = $derived.by(() => {
+		if (!focus) return undefined;
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built and returned whole
+		const ids = new Set(within(boxes, focus.box).map((b) => b.id));
+		for (const id of [focus.box, ...lit.flatMap((l) => [l.s.node.id, l.t.node.id])])
+			for (let b = boxById.get(id); b; b = b.parentId ? boxById.get(b.parentId) : undefined)
+				ids.add(b.id);
+		return ids;
+	});
+	/**
+	 * Toning down waits until something has been looked at for this long, so passing over the
+	 * canvas leaves it as it is; looking from one thing to the next keeps it toned down.
+	 */
+	const DIM_AFTER = 3000;
+	const looking = $derived(!!focus);
+	let dimming = $state(false);
+	$effect(() => {
+		if (!looking) return void (dimming = false);
+		const t = setTimeout(() => (dimming = true), DIM_AFTER);
+		return () => clearTimeout(t);
+	});
+	// Toned down by a style sheet of its own, so looking at something restyles boxes without
+	// rebuilding them.
+	let dimSheet: HTMLStyleElement | undefined;
+	$effect(() => {
+		dimSheet = document.createElement('style');
+		document.head.append(dimSheet);
+		return () => dimSheet?.remove();
+	});
+	$effect(() => {
+		const ids = dimming ? related : undefined;
+		if (!dimSheet) return;
+		const kept = [...(ids ?? [])].map(
+			(id) => `.canvas .svelte-flow__node[data-id=${JSON.stringify(id)}]`
+		);
+		dimSheet.textContent = ids
+			? `.canvas .svelte-flow__node { opacity: 0.3; }\n${kept.join(',\n')} { opacity: 1; }`
+			: '';
+	});
+
 	// ------------------------------------------------------------ hover
 	// What the pointer is over, as enter and leave events tell: a row or api, and a card or name
 	// bar. The view state gets it once a frame, so leaving one row for the next is one change,
