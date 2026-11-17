@@ -29,7 +29,7 @@ export async function runNew(
 	if (kind === 'trigger') lines.push('schedule: { every: 1h }');
 	await fs.mkdir(path.dirname(abs), { recursive: true });
 	await fs.writeFile(abs, lines.join('\n') + '\n');
-	io.log(`created ${path.relative(cwd, abs)}`);
+	io.log(`created ${path.relative(cwd, abs).split(path.sep).join('/')}`);
 	return 0;
 }
 
