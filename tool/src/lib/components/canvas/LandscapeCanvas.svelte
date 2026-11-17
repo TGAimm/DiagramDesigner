@@ -988,18 +988,18 @@
 			data: {
 				points: restRoutes?.get(l.id),
 				halo: true,
+				head: 'arrow',
+				color: 'var(--sdv-edge-rest)',
 				title: `${l.count} connection${l.count > 1 ? 's' : ''}: ${l.kinds.map((k) => KIND_NAME[k]).join(', ')}`
 			},
 			class: ['conn rest', l.count >= 10 ? 'w3' : l.count > 1 ? 'w2' : 'w1', dim && 'dim']
 				.filter(Boolean)
-				.join(' '),
-			markerEnd: 'sdv-arrow-rest'
+				.join(' ')
 		};
 	}
 
 	/** A lit line: in its kind's colour, over the cards, from row to row where they show. */
 	function litEdge(l: LitLine) {
-		const token = LINK_TOKEN[l.kind];
 		return {
 			id: `lit:${l.id}`,
 			source: l.s.node.id,
@@ -1008,11 +1008,12 @@
 			targetHandle: `${l.t.anchor}:${l.sides[1]}`,
 			type: 'connection',
 			zIndex: 1000,
-			data: { points: litRoutes?.get(l.id) },
-			class: `conn lit ${l.kind}`,
-			...(l.kind === 'model'
-				? { markerStart: `sdv-diamond-${token}` }
-				: { markerEnd: `sdv-arrow-${token}` })
+			data: {
+				points: litRoutes?.get(l.id),
+				head: l.kind === 'model' ? 'diamond' : 'arrow',
+				color: `var(--sdv-link-${LINK_TOKEN[l.kind]})`
+			},
+			class: `conn lit ${l.kind}`
 		};
 	}
 
@@ -1022,14 +1023,6 @@
 			...(litRoutes || unrouted ? lit.map(litEdge) : [])
 		];
 	});
-
-	/** Arrowheads and diamonds, grey for lines at rest and in each kind's colour when lit. */
-	const MARKS = [
-		['rest', 'var(--sdv-edge-rest)'],
-		...['ref', 'from', 'write', 'call'].map((t) => [t, `var(--sdv-link-${t})`])
-	];
-	/** Line ends are 10px on screen. */
-	const mark = $derived(10 / viewport.current.zoom);
 
 	/** The key's line entries; each hides its kinds when clicked (see `KEY_OF`). */
 	const KEY_LINES: {
@@ -2285,37 +2278,6 @@
 	{#if settings.minimap}
 		<Minimap boxes={mapBoxes} {cw} {ch} {minZoom} maxZoom={MAX_ZOOM} />
 	{/if}
-	<!-- Line ends keep one size on screen at any zoom, like the lines. -->
-	<svg class="defs" aria-hidden="true">
-		<defs>
-			{#each MARKS as [id, color] (id)}
-				<marker
-					id="sdv-arrow-{id}"
-					viewBox="0 0 10 10"
-					refX="10"
-					refY="5"
-					markerWidth={mark}
-					markerHeight={mark}
-					markerUnits="userSpaceOnUse"
-					orient="auto-start-reverse"
-				>
-					<path d="M0,1 L10,5 L0,9 Z" fill={color} />
-				</marker>
-				<marker
-					id="sdv-diamond-{id}"
-					viewBox="0 0 16 10"
-					refX="16"
-					refY="5"
-					markerWidth={mark * 1.6}
-					markerHeight={mark}
-					markerUnits="userSpaceOnUse"
-					orient="auto-start-reverse"
-				>
-					<path d="M0,5 L8,0 L16,5 L8,10 Z" fill={color} />
-				</marker>
-			{/each}
-		</defs>
-	</svg>
 	{#each wedges as w (w.key)}
 		<button
 			class="wedge"
@@ -2989,8 +2951,13 @@
 	.canvas :global(.conn.handles .svelte-flow__edge-path) {
 		stroke-dasharray: 2 3;
 	}
+	.canvas :global(.conn .head) {
+		transform: scale(calc(1 / var(--z)));
+		transition: opacity 0.12s;
+	}
 	.canvas :global(.conn.dim .svelte-flow__edge-path),
-	.canvas :global(.conn.dim .halo) {
+	.canvas :global(.conn.dim .halo),
+	.canvas :global(.conn.dim .head) {
 		opacity: 0.25;
 	}
 	/* Lit lines are over the cards, so they never take the pointer from a row. */
@@ -3631,10 +3598,5 @@
 		font-size: 11px;
 		font-weight: 700;
 		color: var(--sdv-selection);
-	}
-	.defs {
-		position: absolute;
-		width: 0;
-		height: 0;
 	}
 </style>
