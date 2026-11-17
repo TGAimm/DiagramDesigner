@@ -85,7 +85,7 @@ describe('flag validation', () => {
 		).toEqual([
 			['error', 'flag-key', 'flag "f" needs key'],
 			['error', 'flag-only', 'only flags have key'],
-			['error', 'flag-gate', 'only apis and logic units have when'],
+			['error', 'flag-gate', 'only apis, logic units and triggers have when'],
 			['error', 'flag-scope', `flag "g" is defined outside this unit's module`],
 			['error', 'logic-step', 'a flag step needs on, off or both'],
 			['error', 'logic-target', 'flag names model "m"; allowed: flag'],

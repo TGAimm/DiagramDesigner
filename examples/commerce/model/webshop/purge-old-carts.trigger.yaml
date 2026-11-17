@@ -1,0 +1,8 @@
+id: ko6tg89ikq
+parent: lht4l7njny
+name: purgeOldCarts
+schedule: { cron: '0 3 * * *', tz: Europe/Copenhagen }
+overlap: skip
+timeout: 10m
+retries: 3
+with: carts older than 30 days

@@ -458,7 +458,7 @@ describe('logic units', () => {
 			'  - {}'
 		);
 		expect(report(model)).toEqual([
-			['error', 'logic-target', 'handles names model "c"; allowed: api'],
+			['error', 'logic-target', 'handles names model "c"; allowed: api, trigger'],
 			['error', 'dangling-ref', 'write names "nope", which is not an entity or field'],
 			['error', 'logic-target', 'call names module "m"; allowed: logic-unit, api'],
 			['error', 'logic-step', 'a step does one thing; this one has call and write'],

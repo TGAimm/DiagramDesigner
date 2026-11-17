@@ -1,11 +1,11 @@
 import { LOGIC_KEYS, type Model } from '../model/model';
 import { bodyModels } from './apis';
-import { linkTarget, type LandscapeBox } from './layout';
+import { cardRows, linkTarget, type LandscapeBox } from './layout';
 
 /**
  * Every kind of connection. A field refers to a key (`ref`), holds a model (`model`) or
  * derives from a source (`from`); a unit reads, writes or calls; an api is handled by a unit
- * and its bodies use models (`body`).
+ * and its bodies use models (`body`); a trigger is handled by the units it starts.
  */
 export type LinkKind = 'ref' | 'model' | 'from' | 'reads' | 'writes' | 'calls' | 'handles' | 'body';
 
@@ -36,7 +36,7 @@ export function edgesOf(model: Model): Edge[] {
 		for (const to of f.from ?? []) add('from', id, to);
 	}
 	for (const [id, info] of model.elements) {
-		// An api depends on the unit handling it, as a caller on its callee.
+		// An api or trigger depends on the unit handling it, as a caller on its callee.
 		for (const kind of info.logic ? LOGIC_KEYS : [])
 			for (const to of info.logic![kind])
 				if (kind === 'handles') add(kind, to, id);
@@ -59,7 +59,7 @@ export const apiOf = (model: Model, leaf: string) =>
 
 /**
  * The box a leaf is drawn in, seen from box `near`: a field or model on the nearest card
- * showing it (see `linkTarget`), a unit on its logic card, an api or api field on the box of
+ * showing it (see `linkTarget`), a unit or trigger on its card, an api or api field on the box of
  * the element owning the api.
  */
 export function homeOf(
@@ -80,7 +80,7 @@ export function leavesOf(model: Model, b: LandscapeBox): string[] {
 	return [
 		...(b.view ? [b.elementId] : []),
 		...(b.fields ?? []).map((f) => f.id),
-		...(b.logic?.rows ?? []).map((r) => r.id),
+		...(cardRows(b) ?? []).map((r) => r.id),
 		...apis,
 		...[...model.apiFields].filter(([, f]) => apis.includes(f.apiId)).map(([id]) => id)
 	];

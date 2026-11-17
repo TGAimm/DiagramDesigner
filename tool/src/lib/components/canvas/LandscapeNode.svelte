@@ -20,6 +20,8 @@
 		table?: TableColumn[];
 		/** Set when the box is a module's logic card: its columns and one row per unit. */
 		logic?: { cols: TableColumn[]; rows: LogicRow[] };
+		/** Set when the box is a module's triggers card: one row per trigger, its schedule in words. */
+		triggers?: { cols: TableColumn[]; rows: LogicRow[] };
 		view?: ModelView;
 		/** Names of the models and fields the fields point at (ref, model, from), by id. */
 		labels?: Record<string, string>;
@@ -27,7 +29,7 @@
 		incoming?: Record<string, { ref: number; from: number; api: number }>;
 		/** Selection, focus and flash; read here so they never rebuild the nodes. */
 		state: ViewState;
-		/** A field row, a logic card's unit row or a rail's api row was hovered, left or clicked. */
+		/** A field row, a unit or trigger row or a rail's api row was hovered, left or clicked. */
 		onfield?: (field: string, ev: 'enter' | 'leave' | 'click') => void;
 		/** The box is open, its children shown. */
 		open?: boolean;
@@ -92,6 +94,7 @@
 		LEAF,
 		LINK,
 		logicNote,
+		triggersNote,
 		kindWord,
 		ownerNote,
 		slotCount,
@@ -164,7 +167,7 @@
 	 */
 	const nameFont = (base: number, max: number) =>
 		`clamp(${base}px, calc(${NAME_MIN}px / var(--z, 1)), ${Math.max(base, max)}px)`;
-	const cardName = $derived(d.logic ? 'Logic' : d.name);
+	const cardName = $derived(d.logic ? 'Logic' : d.triggers ? 'Triggers' : d.name);
 	// A card's title grows within its name bar; its frame alone shows its name across the card.
 	const titleFont = $derived(
 		nameFont(
@@ -441,11 +444,15 @@
 			<Handle type="source" id="row:{f.id}:l" position={Position.Left} style="top:{y}px" />
 			<Handle type="source" id="row:{f.id}:r" position={Position.Right} style="top:{y}px" />
 		{/each}
-	{:else if d.logic}
-		{@const cols = d.logic.cols}
-		{@const rows = d.logic.rows}
+	{:else if d.logic || d.triggers}
+		{@const card = (d.logic ?? d.triggers)!}
+		{@const cols = card.cols}
+		{@const rows = card.rows}
+		{@const glyph = d.logic ? 'logic' : 'triggers'}
 		<div
-			class="face table logic"
+			class="face table"
+			class:logic={!!d.logic}
+			class:triggers={!!d.triggers}
 			class:brief={!full}
 			style:--pad="{TABLE.pad}px"
 			style:--row="{TABLE.rowHeight}px"
@@ -456,14 +463,16 @@
 			<div class="thead" style:height="{TABLE.head}px">
 				{#if full}
 					<div class="name screen-sized" style:font-size={titleFont}>
-						<EntityGlyph kind="logic" />Logic
+						<EntityGlyph kind={glyph} />{cardName}
 					</div>
-					<div class="note" style:font-size="{TABLE.note}px">{logicNote(rows.length)}</div>
+					<div class="note" style:font-size="{TABLE.note}px">
+						{d.logic ? logicNote(rows.length) : triggersNote(rows.length)}
+					</div>
 				{/if}
 			</div>
 			{#if !full}
 				<div class="brief-name screen-sized" style:font-size={bodyFont}>
-					<EntityGlyph kind="logic" /><span>Logic</span>
+					<EntityGlyph kind={glyph} /><span>{cardName}</span>
 				</div>
 			{/if}
 			<div
@@ -495,8 +504,9 @@
 						}}
 					>
 						<div class="cell first">
-							<i class="fn">ƒ</i>{#if marks.glyph.has(u.id)}<span class="op"
-									>{marks.glyph.get(u.id)}</span
+							{#if d.logic}<i class="fn">ƒ</i>{:else}<EntityGlyph
+									kind="trigger"
+								/>{/if}{#if marks.glyph.has(u.id)}<span class="op">{marks.glyph.get(u.id)}</span
 								>{/if}<span class="fname">{u.name}</span>
 						</div>
 						<div class="cell sig" style:font-size="{TABLE.signature}px">{u.signature}</div>
@@ -642,7 +652,7 @@
 		cursor: pointer;
 		border-radius: 10px;
 	}
-	/* Corners tell kinds apart: system 14, module 10, logic 10, class 8, table 3. */
+	/* Corners tell kinds apart: system 14, module 10, logic 10, class 8, triggers 6, table 3. */
 	.node.system {
 		border-radius: 14px;
 	}
@@ -762,6 +772,20 @@
 		box-shadow:
 			0 0 0 2px var(--sdv-model-fill),
 			0 0 0 3px var(--kl);
+	}
+	/* Triggers: the one kind whose name bar is tinted, ruled off in the line colour. */
+	.face.table.triggers {
+		--kl: var(--sdv-kind-trigger);
+		--ki: var(--sdv-kind-trigger-icon);
+		--kt: var(--sdv-kind-trigger-text);
+		--ks: var(--sdv-kind-trigger-soft);
+		border-radius: 6px;
+	}
+	/* Its tinted bar is its mark at any zoom, so it stays when the card is drawn as its frame. */
+	.face.table.triggers .thead,
+	.node .face.table.triggers.brief .thead {
+		background: var(--sdv-kind-trigger-head);
+		border-bottom: 1.5px solid var(--kl);
 	}
 	.face.table .name,
 	.brief-name {
@@ -943,7 +967,8 @@
 	}
 	/* A module's logic card: a name bar, then a unit per row with its signature. The name bar's
 	   rule is the first row's top. */
-	.face.table.logic .grid > .row:first-child > .cell {
+	.face.table.logic .grid > .row:first-child > .cell,
+	.face.table.triggers .grid > .row:first-child > .cell {
 		border-top: none;
 	}
 	.fn {

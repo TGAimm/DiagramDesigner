@@ -37,7 +37,7 @@ export function focusOn(model: Model, focus: Focus): Focused {
 	const keeps = (id: string) =>
 		focus.mode === 'data'
 			? kind(id) === 'model'
-			: ['model', 'api', 'logic-unit'].includes(kind(id)!);
+			: ['model', 'api', 'logic-unit', 'trigger'].includes(kind(id)!);
 	const unitOf = (leaf: string) =>
 		model.fields.get(leaf)?.modelId ?? model.apiFields.get(leaf)?.apiId ?? leaf;
 

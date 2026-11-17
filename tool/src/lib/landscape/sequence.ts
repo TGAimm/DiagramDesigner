@@ -1,11 +1,14 @@
 import { flagOn, type Model } from '../model/model';
 import type { LogicStep } from '../model/schema';
+import { scheduleWords } from '../model/schedule';
 
 /** A line of text under a lifeline's name; clicking one with a target goes there. */
 export interface LifelineSub {
 	text: string;
 	/** An api's HTTP method, which colours it. */
 	method?: string;
+	/** A trigger, marked with its glyph. */
+	trigger?: boolean;
 	/** Id of the api or element it stands for. */
 	target?: string;
 }
@@ -58,6 +61,18 @@ export interface Sequence {
 	rows: number;
 }
 
+/**
+ * What a unit is started with: its inputs' names, else what the triggers starting it pass
+ * (their `with`), else `()`.
+ */
+export function inputText(model: Model, unitId: string): string {
+	const info = model.elements.get(unitId)!;
+	const passed = (info.logic?.handles ?? []).flatMap(
+		(id) => model.elements.get(id)?.def.with ?? []
+	);
+	return (info.def.inputs ?? []).map((f) => f.name).join(', ') || passed.join(' | ') || '()';
+}
+
 /** A unit's sequence diagram, read from its steps. Steps naming unknown ids are left out. */
 export function sequenceOf(model: Model, unitId: string): Sequence {
 	const info = model.elements.get(unitId)!;
@@ -77,11 +92,15 @@ export function sequenceOf(model: Model, unitId: string): Sequence {
 			kind: 'caller',
 			name: 'Caller',
 			subs: [
-				...(info.logic?.handles ?? []).map((id) => ({
-					text: route(id),
-					method: el(id)!.def.method,
-					target: id
-				})),
+				...(info.logic?.handles ?? []).map((id) =>
+					el(id)!.def.kind === 'trigger'
+						? {
+								text: `${el(id)!.name} · ${scheduleWords(el(id)!.def.schedule)}`,
+								trigger: true,
+								target: id
+							}
+						: { text: route(id), method: el(id)!.def.method, target: id }
+				),
 				...callers.map((c) => ({ text: `ƒ ${c.name}`, target: c.id }))
 			]
 		},
@@ -114,7 +133,7 @@ export function sequenceOf(model: Model, unitId: string): Sequence {
 		from: 0,
 		to: 1,
 		tone: 'input',
-		text: (def.inputs ?? []).map((f) => f.name).join(', ') || '()'
+		text: inputText(model, unitId)
 	});
 	const walk = (steps: LogicStep[] | undefined, depth: number) => {
 		for (const s of steps ?? []) {

@@ -1,6 +1,7 @@
 import { LOGIC_KEYS, type Model } from '../model/model';
 import type { Element, ModelField, ModelIndex } from '../model/schema';
 import { GLYPH, textWidth } from '../render/text';
+import { scheduleWords } from '../model/schedule';
 import { railGroups, railOf } from './apis';
 import { edgesOf } from './connections';
 import type { ElkExtendedEdge, ElkNode, ElkPort } from 'elkjs/lib/elk-api';
@@ -44,6 +45,8 @@ export interface LandscapeBox {
 	apis?: string[];
 	/** A module's logic units, one row each; set when the box is its logic card. */
 	logic?: { cols: TableColumn[]; rows: LogicRow[] };
+	/** A module's triggers, one row each, its schedule in words; set when the box is its triggers card. */
+	triggers?: { cols: TableColumn[]; rows: LogicRow[] };
 }
 
 interface Size {
@@ -61,8 +64,8 @@ interface Item {
 	ref: boolean;
 	boundary?: boolean;
 	view?: ModelView;
-	/** The logic card of module `el`. */
-	logic?: boolean;
+	/** The logic or triggers card of module `el`. */
+	card?: 'logic' | 'triggers';
 }
 
 /** A box without children: its name at a fixed size, the box fitted round it. */
@@ -437,11 +440,14 @@ function tableLayout(
 	return { size: { width: Math.ceil(width) + 2, height: height + 2 }, cols };
 }
 
-/** A logic unit's row: its name and signature, input names in, outputs out. */
+/** A row of a logic or triggers card: a unit's name and signature, or a trigger's name and schedule. */
 export interface LogicRow {
 	id: string;
 	name: string;
-	/** `(productId, quantity) → Cart Line`; an output that is a model goes by the model's name. */
+	/**
+	 * A unit's `(productId, quantity) → Cart Line`, an output that is a model by the model's
+	 * name; a trigger's schedule in words.
+	 */
 	signature: string;
 }
 
@@ -460,8 +466,21 @@ export function logicRow(model: Model, id: string): LogicRow {
 /** Room for the ƒ before a unit's name. */
 const FN_GLYPH = 14;
 
-/** A module's logic card: a name bar, then one row per unit: its name and signature. */
-function logicLayout(rows: LogicRow[]): { size: Size; cols: TableColumn[] } {
+export const triggerRow = (model: Model, id: string): LogicRow => ({
+	id,
+	name: model.elements.get(id)!.name,
+	signature: scheduleWords(model.elements.get(id)!.def.schedule)
+});
+
+/**
+ * A module's logic or triggers card: a name bar, then one row per unit (its name and
+ * signature) or trigger (its name and schedule).
+ */
+function rowsLayout(
+	rows: LogicRow[],
+	title: string,
+	note: string
+): { size: Size; cols: TableColumn[] } {
 	const col = (key: LogicColumn, ws: number[]) => ({
 		key,
 		label: '',
@@ -478,8 +497,8 @@ function logicLayout(rows: LogicRow[]): { size: Size; cols: TableColumn[] } {
 		)
 	];
 	const width = Math.max(
-		textWidth('Logic', TABLE.title, true) + GLYPH * TABLE.title + 2 * TABLE.pad,
-		textWidth(logicNote(rows.length), TABLE.note) + 2 * TABLE.pad,
+		textWidth(title, TABLE.title, true) + GLYPH * TABLE.title + 2 * TABLE.pad,
+		textWidth(note, TABLE.note) + 2 * TABLE.pad,
 		cols.reduce((w, c) => w + c.width, 0)
 	);
 	const height = TABLE.head + rows.length * TABLE.rowHeight;
@@ -488,6 +507,8 @@ function logicLayout(rows: LogicRow[]): { size: Size; cols: TableColumn[] } {
 
 /** Line under a logic card's name. */
 export const logicNote = (n: number) => `${n} logic unit${n === 1 ? '' : 's'}`;
+/** Line under a triggers card's name. */
+export const triggersNote = (n: number) => `${n} trigger${n === 1 ? '' : 's'}`;
 
 const leafWidth = (name: string) =>
 	Math.max(LEAF.minWidth, textWidth(name, LEAF.font, true) + GLYPH * LEAF.font + 2 * LEAF.padX);
@@ -553,17 +574,21 @@ export function layoutLandscape(
 	// A model owned elsewhere is drawn as a closed card, so it never has boxes inside.
 	const kidsOf = (item: Item): Item[] => {
 		const info = model.elements.get(item.el);
-		if (item.ref || item.view || item.logic || !info) return [];
+		if (item.ref || item.view || item.card || !info) return [];
 		if (item.boundary)
 			return model.elements
 				.get(info.parentId!)!
 				.childIds.filter((id) => id === item.el || (parts.has(id) && rootOf(id) === item.el))
 				.map(card);
-		// A module's logic units share one card, drawn first.
-		const units = info.childIds.filter(isUnit);
+		// A module's triggers share one card, drawn first, then its logic units share one.
+		const rowCard = (card: 'logic' | 'triggers', has: boolean): Item[] =>
+			has ? [{ id: `${item.id}#${card}`, el: item.el, ref: false, card }] : [];
 		return [
-			...(units.length ? [{ id: `${item.id}#logic`, el: item.el, ref: false, logic: true }] : []),
-			...info.childIds.filter((id) => !parts.has(id) && !isApi(id) && !isUnit(id)).map(owned),
+			...rowCard('triggers', info.childIds.some(isTrigger)),
+			...rowCard('logic', info.childIds.some(isUnit)),
+			...info.childIds
+				.filter((id) => !parts.has(id) && !isApi(id) && !isUnit(id) && !isTrigger(id))
+				.map(owned),
 			...info.refIds.map((id) => ({
 				id: `${item.id}>${id}`,
 				el: id,
@@ -580,8 +605,9 @@ export function layoutLandscape(
 	};
 	const isApi = (id: string) => model.elements.get(id)!.def.kind === 'api';
 	const isUnit = (id: string) => model.elements.get(id)!.def.kind === 'logic-unit';
+	const isTrigger = (id: string) => model.elements.get(id)!.def.kind === 'trigger';
 	const apisOf = (item: Item) =>
-		item.ref || item.view || item.boundary || item.logic
+		item.ref || item.view || item.boundary || item.card
 			? []
 			: (model.elements.get(item.el)?.childIds.filter(isApi) ?? []);
 	// Every api inside an element, which all move to its rail while it is closed.
@@ -602,7 +628,9 @@ export function layoutLandscape(
 			...(item.view
 				? [item.el, ...viewFields(model, holders, item.el, item.view).map((f) => f.id)]
 				: []),
-			...(item.logic ? model.elements.get(item.el)!.childIds.filter(isUnit) : []),
+			...(item.card
+				? model.elements.get(item.el)!.childIds.filter(item.card === 'logic' ? isUnit : isTrigger)
+				: []),
 			...apis,
 			...[...model.apiFields].filter(([, f]) => apis.includes(f.apiId)).map(([id]) => id)
 		];
@@ -648,9 +676,14 @@ export function layoutLandscape(
 			);
 			cards.set(item.id, { cols: t.cols, fields });
 			size = t.size;
-		} else if (info && item.logic) {
+		} else if (info && item.card === 'logic') {
 			const rows = info.childIds.filter(isUnit).map((id) => logicRow(model, id));
-			const l = logicLayout(rows);
+			const l = rowsLayout(rows, 'Logic', logicNote(rows.length));
+			logicCards.set(item.id, { cols: l.cols, rows });
+			size = l.size;
+		} else if (info && item.card === 'triggers') {
+			const rows = info.childIds.filter(isTrigger).map((id) => triggerRow(model, id));
+			const l = rowsLayout(rows, 'Triggers', triggersNote(rows.length));
 			logicCards.set(item.id, { cols: l.cols, rows });
 			size = l.size;
 		} else size = { width: leafWidth(info?.name ?? item.el), height: LEAF.height };
@@ -660,7 +693,7 @@ export function layoutLandscape(
 			size.width += own;
 		}
 		// Closed, the box carries the apis of everything inside it too.
-		const deep = item.ref || item.view || item.boundary || item.logic ? [] : deepApis(item.el);
+		const deep = item.ref || item.view || item.boundary || item.card ? [] : deepApis(item.el);
 		const right = Math.max(own, railWidth(item.el, deep, size.height) / 2);
 		if (right) size.right = right;
 		sizes.set(item.id, size);
@@ -694,7 +727,8 @@ export function layoutLandscape(
 				fields: cards.get(item.id)?.fields,
 				foldAt: item.view ? foldAt.get(item.el) : undefined,
 				apis: apisOf(item),
-				logic: logicCards.get(item.id)
+				logic: item.card === 'logic' ? logicCards.get(item.id) : undefined,
+				triggers: item.card === 'triggers' ? logicCards.get(item.id) : undefined
 			};
 			out.push(box);
 			if (kids.length)
@@ -724,7 +758,7 @@ export function layoutLandscape(
 		if (card && i >= 0) return fieldRowY(i, card.fields.length, false, foldAt.get(home.el) ?? FOLD);
 		const u = logicCards.get(home.id)?.rows.findIndex((r) => r.id === leaf) ?? -1;
 		if (u >= 0) return logicRowY(u);
-		return home.view || home.logic ? TABLE.head / 2 : sizes.get(home.id)!.height / 2;
+		return home.view || home.card ? TABLE.head / 2 : sizes.get(home.id)!.height / 2;
 	};
 
 	// Run sideways, a line leaves a box toward what depends on it, by a port at its row.
@@ -935,14 +969,17 @@ export function layoutLandscape(
 }
 
 const modelOf = (model: Model, id: string) => model.fields.get(id)?.modelId ?? id;
-/** Whether a card has a row for a field or logic unit. */
+/** The rows of a logic or triggers card. */
+export const cardRows = (b: LandscapeBox) => b.logic?.rows ?? b.triggers?.rows;
+
+/** Whether a card has a row for a field, logic unit or trigger. */
 const shows = (b: LandscapeBox, id: string) =>
-	!!(b.fields?.some((f) => f.id === id) || b.logic?.rows.some((r) => r.id === id));
+	!!(b.fields?.some((f) => f.id === id) || cardRows(b)?.some((r) => r.id === id));
 
 /**
  * The card a link from box `from` ends on, for the model or field `to`: a sibling if there
  * is one; else, of the cards showing the field, the nearest. A logic unit has one card, its
- * module's logic card; an api has none.
+ * module's logic card, and a trigger its triggers card; an api has none.
  */
 export function linkTarget(
 	model: Model,
@@ -950,7 +987,8 @@ export function linkTarget(
 	from: LandscapeBox,
 	to: string
 ): LandscapeBox | undefined {
-	if (model.elements.get(to)?.def.kind === 'logic-unit') return boxes.find((o) => shows(o, to));
+	const kind = model.elements.get(to)?.def.kind;
+	if (kind === 'logic-unit' || kind === 'trigger') return boxes.find((o) => shows(o, to));
 	const el = modelOf(model, to);
 	const cards = boxes.filter((o) => o.view && o.elementId === el);
 	const dist = (o: LandscapeBox) =>

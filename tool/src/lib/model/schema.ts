@@ -46,10 +46,15 @@ export interface Element {
 	key?: string;
 	default?: FlagValue;
 	when?: FlagGate;
+	schedule?: Schedule;
+	overlap?: Overlap;
+	timeout?: string;
+	retries?: number;
+	with?: string;
 }
 
 /** Kinds an entity file can have; the file name `<name>.<kind>.yaml` gives it. */
-export const ENTITY_KINDS = ['module', 'model', 'logic-unit', 'api', 'flag'] as const;
+export const ENTITY_KINDS = ['module', 'model', 'logic-unit', 'api', 'flag', 'trigger'] as const;
 export type EntityFileKind = (typeof ENTITY_KINDS)[number];
 
 /** Kinds a parent must have, for kinds that may only sit under certain parents. */
@@ -57,19 +62,37 @@ export const PARENT_KINDS: Partial<Record<EntityFileKind, EntityFileKind[]>> = {
 	'logic-unit': ['module'],
 	api: ['module'],
 	model: ['module'],
-	flag: ['module']
+	flag: ['module'],
+	trigger: ['module']
 };
+
+/**
+ * When a trigger runs: exactly one of a 5-field cron, an interval or a one-off local time. It is
+ * a trigger's source; a later kind of trigger gets a source key of its own beside it.
+ */
+export const Schedule = z
+	.strictObject({
+		cron: z.string().optional().describe('5-field cron: minute hour day month weekday'),
+		every: Text.optional().describe('An interval: a number and s, m, h or d, e.g. 15m'),
+		at: z.string().optional().describe('Once, at a local time such as 2026-12-01T00:00'),
+		tz: z.string().optional().describe('IANA time zone of cron and at; default UTC')
+	})
+	.describe('Triggers only: when it runs; exactly one of cron, every and at');
+export type Schedule = z.infer<typeof Schedule>;
+
+export const Overlap = z.enum(['skip', 'queue', 'allow']);
+export type Overlap = z.infer<typeof Overlap>;
 
 export const FlagValue = z.enum(['on', 'off']);
 export type FlagValue = z.infer<typeof FlagValue>;
 
-/** An api or logic unit that exists only while a flag has one value. */
+/** An api, logic unit or trigger that exists only while a flag has one value. */
 export const FlagGate = z
 	.strictObject({
 		flag: Id.describe('Id of the flag'),
 		is: FlagValue.describe('The value the flag must have for this to exist')
 	})
-	.describe('Apis and logic units only: exists only while the flag has this value');
+	.describe('Apis, logic units and triggers only: exists only while the flag has this value');
 export type FlagGate = z.infer<typeof FlagGate>;
 
 /**
@@ -293,7 +316,7 @@ export const EntityFile = z
 		handles: z
 			.array(Id)
 			.optional()
-			.describe('Logic units only: ids of the apis whose requests it handles'),
+			.describe('Logic units only: ids of the apis and triggers that start it'),
 		inputs: z
 			.array(LogicField)
 			.optional()
@@ -313,6 +336,13 @@ export const EntityFile = z
 			.describe('Flags only, required: the name the code asks the flag service for'),
 		default: FlagValue.optional().describe('Flags only: the value production runs; default off'),
 		when: FlagGate.optional(),
+		schedule: Schedule.optional(),
+		overlap: Overlap.optional().describe(
+			'Triggers only: a run due while the last is going is skipped (default), queued or allowed'
+		),
+		timeout: z.string().optional().describe('Triggers only: how long a run may take, e.g. 10m'),
+		retries: z.number().int().min(0).optional().describe('Triggers only: retries of a failed run'),
+		with: Text.optional().describe('Triggers only: what a run passes the unit, free text'),
 		external: z
 			.boolean()
 			.optional()

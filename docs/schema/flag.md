@@ -2,7 +2,7 @@
 
 A feature flag, defined in the module whose code checks it. The code acts on it in
 two ways: a **flag step** in a [logic unit](logic-unit.md) picks a branch of its sequence, and
-a **gate** (`when`) makes an [api](api.md) or logic unit exist only in one state. Calls between
+a **gate** (`when`) makes an [api](api.md), logic unit or [trigger](trigger.md) exist only in one state. Calls between
 systems come from steps, so flipping a flag moves lines too.
 
 ```yaml
@@ -48,7 +48,7 @@ What a state breaks, besides the usual [impact](scenario.md#impact):
 ## Validation
 
 - Errors: a flag without `key`; `key` or `default` on another kind; `when` on anything but an
-  api or logic unit; a flag step or `when` naming something that isn't a flag, or a flag
+  api, logic unit or trigger; a flag step or `when` naming something that isn't a flag, or a flag
   defined outside its module; a flag step with neither `on` nor `off`.
 - Warnings: a flag nothing checks; one key on by default in one place and off in another
   (production is split); each way of setting one key's definitions, away from their

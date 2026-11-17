@@ -1,0 +1,11 @@
+id: u68xzt3fl8
+parent: lht4l7njny
+name: purgeCarts
+handles: [ko6tg89ikq]
+inputs: []
+outputs: []
+steps:
+  - { read: uzi5stl672, with: 'createdAt < now - 30d', gets: old }
+  - each: old
+    do:
+      - { write: uzi5stl672, note: delete the cart and its lines }

@@ -11,6 +11,7 @@ import { ENTITY_KINDS, PARENT_KINDS } from './schema';
 import type { DataPath, Diagnostic, Severity } from './diagnostics';
 import { entityKind, fileKind } from './parse';
 import { toDiagnostic, validateEntityFile } from './validate-file';
+import { isDuration, scheduleProblems } from './schedule';
 
 /** Where an entity lives: design-root-relative file and data path inside it. */
 export interface Loc {
@@ -31,7 +32,7 @@ export interface ElementInfo {
 	/** Models stored here (their `storedIn`), drawn inside as tables. */
 	storedIds: string[];
 	tags?: string[];
-	/** Logic units only: what it handles, and what its steps read, write and call. */
+	/** Logic units only: what starts it, and what its steps read, write and call. */
 	logic?: LogicLinks;
 	/** 0 for top-level elements. */
 	depth: number;
@@ -548,8 +549,27 @@ export function buildModel(
 		} else
 			for (const key of ['key', 'default'] as const)
 				if (value[key]) diag('error', 'flag-only', `only flags have ${key}`, loc, key);
-		if (value.when && kind !== 'api' && kind !== 'logic-unit')
-			diag('error', 'flag-gate', `only apis and logic units have when`, loc, 'when');
+		if (value.when && kind !== 'api' && kind !== 'logic-unit' && kind !== 'trigger')
+			diag('error', 'flag-gate', `only apis, logic units and triggers have when`, loc, 'when');
+		if (kind === 'trigger') {
+			// The source says what starts it; schedule is the only kind so far.
+			if (!value.schedule)
+				diag('error', 'trigger-source', `trigger "${info.name}" needs a schedule`, loc, 'id');
+			else
+				for (const p of scheduleProblems(value.schedule))
+					diag('error', 'trigger-schedule', p.message, at(loc, 'schedule'), p.key);
+			if (value.timeout !== undefined && !isDuration(value.timeout))
+				diag(
+					'error',
+					'trigger-timeout',
+					`timeout "${value.timeout}" is not a duration such as 10m`,
+					loc,
+					'timeout'
+				);
+		} else
+			for (const key of ['schedule', 'overlap', 'timeout', 'retries', 'with'] as const)
+				if (value[key] !== undefined)
+					diag('error', 'trigger-only', `only triggers have ${key}`, loc, key);
 		if (kind === 'logic-unit')
 			for (const key of ['inputs', 'outputs'] as const) {
 				if (!value[key])
@@ -813,6 +833,30 @@ export function buildModel(
 			info.parentId = undefined;
 		}
 	}
+	// A trigger starts the units handling it; one nothing handles starts nothing.
+	const handled = new Set(entities.flatMap((info) => info.logic?.handles ?? []));
+	for (const info of entities) {
+		if (info.def.kind === 'trigger' && !handled.has(info.id))
+			diag(
+				'warning',
+				'trigger-unused',
+				`trigger "${info.name}" starts nothing: no logic unit handles it`,
+				info.loc,
+				'id'
+			);
+		const required = (info.def.inputs ?? []).filter((f) => f.required).map((f) => f.name);
+		for (const h of required.length ? (info.logic?.handles ?? []) : []) {
+			const t = model.elements.get(h)!;
+			if (t.def.kind === 'trigger' && t.def.with === undefined)
+				diag(
+					'warning',
+					'trigger-inputs',
+					`"${info.name}" needs ${required.join(', ')}, but trigger "${t.name}" passes nothing; give it with`,
+					info.loc,
+					'handles'
+				);
+		}
+	}
 	const defaultsByKey = new Map<string, ElementInfo[]>();
 	for (const info of entities) {
 		if (info.def.kind !== 'flag') continue;
@@ -895,7 +939,7 @@ export const STEP_KINDS = [
 
 /** What `handles` and each step kind may name: entity kinds, or `field` for a model field. */
 const LOGIC_TARGETS = {
-	handles: ['api'],
+	handles: ['api', 'trigger'],
 	call: ['logic-unit', 'api'],
 	read: ['model', 'field'],
 	write: ['model', 'field'],

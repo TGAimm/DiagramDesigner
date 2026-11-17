@@ -33,6 +33,7 @@
 	import { theme } from '#lib/client/theme.svelte.ts';
 	import type { FieldRef, Hot, ViewState } from '#lib/client/view-state.svelte.ts';
 	import {
+		cardRows,
 		fieldRowY,
 		incomingCount,
 		layoutLandscape,
@@ -74,6 +75,7 @@
 		type Rail
 	} from '#lib/landscape/apis.ts';
 	import { apiBodies } from '#lib/model/model.ts';
+	import { durationWords, nextRuns, scheduleWords } from '#lib/model/schedule.ts';
 	import {
 		routeKey,
 		type Rect,
@@ -163,18 +165,22 @@
 	const shownEdges = $derived(allEdges.filter((e) => !view.hidden[KEY_OF[e.kind]]));
 	const leavesBy = $derived(new Map(boxes.map((b) => [b.id, new Set(leavesOf(model, b))])));
 	const label = (id: string) => refLabel(model, id) ?? id;
-	/** Where row `i` of a card sits, folded or expanded as it is now; logic cards never fold. */
+	/**
+	 * Where row `i` of a card sits, folded or expanded as it is now; logic and triggers cards
+	 * never fold.
+	 */
 	const rowY = (b: LandscapeBox, i: number) =>
-		b.logic ? logicRowY(i) : fieldRowY(i, b.fields?.length ?? 0, !!view.expanded[b.id], b.foldAt);
-	/** The row of a field or logic unit in a card, or -1. */
+		cardRows(b)
+			? logicRowY(i)
+			: fieldRowY(i, b.fields?.length ?? 0, !!view.expanded[b.id], b.foldAt);
+	/** The row of a field, logic unit or trigger in a card, or -1. */
 	const rowOf = (b: LandscapeBox, id: string | undefined) =>
-		b.logic
-			? b.logic.rows.findIndex((r) => r.id === id)
-			: (b.fields?.findIndex((f) => f.id === id) ?? -1);
+		cardRows(b)?.findIndex((r) => r.id === id) ?? b.fields?.findIndex((f) => f.id === id) ?? -1;
 	const el = (id: string) => model.elements.get(id);
 	const focusedEl = $derived(view.focused && changes.shown.elements.get(view.focused.id));
 	const isUnit = (id: string) => el(id)?.def.kind === 'logic-unit';
 	const isApiEl = (id: string) => el(id)?.def.kind === 'api';
+	const isTrigger = (id: string) => el(id)?.def.kind === 'trigger';
 
 	// Every system and module is drawn open at any zoom. Zoomed out, what thins out is the rows of
 	// cards and rails (see open.ts), which are most of what a large landscape draws.
@@ -327,7 +333,11 @@
 			x1: node.absX + node.width,
 			y:
 				node.absY +
-				(row >= 0 ? rowY(home, row) : node.view || node.logic ? TABLE.head / 2 : node.height / 2),
+				(row >= 0
+					? rowY(home, row)
+					: node.view || cardRows(node)
+						? TABLE.head / 2
+						: node.height / 2),
 			peer: node !== home
 		};
 	}
@@ -666,6 +676,7 @@
 					indexes: b.view === 'table' ? info.def.indexes : undefined,
 					table: b.table,
 					logic: b.logic,
+					triggers: b.triggers,
 					view: b.view,
 					labels: Object.fromEntries(
 						(b.fields ?? [])
@@ -727,7 +738,7 @@
 		anchor: 'head',
 		x0: b.absX,
 		x1: b.absX + b.width,
-		y: b.absY + (b.view || b.logic ? TABLE.head / 2 : b.height / 2)
+		y: b.absY + (b.view || cardRows(b) ? TABLE.head / 2 : b.height / 2)
 	});
 
 	// Lines at rest and lit lines are routed apart, so a hover never moves the lines at rest.
@@ -790,8 +801,7 @@
 			const x = b.absX + b.width / 2;
 			add({ box: b.id }, x, b.absY + b.height / 2);
 			const n = b.fields?.length ?? 0;
-			const rows =
-				b.logic?.rows ?? b.fields?.slice(0, shownRows(n, !!view.expanded[b.id], b.foldAt));
+			const rows = cardRows(b) ?? b.fields?.slice(0, shownRows(n, !!view.expanded[b.id], b.foldAt));
 			rows?.forEach((r, i) => add({ box: b.id, leaf: r.id }, x, b.absY + rowY(b, i)));
 		}
 		for (const [id, r] of rails) {
@@ -1107,6 +1117,58 @@
 	}
 	const unitCard = $derived(unitCardOf(view.field?.field));
 
+	/**
+	 * The clicked trigger: its schedule in words and as written, its next runs, how a run
+	 * behaves, and the units it starts.
+	 */
+	function triggerCardOf(id: string | undefined, near: LandscapeBox | undefined) {
+		const t = id && isTrigger(id) ? el(id) : undefined;
+		if (!t || !near) return undefined;
+		const d = t.def;
+		const s = d.schedule ?? {};
+		const zone = s.cron !== undefined || s.at !== undefined ? `, ${s.tz ?? 'UTC'}` : '';
+		const written = s.cron ?? (s.every !== undefined ? `every ${s.every}` : `at ${s.at}`);
+		const next = nextRuns(s, 3);
+		const gate = d.when && el(d.when.flag);
+		const OVERLAP = {
+			skip: 'skip a run due while one is going',
+			queue: 'queue a run due while one is going',
+			allow: 'let runs overlap'
+		};
+		const row = (label: string, text: string | undefined, mono = false) =>
+			text === undefined ? [] : [{ label, text, mono }];
+		return {
+			title: t.name,
+			sub: `Trigger · ${pathOf(t.parentId)}`,
+			schedule: [
+				...row('When', scheduleWords(s) + zone),
+				...row('As written', s.cron !== undefined ? `cron ${written}` : written, true),
+				...row('Next', next.length ? next.join(' · ') : undefined)
+			],
+			run: [
+				...row('Overlap', OVERLAP[d.overlap ?? 'skip']),
+				...row('Timeout', d.timeout && durationWords(d.timeout)),
+				...row('Retries', d.retries?.toString()),
+				...row('With', d.with),
+				...row('Exists when', gate ? `${gate.name} is ${d.when!.is}` : undefined)
+			],
+			handledBy: (rels.in.get(t.id) ?? [])
+				.filter((l) => l.kind === 'handles')
+				.map((l) => {
+					const b = linkTarget(model, boxes, near, l.field);
+					return {
+						id: l.field,
+						text: el(l.field)!.name,
+						where: pathOf(el(l.field)!.parentId),
+						target: b && { box: b, field: l.field }
+					};
+				})
+		};
+	}
+	const triggerCard = $derived(
+		triggerCardOf(view.field?.field, view.field ? boxById.get(view.field.box) : undefined)
+	);
+
 	/** What a sequence drawn in a card on `from` names: an api, a unit's row or a model. */
 	function seqAt(id: string, from: LandscapeBox | undefined): PeekAt | undefined {
 		if (isApiEl(id)) return { api: id };
@@ -1292,7 +1354,7 @@
 
 	/** The card shown: its place on screen and width. */
 	const shownCard = $derived(
-		inspector && fieldPos
+		(inspector || triggerCard) && fieldPos
 			? { ...fieldPos, w: FIELD_W }
 			: unitCard && unitPos
 				? { ...unitPos, w: cardMin ? FIELD_W : unitW }
@@ -1320,6 +1382,10 @@
 					w: Math.max(420, unit.seq ? sequenceWidth(unit.seq) + 2 : 0)
 				}
 			);
+		}
+		if (t.field && isTrigger(t.field)) {
+			const trigger = triggerCardOf(t.field, t.box);
+			return trigger && { kind: 'trigger' as const, trigger, w: FIELD_W };
 		}
 		if (t.field) {
 			const field = fieldCardOf({ box: t.box.id, field: t.field });
@@ -1421,7 +1487,7 @@
 			view.field = null;
 			view.trail = [];
 			const own = boxes.filter((b) => b.elementId === hit.id && !b.ref && !b.boundary);
-			const t = own.find((b) => !b.logic) ?? own[0];
+			const t = own.find((b) => !cardRows(b)) ?? own[0];
 			if (!t) return;
 			// Half its api rail sits outside its right border.
 			const rail = t.apis?.length
@@ -1438,8 +1504,8 @@
 		const modelId = hit.kind === 'field' ? model.fields.get(hit.id)?.modelId : hit.id;
 		const field = hit.kind === 'model' ? undefined : hit.id;
 		const fits = (b: LandscapeBox) =>
-			hit.kind === 'logic-unit'
-				? !!b.logic && rowOf(b, field) >= 0
+			hit.kind === 'logic-unit' || hit.kind === 'trigger'
+				? !!cardRows(b) && rowOf(b, field) >= 0
 				: !!b.view && b.elementId === modelId && (!field || rowOf(b, field) >= 0);
 		const box = boxes.find((b) => fits(b) && !b.ref) ?? boxes.find(fits);
 		if (box) flyTo({ box, field });
@@ -1468,7 +1534,7 @@
 		if (field) {
 			const box = boxes.find((b) => b.view && b.elementId === field.modelId && rowOf(b, id) >= 0);
 			if (box) view.field = { box: box.id, field: id };
-		} else if (kind === 'logic-unit') {
+		} else if (kind === 'logic-unit' || kind === 'trigger') {
 			const box = boxes.find((b) => rowOf(b, id) >= 0);
 			if (box) view.field = { box: box.id, field: id };
 		} else if (kind === 'api') view.api = id;
@@ -2050,6 +2116,7 @@
 				<EntityGlyph kind="class" />Model, where owned<span class="sw class"></span>
 			</div>
 			<div class="k"><EntityGlyph kind="table" />Stored table<span class="sw table"></span></div>
+			<div class="k"><EntityGlyph kind="triggers" />Triggers<span class="sw triggers"></span></div>
 			<div class="k"><EntityGlyph kind="logic" />Logic<span class="sw logic"></span></div>
 			<div class="k"><EntityGlyph kind="api" />APIs<span class="sw api"></span></div>
 			<hr />
@@ -2242,6 +2309,47 @@
 			</section>
 		{/each}
 	{/snippet}
+	{#snippet triggerBody(
+		t: NonNullable<ReturnType<typeof triggerCardOf>>,
+		pick: (at: PeekAt) => void,
+		open?: string
+	)}
+		{#each [{ label: 'Schedule', rows: t.schedule }, { label: 'Run', rows: t.run }] as s (s.label)}
+			<section>
+				<h4>{s.label}</h4>
+				{#each s.rows as r (r.label)}
+					<div class="api-field">
+						<span class="where">{r.label}</span><span class:mono={r.mono}>{r.text}</span>
+					</div>
+				{/each}
+			</section>
+		{/each}
+		{#if t.handledBy.length}
+			<section class="calls">
+				<h4>Handled by</h4>
+				{#each t.handledBy as e (e.id)}
+					<button
+						class="entry"
+						class:open={!!open && !!e.target && open === keyOf({ target: e.target })}
+						disabled={!e.target}
+						onclick={() => e.target && pick({ target: e.target })}
+						title={e.target ? 'Show here' : undefined}
+					>
+						<span class="text" data-glyph="ƒ">{e.text}</span>
+						<span class="where">{e.where}</span>
+					</button>
+				{/each}
+			</section>
+		{:else}
+			<p class="empty">No logic unit handles it, so it starts nothing.</p>
+		{/if}
+	{/snippet}
+	{#snippet triggerTitle(t: NonNullable<ReturnType<typeof triggerCardOf>>)}
+		<div class="head">
+			<div class="title"><EntityGlyph kind="trigger" /> {t.title}</div>
+			<div class="type">{t.sub}</div>
+		</div>
+	{/snippet}
 	{#snippet apiTitle(api: NonNullable<ReturnType<typeof apiCardOf>>)}
 		<div class="head">
 			<div class="title">
@@ -2307,6 +2415,29 @@
 			</header>
 			<ChangeSection id={view.field!.field} go={goTo} />
 			{@render fieldBody(inspector, openPeek, peek?.from)}
+		</aside>
+	{:else if triggerCard && fieldPos}
+		<aside
+			class="inspector trigger"
+			class:min={cardMin}
+			style:left="{fieldPos.left}px"
+			style:top="{fieldPos.top}px"
+			style:width="{FIELD_W}px"
+			bind:clientHeight={cardH}
+			onpointerdowncapture={press}
+			data-testid="trigger-card"
+		>
+			<header>
+				{#if view.trail.length}
+					<button class="icon-btn" onclick={goBack} title="Back to the previous row"
+						><ChevronLeft size={16} /></button
+					>
+				{/if}
+				{@render triggerTitle(triggerCard)}
+				{@render minButton()}
+			</header>
+			<ChangeSection id={view.field!.field} go={goTo} />
+			{@render triggerBody(triggerCard, openPeek, peek?.from)}
 		</aside>
 	{:else if unitCard && unitPos}
 		{@const u = unitCard}
@@ -2398,6 +2529,8 @@
 							<div class="title"><i class="fn">ƒ</i> {p.unit.title}</div>
 							<div class="type">{p.unit.sub}</div>
 						</div>
+					{:else if p.kind === 'trigger'}
+						{@render triggerTitle(p.trigger)}
 					{:else}
 						<div class="head">
 							<div class="title">{p.field.title}</div>
@@ -2410,6 +2543,8 @@
 					{@render apiBody(p.api, peekTo)}
 				{:else if p.kind === 'unit'}
 					{@render unitBody(p.unit, peekTo, p.from, peek!.at.target!.field!)}
+				{:else if p.kind === 'trigger'}
+					{@render triggerBody(p.trigger, peekTo)}
 				{:else}
 					{@render fieldBody(p.field, peekTo)}
 				{/if}
@@ -2727,6 +2862,16 @@
 		box-shadow:
 			0 0 0 1.5px var(--sdv-model-fill),
 			0 0 0 2.5px var(--sdv-kind-logic);
+	}
+	.key .sw.triggers {
+		border: 1.5px solid var(--sdv-kind-trigger);
+		border-radius: 2px;
+		background: linear-gradient(
+			to bottom,
+			var(--sdv-kind-trigger-head) 3px,
+			var(--sdv-kind-trigger) 3px 4.5px,
+			transparent 4.5px
+		);
 	}
 	.key .sw.api {
 		border-color: var(--sdv-system-stroke);

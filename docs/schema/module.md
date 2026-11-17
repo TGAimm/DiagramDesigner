@@ -19,7 +19,7 @@ models: [li65oa3wga]   # optional: models owned elsewhere, drawn inside as dashe
   one folder is an error; a file outside its root's folder is a warning.
 - Moving a box is a change of `parent`: none lifts it to a root (see [scenario](scenario.md)).
 
-Children: modules, logic-units (rows of one Logic card), apis (listed on a rail across the
-right border), models (via `ownedBy`, drawn as classes), and models stored here (via their
+Children: modules, triggers (rows of one Triggers card), logic-units (rows of one Logic card),
+apis (listed on a rail across the right border), models (via `ownedBy`, drawn as classes), and models stored here (via their
 `storedIn`, drawn as stored tables). Listing a model this module already owns or stores is a
 warning.

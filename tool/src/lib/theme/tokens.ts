@@ -46,6 +46,12 @@ const light = {
 	'kind-logic-icon': '#f59e0b',
 	'kind-logic-text': '#b45309',
 	'kind-logic-soft': '#fef3c7',
+	// Triggers: the only kind whose name bar is tinted (head).
+	'kind-trigger': '#a78bfa',
+	'kind-trigger-icon': '#8b5cf6',
+	'kind-trigger-text': '#6d28d9',
+	'kind-trigger-soft': '#ede9fe',
+	'kind-trigger-head': '#f5f3ff',
 
 	'api-fill': '#ffffff',
 	'api-stroke': '#8d8a83',
@@ -105,6 +111,11 @@ const dark: Record<Token, string> = {
 	'kind-logic-icon': '#f59e0b',
 	'kind-logic-text': '#fde68a',
 	'kind-logic-soft': '#523c1b',
+	'kind-trigger': '#a78bfa',
+	'kind-trigger-icon': '#8b5cf6',
+	'kind-trigger-text': '#ddd6fe',
+	'kind-trigger-soft': '#3b2d63',
+	'kind-trigger-head': '#251f38',
 
 	'api-fill': '#1b1c20',
 	'api-stroke': '#76746f',

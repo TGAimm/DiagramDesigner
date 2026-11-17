@@ -24,6 +24,8 @@
 	},
 	"dependencies": {
 		"chokidar": "6.0.0",
+		"cron-parser": "5.10.3",
+		"cronstrue": "3.38.0",
 		"elkjs": "0.11.0",
 		"libavoid-js": "0.4.5",
 		"tsx": "4.23.15",

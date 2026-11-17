@@ -58,7 +58,7 @@ export function drawnInFull(
 	const out = new Set<string>();
 	const cards = cardsLegible(cam.zoom);
 	for (const b of boxes) {
-		if (cards && (b.table || b.logic) && near(b.absX, b.absY, b.width, b.height, cam))
+		if (cards && (b.table || b.logic || b.triggers) && near(b.absX, b.absY, b.width, b.height, cam))
 			out.add(b.id);
 		const r = rails.get(b.id);
 		if (

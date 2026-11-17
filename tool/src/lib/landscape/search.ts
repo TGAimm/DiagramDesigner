@@ -1,7 +1,15 @@
 import type { Model } from '#lib/model/model.ts';
 
 /** What a hit is; groups are listed in this order, following the landscape. */
-export const HIT_KINDS = ['system', 'module', 'model', 'field', 'api', 'logic-unit'] as const;
+export const HIT_KINDS = [
+	'system',
+	'module',
+	'model',
+	'field',
+	'api',
+	'logic-unit',
+	'trigger'
+] as const;
 export type HitKind = (typeof HIT_KINDS)[number];
 
 export const HIT_GROUPS: Record<HitKind, string> = {
@@ -10,7 +18,8 @@ export const HIT_GROUPS: Record<HitKind, string> = {
 	model: 'MODELS',
 	field: 'FIELDS',
 	api: 'APIS',
-	'logic-unit': 'LOGIC UNITS'
+	'logic-unit': 'LOGIC UNITS',
+	trigger: 'TRIGGERS'
 };
 
 /** Where the query sits in a text: [start, end). */
@@ -43,7 +52,7 @@ const find = (text: string, q: string): Mark | undefined => {
 };
 
 /**
- * Finds systems, modules, models, fields, apis and logic units whose name holds the query
+ * Finds systems, modules, models, fields, apis, logic units and triggers whose name holds the query
  * (any case); apis also by path. Within a group, the earlier the query sits in the text, the
  * higher the hit. With no query, lists the systems to start from. `hidden` apis and units
  * (gated off in the shown flag state) are not found.
@@ -74,7 +83,8 @@ export function searchLandscape(model: Model, query: string, hidden?: Set<string
 		model: [],
 		field: [],
 		api: [],
-		'logic-unit': []
+		'logic-unit': [],
+		trigger: []
 	};
 	for (const e of model.elements.values()) {
 		// A root module is a system.

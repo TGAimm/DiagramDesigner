@@ -8,7 +8,7 @@ the steps, so change impact can follow it without saying anything twice.
 id: mfj6c1l8c6
 parent: lht4l7njny               # must be a module
 name: addToCart
-handles: [jibntgqh1p]            # apis whose requests start it
+handles: [jibntgqh1p]            # apis and triggers that start it
 inputs:                          # required; [] for none
   - { id: kp8dv9ndf8, name: productId, type: uuid, required: true }
   - { id: axpx7vf6ma, name: quantity, type: int, required: true }
@@ -48,14 +48,15 @@ steps:                           # the sequence, top to bottom
   unit, its name and signature, `(productId, quantity) → Cart Line` (an output that is a
   model goes by the model's name). Nothing else: the rest is behind a click.
 - Hover a row to draw what its steps read and write (arrow at the model), call (dotted, arrow
-  at the callee) and the apis it handles (dotted, from the api's rail row), and light those
-  rows (see [Connections](README.md#connections)).
+  at the callee) and the apis and triggers it handles (dotted, from the api's rail row or the
+  trigger's row), and light those rows (see [Connections](README.md#connections)).
 - Click a row: the unit card opens beside it (over the canvas, centred, if there is no room)
   with typed inputs, outputs and fails, then the steps as a **sequence diagram**. Lifelines:
-  the caller (apis it handles, units calling it), the unit, then each unit, api owner or model
-  it touches, in first-use order; a model shows the store holding it. Calls are solid with
-  their `gets` returned dashed; reads and writes go to the model; returns and fails go back to
-  the caller; `if` and `each` draw alt and loop boxes. Click a name or message to go there.
+  the caller (apis and [triggers](trigger.md) it handles, units calling it), the unit, then
+  each unit, api owner or model it touches, in first-use order; a model shows the store
+  holding it. Calls are solid with their `gets` returned dashed; reads and writes go to the
+  model; returns and fails go back to the caller; `if` and `each` draw alt and loop boxes.
+  Click a name or message to go there.
 - **Play** beside the card's Sequence heading walks the board one step at a time: the card
   closes, a player docks under the canvas, and the canvas focuses on the run: only the unit,
   what starts it, and what its steps (and those of every unit with steps it calls, however

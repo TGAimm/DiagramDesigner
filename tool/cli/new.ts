@@ -26,6 +26,7 @@ export async function runNew(
 	if (parent) lines.push(`${kind === 'model' ? 'ownedBy' : 'parent'}: ${parent}`);
 	lines.push(`name: ${path.basename(file).split('.')[0]}`);
 	if (kind === 'api') lines.push('method: GET', 'path: /');
+	if (kind === 'trigger') lines.push('schedule: { every: 1h }');
 	await fs.mkdir(path.dirname(abs), { recursive: true });
 	await fs.writeFile(abs, lines.join('\n') + '\n');
 	io.log(`created ${path.relative(cwd, abs)}`);

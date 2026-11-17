@@ -25,7 +25,8 @@
 		module: 'module',
 		model: 'class',
 		api: 'api',
-		'logic-unit': 'logic'
+		'logic-unit': 'logic',
+		trigger: 'trigger'
 	};
 	const MODES: [FocusMode, string][] = [
 		['all', 'Everything'],

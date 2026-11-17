@@ -1,7 +1,8 @@
 # Entity files
 
 One entity per file: `<name>.<kind>.yaml`. Kinds: [module](module.md),
-[model](model.md), [logic-unit](logic-unit.md), [api](api.md), [flag](flag.md). Pending changes over the design
+[model](model.md), [logic-unit](logic-unit.md), [api](api.md), [trigger](trigger.md),
+[flag](flag.md). Pending changes over the design
 live in [scenario](scenario.md) files. A module with no parent is a
 root, drawn as a system; one folder per root, and everything in it lives under it.
 

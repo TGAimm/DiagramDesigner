@@ -103,7 +103,9 @@
 					title={s.text}
 					onclick={() => s.target && onpick(s.target)}
 					>{#if s.method}<b style:color="var(--sdv-method-{s.method.toLowerCase()})">{s.method}</b
-						>{s.text.slice(s.method.length + 1)}{:else}{s.text}{/if}</button
+						>{s.text.slice(s.method.length + 1)}{:else if s.trigger}<EntityGlyph
+							kind="trigger"
+						/>{s.text}{:else}{s.text}{/if}</button
 				>
 			{/each}
 		</div>

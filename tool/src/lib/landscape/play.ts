@@ -1,5 +1,6 @@
 import { flagOn, type Model } from '../model/model';
 import type { LogicStep } from '../model/schema';
+import { inputText } from './sequence';
 
 /** A branch to pick at a choice: its button text, and the short word under its mark. */
 export interface PlayOption {
@@ -191,7 +192,7 @@ export function runOf(
 			{
 				key: 'in',
 				kind: 'input',
-				text: (def.def.inputs ?? []).map((f) => f.name).join(', ') || '()',
+				text: inputText(model, unitId),
 				from: caller ?? unitId,
 				to: unitId
 			},
