@@ -564,7 +564,6 @@
 		<!-- Straddles the right border; its rows are laid out at full size, then scaled to fit. -->
 		<div
 			class="rail"
-			class:closed={!railListed}
 			style:left="{width - r.width / 2}px"
 			style:top="{r.top}px"
 			style:width="{r.width}px"
@@ -1136,10 +1135,6 @@
 		color: var(--sdv-api-text);
 		pointer-events: auto;
 		cursor: default;
-	}
-	/* Closed, a slim capsule on the border. */
-	.rail.closed {
-		border-radius: 999px;
 	}
 	.rail-inner {
 		transform-origin: 0 0;

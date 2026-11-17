@@ -2967,7 +2967,7 @@
 	}
 	.key .sw.api {
 		border-color: var(--sdv-system-stroke);
-		border-radius: 999px;
+		border-radius: 4px;
 	}
 	.key hr {
 		border: none;
