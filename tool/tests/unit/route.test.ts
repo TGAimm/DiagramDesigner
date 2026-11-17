@@ -99,6 +99,16 @@ describe('routeLines', () => {
 		expect(gapAt(routeLines(boxes, lines, true))).toBe(0);
 	});
 
+	it('ends a line on a bare point even where a free end has no room', () => {
+		// 12 px right of a box: closer than a free end's speck and the box can both keep clear of.
+		const pts = routeLines(boxes, [
+			{ id: 'x', s: end('a'), t: { point: true, x0: 412, x1: 412, y: 30, sides: [] } }
+		]).get('x')!;
+		expect(pts.at(-1)).toEqual({ x: 412, y: 30 });
+		for (let i = 1; i < pts.length; i++)
+			expect(pts[i].x === pts[i - 1].x || pts[i].y === pts[i - 1].y).toBe(true);
+	});
+
 	it('ends a free end on the side asked', () => {
 		const pts = routeLines(boxes, [
 			{ id: 'x', s: end('a'), t: { x0: 500, x1: 600, y: 30, sides: ['l'] } }

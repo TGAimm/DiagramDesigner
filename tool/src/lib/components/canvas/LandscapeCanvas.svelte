@@ -82,6 +82,7 @@
 	import { durationWords, nextRuns, scheduleWords } from '#lib/model/schedule.ts';
 	import {
 		routeKey,
+		type Point,
 		type Rect,
 		type RouteEnd,
 		type RouteGroup,
@@ -890,16 +891,17 @@
 			groups.set(parent ?? '', g);
 			return g;
 		};
-		const end = (b: LandscapeBox) => {
-			const { x0, x1, y } = headEnd(b);
-			return { on: b.id, x0, x1, y, sides: ['l', 'r'] as Side[] };
-		};
-		for (const l of rest)
+		// Each end leaves by the side facing the other box, so lines leaving a box one way share
+		// an exit and never set off the wrong way round it.
+		for (const l of rest) {
+			const [a, b] = [headEnd(boxById.get(l.source)!), headEnd(boxById.get(l.target)!)];
+			const [sa, sb] = sides(a, b);
 			group(l.parentId).lines.push({
 				id: l.id,
-				s: end(boxById.get(l.source)!),
-				t: end(boxById.get(l.target)!)
+				s: { on: l.source, x0: a.x0, x1: a.x1, y: a.y, sides: [sa] },
+				t: { on: l.target, x0: b.x0, x1: b.x1, y: b.y, sides: [sb] }
 			});
+		}
 		const lines = [...groups.values()].flatMap((g) => g.lines);
 		// Lines at rest leaving a box together share one exit (see the design's Routing rule).
 		return { lines, groups: [...groups.values()], key: routeKey(lines, true) };
@@ -913,16 +915,63 @@
 		router.want(obstacles, key, lines, true, 'rest', routeCame, groups);
 	});
 
-	/** Lit lines as the router takes them. */
+	/**
+	 * The line at rest a lit line runs along: the one joining, the same way, the two children
+	 * of the box both its ends share that hold them. Where the lit line joins it, where it leaves
+	 * it, and its corners between. The joins are where the line at rest first and last turns, in
+	 * the open between boxes; the middle of a straight one. None when no such line is drawn or
+	 * routed yet, or one end holds the other.
+	 */
+	function trunkOf(l: LitLine) {
+		const chain = (b: LandscapeBox) => {
+			const out = [b];
+			for (let p = b.parentId; p; p = boxById.get(p)?.parentId) out.push(boxById.get(p)!);
+			return out;
+		};
+		const [cs, ct] = [chain(l.s.node), chain(l.t.node)];
+		const shared = cs.find((b) => ct.includes(b));
+		const a = shared ? cs[cs.indexOf(shared) - 1] : cs.at(-1);
+		const b = shared ? ct[ct.indexOf(shared) - 1] : ct.at(-1);
+		if (!a || !b || a === b) return undefined;
+		const pts = restRoutes?.get(`${a.id}>${b.id}`);
+		if (!pts || pts.length < 2) return undefined;
+		const n = pts.length;
+		const mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+		const [join, leave] = n > 2 ? [pts[1], pts[n - 2]] : [mid, mid];
+		return { join, leave, between: n > 3 ? pts.slice(2, -2) : [] };
+	}
+	/** A bare point at `p` as a line end, met from any side. */
+	const freeAt = (p: Point): RouteEnd => ({ point: true, x0: p.x, x1: p.x, y: p.y, sides: [] });
+
+	/**
+	 * Lit lines as the router takes them. One that runs along a line at rest is two short lines:
+	 * from its start out to where it joins that line, and from where it leaves it to its end.
+	 */
 	const routeLinesOf = (lines: LitLine[]): RouteLine[] =>
-		lines.map((l) => {
+		lines.flatMap((l) => {
 			const sameCard = l.s.node === l.t.node;
-			return {
-				id: l.id,
-				s: routeEnd(l.s, l.sides[0], sameCard ? 'r' : undefined),
-				t: routeEnd(l.t, l.sides[1], sameCard ? 'r' : undefined)
-			};
+			const trunk = sameCard ? undefined : trunkOf(l);
+			if (!trunk)
+				return [
+					{
+						id: l.id,
+						s: routeEnd(l.s, l.sides[0], sameCard ? 'r' : undefined),
+						t: routeEnd(l.t, l.sides[1], sameCard ? 'r' : undefined)
+					}
+				];
+			return [
+				{ id: `${l.id}|s`, s: routeEnd(l.s, l.sides[0]), t: freeAt(trunk.join) },
+				{ id: `${l.id}|t`, s: freeAt(trunk.leave), t: routeEnd(l.t, l.sides[1]) }
+			];
 		});
+	/** A lit line's corners: its own route, or its two short lines joined along the line at rest. */
+	function litPoints(l: LitLine): Point[] | undefined {
+		const own = litRoutes?.get(l.id);
+		if (own) return own;
+		const trunk = trunkOf(l);
+		const [s, t] = [litRoutes?.get(`${l.id}|s`), litRoutes?.get(`${l.id}|t`)];
+		return trunk && s && t ? [...s, ...trunk.between, ...t] : undefined;
+	}
 	// Lit lines are mostly routed ahead (below). Those that are not are routed before anything
 	// else and drawn when they come, a moment after the rows they join light up.
 	const litWant = $derived.by(() => {
@@ -1013,7 +1062,7 @@
 			type: 'connection',
 			zIndex: 1000,
 			data: {
-				points: litRoutes?.get(l.id),
+				points: litPoints(l),
 				head: l.kind === 'model' ? 'diamond' : 'arrow',
 				color: `var(--sdv-link-${LINK_TOKEN[l.kind]})`
 			},
@@ -1066,7 +1115,7 @@
 			{ key: string; x: number; y: number; angle: number; kind: LinkKind; end: End; name: string }
 		>();
 		for (const l of lit) {
-			const route = litRoutes?.get(l.id);
+			const route = litPoints(l);
 			for (const [end, side, at] of [
 				[l.s, l.sides[0], route?.[0]],
 				[l.t, l.sides[1], route?.at(-1)]

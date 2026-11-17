@@ -17,10 +17,16 @@ export type Side = 'l' | 'r';
 
 /**
  * One end of a line, at height `y`. On a box lines go round (`on`), it leaves by whichever
- * of `sides` routes best; else it is a free point on side `sides[0]` of `x0`…`x1`.
+ * of `sides` routes best; else it is a free point on side `sides[0]` of `x0`…`x1`, or with
+ * `point`, a bare point at `x0`.
  */
 export interface RouteEnd {
 	on?: string;
+	/**
+	 * A bare point at `x0`, `y`, met from any side: no speck of a box round it, so it can sit
+	 * as close to boxes as a line can run.
+	 */
+	point?: boolean;
 	x0: number;
 	x1: number;
 	y: number;
@@ -130,6 +136,7 @@ export function routeLines(
 	// Pins on a box at one height and sides, shared by every line ending there.
 	const pins = new Map<string, number>();
 	const end = (e: RouteEnd) => {
+		if (e.point) return temp(new A.ConnEnd(pt(e.x0, e.y)));
 		let on = e.on;
 		let box = on === undefined ? undefined : boxes.get(on);
 		let sides = e.sides;
