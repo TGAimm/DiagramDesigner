@@ -117,7 +117,9 @@
 	// A card of over FOLD fields (or `foldAt`) shows the first ones and a row to show all. Expanded, it keeps
 	// its laid-out size and draws over whatever is below it (see `.node.expanded`).
 	const count = $derived(d.fields?.length ?? 0);
-	const expanded = $derived(!!d.state.expanded[id]);
+	// A peek's card folds on its own, not with the same card on the canvas.
+	let peekExpanded = $state(false);
+	const expanded = $derived(d.peek ? peekExpanded : !!d.state.expanded[id]);
 	const at = $derived(d.foldAt ?? FOLD);
 	const shown = $derived(d.fields?.slice(0, shownRows(count, expanded, at)) ?? []);
 	// A lit row hidden in the fold lights the toggle row instead.
@@ -149,6 +151,7 @@
 	});
 	function toggle(e: MouseEvent) {
 		e.stopPropagation();
+		if (d.peek) return void (peekExpanded = !peekExpanded);
 		const next = { ...d.state.expanded };
 		if (expanded) delete next[id];
 		else next[id] = true;

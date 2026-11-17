@@ -1404,6 +1404,26 @@
 	 */
 	let peek = $state<{ at: PeekAt; from: string; dy: number; trail: PeekAt[] } | null>(null);
 	let peekH = $state(0);
+	/**
+	 * Cards over the canvas never scroll (they are as tall as what they show), so a wheel or a
+	 * drag on one zooms or pans the canvas under it, as it would off the card.
+	 */
+	function toCanvas(card: HTMLElement) {
+		const pane = () => card.parentElement?.querySelector('.svelte-flow__pane');
+		const wheel = (e: WheelEvent) => {
+			e.preventDefault();
+			pane()?.dispatchEvent(new WheelEvent(e.type, e));
+		};
+		const down = (e: MouseEvent) => {
+			if (!e.button) pane()?.dispatchEvent(new MouseEvent(e.type, e));
+		};
+		card.addEventListener('wheel', wheel, { passive: false });
+		card.addEventListener('mousedown', down);
+		return () => {
+			card.removeEventListener('wheel', wheel);
+			card.removeEventListener('mousedown', down);
+		};
+	}
 	/** Where in the card the last press was. */
 	let pressDy = 0;
 	const keyOf = (at: PeekAt) => at.api ?? `${at.target?.box.id}|${at.target?.field ?? ''}`;
@@ -2525,6 +2545,7 @@
 			style:width="{FIELD_W}px"
 			bind:clientHeight={cardH}
 			onpointerdowncapture={press}
+			{@attach toCanvas}
 			data-testid="field-inspector"
 		>
 			<header>
@@ -2551,6 +2572,7 @@
 			style:width="{FIELD_W}px"
 			bind:clientHeight={cardH}
 			onpointerdowncapture={press}
+			{@attach toCanvas}
 			data-testid="trigger-card"
 		>
 			<header>
@@ -2575,6 +2597,7 @@
 			style:width="{cardMin ? FIELD_W : unitW}px"
 			bind:clientHeight={cardH}
 			onpointerdowncapture={press}
+			{@attach toCanvas}
 			data-testid="unit-card"
 		>
 			<header>
@@ -2602,6 +2625,7 @@
 			style:width="{API_W}px"
 			bind:clientHeight={cardH}
 			onpointerdowncapture={press}
+			{@attach toCanvas}
 			data-testid="api-inspector"
 		>
 			<header>
@@ -2621,17 +2645,20 @@
 				style:left="{peekPos.left}px"
 				style:top="{peekPos.top}px"
 				style:width="{p.w}px"
-				style:height={view.expanded[p.box.id] ? undefined : `${p.box.height}px`}
+				style:--h="{p.box.height}px"
 				bind:clientHeight={peekH}
+				{@attach toCanvas}
 				data-testid="peek"
 			>
-				<LandscapeNode
-					{...{} as NodeProps}
-					id={p.box.id}
-					data={p.data}
-					width={p.box.width}
-					height={p.box.height}
-				/>
+				{#key p.box.id}
+					<LandscapeNode
+						{...{} as NodeProps}
+						id={p.box.id}
+						data={p.data}
+						width={p.box.width}
+						height={p.box.height}
+					/>
+				{/key}
 				<div class="peek-head" style:height="{TABLE.head}px">
 					{@render peekBackButton()}{@render peekButtons()}
 				</div>
@@ -2644,6 +2671,7 @@
 				style:top="{peekPos.top}px"
 				style:width="{p.w}px"
 				bind:clientHeight={peekH}
+				{@attach toCanvas}
 				data-testid="peek"
 			>
 				<header>
@@ -3041,7 +3069,6 @@
 	}
 	.inspector {
 		position: absolute;
-		max-height: calc(100% - 16px);
 		z-index: 10;
 		box-sizing: border-box;
 		background: var(--sdv-model-fill);
@@ -3049,7 +3076,6 @@
 		box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
 		color: var(--sdv-model-text);
 		font-size: 13px;
-		overflow: auto;
 	}
 	.inspector.min > :not(header) {
 		display: none;
@@ -3166,9 +3192,6 @@
 	.inspector .where.fail {
 		color: var(--sdv-method-put);
 	}
-	.inspector .seq-section {
-		overflow-x: auto;
-	}
 	.inspector .status {
 		font-variant-numeric: tabular-nums;
 		margin-right: 6px;
@@ -3210,8 +3233,12 @@
 	   in its name bar. */
 	.peek-card {
 		position: absolute;
+		height: var(--h);
 		z-index: 11;
 		box-shadow: 0 10px 32px rgba(0, 0, 0, 0.22);
+	}
+	.peek-card:has(> :global(.node.expanded)) {
+		height: auto;
 	}
 	/* Outlines mark a card's place on the canvas; the peek is not on it. */
 	.peek-card :global(.node) {
