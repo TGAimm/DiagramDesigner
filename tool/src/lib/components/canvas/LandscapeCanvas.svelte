@@ -102,6 +102,7 @@
 	import { untrack } from 'svelte';
 	import LandscapeNode, { type LandscapeNodeData } from './LandscapeNode.svelte';
 	import ConnectionEdge from './ConnectionEdge.svelte';
+	import GlLayer, { type GlHit, type GlLine } from './GlLayer.svelte';
 	import EntityGlyph from './EntityGlyph.svelte';
 	import ChangeSection from '#lib/components/ChangeSection.svelte';
 	import ChangesPanel from '#lib/components/ChangesPanel.svelte';
@@ -142,6 +143,9 @@
 
 	// Render everything: every box and rail open at any zoom; long cards still fold.
 	const all = $derived(settings.detail === 'all');
+	// Drawn on one WebGL canvas (see GlLayer) instead of as page elements; Svelte Flow still pans,
+	// zooms and carries everything over the landscape, given no nodes or edges.
+	const gl = $derived(settings.renderer === 'webgl');
 	// The design, or the state of a scenario or commit being compared (see changes.svelte.ts);
 	// in a focus, cut down to the subject and what connects to it, drawn the same. Playing, to
 	// what the run can touch, whatever focus it started in.
@@ -797,6 +801,42 @@
 	});
 
 	$effect(() => {
+		if (gl) nodes = [];
+		else buildNodes();
+		// A new layout or focus is fitted; leaving a focus or stopping goes back to where the view
+		// was.
+		if ((fittedTo !== settings.layout || fittedFocus !== focusKey) && boxes.length) {
+			const keep = keepCamera;
+			keepCamera = false;
+			fittedTo = settings.layout;
+			fittedFocus = focusKey;
+			if (!keep) {
+				fitting = true;
+				requestAnimationFrame(() =>
+					requestAnimationFrame(() => {
+						if (playing) fitRun();
+						else void fitAll().then(() => (ready = true));
+						fitting = false;
+					})
+				);
+			}
+		}
+	});
+	/** Fits the whole of what is drawn: the nodes, or on the WebGL canvas every box and rail. */
+	function fitAll(duration?: number) {
+		if (!gl) return flow.fitView({ padding: 0.08, duration });
+		const x = Math.min(...boxes.map((b) => b.absX));
+		const y = Math.min(...boxes.map((b) => b.absY));
+		const right = Math.max(
+			...boxes.map((b) => b.absX + b.width + (rails.get(b.id)?.width ?? 0) / 2)
+		);
+		const bottom = Math.max(...boxes.map((b) => b.absY + b.height));
+		return flow.fitBounds(
+			{ x, y, width: right - x, height: bottom - y },
+			{ padding: 0.08, duration }
+		);
+	}
+	function buildNodes() {
 		const counts = Object.fromEntries(
 			[...model.fields.keys()].map((id) => [
 				id,
@@ -860,25 +900,7 @@
 				} satisfies LandscapeNodeData
 			};
 		});
-		// A new layout or focus is fitted; leaving a focus or stopping goes back to where the view
-		// was.
-		if ((fittedTo !== settings.layout || fittedFocus !== focusKey) && boxes.length) {
-			const keep = keepCamera;
-			keepCamera = false;
-			fittedTo = settings.layout;
-			fittedFocus = focusKey;
-			if (!keep) {
-				fitting = true;
-				requestAnimationFrame(() =>
-					requestAnimationFrame(() => {
-						if (playing) fitRun();
-						else void flow.fitView({ padding: 0.08 }).then(() => (ready = true));
-						fitting = false;
-					})
-				);
-			}
-		}
-	});
+	}
 
 	// At rest only who talks to whom: calls, handles, reads and writes. Keys, holds, lineage
 	// and bodies light up on hover.
@@ -1097,6 +1119,7 @@
 	}
 
 	$effect(() => {
+		if (gl) return void (edges = []);
 		edges = [
 			// Each line at rest once routed, never first along a makeshift path.
 			...rest
@@ -1105,6 +1128,155 @@
 			...(litRoutes || unrouted ? lit.map(litEdge) : [])
 		];
 	});
+
+	// ------------------------------------------------------------ WebGL
+	let glLayer: ReturnType<typeof GlLayer> | undefined = $state();
+	/** Depth of a box: 0 for a root, -1 for none. */
+	const depthOf = (id: string | undefined) => {
+		let d = -1;
+		for (
+			let b = id ? boxById.get(id) : undefined;
+			b;
+			b = b.parentId ? boxById.get(b.parentId) : undefined
+		)
+			d++;
+		return d;
+	};
+	/** Where a line runs while it is not routed: out of one end, across, into the other. */
+	function straight(
+		s: { x0: number; x1: number; y: number },
+		t: { x0: number; x1: number; y: number },
+		[ss, ts]: readonly ['l' | 'r', 'l' | 'r']
+	): Point[] {
+		const a = { x: ss === 'r' ? s.x1 : s.x0, y: s.y };
+		const b = { x: ts === 'r' ? t.x1 : t.x0, y: t.y };
+		const mx = ss === ts ? Math.max(a.x, b.x) + 24 : (a.x + b.x) / 2;
+		return [a, { x: mx, y: a.y }, { x: mx, y: b.y }, b];
+	}
+	/** Lines at rest as the WebGL canvas draws them, as `restEdge` does for Svelte Flow. */
+	const glRest = $derived.by((): GlLine[] => {
+		if (!gl) return [];
+		return rest
+			.filter((l) => unrouted || restRoutes.routes.has(l.id))
+			.map((l) => {
+				const [a, b] = [headEnd(boxById.get(l.source)!), headEnd(boxById.get(l.target)!)];
+				const w = l.count >= 10 ? 3 : l.count > 1 ? 2 : 1;
+				return {
+					id: `rest:${l.id}`,
+					points: restRoutes.routes.get(l.id) ?? straight(a, b, sides(a, b)),
+					width: 0.5 + w,
+					halo: 4.5 + w,
+					color: 'edge-rest',
+					head: 'arrow',
+					dim: !!focus,
+					title: `${l.count} connection${l.count > 1 ? 's' : ''}: ${l.kinds.map((k) => KIND_NAME[k]).join(', ')}`,
+					depth: depthOf(l.parentId)
+				};
+			});
+	});
+	/** Lit lines as the WebGL canvas draws them, as `litEdge` does for Svelte Flow. */
+	const glLit = $derived.by((): GlLine[] => {
+		if (!gl || !(litRoutes || unrouted)) return [];
+		return lit.map((l) => ({
+			id: `lit:${l.id}`,
+			points: litPoints(l) ?? straight(l.s, l.t, l.sides),
+			width: 2,
+			color: `link-${LINK_TOKEN[l.kind]}` as GlLine['color'],
+			head: l.kind === 'model' ? 'diamond' : 'arrow',
+			dash:
+				l.kind === 'from'
+					? ([5, 4] as const)
+					: l.kind === 'calls' || l.kind === 'handles'
+						? ([2, 3] as const)
+						: undefined,
+			depth: Infinity
+		}));
+	});
+	/** What the pointer is over on the WebGL canvas, told as the nodes' enter and leave events. */
+	let glPointer = $state.raw<GlHit | null>(null);
+	let railTimer: ReturnType<typeof setTimeout> | undefined;
+	$effect(() => () => clearTimeout(railTimer));
+	const leafOf = (h: GlHit | null) => (h && (h.part === 'row' || h.part === 'api') ? h : undefined);
+	/** The card face or name bar a hit is on, as a node's `onbox` tells it. */
+	const boxIn = (h: GlHit | null) =>
+		h && (h.part === 'head' || h.part === 'row' || h.part === 'fold') ? h.box : undefined;
+	const railIn = (h: GlHit | null) =>
+		h && (h.part === 'api' || h.part === 'rail') ? h.box : undefined;
+	function glHover(next: GlHit | null) {
+		const was = glPointer;
+		if (JSON.stringify(was) === JSON.stringify(next)) return;
+		const [a, b] = [leafOf(was), leafOf(next)];
+		const same = !!a && !!b && a.box === b.box && a.id === b.id;
+		if (a && !same) onfield(a.box, a.id, 'leave');
+		if (b && !same) onfield(b.box, b.id, 'enter');
+		if (boxIn(was) !== boxIn(next)) {
+			if (boxIn(next)) overBox = boxIn(next)!;
+			else if (overBox === boxIn(was)) overBox = null;
+			hoverLater();
+		}
+		// A rail lists its endpoints once the pointer rests on it; leaving is instant.
+		if (railIn(was) !== railIn(next)) {
+			clearTimeout(railTimer);
+			if (view.railHover === railIn(was)) view.railHover = null;
+			const r = railIn(next);
+			if (r) railTimer = setTimeout(() => (view.railHover = r), HOVER_DELAY);
+		}
+		glPointer = next;
+	}
+	/** The pane under an event: the canvas itself, not a card or bar over it. */
+	const paneOf = (e: Event) =>
+		(e.target as Element | null)?.closest?.('.svelte-flow__pane') as HTMLElement | null;
+	function glAt(e: MouseEvent) {
+		const r = canvasEl!.getBoundingClientRect();
+		return glLayer?.hitAt(e.clientX - r.left, e.clientY - r.top) ?? null;
+	}
+	function glMove(e: PointerEvent) {
+		if (!gl) return;
+		const pane = paneOf(e);
+		// While the view is dragged nothing is hovered, as the nodes take no pointer then.
+		if (!pane || e.buttons || moving) return glHover(null);
+		const hit = glAt(e);
+		glHover(hit);
+		pane.style.cursor = hit ? 'pointer' : '';
+		const r = canvasEl!.getBoundingClientRect();
+		pane.title = hit
+			? ''
+			: (glLayer?.restLineAt(e.clientX - r.left, e.clientY - r.top)?.title ?? '');
+	}
+	/** A click on what the WebGL canvas draws, as on a node; else on through to the pane. */
+	function glClick(e: MouseEvent) {
+		if (!gl || !paneOf(e)) return;
+		const hit = glAt(e);
+		if (!hit) return;
+		e.stopPropagation();
+		if (hit.part === 'row') onfield(hit.box, hit.id, 'click');
+		else if (hit.part === 'api') onapi(hit.id);
+		else if (hit.part === 'fold') {
+			const next = { ...view.expanded };
+			if (next[hit.box]) delete next[hit.box];
+			else next[hit.box] = true;
+			view.expanded = next;
+		} else {
+			view.selectedNodes = [hit.box];
+			unpin();
+		}
+	}
+	/** While a scenario is edited: a field row or a class card's name bar opens the edit menu. */
+	function glMenu(e: MouseEvent) {
+		if (!gl || !editing || !paneOf(e)) return;
+		const hit = glAt(e);
+		const b = hit && boxById.get(hit.box);
+		const target =
+			hit?.part === 'row' && b?.fields
+				? hit.id
+				: hit?.part === 'head' && b?.table && b.view === 'class'
+					? b.elementId
+					: undefined;
+		if (!target) return;
+		e.preventDefault();
+		e.stopPropagation();
+		menu = { target, x: e.clientX, y: e.clientY };
+	}
 
 	/** The key's line entries; each hides its kinds when clicked (see `KEY_OF`). */
 	const KEY_LINES: {
@@ -2262,6 +2434,11 @@
 	bind:clientWidth={cw}
 	bind:clientHeight={ch}
 	data-testid="canvas"
+	role="presentation"
+	onpointermove={glMove}
+	onpointerleave={() => gl && glHover(null)}
+	onclickcapture={glClick}
+	oncontextmenucapture={glMenu}
 >
 	<SvelteFlow
 		bind:nodes
@@ -2300,13 +2477,45 @@
 			unpin();
 		}}
 	>
+		{#if gl}
+			<GlLayer
+				bind:this={glLayer}
+				{boxes}
+				{boxById}
+				{rails}
+				{model}
+				{rels}
+				{view}
+				rest={glRest}
+				lit={glLit}
+				dim={dimming ? related : undefined}
+				{namesInFront}
+				pointer={glPointer}
+			/>
+		{/if}
 		<Background
 			variant={BackgroundVariant.Dots}
 			gap={20}
 			patternColor="var(--sdv-grid)"
 			bgColor="var(--sdv-canvas-bg)"
 		/>
-		<Controls showLock={false}>
+		<Controls showLock={false} showFitView={!gl}>
+			{#if gl}
+				<ControlButton aria-label="Fit View" title="Fit View" onclick={() => void fitAll(200)}>
+					<svg
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<path
+							d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"
+						/>
+					</svg>
+				</ControlButton>
+			{/if}
 			<ControlButton
 				class={settings.minimap ? 'on' : undefined}
 				aria-label="Map"

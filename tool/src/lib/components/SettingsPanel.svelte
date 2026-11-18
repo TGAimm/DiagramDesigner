@@ -27,7 +27,7 @@
 		{
 			value: 'webgl',
 			title: 'WebGL (experimental)',
-			text: 'Everything is drawn on one WebGL canvas, which keeps its frame rate however much is drawn. So far it draws systems, modules, cards with their rows, api rails and the lines at rest, and pans and zooms; hover, picking, the inspector, focus and play still need page elements.'
+			text: 'Boxes, rows and lines are drawn on one WebGL canvas, which keeps its frame rate however much is drawn. Everything else works as with page elements: hover, picking, lit lines, the inspector, focus and play.'
 		}
 	];
 
