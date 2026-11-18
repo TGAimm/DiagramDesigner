@@ -21,6 +21,17 @@
 	}
 
 	/** What is under the pointer. */
+	/** A name drawn in front of everything, at canvas px `x`, `y`, at most `max` px tall. */
+	export interface FrontName {
+		id: string;
+		b: import('#lib/landscape/layout.ts').LandscapeBox;
+		name: string;
+		glyph: string;
+		x: number;
+		y: number;
+		max: number;
+	}
+
 	export type GlHit =
 		| { part: 'row'; box: string; id: string }
 		| { part: 'api'; box: string; id: string }
@@ -35,7 +46,7 @@
 
 <script lang="ts">
 	import type { BitmapText, Container, Graphics } from 'pixi.js';
-	import { useViewport } from '@xyflow/svelte';
+	import { getCamera } from '#lib/client/camera.svelte.ts';
 	import { changes } from '#lib/client/changes.svelte.ts';
 	import { theme } from '#lib/client/theme.svelte.ts';
 	import type { ViewState } from '#lib/client/view-state.svelte.ts';
@@ -92,7 +103,7 @@
 		rest,
 		lit,
 		dim,
-		namesInFront,
+		front,
 		pointer
 	}: {
 		boxes: LandscapeBox[];
@@ -105,19 +116,30 @@
 		lit: GlLine[];
 		/** While something is looked at: the boxes kept bright; the rest are toned down. */
 		dim: Set<string> | undefined;
-		/** Open boxes' names are drawn in front by the canvas, not here. */
-		namesInFront: boolean;
+		/**
+		 * Zoomed far out, open boxes' and closed rails' names drawn in front of everything, each
+		 * clear of the others (see `namesShown` in LandscapeCanvas); none when they fit their boxes.
+		 */
+		front: FrontName[];
 		/** What the pointer is over now, for a row's hover tint. */
 		pointer: GlHit | null;
 	} = $props();
 
-	const viewport = useViewport();
+	const viewport = getCamera();
 	const DIM_OPACITY = 0.2;
+	/** The dots' spacing in canvas px, and the size their tile is drawn at. */
+	const DOT_GAP = 20;
+	const DOT_TILE = 64;
+	/** The names drawn in front take over from open boxes' own. */
+	const namesInFront = $derived(front.length > 0);
 
 	let host: HTMLDivElement;
 	let canvas: HTMLCanvasElement;
 	let pixi: typeof import('pixi.js') | undefined = $state();
 	let app: import('pixi.js').Application | undefined;
+	/** What is drawn in canvas px, moved and scaled by the camera; the dots stay in screen px. */
+	let world: Container | undefined;
+	let dots: import('pixi.js').TilingSprite | undefined;
 	let failed = $state<string>();
 
 	// ------------------------------------------------------------ PixiJS
@@ -141,6 +163,8 @@
 				if (gone) return a.destroy();
 				made = a;
 				a.renderer.on('resize', () => request());
+				world = new P.Container();
+				a.stage.addChild(world);
 				app = a;
 				pixi = P;
 			} catch (e) {
@@ -177,6 +201,8 @@
 		kind: 'group' | 'card' | 'leaf' | 'rail';
 		/** Its width at GLYPH_PX. */
 		w: number;
+		/** Its alpha before toning down. */
+		alpha: number;
 		/** Where it was last drawn, in canvas px, for hit testing a name tab. */
 		at?: { x0: number; y0: number; x1: number; y1: number };
 	}
@@ -190,8 +216,22 @@
 	/** The row under the pointer, tinted over its card's rows. */
 	let hoverLayer: Graphics | undefined;
 	let badgeLayer: Container | undefined;
+	/** Names drawn in front of everything while zoomed far out, by name id. */
+	let frontLayer: Container | undefined;
+	let frontOf = new Map<
+		string,
+		{
+			m: FrontName;
+			c: Container;
+			bg: Graphics;
+			text: BitmapText;
+			rail: boolean;
+			/** Its backing, in canvas px, for hit testing. */
+			at?: { x: number; y: number; w: number; h: number };
+		}
+	>();
 	/** Cards and rails drawing their rows, by box id (`rail:` for a rail), and what they drew. */
-	let rowsOf = new Map<string, { c: Container; sig: string }>();
+	let rowsOf = new Map<string, { c: Container; sig: string; b: LandscapeBox }>();
 	let depthCache = new Map<string, number>();
 	/* eslint-enable svelte/prefer-svelte-reactivity */
 
@@ -227,21 +267,51 @@
 	};
 	const marked = (id: string) =>
 		marks.glyph.has(id) || (marks.level.has(id) && marks.level.get(id) !== 'stopped');
-	/** How much of a box shows: toned down while not related to what is looked at, faded when compared and unchanged. */
-	const alphaOf = (b: LandscapeBox) =>
-		(dim && !dim.has(b.id) ? DIM_OPACITY : 1) *
-		(comparing && !b.group && !marks.rollup.get(b.elementId) ? 0.45 : 1);
+	/** How much of a box shows while a scenario or commit is compared: unchanged ones fade. */
+	const fadedOf = (b: LandscapeBox) =>
+		comparing && !b.group && !marks.rollup.get(b.elementId) ? 0.45 : 1;
+	/**
+	 * How much of a box shows while something is looked at: toned down when not related. Set
+	 * on what is drawn (see `applyDim`), never drawn anew, so looking at something costs a loop.
+	 */
+	const dimOf = (id: string) => (dim && !dim.has(id) ? DIM_OPACITY : 1);
+	/** Each box's own graphics, so it can be toned down alone. */
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- the scene is drawn, not read
+	let boxGfx = new Map<string, Graphics>();
+	function applyDim() {
+		for (const [id, g] of boxGfx) g.alpha = dimOf(id);
+		for (const n of names) n.text.alpha = n.alpha * dimOf(n.b.id);
+		for (const r of rowsOf.values()) r.c.alpha = fadedOf(r.b) * dimOf(r.b.id);
+		for (const badge of badgeLayer?.children ?? []) badge.alpha = dimOf(badge.label);
+	}
 
 	/** Boxes, names and badges, layer by layer; lines, rows and outlines are drawn per frame. */
 	function build() {
 		const P = pixi!;
-		const stage = app!.stage;
+		const stage = world!;
 		for (const child of stage.removeChildren()) child.destroy({ children: true });
+		// The canvas's dots, 20 canvas px apart and 1 across, as Svelte Flow's background draws
+		// them: one tile, repeated and scaled with the zoom.
+		dots?.destroy({ texture: true, textureSource: true });
+		const tile = document.createElement('canvas');
+		tile.width = tile.height = DOT_TILE;
+		const ctx = tile.getContext('2d')!;
+		ctx.fillStyle = values.grid;
+		ctx.beginPath();
+		ctx.arc(DOT_TILE / 2, DOT_TILE / 2, (DOT_TILE / DOT_GAP) * 0.5, 0, 2 * Math.PI);
+		ctx.fill();
+		dots = new P.TilingSprite({
+			texture: P.Texture.from({ resource: tile, autoGenerateMipmaps: true }),
+			width: app!.screen.width,
+			height: app!.screen.height
+		});
+		app!.stage.addChildAt(dots, 0);
 		names = [];
 		nameOf = new Map();
 		lineLayers = new Map();
 		rowsOf = new Map();
 		depthCache = new Map();
+		boxGfx = new Map();
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built and used here
 		const byDepth = new Map<number, LandscapeBox[]>();
 		for (const b of boxes) {
@@ -256,9 +326,14 @@
 		lineLayer(-1);
 		const deepest = Math.max(-1, ...byDepth.keys());
 		for (let d = 0; d <= deepest; d++) {
-			const g = new P.Graphics();
-			stage.addChild(g);
-			for (const b of byDepth.get(d) ?? []) drawBox(g, b);
+			const layer = new P.Container();
+			stage.addChild(layer);
+			for (const b of byDepth.get(d) ?? []) {
+				const g = new P.Graphics();
+				drawBox(g, b);
+				layer.addChild(g);
+				boxGfx.set(b.id, g);
+			}
 			lineLayer(d);
 		}
 		const nameLayer = new P.Container();
@@ -276,19 +351,19 @@
 						: 'module-text';
 			const kind = b.group ? 'group' : isCard(b) ? 'card' : 'leaf';
 			const text = textOf(op ? `${op} ${name}` : name, tok, true);
-			text.alpha *= alphaOf(b);
+			text.alpha *= fadedOf(b);
 			text.cullable = true;
 			nameLayer.addChild(text);
-			const n: Name = { text, b, kind, w: text.width };
+			const n: Name = { text, b, kind, w: text.width, alpha: text.alpha };
 			names.push(n);
 			nameOf.set(b.id, n);
 		}
 		for (const [id] of rails) {
 			const b = boxById.get(id)!;
 			const text = textOf('APIs', 'api-text', true);
-			text.alpha *= alphaOf(b);
+			text.alpha *= fadedOf(b);
 			nameLayer.addChild(text);
-			const n: Name = { text, b, kind: 'rail', w: text.width };
+			const n: Name = { text, b, kind: 'rail', w: text.width, alpha: text.alpha };
 			names.push(n);
 			nameOf.set(`rail:${id}`, n);
 		}
@@ -302,6 +377,10 @@
 		stage.addChild(outlineLayer);
 		badgeLayer = new P.Container();
 		stage.addChild(badgeLayer);
+		frontLayer = new P.Container();
+		stage.addChild(frontLayer);
+		frontOf = new Map();
+		dimDirty = true;
 		// One count per closed box: what changed or is affected inside, in the worst severity.
 		for (const b of boxes) {
 			const roll = marks.rollup.get(b.elementId);
@@ -326,7 +405,7 @@
 	}
 
 	function drawBox(g: Graphics, b: LandscapeBox) {
-		const a = alphaOf(b);
+		const a = fadedOf(b);
 		const fill = (t: Token) => {
 			const c = colour(t);
 			return { ...c, alpha: c.alpha * a };
@@ -506,12 +585,69 @@
 		}
 	}
 
+	/**
+	 * Names in front, as the page elements' canvas draws them (`.front-name`): NAME_PX on screen
+	 * (13), never past `max`, on a backing in the canvas colour in an open box's top-left corner,
+	 * or a rail's, framed like a rail, on the rail's middle. Kept while shown, dropped when not.
+	 */
+	function placeFront(z: number) {
+		const P = pixi!;
+		const want = new Set(front.map((m) => m.id));
+		for (const [id, f] of frontOf)
+			if (!want.has(id)) {
+				f.c.destroy({ children: true });
+				frontOf.delete(id);
+			}
+		for (const m of front) {
+			let f = frontOf.get(m.id);
+			if (!f) {
+				const rail = m.glyph === 'api';
+				const c = new P.Container();
+				const bg = new P.Graphics();
+				const text = textOf(m.name, rail ? 'api-text' : 'system-text', true);
+				c.addChild(bg, text);
+				frontLayer!.addChild(c);
+				f = { m, c, bg, text, rail };
+				frontOf.set(m.id, f);
+			}
+			f.m = m;
+			const px = Math.min(13 / z, m.max);
+			f.text.scale.set(px / GLYPH_PX);
+			const w = f.text.width;
+			const h = 1.2 * px;
+			const padX = (f.rail ? 0.4 : 0.3) * px;
+			const at = f.rail
+				? { x: m.x - w / 2 - padX, y: m.y - h / 2, w: w + 2 * padX, h }
+				: { x: m.x + 0.3 * px, y: m.y + 0.4 * px, w: w + 2 * padX, h };
+			f.at = at;
+			f.bg.clear();
+			const back = colour(f.rail ? 'api-fill' : 'canvas-bg');
+			f.bg.roundRect(at.x, at.y, at.w, at.h, 0.3 * px).fill({
+				...back,
+				alpha: back.alpha * (f.rail ? 1 : 0.85)
+			});
+			if (f.rail) f.bg.stroke({ ...colour('system-stroke'), width: 1, pixelLine: true });
+			f.text.position.set(at.x + padX, at.y + 0.1 * px);
+			f.c.alpha = dimOf(m.b.id);
+		}
+	}
+
 	// ------------------------------------------------------------ rows
 	/** A card's rows show while it reads near the screen, or is looked at; a rail's as well, or hovered. */
 	const cardFull = (id: string) => !!view.near[id] || !!view.full[id];
 	const railListed = (id: string) => view.railHover === id || cardFull(id);
 
-	function placeRows() {
+	/**
+	 * Rows' text is drawn once it is this many px tall on screen. A box drawn in full far out
+	 * (looked at, or at the end of a lit line) keeps its rows' tints and marks, which show where
+	 * lines end, without thousands of texts smaller than a pixel.
+	 */
+	const TEXT_MIN = 2;
+	/** Whether the rows being built draw their text (see TEXT_MIN). */
+	let readable = true;
+	const stub = (x = 0) => ({ x, width: 0, alpha: 1 }) as unknown as BitmapText;
+
+	function placeRows(z: number) {
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built and used here
 		const want = new Map<string, string>();
 		for (const b of boxes)
@@ -525,7 +661,8 @@
 						view.flash?.box === b.id ? view.flash.field : '',
 						view.apiDim[b.id] ?? null,
 						view.apiBoxes[b.id] ?? null,
-						alphaOf(b)
+						fadedOf(b),
+						TABLE.row * z >= TEXT_MIN
 					])
 				);
 		for (const [id] of rails)
@@ -536,7 +673,8 @@
 					JSON.stringify([
 						apis.filter((a) => view.hotApis[a]),
 						apis.includes(view.api ?? '') ? view.api : '',
-						alphaOf(boxById.get(id)!)
+						fadedOf(boxById.get(id)!),
+						RAIL.font * rails.get(id)!.scale * z >= TEXT_MIN
 					])
 				);
 			}
@@ -548,10 +686,11 @@
 		for (const [id, sig] of want) {
 			if (rowsOf.has(id)) continue;
 			const b = boxById.get(id.startsWith('rail:') ? id.slice(5) : id)!;
+			readable = JSON.parse(sig).at(-1);
 			const c = id.startsWith('rail:') ? railRows(b) : cardRowsOf(b);
-			c.alpha = alphaOf(b);
+			c.alpha = fadedOf(b) * dimOf(b.id);
 			rowLayer!.addChild(c);
-			rowsOf.set(id, { c, sig });
+			rowsOf.set(id, { c, sig, b });
 		}
 	}
 
@@ -589,6 +728,7 @@
 		const g = new P.Graphics();
 		out.addChild(g);
 		const at = (s: string, x: number, y: number, px: number, t: Token, bold = false) => {
+			if (!readable) return stub(x);
 			const text = textOf(s, t, bold);
 			text.scale.set(px / GLYPH_PX);
 			text.position.set(x, y - (px * 1.2) / 2);
@@ -813,6 +953,7 @@
 		const y0 = b.absY + r.top;
 		const s = r.scale;
 		const at = (text: string, x: number, y: number, px: number, t: Token, bold = false) => {
+			if (!readable) return stub(x);
 			const o = textOf(text, t, bold);
 			o.scale.set((px * s) / GLYPH_PX);
 			o.position.set(x, y - (px * s * 1.2) / 2);
@@ -944,6 +1085,7 @@
 	let frame = 0;
 	let drawnZoom = NaN;
 	let linesDirty = true;
+	let dimDirty = true;
 	/** Draws the next frame. */
 	function request() {
 		if (frame || typeof requestAnimationFrame === 'undefined') return;
@@ -951,20 +1093,32 @@
 			frame = 0;
 			if (!app || !pixi) return;
 			const { x, y, zoom } = viewport.current;
-			app.stage.position.set(x, y);
-			app.stage.scale.set(zoom);
+			world!.position.set(x, y);
+			world!.scale.set(zoom);
+			if (dots) {
+				const k = (DOT_GAP * zoom) / DOT_TILE;
+				dots.width = app.screen.width;
+				dots.height = app.screen.height;
+				dots.tileScale.set(k);
+				dots.tilePosition.set(x - (DOT_GAP / 2) * zoom, y - (DOT_GAP / 2) * zoom);
+			}
 			if (zoom !== drawnZoom || linesDirty) {
 				drawLines(zoom);
 				drawnZoom = zoom;
 				linesDirty = false;
 			}
-			placeRows();
+			placeRows(zoom);
 			placeNames(zoom);
+			placeFront(zoom);
+			if (dimDirty) {
+				applyDim();
+				dimDirty = false;
+			}
 			drawOutlines(zoom);
 			drawHover();
 			// Culled against the screen in canvas px.
 			const s = app.screen;
-			pixi.Culler.shared.cull(app.stage, { x: 0, y: 0, width: s.width, height: s.height });
+			pixi.Culler.shared.cull(world!, { x: 0, y: 0, width: s.width, height: s.height });
 			app.render();
 		});
 	}
@@ -972,10 +1126,16 @@
 
 	// A new layout, theme, dimming or change marks draw the scene anew.
 	$effect(() => {
-		void [pixi, boxes, boxById, rails, model, values, dim, marks, comparing, changes.hidden];
+		void [pixi, boxes, boxById, rails, model, values, marks, comparing, changes.hidden];
 		if (!pixi || !app) return;
 		build();
 		linesDirty = true;
+		request();
+	});
+	// Looking at something tones the rest down: alphas only.
+	$effect(() => {
+		void dim;
+		dimDirty = true;
 		request();
 	});
 	$effect(() => {
@@ -988,7 +1148,7 @@
 		void viewport.current;
 		void [view.near, view.full, view.railHover, view.expanded, view.hot, view.field, view.flash];
 		void [view.apiDim, view.apiBoxes, view.hotApis, view.api, view.peerBoxes, view.selectedNodes];
-		void [pointer, namesInFront];
+		void [pointer, front];
 		request();
 	});
 
@@ -1003,6 +1163,11 @@
 		const wy = (py - y) / zoom;
 		const inside = (x0: number, y0: number, w: number, h: number) =>
 			wx >= x0 && wx <= x0 + w && wy >= y0 && wy <= y0 + h;
+		// Names drawn in front take the pointer first, an open box's as its name bar; a rail's
+		// takes none, as with page elements.
+		for (const [, f] of frontOf)
+			if (!f.rail && f.at && inside(f.at.x, f.at.y, f.at.w, f.at.h))
+				return { part: 'head', box: f.m.b.id, card: false };
 		// Rails straddle their box's right border, over it and what is beside it.
 		for (const [id, r] of rails) {
 			const b = boxById.get(id)!;

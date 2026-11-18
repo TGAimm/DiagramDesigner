@@ -11,7 +11,7 @@
 </script>
 
 <script lang="ts">
-	import { useSvelteFlow, useViewport } from '@xyflow/svelte';
+	import { getCamera } from '#lib/client/camera.svelte.ts';
 
 	/**
 	 * The whole landscape at one scale, the view as an outlined frame. Click to centre the view
@@ -29,8 +29,7 @@
 	const MAX_H = 430;
 	const HEAD = 16.5;
 
-	const flow = useSvelteFlow();
-	const viewport = useViewport();
+	const camera = getCamera();
 
 	const bounds = $derived.by(() => {
 		let x0 = Infinity,
@@ -53,7 +52,7 @@
 	const w = $derived(bounds.w * s);
 	const h = $derived(bounds.h * s);
 	const view = $derived.by(() => {
-		const { x, y, zoom } = viewport.current;
+		const { x, y, zoom } = camera.current;
 		return {
 			x: (-x / zoom - bounds.x) * s,
 			y: (-y / zoom - bounds.y) * s,
@@ -66,8 +65,8 @@
 	let grab: { dx: number; dy: number } | null = null;
 
 	function centre(mx: number, my: number, duration = 0) {
-		flow.setCenter(mx / s + bounds.x, my / s + bounds.y, {
-			zoom: viewport.current.zoom,
+		camera.setCenter(mx / s + bounds.x, my / s + bounds.y, {
+			zoom: camera.current.zoom,
 			duration
 		});
 	}
@@ -98,9 +97,9 @@
 	function wheel(svg: SVGSVGElement) {
 		const on = (e: WheelEvent) => {
 			e.preventDefault();
-			const { x, y, zoom } = viewport.current;
+			const { x, y, zoom } = camera.current;
 			const next = Math.min(maxZoom, Math.max(minZoom, zoom * 2 ** (-e.deltaY * 0.002)));
-			flow.setCenter((cw / 2 - x) / zoom, (ch / 2 - y) / zoom, { zoom: next });
+			camera.setCenter((cw / 2 - x) / zoom, (ch / 2 - y) / zoom, { zoom: next });
 		};
 		svg.addEventListener('wheel', on, { passive: false });
 		return () => svg.removeEventListener('wheel', on);
