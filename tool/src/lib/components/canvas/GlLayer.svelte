@@ -197,9 +197,16 @@
 	 * Text `px` px tall in token `t`, drawn by the browser at its size on screen (see gl/text.ts);
 	 * `lcd` when it sits on an opaque fill, where page text gets subpixel antialiasing.
 	 */
-	function textOf(s: string, t: Token, px: number, bold = false, lcd = false): GlLabel {
+	function textOf(
+		s: string,
+		t: Token,
+		px: number,
+		bold = false,
+		lcd = false,
+		glyph?: string
+	): GlLabel {
 		const c = colour(t);
-		const label = text!.label(s, { px, color: c.color, weight: bold ? 600 : 400, lcd });
+		const label = text!.label(s, { px, color: c.color, weight: bold ? 600 : 400, lcd, glyph });
 		label.alpha = c.alpha;
 		return label;
 	}
@@ -365,19 +372,35 @@
 			const name = b.logic ? 'Logic' : b.triggers ? 'Triggers' : (el?.name ?? b.id);
 			const op = marks.glyph.get(b.elementId);
 			const tok: Token = isCard(b)
-				? 'model-text'
+				? (`${kindToken(b)}-text` as Token)
 				: b.boundary
 					? 'boundary-text'
 					: isSystem(b)
 						? 'system-text'
 						: 'module-text';
 			const kind = b.group ? 'group' : isCard(b) ? 'card' : 'leaf';
+			// The mark of what it is: a system, module, class (a boundary is the model it holds),
+			// stored table, logic or triggers card, as LandscapeNode draws it.
+			const glyph = b.logic
+				? 'logic'
+				: b.triggers
+					? 'triggers'
+					: b.table
+						? b.view === 'table'
+							? 'table'
+							: 'class'
+						: b.boundary
+							? 'class'
+							: isSystem(b)
+								? 'system'
+								: 'module';
 			const text = textOf(
 				op ? `${op} ${name}` : name,
 				tok,
 				NAME_MIN,
 				true,
-				isCard(b) && fadedOf(b) === 1
+				isCard(b) && fadedOf(b) === 1,
+				glyph
 			);
 			text.alpha *= fadedOf(b);
 			text.cullable = true;
@@ -388,7 +411,7 @@
 		}
 		for (const [id] of rails) {
 			const b = boxById.get(id)!;
-			const text = textOf('APIs', 'api-text', NAME_MIN, true, fadedOf(b) === 1);
+			const text = textOf('APIs', 'api-text', NAME_MIN, true, fadedOf(b) === 1, 'api');
 			text.alpha *= fadedOf(b);
 			nameLayer.addChild(text);
 			const n: Name = { text, b, kind: 'rail', w: text.width / text.px, alpha: text.alpha };
@@ -568,7 +591,14 @@
 				const rail = m.glyph === 'api';
 				const c = new P.Container();
 				const bg = new P.Graphics();
-				const text = textOf(m.name, rail ? 'api-text' : 'system-text', NAME_PX, true);
+				const text = textOf(
+					m.name,
+					rail ? 'api-text' : 'system-text',
+					NAME_PX,
+					true,
+					false,
+					m.glyph
+				);
 				c.addChild(bg, text);
 				frontLayer!.addChild(c);
 				f = { m, c, bg, text, rail };
