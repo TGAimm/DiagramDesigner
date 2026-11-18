@@ -61,7 +61,7 @@ const EARLIER = 4;
 /** The boxes as one string, alike for boxes alike. */
 export const boxesKey = (boxes: Map<string, Rect>) => {
 	let out = '';
-	for (const [id, r] of boxes) out += `${id}:${r.x0},${r.y0},${r.x1},${r.y1};`;
+	for (const [id, r] of boxes) out += `${id}:${r.x0},${r.y0},${r.x1},${r.y1}${r.frame ? 'f' : ''};`;
 	return out;
 };
 

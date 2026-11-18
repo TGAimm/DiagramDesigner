@@ -474,12 +474,20 @@
 	let routedIn = $state(0);
 	const routeCame = () => untrack(() => routedIn++);
 
-	/** Boxes lines go round: every shown box but an open one, with its rail; open boxes' rails. */
+	/**
+	 * Boxes lines go round: every shown box but an open one, with its rail; open boxes' rails.
+	 * Open boxes are frames, which lines cross but keep off the edges of.
+	 */
 	const obstacles = $derived.by(() => {
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built and returned whole
 		const out = new Map<string, Rect>();
 		for (const b of boxes) {
-			if (open.has(b.id) || (b.parentId && !open.has(b.parentId))) continue;
+			if (b.parentId && !open.has(b.parentId)) continue;
+			if (open.has(b.id)) {
+				const [x0, y0] = [b.absX, b.absY];
+				out.set(`frame:${b.id}`, { x0, y0, x1: x0 + b.width, y1: y0 + b.height, frame: true });
+				continue;
+			}
 			const r = rails.get(b.id);
 			out.set(b.id, {
 				x0: b.absX,
