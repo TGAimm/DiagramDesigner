@@ -90,6 +90,9 @@
 		type Side
 	} from '#lib/landscape/route.ts';
 	import { RouteClient, type RouteAhead, type RoutePort } from '#lib/landscape/route-client.ts';
+	import { routeStore } from '#lib/landscape/route-store.ts';
+	import { design } from '#lib/client/store.svelte.ts';
+	import RoutingProgress from './RoutingProgress.svelte';
 	import RouteWorker from '#lib/landscape/route-worker.ts?worker';
 	import wasmUrl from 'libavoid-js/dist/libavoid.wasm?url';
 	import { untrack } from 'svelte';
@@ -148,10 +151,17 @@
 	);
 	const focusKey = $derived(playing ? `run:${playing}` : view.focused);
 	const model = $derived(focused?.model ?? changes.shown);
+	/** The whole landscape's layout, kept while it holds, so leaving a focus lays out nothing. */
+	let whole:
+		{ model: unknown; opts: unknown; laid: ReturnType<typeof layoutLandscape> } | undefined;
 	// Laid out with every flag branch and gated item in, so setting a flag moves nothing.
-	const laid = $derived(
-		layoutLandscape(focused?.model ?? changes.layoutModel, settings.layout, focused?.foldAt)
-	);
+	const laid = $derived.by(() => {
+		if (focused) return layoutLandscape(focused.model, settings.layout, focused.foldAt);
+		const [model, opts] = [changes.layoutModel, settings.layout];
+		if (whole?.model !== model || whole.opts !== opts)
+			whole = { model, opts, laid: layoutLandscape(model, opts) };
+		return whole.laid;
+	});
 	const boxes = $derived(laid.boxes);
 	// However large the landscape, it can be zoomed out until all of it is in view, with room
 	// to spare.
@@ -439,10 +449,13 @@
 	// ------------------------------------------------------------ routing
 	// In workers, one for what is wanted now and one routing ahead, so routing never holds up
 	// input or frames (see route-client.ts).
+	// The lines at rest are kept in the browser too, so opening the landscape again draws them
+	// at once.
 	const router = new RouteClient(
 		new RouteWorker() as unknown as RoutePort,
 		new RouteWorker() as unknown as RoutePort,
-		wasmUrl
+		wasmUrl,
+		typeof localStorage === 'undefined' ? undefined : routeStore(localStorage)
 	);
 	/** Routing failed: lines run straight between their ends instead. */
 	let unrouted = $state(false);
@@ -451,9 +464,10 @@
 		unrouted = true;
 	};
 	$effect(() => () => router.destroy());
-	/** Counts routes wanted now coming in, for what reads them to look again. */
+	/** Counts routes wanted now coming in, for what reads them to look again. Told from
+	 * inside the effects that want them, so not read there. */
 	let routedIn = $state(0);
-	const routeCame = () => routedIn++;
+	const routeCame = () => untrack(() => routedIn++);
 
 	/** Boxes lines go round: every shown box but an open one, with its rail; open boxes' rails. */
 	const obstacles = $derived.by(() => {
@@ -913,6 +927,48 @@
 	$effect(() => {
 		const { key, lines, groups } = restWant;
 		router.want(obstacles, key, lines, true, 'rest', routeCame, groups);
+	});
+
+	// While the lines at rest are routed, a bar says how long is left, judged by how long they
+	// took last time for this landscape and focus (see RoutingProgress).
+	const routing = $derived(!!restWant.key && !restRoutes && !unrouted);
+	/** Ms since routing the lines at rest started, while it goes on. */
+	let routingFor = $state<number>();
+	const TOOK_KEY = 'sdv-route-ms';
+	const tookKey = $derived(
+		JSON.stringify([design.landscape?.path ?? design.landscape?.name ?? '', focusKey ?? ''])
+	);
+	function took(): Record<string, number> {
+		try {
+			return JSON.parse(localStorage.getItem(TOOK_KEY) ?? '{}');
+		} catch {
+			return {};
+		}
+	}
+	let expected = $state<number>();
+	$effect(() => {
+		if (!routing) return;
+		const key = untrack(() => tookKey);
+		expected = took()[key];
+		const t0 = performance.now();
+		routingFor = 0;
+		const tick = setInterval(() => (routingFor = performance.now() - t0), 250);
+		return () => {
+			clearInterval(tick);
+			routingFor = undefined;
+			// Only a routing that came to an end is a measure, not one cut short by leaving.
+			if (untrack(() => unrouted || !restRoutes)) return;
+			const ms = performance.now() - t0;
+			// The last 50 kept, newest last.
+			const others = Object.entries(took())
+				.filter(([k]) => k !== key)
+				.slice(-49);
+			try {
+				localStorage.setItem(TOOK_KEY, JSON.stringify(Object.fromEntries([...others, [key, ms]])));
+			} catch {
+				// Not kept; the bar then has nothing to judge by next time.
+			}
+		};
 	});
 
 	/**
@@ -2903,6 +2959,9 @@
 			onchange={setFocus}
 			onleave={leaveFocus}
 		/>
+	{/if}
+	{#if routingFor !== undefined && routingFor > 400}
+		<RoutingProgress count={rest.length} elapsed={routingFor} {expected} />
 	{/if}
 	{#if search.open}
 		<SearchPalette onpick={pick} onfocus={focusHit} onclose={() => (search.open = false)} />

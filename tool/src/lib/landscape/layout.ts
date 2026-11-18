@@ -87,6 +87,12 @@ export interface LayoutOptions {
 	placement: 'NETWORK_SIMPLEX' | 'BRANDES_KOEPF' | 'LINEAR_SEGMENTS' | 'SIMPLE';
 	/** Width over height that unconnected groups are packed into. */
 	aspect: number;
+	/**
+	 * The smallest a system or module is drawn, as a share of the largest box beside it: at
+	 * least this much of the widest one's width and of the tallest one's height, so one with
+	 * little inside still shows next to large ones. 0 fits every box to what it holds.
+	 */
+	minShare: number;
 }
 
 export const DEFAULT_LAYOUT: LayoutOptions = {
@@ -94,6 +100,7 @@ export const DEFAULT_LAYOUT: LayoutOptions = {
 	direction: 'RIGHT',
 	spacing: 1,
 	placement: 'NETWORK_SIMPLEX',
+	minShare: 0.125,
 	aspect: 1.6
 };
 const PAD = 32;
@@ -911,14 +918,51 @@ export function layoutLandscape(
 		return Math.max(own, railWidth(item.el, deep, Infinity) / 2);
 	};
 
+	/**
+	 * Systems and modules among siblings `kids` grown to `opts.minShare` of the widest and of the
+	 * tallest of them, so one with little or nothing inside is not lost beside large ones. What
+	 * is inside a grown box stays centred in it (see `place`). A grown box keeps room for its
+	 * rails at full size, as a group does, since they scale with the box's height.
+	 */
+	const atLeast = (kids: Item[]) => {
+		if (!opts.minShare || kids.length < 2) return;
+		const w = opts.minShare * Math.max(...kids.map((k) => sizes.get(k.id)!.width));
+		const h = opts.minShare * Math.max(...kids.map((k) => sizes.get(k.id)!.height));
+		for (const item of kids) {
+			if (item.ref || item.view || item.card || item.boundary) continue;
+			const size = sizes.get(item.id)!;
+			if (size.width >= w && size.height >= h) continue;
+			const was = inner.get(item.id) ?? 0;
+			const right = fullRail(item);
+			sizes.set(item.id, {
+				width: Math.max(size.width - was + (inner.get(item.id) ?? 0), w),
+				height: Math.max(size.height, h),
+				right: right || undefined
+			});
+		}
+	};
+
 	// Each group's children, relative to the room inside it ('' for the top level).
 	const blocks = new Map<string, Block>();
 	/**
 	 * Siblings `parent` holds (none for the top level), `g` apart: those lines join laid out
 	 * together, the groups no line joins packed. Every group among them is laid out inside first
-	 * and then stands as one box of its size.
+	 * and then stands as one box of its size, at least `opts.minShare` of the largest.
 	 */
 	const layout = (parent: string | undefined, kids: Item[], g: number): Block => {
+		for (const item of kids) {
+			const inside = kidsBy.get(item.id)!;
+			if (!inside.length) continue;
+			const right = fullRail(item);
+			const block = layout(item.id, inside, gap);
+			blocks.set(item.id, block);
+			sizes.set(item.id, {
+				width: block.width + 2 * PAD + (inner.get(item.id) ?? 0),
+				height: block.height + HEADER + PAD,
+				right: right || undefined
+			});
+		}
+		atLeast(kids);
 		const parts = components(parent, kids);
 		return parts.length === 1
 			? run(kids, g)
@@ -929,18 +973,6 @@ export function layoutLandscape(
 	};
 	/** Siblings `top`, `g` apart, as one ELK graph. */
 	const run = (top: Item[], g: number): Block => {
-		for (const item of top) {
-			const kids = kidsBy.get(item.id)!;
-			if (!kids.length) continue;
-			const right = fullRail(item);
-			const block = layout(item.id, kids, gap);
-			blocks.set(item.id, block);
-			sizes.set(item.id, {
-				width: block.width + 2 * PAD + (inner.get(item.id) ?? 0),
-				height: block.height + HEADER + PAD,
-				right: right || undefined
-			});
-		}
 		const ids = new Set(top.map((i) => i.id));
 		const children = top.map((item) => {
 			const size = sizes.get(item.id)!;

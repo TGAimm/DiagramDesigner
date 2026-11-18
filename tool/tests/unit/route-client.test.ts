@@ -13,6 +13,7 @@ import {
 	type RouteLine
 } from '../../src/lib/landscape/route';
 import { RouteClient, type RoutePort } from '../../src/lib/landscape/route-client';
+import { routeStore } from '../../src/lib/landscape/route-store';
 import { routeService, type ToRouter } from '../../src/lib/landscape/route-service';
 import { loadDesign } from '../../src/lib/model/loader';
 
@@ -182,5 +183,111 @@ describe('RouteClient', () => {
 		expect(client.get(moved, key)).toEqual(routeLines(moved, ls));
 		expect(client.get(moved, '')).toEqual(new Map());
 		client.destroy();
+	});
+
+	it('finds what was routed among boxes again on going back to them, routing nothing', async () => {
+		const now = new InProcess();
+		const client = new RouteClient(now, new InProcess());
+		const ls = [line('x', 'a', 'b')];
+		const [rest, lit] = [routeKey(ls, true), routeKey(ls)];
+		const done = vi.fn();
+		client.want(boxes, rest, ls, true, 'rest', done);
+		client.want(boxes, lit, ls, false, 'lit', done);
+		await vi.waitFor(() => expect(done).toHaveBeenCalledTimes(2));
+		// A focus: other boxes, its lines routed among them.
+		const focus = new Map([
+			['a', boxes.get('a')!],
+			['b', rect(200, 0, 100, 60)]
+		]);
+		client.want(focus, rest, ls, true, 'rest', done);
+		await vi.waitFor(() => expect(done).toHaveBeenCalledTimes(3));
+		expect(now.routed()).toHaveLength(3);
+		// Back to the whole landscape, rebuilt alike: both kept, told at once.
+		const back = new Map(boxes);
+		client.want(back, rest, ls, true, 'rest', done);
+		client.want(back, lit, ls, false, 'lit', done);
+		expect(done).toHaveBeenCalledTimes(5);
+		expect(client.get(back, rest)).toEqual(routeLines(boxes, ls, true));
+		expect(client.get(back, lit)).toEqual(routeLines(boxes, ls));
+		expect(now.routed()).toHaveLength(3);
+		client.destroy();
+	});
+
+	it('keeps lines routed for boxes left meanwhile, for going back', async () => {
+		const now = new InProcess();
+		const client = new RouteClient(now, new InProcess());
+		const ls = [line('x', 'a', 'b')];
+		const key = routeKey(ls, true);
+		const done = vi.fn();
+		client.want(boxes, key, ls, true, 'rest', done);
+		// Left before they came, and back.
+		client.want(new Map([['a', boxes.get('a')!]]), '', [], true, 'rest', done);
+		client.want(boxes, key, ls, true, 'rest', done);
+		await vi.waitFor(() => expect(client.get(boxes, key)).toBeDefined());
+		expect(now.routed()).toHaveLength(1);
+		client.destroy();
+	});
+
+	it('takes lines at rest from the store, and keeps them there once routed', async () => {
+		const kept = new Map<string, Map<string, { x: number; y: number }[]>>();
+		const store = { load: (k: string) => kept.get(k), save: vi.fn((k, r) => kept.set(k, r)) };
+		const ls = [line('x', 'a', 'b')];
+		const key = routeKey(ls, true);
+		const done = vi.fn();
+		const first = new RouteClient(new InProcess(), new InProcess(), undefined, store);
+		first.want(boxes, key, ls, true, 'rest', done);
+		await vi.waitFor(() => expect(store.save).toHaveBeenCalledOnce());
+		first.destroy();
+
+		const now = new InProcess();
+		const again = new RouteClient(now, new InProcess(), undefined, store);
+		again.want(new Map(boxes), key, ls, true, 'rest', done);
+		expect(done).toHaveBeenCalledTimes(2);
+		expect(again.get(boxes, key)).toEqual(routeLines(boxes, ls, true));
+		expect(now.routed()).toEqual([]);
+		// Not among other boxes.
+		again.want(new Map([...boxes, ['c', rect(0, 400, 100, 60)]]), key, ls, true, 'rest', done);
+		expect(now.routed()).toHaveLength(1);
+		again.destroy();
+	});
+});
+
+describe('routeStore', () => {
+	const memory = (limit = Infinity) => {
+		const m = new Map<string, string>();
+		return {
+			m,
+			getItem: (k: string) => m.get(k) ?? null,
+			setItem: (k: string, v: string) => {
+				const size = [...m].reduce((n, [key, val]) => n + (key === k ? 0 : val.length), 0);
+				if (size + v.length > limit) throw new Error('quota');
+				m.set(k, v);
+			},
+			removeItem: (k: string) => void m.delete(k)
+		};
+	};
+	const routes = (n: number) => new Map([[`l${n}`, [{ x: n, y: 0 }]]]);
+
+	it('gives back what it kept, the last few only', () => {
+		const storage = memory();
+		const store = routeStore(storage, 2);
+		for (const n of [1, 2, 3]) store.save(`k${n}`, routes(n));
+		expect(store.load('k1')).toBeUndefined();
+		expect(store.load('k2')).toEqual(routes(2));
+		expect(store.load('k3')).toEqual(routes(3));
+		expect(storage.m.size).toBe(3);
+	});
+
+	it('drops the oldest to make room when the storage is full', () => {
+		// Room for two sets of 50 corners, not three.
+		const storage = memory(2000);
+		const store = routeStore(storage, 8);
+		const long = (n: number) =>
+			new Map([[`l${n}`, Array.from({ length: 50 }, (_, i) => ({ x: i, y: n }))]]);
+		for (const n of [1, 2, 3, 4]) store.save(`k${n}`, long(n));
+		expect(store.load('k4')).toEqual(long(4));
+		expect(store.load('k3')).toEqual(long(3));
+		expect(store.load('k1')).toBeUndefined();
+		expect(store.load('k2')).toBeUndefined();
 	});
 });
