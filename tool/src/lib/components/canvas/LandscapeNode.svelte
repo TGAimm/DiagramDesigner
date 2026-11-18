@@ -1,7 +1,7 @@
 <script lang="ts" module>
 	import type { ModelField, ModelIndex } from '#lib/model/schema.ts';
 	import type { LogicRow, ModelView, TableColumn } from '#lib/landscape/layout.ts';
-	import type { ViewState } from '#lib/client/view-state.svelte.ts';
+	import { HOVER_DELAY, type ViewState } from '#lib/client/view-state.svelte.ts';
 
 	export interface LandscapeNodeData extends Record<string, unknown> {
 		name: string;
@@ -131,6 +131,9 @@
 	// Otherwise a card is its frame and name, a rail its name. Hovered, a rail lists its
 	// endpoints at any zoom, as a hovered card draws its rows.
 	const full = $derived(!!d.peek || !!d.state.near[id] || !!d.state.full[id]);
+	// A rail lists them once the pointer rests on it (see HOVER_DELAY); leaving is instant.
+	let railTimer: ReturnType<typeof setTimeout> | undefined;
+	$effect(() => () => clearTimeout(railTimer));
 	const railListed = $derived(
 		!!d.rail && (d.state.railHover === id || !!d.state.near[id] || !!d.state.full[id])
 	);
@@ -573,8 +576,12 @@
 			style:width="{r.width}px"
 			style:height="{r.height}px"
 			role="presentation"
-			onmouseenter={() => (d.state.railHover = id)}
+			onmouseenter={() => {
+				clearTimeout(railTimer);
+				railTimer = setTimeout(() => (d.state.railHover = id), HOVER_DELAY);
+			}}
 			onmouseleave={() => {
+				clearTimeout(railTimer);
 				if (d.state.railHover === id) d.state.railHover = null;
 			}}
 		>
