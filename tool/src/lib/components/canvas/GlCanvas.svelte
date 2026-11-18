@@ -29,6 +29,7 @@
 	import { railsOf, restGroups } from '#lib/landscape/scene.ts';
 	import { tokenValues, type Token } from '#lib/theme/tokens.ts';
 	import wasmUrl from 'libavoid-js/dist/libavoid.wasm?url';
+	import { glText } from './gl/font.ts';
 
 	/**
 	 * The landscape drawn on one WebGL canvas (PixiJS), the Rendering technique setting's
@@ -190,15 +191,7 @@
 					: 'kind-class';
 
 	function textOf(s: string, colour: { color: number }, bold = false) {
-		const t = new pixi!.BitmapText({
-			text: s,
-			style: {
-				fontFamily: getComputedStyle(document.body).fontFamily,
-				fontSize: GLYPH_PX,
-				fill: 0xffffff,
-				fontWeight: bold ? 'bold' : 'normal'
-			}
-		});
+		const t = glText(pixi!, s, { bold });
 		t.tint = colour.color;
 		return t;
 	}
