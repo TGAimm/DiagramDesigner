@@ -11,6 +11,11 @@ export interface Rect {
 	y0: number;
 	x1: number;
 	y1: number;
+	/**
+	 * An open box, drawn round the boxes inside it: lines cross it freely, but keep `buffer` off
+	 * its edges instead of running along them, hidden by its border (see `clearFrames`).
+	 */
+	frame?: boolean;
 }
 
 export type Side = 'l' | 'r';
@@ -101,7 +106,7 @@ export function boxesNear(
 
 /**
  * Each line's corners, start and end included, by line id. Lines round `boxes` by id (those
- * near them: see `boxesNear`). With `shareEnds`, lines leaving one end run as one line from
+ * near them: see `boxesNear`), and keep off the edges of those that are frames. With `shareEnds`, lines leaving one end run as one line from
  * it, else they spread apart there too.
  */
 export function routeLines(
@@ -126,19 +131,26 @@ export function routeLines(
 	const temp = <T>(o: T) => (temps.push(o), o);
 	const pt = (x: number, y: number) => temp(new A.Point(x, y));
 
+	const solid = new Map<string, Rect>();
+	const frames: Rect[] = [];
+	for (const [id, r] of boxes)
+		if (r.frame) frames.push(r);
+		else solid.set(id, r);
+	const near = boxesNear(solid, lines);
+
 	const shapes = new Map<string, unknown>();
 	const shape = (id: string, r: Rect) =>
 		shapes.get(id) ??
 		shapes
 			.set(id, new A.ShapeRef(router, temp(new A.Rectangle(pt(r.x0, r.y0), pt(r.x1, r.y1)))))
 			.get(id);
-	for (const [id, r] of boxesNear(boxes, lines)) shape(id, r);
+	for (const [id, r] of near) shape(id, r);
 	// Pins on a box at one height and sides, shared by every line ending there.
 	const pins = new Map<string, number>();
 	const end = (e: RouteEnd) => {
 		if (e.point) return temp(new A.ConnEnd(pt(e.x0, e.y)));
 		let on = e.on;
-		let box = on === undefined ? undefined : boxes.get(on);
+		let box = on === undefined ? undefined : solid.get(on);
 		let sides = e.sides;
 		if (!box) {
 			// The binding has no end that is a point with a direction, so a free end is a pin
@@ -193,6 +205,135 @@ export function routeLines(
 	// The router owns its shapes, pins and lines.
 	A.destroy(router);
 	for (const o of temps) A.destroy(o);
+	return frames.length ? clearFrames(out, [...near.values()], frames) : out;
+}
+
+/** A straight piece of a route: across `axis` at `at`, from `lo` to `hi` along it. */
+interface Span {
+	/** 'x' for an upright piece, at an x; 'y' for a level one, at a y. */
+	axis: 'x' | 'y';
+	at: number;
+	lo: number;
+	hi: number;
+}
+
+interface Piece extends Span {
+	id: string;
+	/** It runs from corner `i` to corner `i + 1`. */
+	i: number;
+	/** Both its ends are bends, so it can move across itself; a piece ending a route cannot. */
+	free: boolean;
+}
+
+/**
+ * The routes with every piece running along a frame's edge, nearer than `gap`, moved off it,
+ * with the pieces of other lines running beside it, so no border hides a line. libavoid keeps
+ * lines `gap` off the boxes it routes round, but lines must cross frames, so it is not told of
+ * them, and it runs a line down the middle between two boxes, which can be right on the border
+ * of a frame round one of them. A piece moves to whichever side of the edge is nearer and
+ * leaves it clear of boxes, frames' edges and other lines; with neither, or ending a route, it
+ * stays.
+ */
+export function clearFrames(
+	routes: Map<string, Point[]>,
+	boxes: Rect[],
+	frames: Rect[],
+	gap: number = ROUTE.buffer
+): Map<string, Point[]> {
+	const EPS = 0.5;
+	const out = new Map([...routes].map(([id, pts]) => [id, pts.map((p) => ({ ...p }))]));
+	const edges: Span[] = frames.flatMap((f): Span[] => [
+		{ axis: 'x', at: f.x0, lo: f.y0, hi: f.y1 },
+		{ axis: 'x', at: f.x1, lo: f.y0, hi: f.y1 },
+		{ axis: 'y', at: f.y0, lo: f.x0, hi: f.x1 },
+		{ axis: 'y', at: f.y1, lo: f.x0, hi: f.x1 }
+	]);
+	const along = (a: 'x' | 'y') => (a === 'x' ? 'y' : 'x');
+	const overlap = (a: Span, b: Span) => Math.min(a.hi, b.hi) - Math.max(a.lo, b.lo) > EPS;
+	const pieces = () => {
+		const all: Piece[] = [];
+		for (const [id, pts] of out)
+			for (let i = 0; i + 1 < pts.length; i++) {
+				const [p, q] = [pts[i], pts[i + 1]];
+				const axis = Math.abs(p.x - q.x) < EPS ? 'x' : Math.abs(p.y - q.y) < EPS ? 'y' : undefined;
+				if (!axis) continue;
+				const [a, b] = [p[along(axis)], q[along(axis)]];
+				const free = i > 0 && i + 2 < pts.length;
+				all.push({ id, i, axis, at: p[axis], lo: Math.min(a, b), hi: Math.max(a, b), free });
+			}
+		return all;
+	};
+	/** Whether a piece comes nearer than `g` to a box. */
+	const nears = (s: Span, r: Rect, g: number) =>
+		s.axis === 'x'
+			? r.x0 - g < s.at && s.at < r.x1 + g && r.y0 - g < s.hi && s.lo < r.y1 + g
+			: r.y0 - g < s.at && s.at < r.y1 + g && r.x0 - g < s.hi && s.lo < r.x1 + g;
+	const onEdge = (s: Span) =>
+		edges.find((e) => e.axis === s.axis && Math.abs(e.at - s.at) < gap - EPS && overlap(e, s));
+
+	/** The routes `bundle` is part of with it moved `d` across itself, if that leaves all clear. */
+	const moved = (bundle: Piece[], all: Piece[], d: number) => {
+		const next = new Map<string, Point[]>();
+		for (const s of bundle) {
+			const pts = next.get(s.id) ?? out.get(s.id)!.map((p) => ({ ...p }));
+			next.set(s.id, pts);
+			pts[s.i][s.axis] += d;
+			pts[s.i + 1][s.axis] += d;
+		}
+		for (const s of bundle) {
+			const to = { ...s, at: s.at + d };
+			if (onEdge(to) || boxes.some((r) => nears(to, r, gap - EPS))) return undefined;
+			for (const o of all)
+				if (!bundle.includes(o) && o.axis === s.axis && overlap(o, to))
+					if (Math.abs(o.at - to.at) < ROUTE.spread - EPS) return undefined;
+			// The pieces either side only grow or shrink: each keeps its way and crosses no box.
+			const [was, pts] = [out.get(s.id)!, next.get(s.id)!];
+			for (const [j, k] of [
+				[s.i - 1, s.i],
+				[s.i + 1, s.i + 2]
+			]) {
+				const [before, after] = [was[k][s.axis] - was[j][s.axis], pts[k][s.axis] - pts[j][s.axis]];
+				if (Math.sign(before) !== Math.sign(after) || Math.abs(after) < EPS) return undefined;
+				const [a, b] = [pts[j][s.axis], pts[k][s.axis]];
+				const side: Span = {
+					axis: along(s.axis),
+					at: pts[j][along(s.axis)],
+					lo: Math.min(a, b),
+					hi: Math.max(a, b)
+				};
+				if (boxes.some((r) => nears(side, r, 0))) return undefined;
+			}
+		}
+		return next;
+	};
+
+	const stuck = new Set<string>();
+	for (let tries = 1000; tries > 0; tries--) {
+		const all = pieces();
+		const s = all.find((p) => !stuck.has(`${p.id}|${p.i}`) && onEdge(p));
+		if (!s) break;
+		const e = onEdge(s)!;
+		// The pieces of lines running beside it, `spread` apart, move with it.
+		const bundle = [s];
+		for (let k = 0; k < bundle.length; k++)
+			for (const o of all)
+				if (
+					!bundle.includes(o) &&
+					o.axis === s.axis &&
+					Math.abs(o.at - bundle[k].at) <= ROUTE.spread + EPS &&
+					overlap(o, bundle[k])
+				)
+					bundle.push(o);
+		const ats = bundle.map((p) => p.at);
+		const ds = [e.at + gap - Math.min(...ats), e.at - gap - Math.max(...ats)].sort(
+			(a, b) => Math.abs(a) - Math.abs(b)
+		);
+		const next = bundle.every((p) => p.free)
+			? ds.map((d) => moved(bundle, all, d)).find(Boolean)
+			: undefined;
+		if (next) for (const [id, pts] of next) out.set(id, pts);
+		else for (const p of bundle) stuck.add(`${p.id}|${p.i}`);
+	}
 	return out;
 }
 

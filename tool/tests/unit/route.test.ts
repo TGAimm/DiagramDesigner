@@ -117,6 +117,67 @@ describe('routeLines', () => {
 	});
 });
 
+describe('frames', () => {
+	// Two open modules side by side, 40 apart, cards 32 inside. The line from `a` down to `b`
+	// runs between `a2` and `b`, whose middle is right on module `m`'s right edge.
+	const cards = new Map([
+		['a', rect(32, 40, 68, 60)],
+		['a2', rect(32, 300, 196, 60)],
+		['c', rect(372, 40, 236, 60)],
+		['b', rect(372, 300, 236, 60)]
+	]);
+	const frames = new Map([
+		['frame:m', { ...rect(0, 0, 300, 400), frame: true }],
+		['frame:n', { ...rect(340, 0, 300, 400), frame: true }]
+	]);
+	const card = (on: string, y: number) => {
+		const r = cards.get(on)!;
+		return { on, x0: r.x0, x1: r.x1, y, sides: ['l', 'r'] as const };
+	};
+	const lines = [{ id: 'x', s: card('a', 70), t: card('b', 330) }];
+	/** How near each upright piece comes to an upright edge of a frame. */
+	const nearest = (pts: Point[]) =>
+		Math.min(
+			...pts.slice(1).flatMap((p, i) => {
+				const q = pts[i];
+				if (p.x !== q.x) return [];
+				return [...frames.values()].flatMap((f) => [Math.abs(p.x - f.x0), Math.abs(p.x - f.x1)]);
+			})
+		);
+
+	it('runs a line right along a frame edge when not told of the frames', () => {
+		expect(nearest(routeLines(cards, lines).get('x')!)).toBe(0);
+	});
+
+	it('keeps a line crossing frames off their edges, and clear of the boxes', () => {
+		const pts = routeLines(new Map([...cards, ...frames]), lines).get('x')!;
+		expect(nearest(pts)).toBeGreaterThanOrEqual(ROUTE.buffer);
+		expect(pts[0]).toEqual({ x: 100, y: 70 });
+		expect(pts.at(-1)).toEqual({ x: 372, y: 330 });
+		for (let i = 1; i < pts.length; i++) {
+			expect(pts[i].x === pts[i - 1].x || pts[i].y === pts[i - 1].y).toBe(true);
+			for (const r of cards.values()) expect(hits(pts[i - 1], pts[i], r)).toBe(false);
+		}
+	});
+
+	it('moves the lines running beside it with it, keeping them apart', () => {
+		const two = [
+			{ id: 'x', s: card('a', 60), t: card('b', 320) },
+			{ id: 'y', s: card('a', 80), t: card('b', 340) }
+		];
+		const r = routeLines(new Map([...cards, ...frames]), two);
+		const [x, y] = [r.get('x')!, r.get('y')!];
+		expect(Math.min(nearest(x), nearest(y))).toBeGreaterThanOrEqual(ROUTE.buffer);
+		const upright = (pts: Point[]) => pts.find((p, i) => i && p.x === pts[i - 1].x)!.x;
+		expect(Math.abs(upright(x) - upright(y))).toBeGreaterThanOrEqual(ROUTE.spread);
+	});
+
+	it('leaves lines that keep off the edges as they are', () => {
+		const wide = new Map([['frame:m', { ...rect(-100, -100, 1000, 1000), frame: true }]]);
+		expect(routeLines(new Map([...cards, ...wide]), lines)).toEqual(routeLines(cards, lines));
+	});
+});
+
 describe('routeGroups', () => {
 	const at = (on: string, r: Rect) => ({
 		on,
