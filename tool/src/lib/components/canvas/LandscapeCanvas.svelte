@@ -33,7 +33,12 @@
 	import Minimap from './Minimap.svelte';
 	import { settings } from '#lib/client/settings.svelte.ts';
 	import { theme } from '#lib/client/theme.svelte.ts';
-	import type { FieldRef, Hot, ViewState } from '#lib/client/view-state.svelte.ts';
+	import {
+		HOVER_DELAY,
+		type FieldRef,
+		type Hot,
+		type ViewState
+	} from '#lib/client/view-state.svelte.ts';
 	import {
 		cardRows,
 		fieldRowY,
@@ -619,17 +624,27 @@
 
 	// ------------------------------------------------------------ hover
 	// What the pointer is over, as enter and leave events tell: a row or api, and a card or name
-	// bar. The view state gets it once a frame, so leaving one row for the next is one change,
+	// bar. The view state gets it once the pointer has rested on it for HOVER_DELAY, so sweeping
+	// across the canvas lights nothing on the way, and leaving one row for the next is one change,
 	// never a moment on the card between them that lights (and routes) all of the card's lines.
-	// Nor while the view pans or zooms, when everything slides under the pointer: then it gets
-	// what the pointer is over once the view rests.
+	// Going off everything shows at once, the next frame. Nor while the view pans or zooms, when
+	// everything slides under the pointer: then it gets what the pointer is over once the view
+	// rests.
 	let overRow: FieldRef | null = null;
 	let overBox: string | null = null;
 	let moving = false;
 	let hoverFrame = 0;
+	let hoverTimer: ReturnType<typeof setTimeout> | undefined;
 	function hoverLater() {
-		hoverFrame ||= requestAnimationFrame(hoverNow);
+		cancelAnimationFrame(hoverFrame);
+		clearTimeout(hoverTimer);
+		if (overRow || overBox) hoverTimer = setTimeout(hoverNow, HOVER_DELAY);
+		else hoverFrame = requestAnimationFrame(hoverNow);
 	}
+	$effect(() => () => {
+		cancelAnimationFrame(hoverFrame);
+		clearTimeout(hoverTimer);
+	});
 	function hoverNow() {
 		hoverFrame = 0;
 		if (moving) return;
