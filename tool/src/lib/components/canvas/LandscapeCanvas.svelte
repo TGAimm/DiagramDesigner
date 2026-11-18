@@ -94,7 +94,12 @@
 		type RouteLine,
 		type Side
 	} from '#lib/landscape/route.ts';
-	import { RouteClient, type RouteAhead, type RoutePort } from '#lib/landscape/route-client.ts';
+	import {
+		keyedGroup,
+		RouteClient,
+		type RouteAhead,
+		type RoutePort
+	} from '#lib/landscape/route-client.ts';
 	import { routeStore } from '#lib/landscape/route-store.ts';
 	import { design } from '#lib/client/store.svelte.ts';
 	import RoutingProgress from './RoutingProgress.svelte';
@@ -245,7 +250,10 @@
 			document.adoptedStyleSheets = document.adoptedStyleSheets.filter((s) => s !== zoomSheet);
 		};
 	});
-	$effect(() => zoomRule.style.setProperty('--z', String(viewport.current.zoom)));
+	// The zoom alone, so what reads it is left alone while the view pans. Each write to the rule
+	// restyles every `screen-sized` element, so it is written only when the zoom changes.
+	const zoom = $derived(viewport.current.zoom);
+	$effect(() => zoomRule.style.setProperty('--z', String(zoom)));
 	/** The rail on box `id` lists its endpoints: they read near the screen, or are looked at. */
 	const listed = (id: string) => !!view.near[id] || !!view.full[id];
 
@@ -283,7 +291,7 @@
 	 * 1.6em tall with its margin. `max` is the cap, in canvas px.
 	 */
 	const NAME_PX = 13;
-	const namesInFront = $derived(viewport.current.zoom < NAME_PX / (HEADER / 2));
+	const namesInFront = $derived(zoom < NAME_PX / (HEADER / 2));
 	const fitIn = (b: LandscapeBox, em: number) => Math.min(b.width / em, b.height / 2 / 1.6);
 	const frontNames = $derived([
 		...boxes.flatMap((b) => {
@@ -320,7 +328,7 @@
 	 */
 	const namesShown = $derived.by(() => {
 		if (!namesInFront) return [];
-		const z = viewport.current.zoom;
+		const z = zoom;
 		const placed: { x: number; y: number; w: number; h: number }[] = [];
 		return [...frontNames]
 			.sort((a, b) => b.b.width * b.b.height - a.b.width * a.b.height)
@@ -460,7 +468,8 @@
 		new RouteWorker() as unknown as RoutePort,
 		new RouteWorker() as unknown as RoutePort,
 		wasmUrl,
-		typeof localStorage === 'undefined' ? undefined : routeStore(localStorage)
+		// Lines at rest are kept by group, a few landscapes' worth.
+		typeof localStorage === 'undefined' ? undefined : routeStore(localStorage, 512)
 	);
 	/** Routing failed: lines run straight between their ends instead. */
 	let unrouted = $state(false);
@@ -650,6 +659,7 @@
 	let overRow: FieldRef | null = null;
 	let overBox: string | null = null;
 	let moving = false;
+	let canvasEl: HTMLDivElement | undefined;
 	let hoverFrame = 0;
 	let hoverTimer: ReturnType<typeof setTimeout> | undefined;
 	function hoverLater() {
@@ -949,22 +959,21 @@
 				t: { on: l.target, x0: b.x0, x1: b.x1, y: b.y, sides: [sb] }
 			});
 		}
-		const lines = [...groups.values()].flatMap((g) => g.lines);
 		// Lines at rest leaving a box together share one exit (see the design's Routing rule).
-		return { lines, groups: [...groups.values()], key: routeKey(lines, true) };
+		// Each group is kept by its own boxes and lines, so a change routes only the groups it
+		// touched.
+		return [...groups.values()].map((g) => keyedGroup(g, true));
 	});
+	/** The lines at rest routed so far, drawn as their groups come in. */
 	const restRoutes = $derived.by(() => {
 		void routedIn;
-		return router.get(obstacles, restWant.key);
+		return router.groupRoutes(restWant);
 	});
-	$effect(() => {
-		const { key, lines, groups } = restWant;
-		router.want(obstacles, key, lines, true, 'rest', routeCame, groups);
-	});
+	$effect(() => router.wantGroups(restWant, true, routeCame));
 
 	// While the lines at rest are routed, a bar says how long is left, judged by how long they
 	// took last time for this landscape and focus (see RoutingProgress).
-	const routing = $derived(!!restWant.key && !restRoutes && !unrouted);
+	const routing = $derived(!restRoutes.done && !unrouted);
 	/** Ms since routing the lines at rest started, while it goes on. */
 	let routingFor = $state<number>();
 	const TOOK_KEY = 'sdv-route-ms';
@@ -990,7 +999,7 @@
 			clearInterval(tick);
 			routingFor = undefined;
 			// Only a routing that came to an end is a measure, not one cut short by leaving.
-			if (untrack(() => unrouted || !restRoutes)) return;
+			if (untrack(() => unrouted || !restRoutes.done)) return;
 			const ms = performance.now() - t0;
 			// The last 50 kept, newest last.
 			const others = Object.entries(took())
@@ -1022,7 +1031,7 @@
 		const a = shared ? cs[cs.indexOf(shared) - 1] : cs.at(-1);
 		const b = shared ? ct[ct.indexOf(shared) - 1] : ct.at(-1);
 		if (!a || !b || a === b) return undefined;
-		const pts = restRoutes?.get(`${a.id}>${b.id}`);
+		const pts = restRoutes.routes.get(`${a.id}>${b.id}`);
 		if (!pts || pts.length < 2) return undefined;
 		const n = pts.length;
 		const mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
@@ -1128,7 +1137,7 @@
 			// them, over the box they share.
 			zIndex: -1,
 			data: {
-				points: restRoutes?.get(l.id),
+				points: restRoutes.routes.get(l.id),
 				halo: true,
 				head: 'arrow',
 				color: 'var(--sdv-edge-rest)',
@@ -1161,7 +1170,10 @@
 
 	$effect(() => {
 		edges = [
-			...(restRoutes || unrouted ? rest.map((l) => restEdge(l, !!focus)) : []),
+			// Each line at rest once routed, never first along a makeshift path.
+			...rest
+				.filter((l) => unrouted || restRoutes.routes.has(l.id))
+				.map((l) => restEdge(l, !!focus)),
 			...(litRoutes || unrouted ? lit.map(litEdge) : [])
 		];
 	});
@@ -2316,7 +2328,13 @@
 	}}
 />
 
-<div class="canvas" bind:clientWidth={cw} bind:clientHeight={ch} data-testid="canvas">
+<div
+	class="canvas"
+	bind:this={canvasEl}
+	bind:clientWidth={cw}
+	bind:clientHeight={ch}
+	data-testid="canvas"
+>
 	<SvelteFlow
 		bind:nodes
 		{edges}
@@ -2331,8 +2349,17 @@
 		elementsSelectable={false}
 		zoomOnDoubleClick={false}
 		onmovestart={() => (moving = true)}
+		onmove={(e) => {
+			// While the view is dragged, nothing on it takes the pointer: each step would hit-test
+			// and restyle (`:hover`) the boxes sliding under it. Set at the first step, not the
+			// start, which a click on a row or box also makes. Not for the wheel: its gestures end
+			// at each pause, and each switch restyles the whole canvas.
+			if (!e || e instanceof WheelEvent || canvasEl?.classList.contains('moving')) return;
+			canvasEl?.classList.add('moving');
+		}}
 		onmoveend={() => {
 			moving = false;
+			canvasEl?.classList.remove('moving');
 			hoverLater();
 			router.aheadFrom(viewCentre());
 		}}
@@ -3011,6 +3038,11 @@
 		flex: 1;
 		min-width: 0;
 		min-height: 0;
+	}
+	/* Nodes and edges set their own pointer-events, so every one is overruled. */
+	.canvas.moving :global(.svelte-flow__viewport),
+	.canvas.moving :global(.svelte-flow__viewport *) {
+		pointer-events: none !important;
 	}
 	/* Drawn over the module's children, as its in-box name is (see LandscapeNode's `.header`),
 	   on a backing so it reads over them. */

@@ -12,7 +12,7 @@ import {
 	type RouteEnd,
 	type RouteLine
 } from '../../src/lib/landscape/route';
-import { RouteClient, type RoutePort } from '../../src/lib/landscape/route-client';
+import { keyedGroup, RouteClient, type RoutePort } from '../../src/lib/landscape/route-client';
 import { routeStore } from '../../src/lib/landscape/route-store';
 import { routeService, type ToRouter } from '../../src/lib/landscape/route-service';
 import { loadDesign } from '../../src/lib/model/loader';
@@ -226,6 +226,121 @@ describe('RouteClient', () => {
 		await vi.waitFor(() => expect(client.get(boxes, key)).toBeDefined());
 		expect(now.routed()).toHaveLength(1);
 		client.destroy();
+	});
+
+	describe('lines at rest by group', () => {
+		const far = new Map([
+			['p', rect(1000, 0, 100, 60)],
+			['q', rect(1300, 0, 100, 60)]
+		]);
+		const farLine = (id: string, y = 30): RouteLine => ({
+			id,
+			s: on('p', far.get('p')!, y),
+			t: on('q', far.get('q')!, y)
+		});
+		const small = keyedGroup({ boxes: far, lines: [farLine('pq')] }, true);
+		const big = keyedGroup(
+			{ boxes, lines: [line('ab', 'a', 'b'), line('ac', 'a', 'c'), line('bc', 'b', 'c')] },
+			true
+		);
+
+		it('routes each group among its own boxes, the smaller first, on both workers', async () => {
+			const [now, later] = [new InProcess(), new InProcess()];
+			const client = new RouteClient(now, later);
+			const done = vi.fn();
+			client.wantGroups([big, small], true, done);
+			expect(client.groupRoutes([big, small]).done).toBe(false);
+			await vi.waitFor(() => expect(done).toHaveBeenCalledTimes(2));
+			expect(now.routed()).toEqual([routeKey(small.lines, true)]);
+			expect(later.routed()).toEqual([routeKey(big.lines, true)]);
+			const { routes, done: all } = client.groupRoutes([big, small]);
+			expect(all).toBe(true);
+			expect(routes).toEqual(
+				new Map([...routeLines(boxes, big.lines, true), ...routeLines(far, small.lines, true)])
+			);
+			client.destroy();
+		});
+
+		it('routes a large group only on the worker routing ahead', async () => {
+			const [now, later] = [new InProcess(), new InProcess()];
+			const client = new RouteClient(now, later);
+			const many = keyedGroup(
+				{
+					boxes,
+					lines: Array.from({ length: 65 }, (_, i) => line(`l${i}`, 'a', 'b', 5 + i * 0.75))
+				},
+				true
+			);
+			client.wantGroups([many], true, vi.fn());
+			client.wantGroups([many, small], true, vi.fn());
+			await vi.waitFor(() => expect(client.groupRoutes([many, small]).done).toBe(true));
+			expect(now.routed()).toEqual([routeKey(small.lines, true)]);
+			expect(later.routed()).toEqual([routeKey(many.lines, true)]);
+			client.destroy();
+		});
+
+		it('routes again only the groups that changed, whatever else did', async () => {
+			const [now, later] = [new InProcess(), new InProcess()];
+			const client = new RouteClient(now, later);
+			const done = vi.fn();
+			client.wantGroups([big, small], true, done);
+			await vi.waitFor(() => expect(client.groupRoutes([big, small]).done).toBe(true));
+			const changed = keyedGroup({ boxes: far, lines: [farLine('pq', 20)] }, true);
+			// Another layout meanwhile: groups do not belong to one.
+			client.want(new Map([['a', boxes.get('a')!]]), '', [], true, 'rest', done);
+			client.wantGroups([big, changed], true, done);
+			expect(client.groupRoutes([big, changed])).toMatchObject({ done: false });
+			expect(client.groupRoutes([big, changed]).routes.has('ab')).toBe(true);
+			await vi.waitFor(() => expect(client.groupRoutes([big, changed]).done).toBe(true));
+			expect([...now.routed(), ...later.routed()]).toHaveLength(3);
+			client.destroy();
+		});
+
+		it('finds a group moved elsewhere whole, its lines moved with it', async () => {
+			const [now, later] = [new InProcess(), new InProcess()];
+			const client = new RouteClient(now, later);
+			client.wantGroups([big], true, vi.fn());
+			await vi.waitFor(() => expect(client.groupRoutes([big]).done).toBe(true));
+			const by = (r: Rect): Rect => ({
+				x0: r.x0 + 500,
+				y0: r.y0 - 70,
+				x1: r.x1 + 500,
+				y1: r.y1 - 70
+			});
+			const shifted = new Map([...boxes].map(([id, r]) => [id, by(r)]));
+			const end = (e: RouteEnd): RouteEnd => ({
+				...e,
+				x0: e.x0 + 500,
+				x1: e.x1 + 500,
+				y: e.y - 70
+			});
+			const lines = big.lines.map((l) => ({ ...l, s: end(l.s), t: end(l.t) }));
+			const there = keyedGroup({ boxes: shifted, lines }, true);
+			expect(there.key).toBe(big.key);
+			const done = vi.fn();
+			client.wantGroups([there], true, done);
+			expect(done).toHaveBeenCalledOnce();
+			expect(client.groupRoutes([there]).routes).toEqual(routeLines(shifted, lines, true));
+			expect([...now.routed(), ...later.routed()]).toHaveLength(1);
+			client.destroy();
+		});
+
+		it('takes groups from the store, and keeps them there once routed', async () => {
+			const kept = new Map<string, Map<string, { x: number; y: number }[]>>();
+			const store = { load: (k: string) => kept.get(k), save: vi.fn((k, r) => kept.set(k, r)) };
+			const first = new RouteClient(new InProcess(), new InProcess(), undefined, store);
+			first.wantGroups([small, big], true, vi.fn());
+			await vi.waitFor(() => expect(store.save).toHaveBeenCalledTimes(2));
+			first.destroy();
+			const [now, later] = [new InProcess(), new InProcess()];
+			const again = new RouteClient(now, later, undefined, store);
+			const done = vi.fn();
+			again.wantGroups([small, big], true, done);
+			expect(done).toHaveBeenCalledOnce();
+			expect(again.groupRoutes([small, big]).done).toBe(true);
+			expect([...now.routed(), ...later.routed()]).toEqual([]);
+			again.destroy();
+		});
 	});
 
 	it('takes lines at rest from the store, and keeps them there once routed', async () => {

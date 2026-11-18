@@ -17,8 +17,30 @@ const FakeWorker = ((ElkWorker as unknown as { Worker?: unknown }).Worker ??
 
 let worker: Dispatcher | undefined;
 
+/**
+ * Graphs laid out lately, by the graph, least lately used first. ELK is most of what a layout
+ * costs, and it lays out the same graph the same way, so a change to one box lays out again
+ * only the graphs it is in: its own siblings, and its parents' up to the root.
+ */
+const laidOut = new Map<string, string>();
+const KEEP = 4096;
+
 /** Lays out `graph` and returns it with every child's position and its own size. */
 export function elkLayout(graph: ElkNode): ElkNode {
+	const key = JSON.stringify(graph);
+	let out = laidOut.get(key);
+	if (out !== undefined) laidOut.delete(key);
+	else out = JSON.stringify(run(graph));
+	laidOut.set(key, out);
+	for (const k of laidOut.keys()) {
+		if (laidOut.size <= KEEP) break;
+		laidOut.delete(k);
+	}
+	// A copy each time: what is handed out may be changed.
+	return JSON.parse(out);
+}
+
+function run(graph: ElkNode): ElkNode {
 	if (!worker) {
 		worker = new FakeWorker();
 		worker.onmessage = () => {};

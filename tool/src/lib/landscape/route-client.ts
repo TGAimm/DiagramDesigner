@@ -1,17 +1,25 @@
-import { routeKey, type Point, type Rect, type RouteGroup, type RouteLine } from './route.ts';
+import {
+	routeKey,
+	type Point,
+	type Rect,
+	type RouteEnd,
+	type RouteGroup,
+	type RouteLine
+} from './route.ts';
 import type { FromRouter, ToRouter } from './route-service.ts';
 
 /**
  * Lines routed in workers, so routing never holds up input or frames, and routed ahead of time,
  * so looking at something finds its lines ready.
  *
- * One worker routes what is wanted now: the lines at rest, then the lit lines of what is looked
- * at, the newest only. The other routes ahead: after each layout, the lit lines of everything
- * that can be looked at, those near the view first. Both keep to one set of lines at a time,
- * so the page can still reorder what waits. Routes are kept by their lines (`routeKey`) and the
- * boxes they were routed among: those of the last few layouts are kept, so going back to one, as
- * on leaving a focus, finds its lines ready. The lines at rest can also be kept across visits
- * (`RouteStore`), so opening a landscape again draws them at once.
+ * One worker routes what is wanted now: the lit lines of what is looked at, the newest only,
+ * and the groups of lines at rest. The other routes ahead: the largest group of lines at rest,
+ * then, after each layout, the lit lines of everything that can be looked at, those near the
+ * view first. Both keep to one set of lines at a time, so the page can still reorder what waits.
+ * Routes are kept by their lines (`routeKey`) and the boxes they were routed among: those of
+ * the last few layouts are kept, so going back to one, as on leaving a focus, finds its lines
+ * ready. Lines at rest are kept by group (`wantGroups`), here and across visits (`RouteStore`),
+ * so opening a landscape again, or changing part of it, draws them at once.
  */
 
 export type Routes = Map<string, Point[]>;
@@ -66,6 +74,37 @@ export const boxesKey = (boxes: Map<string, Rect>) => {
 	return out;
 };
 
+/**
+ * A group of lines at rest (see `RouteGroup`) and what its routes are kept by: its own boxes and
+ * lines, measured from its top-left corner (`x`, `y`), so they hold whatever else the layout
+ * changes, and wherever the group is moved to.
+ */
+export interface KeyedGroup extends RouteGroup {
+	key: string;
+	x: number;
+	y: number;
+}
+
+/** `group` with its key; `shareEnds` as it is routed. */
+export function keyedGroup(group: RouteGroup, shareEnds: boolean): KeyedGroup {
+	let [x, y] = [Infinity, Infinity];
+	for (const r of group.boxes.values()) [x, y] = [Math.min(x, r.x0), Math.min(y, r.y0)];
+	if (!group.boxes.size) [x, y] = [0, 0];
+	const boxes = new Map<string, Rect>();
+	for (const [id, r] of group.boxes)
+		boxes.set(id, { ...r, x0: r.x0 - x, y0: r.y0 - y, x1: r.x1 - x, y1: r.y1 - y });
+	const end = (e: RouteEnd): RouteEnd => ({ ...e, x0: e.x0 - x, x1: e.x1 - x, y: e.y - y });
+	const lines = group.lines.map((l) => ({ ...l, s: end(l.s), t: end(l.t) }));
+	return { ...group, x, y, key: `${boxesKey(boxes)}|${routeKey(lines, shareEnds)}` };
+}
+
+/** `routes` moved by `dx`, `dy`. */
+const moved = (routes: Routes, dx: number, dy: number): Routes =>
+	new Map([...routes].map(([id, pts]) => [id, pts.map((p) => ({ x: p.x + dx, y: p.y + dy }))]));
+
+/** Groups of lines at rest of more lines than this are routed only ahead (see `nextGroup`). */
+const LARGE = 64;
+
 /** What is wanted now, by priority: lines at rest before lit ones. */
 const SLOTS = ['rest', 'lit'] as const;
 type Slot = (typeof SLOTS)[number];
@@ -74,8 +113,8 @@ interface Job {
 	key: string;
 	lines: RouteLine[];
 	shareEnds: boolean;
-	/** Routed group by group among their own boxes, not `lines` among all the boxes. */
-	groups?: RouteGroup[];
+	/** A group of lines at rest, routed among its own boxes, not `lines` among all the boxes. */
+	group?: KeyedGroup;
 	slot?: Slot;
 	done?: () => void;
 }
@@ -107,6 +146,11 @@ export class RouteClient {
 	private readonly waiting = new Map<Slot, Job>();
 	/** What to route ahead, nearest last. */
 	private queue: RouteAhead[] = [];
+	/** Routes of groups of lines at rest by `KeyedGroup.key`, least lately used first. */
+	private readonly grouped = new Map<string, Routes>();
+	private keepGroups = 256;
+	/** Groups of lines at rest to route, smallest first. */
+	private groupQueue: Job[] = [];
 	private ids = 0;
 	private timer?: ReturnType<typeof setTimeout>;
 
@@ -157,8 +201,7 @@ export class RouteClient {
 	 * Routes `lines` (known by `key`, see `routeKey`) among `boxes` before anything routed ahead,
 	 * unless they are kept, and tells `done` once `get` has them, at once if it has. What waits
 	 * in `slot` is dropped: only the newest is wanted. Lines at rest kept in the store are taken
-	 * from there. With `groups`, those are routed instead, each among its own boxes; `boxes`
-	 * still says which layout they belong to.
+	 * from there.
 	 */
 	want(
 		boxes: Map<string, Rect>,
@@ -166,8 +209,7 @@ export class RouteClient {
 		lines: RouteLine[],
 		shareEnds: boolean,
 		slot: Slot,
-		done: () => void,
-		groups?: RouteGroup[]
+		done: () => void
 	) {
 		this.use(boxes);
 		this.waiting.delete(slot);
@@ -184,8 +226,70 @@ export class RouteClient {
 				lane.busy.done = done;
 				return;
 			}
-		this.waiting.set(slot, { key, lines, shareEnds, groups, slot, done });
+		this.waiting.set(slot, { key, lines, shareEnds, slot, done });
 		this.sendWaiting();
+	}
+
+	/**
+	 * Routes the lines at rest group by group, each among its own boxes, and tells `done` as
+	 * each group's come in, and at once if all are kept. A group is kept by its own boxes and
+	 * lines, in the store too, so a change elsewhere in the layout routes only the groups it
+	 * touched. Smaller groups go first, on both workers, so most lines are drawn soon; large
+	 * ones only on the worker routing ahead, so lit lines never wait for them. Replaces the
+	 * groups wanted before.
+	 */
+	wantGroups(groups: KeyedGroup[], shareEnds: boolean, done: () => void) {
+		this.keepGroups = Math.max(256, 4 * groups.length);
+		const jobs: Job[] = [];
+		for (const g of groups) {
+			if (!g.lines.length || this.keptGroup(g.key)) continue;
+			const busy = [this.now, this.later].find((lane) => lane.busy?.key === g.key)?.busy;
+			if (busy) {
+				busy.done = done;
+				continue;
+			}
+			jobs.push({ key: g.key, lines: g.lines, shareEnds, group: g, done });
+		}
+		this.groupQueue = jobs.sort((a, b) => a.lines.length - b.lines.length);
+		if (!jobs.length) done();
+		this.sendWaiting();
+		this.pump();
+	}
+
+	/** The routes of `groups` kept so far, all by line id, and whether every group's are. */
+	groupRoutes(groups: KeyedGroup[]): { routes: Routes; done: boolean } {
+		const routes: Routes = new Map();
+		let done = true;
+		for (const g of groups) {
+			if (!g.lines.length) continue;
+			const r = this.keptGroup(g.key);
+			if (!r) done = false;
+			else for (const [id, pts] of moved(r, g.x, g.y)) routes.set(id, pts);
+		}
+		return { routes, done };
+	}
+
+	/** A group's routes from its top-left corner, kept here or in the store. */
+	private keptGroup(key: string): Routes | undefined {
+		let r = this.grouped.get(key);
+		if (!r && this.store) {
+			try {
+				r = this.store.load(`group|${key}`);
+			} catch {
+				// Not kept; routed again.
+			}
+		}
+		if (r) this.keepGroup(key, r);
+		return r;
+	}
+
+	private keepGroup(key: string, routes: Routes) {
+		this.grouped.delete(key);
+		this.grouped.set(key, routes);
+		for (const k of this.grouped.keys()) {
+			if (this.grouped.size <= this.keepGroups) break;
+			this.grouped.delete(k);
+		}
 	}
 
 	/**
@@ -268,8 +372,23 @@ export class RouteClient {
 			ver: this.cur.ver,
 			lines: job.lines,
 			shareEnds: job.shareEnds,
-			groups: job.groups
+			groups: job.group && [{ boxes: job.group.boxes, lines: job.group.lines }]
 		});
+	}
+
+	/**
+	 * The next group of lines at rest to route, the smallest; `large` lets a group of over
+	 * LARGE lines go, which only the worker routing ahead takes: libavoid takes far longer the
+	 * more lines a group has (up to a minute), and lit lines must not wait for it.
+	 */
+	private nextGroup(large: boolean): Job | undefined {
+		while (this.groupQueue.length) {
+			const job = this.groupQueue[0];
+			if (!large && job.lines.length > LARGE) return undefined;
+			this.groupQueue.shift();
+			if (!this.grouped.has(job.key)) return job;
+			job.done?.();
+		}
 	}
 
 	private sendWaiting() {
@@ -281,11 +400,18 @@ export class RouteClient {
 			if (this.cur.rest?.key === job.key || this.cur.kept.has(job.key)) job.done?.();
 			else return this.send(this.now, job);
 		}
+		const group = this.nextGroup(false);
+		if (group) this.send(this.now, group);
 	}
 
-	/** Sends the nearest look whose lines are not routed yet, a few ms of looking at a time. */
+	/**
+	 * Sends the next group of lines at rest, else the nearest look whose lines are not routed
+	 * yet, a few ms of looking at a time.
+	 */
 	private pump() {
 		if (this.failed || this.later.busy || this.timer) return;
+		const group = this.nextGroup(true);
+		if (group) return this.send(this.later, group);
 		const t0 = performance.now();
 		for (let a = this.queue.pop(); a; a = this.queue.pop()) {
 			let lines: RouteLine[] = [];
@@ -313,7 +439,17 @@ export class RouteClient {
 		if (m.error) return this.fail(m.error);
 		// Routed for the boxes of this layout or of one left meanwhile, kept for going back.
 		const at = [this.cur, ...this.earlier.values()].find((l) => l.ver === m.ver);
-		if (job && m.routes && at) {
+		if (job?.group && m.routes) {
+			// A group's routes hold for whatever layout it is in, wherever it is.
+			const routes = moved(m.routes, -job.group.x, -job.group.y);
+			this.keepGroup(job.key, routes);
+			try {
+				this.store?.save(`group|${job.key}`, routes);
+			} catch {
+				// Not kept for next time; routed again then.
+			}
+			job.done?.();
+		} else if (job && m.routes && at) {
 			if (job.slot === 'rest') {
 				at.rest = { key: job.key, routes: m.routes };
 				try {
