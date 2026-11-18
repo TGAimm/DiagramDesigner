@@ -45,7 +45,7 @@
 </script>
 
 <script lang="ts">
-	import type { BitmapText, Container, Graphics } from 'pixi.js';
+	import type { Container, Graphics } from 'pixi.js';
 	import { getCamera } from '#lib/client/camera.svelte.ts';
 	import { changes } from '#lib/client/changes.svelte.ts';
 	import { theme } from '#lib/client/theme.svelte.ts';
@@ -77,8 +77,8 @@
 	import { NAME_MIN } from '#lib/landscape/open.ts';
 	import type { Model } from '#lib/model/model.ts';
 	import { tokenValues } from '#lib/theme/tokens.ts';
-	import { GLYPH_PX, glText } from './gl/font.ts';
 	import { LineLayer, lineShader, tokenRgba } from './gl/lines.ts';
+	import { GlTextLayer, LINE, type GlLabel } from './gl/text.ts';
 
 	/**
 	 * The landscape's boxes, rows and lines drawn on one WebGL canvas (PixiJS), for the Rendering
@@ -128,6 +128,8 @@
 
 	const viewport = getCamera();
 	const DIM_OPACITY = 0.2;
+	/** Names drawn in front keep this size on screen, as the page elements' do. */
+	const NAME_PX = 13;
 	/** The dots' spacing in canvas px, and the size their tile is drawn at. */
 	const DOT_GAP = 20;
 	const DOT_TILE = 64;
@@ -141,6 +143,7 @@
 	/** What is drawn in canvas px, moved and scaled by the camera; the dots stay in screen px. */
 	let world: Container | undefined;
 	let dots: import('pixi.js').TilingSprite | undefined;
+	let text: GlTextLayer | undefined;
 	let failed = $state<string>();
 
 	// ------------------------------------------------------------ PixiJS
@@ -166,6 +169,7 @@
 				a.renderer.on('resize', () => request());
 				world = new P.Container();
 				a.stage.addChild(world);
+				text = new GlTextLayer(P, a.renderer);
 				app = a;
 				pixi = P;
 			} catch (e) {
@@ -176,6 +180,8 @@
 			gone = true;
 			made?.destroy(false, { children: true });
 			lineShading = undefined;
+			text?.destroy();
+			text = undefined;
 			app = undefined;
 		};
 	});
@@ -187,21 +193,23 @@
 		return { color: c.toNumber(), alpha: c.alpha };
 	};
 
-	/** Text crisp at any scale (see gl/font.ts), tinted with token `t`. */
-	function textOf(s: string, t: Token, bold = false): BitmapText {
-		const text = glText(pixi!, s, { bold });
+	/**
+	 * Text `px` px tall in token `t`, drawn by the browser at its size on screen (see gl/text.ts);
+	 * `lcd` when it sits on an opaque fill, where page text gets subpixel antialiasing.
+	 */
+	function textOf(s: string, t: Token, px: number, bold = false, lcd = false): GlLabel {
 		const c = colour(t);
-		text.tint = c.color;
-		text.alpha = c.alpha;
-		return text;
+		const label = text!.label(s, { px, color: c.color, weight: bold ? 600 : 400, lcd });
+		label.alpha = c.alpha;
+		return label;
 	}
 
 	// ------------------------------------------------------------ the scene
 	interface Name {
-		text: BitmapText;
+		text: GlLabel;
 		b: LandscapeBox;
 		kind: 'group' | 'card' | 'leaf' | 'rail';
-		/** Its width at GLYPH_PX. */
+		/** Its width per px of font size. */
 		w: number;
 		/** Its alpha before toning down. */
 		alpha: number;
@@ -216,6 +224,13 @@
 	/** The lines' shader, made once per renderer. */
 	let lineShading: import('pixi.js').Shader | undefined;
 	let rowLayer: Container | undefined;
+	/**
+	 * Rows' texts, over all rows' tints and rules, so they are drawn in one batch; expanded cards'
+	 * rows and texts go over the rest, as they cover what is below them.
+	 */
+	let rowTextLayer: Container | undefined;
+	let overLayer: Container | undefined;
+	let overTextLayer: Container | undefined;
 	let outlineLayer: Graphics | undefined;
 	/** The row under the pointer, tinted over its card's rows. */
 	let hoverLayer: Graphics | undefined;
@@ -228,14 +243,14 @@
 			m: FrontName;
 			c: Container;
 			bg: Graphics;
-			text: BitmapText;
+			text: GlLabel;
 			rail: boolean;
 			/** Its backing, in canvas px, for hit testing. */
 			at?: { x: number; y: number; w: number; h: number };
 		}
 	>();
 	/** Cards and rails drawing their rows, by box id (`rail:` for a rail), and what they drew. */
-	let rowsOf = new Map<string, { c: Container; sig: string; b: LandscapeBox }>();
+	let rowsOf = new Map<string, Rows & { sig: string; b: LandscapeBox }>();
 	let depthCache = new Map<string, number>();
 	/* eslint-enable svelte/prefer-svelte-reactivity */
 
@@ -285,7 +300,7 @@
 	function applyDim() {
 		for (const [id, g] of boxGfx) g.alpha = dimOf(id);
 		for (const n of names) n.text.alpha = n.alpha * dimOf(n.b.id);
-		for (const r of rowsOf.values()) r.c.alpha = fadedOf(r.b) * dimOf(r.b.id);
+		for (const r of rowsOf.values()) r.c.alpha = r.t.alpha = fadedOf(r.b) * dimOf(r.b.id);
 		for (const badge of badgeLayer?.children ?? []) badge.alpha = dimOf(badge.label);
 	}
 
@@ -357,25 +372,34 @@
 						? 'system-text'
 						: 'module-text';
 			const kind = b.group ? 'group' : isCard(b) ? 'card' : 'leaf';
-			const text = textOf(op ? `${op} ${name}` : name, tok, true);
+			const text = textOf(
+				op ? `${op} ${name}` : name,
+				tok,
+				NAME_MIN,
+				true,
+				isCard(b) && fadedOf(b) === 1
+			);
 			text.alpha *= fadedOf(b);
 			text.cullable = true;
 			nameLayer.addChild(text);
-			const n: Name = { text, b, kind, w: text.width, alpha: text.alpha };
+			const n: Name = { text, b, kind, w: text.width / text.px, alpha: text.alpha };
 			names.push(n);
 			nameOf.set(b.id, n);
 		}
 		for (const [id] of rails) {
 			const b = boxById.get(id)!;
-			const text = textOf('APIs', 'api-text', true);
+			const text = textOf('APIs', 'api-text', NAME_MIN, true, fadedOf(b) === 1);
 			text.alpha *= fadedOf(b);
 			nameLayer.addChild(text);
-			const n: Name = { text, b, kind: 'rail', w: text.width, alpha: text.alpha };
+			const n: Name = { text, b, kind: 'rail', w: text.width / text.px, alpha: text.alpha };
 			names.push(n);
 			nameOf.set(`rail:${id}`, n);
 		}
 		rowLayer = new P.Container();
-		stage.addChild(rowLayer);
+		rowTextLayer = new P.Container();
+		overLayer = new P.Container();
+		overTextLayer = new P.Container();
+		stage.addChild(rowLayer, rowTextLayer, overLayer, overTextLayer);
 		hoverLayer = new P.Graphics();
 		stage.addChild(hoverLayer);
 		litLayer = new LineLayer(P, shading);
@@ -400,8 +424,7 @@
 			g.roundRect(-11, -11, Math.max(22, 10 + 7 * String(roll.count).length), 22, 11).fill(
 				colour(fill)
 			);
-			const t = textOf(String(roll.count), 'op-text', true);
-			t.scale.set(12 / GLYPH_PX);
+			const t = textOf(String(roll.count), 'op-text', 12, true, true);
 			t.position.set(
 				-t.width / 2 + (Math.max(22, 10 + 7 * String(roll.count).length) - 22) / 2,
 				-7.5
@@ -475,7 +498,7 @@
 	function placeNames(z: number) {
 		for (const n of names) {
 			const { b, text } = n;
-			const fit = (w: number, h: number) => Math.max(0, Math.min(w / (n.w / GLYPH_PX), h));
+			const fit = (w: number, h: number) => Math.max(0, Math.min(w / n.w, h));
 			let px: number;
 			let x: number;
 			let y: number;
@@ -486,7 +509,7 @@
 				if (listed) continue;
 				const room = fit(r.width - 8, r.height * 0.6);
 				px = clamp(Math.min(RAIL.font, room), NAME_MIN / z, room);
-				x = b.absX + b.width - ((n.w / GLYPH_PX) * px) / 2;
+				x = b.absX + b.width - (n.w * px) / 2;
 				y = b.absY + r.top + r.height / 2 - 0.6 * px;
 			} else if (n.kind === 'group') {
 				px = Math.min(13 / z, HEADER / 2, fit(b.width - 24, Infinity));
@@ -504,17 +527,17 @@
 			} else {
 				const room = b.width - (rails.get(b.id)?.width ?? 0) / 2 - 16;
 				px = clamp(n.kind === 'card' ? TABLE.title : 15, NAME_MIN / z, fit(room, b.height * 0.6));
-				const w = (n.w / GLYPH_PX) * px;
+				const w = n.w * px;
 				x = b.absX + (room + 16 - w) / 2;
-				y = b.absY + (b.height - 1.2 * px) / 2;
+				y = b.absY + (b.height - LINE * px) / 2;
 			}
-			text.scale.set(px / GLYPH_PX);
+			text.px = px;
 			text.position.set(x, y);
 			if (n.kind !== 'group' && n.kind !== 'rail') text.visible = px * z >= 2;
 			n.at = {
 				x0: x - 4 / z,
 				y0: y - 2 / z,
-				x1: x + (n.w / GLYPH_PX) * px + 4 / z,
+				x1: x + n.w * px + 4 / z,
 				y1: y + 1.3 * px
 			};
 		}
@@ -545,17 +568,17 @@
 				const rail = m.glyph === 'api';
 				const c = new P.Container();
 				const bg = new P.Graphics();
-				const text = textOf(m.name, rail ? 'api-text' : 'system-text', true);
+				const text = textOf(m.name, rail ? 'api-text' : 'system-text', NAME_PX, true);
 				c.addChild(bg, text);
 				frontLayer!.addChild(c);
 				f = { m, c, bg, text, rail };
 				frontOf.set(m.id, f);
 			}
 			f.m = m;
-			const px = Math.min(13 / z, m.max);
-			f.text.scale.set(px / GLYPH_PX);
+			const px = Math.min(NAME_PX / z, m.max);
+			f.text.px = px;
 			const w = f.text.width;
-			const h = 1.2 * px;
+			const h = LINE * px;
 			const padX = (f.rail ? 0.4 : 0.3) * px;
 			const at = f.rail
 				? { x: m.x - w / 2 - padX, y: m.y - h / 2, w: w + 2 * padX, h }
@@ -586,7 +609,7 @@
 	const TEXT_MIN = 2;
 	/** Whether the rows being built draw their text (see TEXT_MIN). */
 	let readable = true;
-	const stub = (x = 0) => ({ x, width: 0, alpha: 1 }) as unknown as BitmapText;
+	const stub = (x = 0) => ({ x, width: 0, alpha: 1 }) as unknown as GlLabel;
 
 	function placeRows(z: number) {
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built and used here
@@ -622,16 +645,20 @@
 		for (const [id, r] of rowsOf)
 			if (want.get(id) !== r.sig) {
 				r.c.destroy({ children: true });
+				r.t.destroy({ children: true });
 				rowsOf.delete(id);
 			}
 		for (const [id, sig] of want) {
 			if (rowsOf.has(id)) continue;
 			const b = boxById.get(id.startsWith('rail:') ? id.slice(5) : id)!;
+			const rail = id.startsWith('rail:');
 			readable = JSON.parse(sig).at(-1);
-			const c = id.startsWith('rail:') ? railRows(b) : cardRowsOf(b);
-			c.alpha = fadedOf(b) * dimOf(b.id);
-			rowLayer!.addChild(c);
-			rowsOf.set(id, { c, sig, b });
+			const { c, t } = rail ? railRows(b) : cardRowsOf(b);
+			c.alpha = t.alpha = fadedOf(b) * dimOf(b.id);
+			const over = !rail && !!view.expanded[b.id];
+			(over ? overLayer : rowLayer)!.addChild(c);
+			(over ? overTextLayer : rowTextLayer)!.addChild(t);
+			rowsOf.set(id, { c, t, sig, b });
 		}
 	}
 
@@ -663,17 +690,24 @@
 		return { bg, bar };
 	}
 
-	function cardRowsOf(b: LandscapeBox): Container {
+	/** A card's or rail's rows: tints and rules, and texts (see rowTextLayer). */
+	interface Rows {
+		c: Container;
+		t: Container;
+	}
+
+	function cardRowsOf(b: LandscapeBox): Rows {
 		const P = pixi!;
 		const out = new P.Container();
+		const words = new P.Container();
 		const g = new P.Graphics();
 		out.addChild(g);
+		const lcd = fadedOf(b) === 1;
 		const at = (s: string, x: number, y: number, px: number, t: Token, bold = false) => {
 			if (!readable) return stub(x);
-			const text = textOf(s, t, bold);
-			text.scale.set(px / GLYPH_PX);
-			text.position.set(x, y - (px * 1.2) / 2);
-			out.addChild(text);
+			const text = textOf(s, t, px, bold, lcd);
+			text.position.set(x, y - (px * LINE) / 2);
+			words.addChild(text);
 			return text;
 		};
 		const k = kindToken(b);
@@ -739,7 +773,7 @@
 						.lineTo(name.x + name.width, y)
 						.stroke({ ...colour('text-muted'), width: 1, pixelLine: true });
 			});
-			return out;
+			return { c: out, t: words };
 		}
 		const fields = b.fields ?? [];
 		const expanded = !!view.expanded[b.id];
@@ -773,7 +807,7 @@
 			if (s.bar) bar(top, rowsH, s.bar);
 			sep(top);
 			const faded = (comparing && !marked(f.id)) || !!dimRows?.[f.id];
-			const texts: BitmapText[] = [];
+			const texts: GlLabel[] = [];
 			cols.forEach((c, ci) => {
 				const x = xs[ci] + TABLE.pad;
 				if (c.key === 'name') {
@@ -881,24 +915,25 @@
 				);
 			}
 		}
-		return out;
+		return { c: out, t: words };
 	}
 
-	function railRows(b: LandscapeBox): Container {
+	function railRows(b: LandscapeBox): Rows {
 		const P = pixi!;
 		const r = rails.get(b.id)!;
 		const out = new P.Container();
+		const words = new P.Container();
 		const g = new P.Graphics();
 		out.addChild(g);
 		const x0 = b.absX + b.width - r.width / 2;
 		const y0 = b.absY + r.top;
 		const s = r.scale;
+		const lcd = fadedOf(b) === 1;
 		const at = (text: string, x: number, y: number, px: number, t: Token, bold = false) => {
 			if (!readable) return stub(x);
-			const o = textOf(text, t, bold);
-			o.scale.set((px * s) / GLYPH_PX);
-			o.position.set(x, y - (px * s * 1.2) / 2);
-			out.addChild(o);
+			const o = textOf(text, t, px * s, bold, lcd);
+			o.position.set(x, y - (px * s * LINE) / 2);
+			words.addChild(o);
 			return o;
 		};
 		at('APIs', x0 + RAIL.pad * s, y0 + (RAIL.head / 2) * s, RAIL.label, 'text-muted', true);
@@ -966,7 +1001,7 @@
 			}
 			y += grp.apis.length * RAIL.row;
 		}
-		return out;
+		return { c: out, t: words };
 	}
 
 	// ------------------------------------------------------------ outlines
@@ -1027,6 +1062,12 @@
 	let restDirty = true;
 	let litDirty = true;
 	let dimDirty = true;
+	/** The camera last drawn, when it last moved, and the frame drawn once it rests. */
+	let camera = '';
+	let moved = 0;
+	let restTimer: ReturnType<typeof setTimeout> | undefined;
+	/** The camera rests once it has not moved for this long (ms); text is then drawn sharp. */
+	const REST = 120;
 	/** Draws the next frame. */
 	function request() {
 		if (frame || typeof requestAnimationFrame === 'undefined') return;
@@ -1034,6 +1075,14 @@
 			frame = 0;
 			if (!app || !pixi) return;
 			const { x, y, zoom } = viewport.current;
+			const now = performance.now();
+			const cam = `${x} ${y} ${zoom}`;
+			if (cam !== camera) {
+				camera = cam;
+				moved = now;
+				clearTimeout(restTimer);
+				restTimer = setTimeout(request, REST + 10);
+			}
 			world!.position.set(x, y);
 			world!.scale.set(zoom);
 			if (dots) {
@@ -1055,13 +1104,19 @@
 			}
 			drawOutlines(zoom);
 			drawHover();
-			// Culled against the screen in canvas px.
+			// Text first: a text given its first raster has bounds to cull by. Culled against the
+			// screen in canvas px.
 			const s = app.screen;
+			const more = text?.update(s, now - moved < REST);
 			pixi.Culler.shared.cull(world!, { x: 0, y: 0, width: s.width, height: s.height });
 			app.render();
+			if (more) request();
 		});
 	}
-	$effect(() => () => cancelAnimationFrame(frame));
+	$effect(() => () => {
+		cancelAnimationFrame(frame);
+		clearTimeout(restTimer);
+	});
 
 	// A new layout, theme, dimming or change marks draw the scene anew.
 	$effect(() => {
