@@ -136,6 +136,10 @@ const dark: Record<Token, string> = {
 
 export const TOKENS = Object.keys(light) as Token[];
 
+/** Each token's value in `theme`, for what draws without CSS (the WebGL canvas). */
+export const tokenValues = (theme: 'light' | 'dark'): Record<Token, string> =>
+	theme === 'dark' ? dark : light;
+
 /** CSS declaring every token for both themes; `data-theme` on an ancestor selects one. */
 export function themeCss(): string {
 	const block = (values: Record<Token, string>) =>

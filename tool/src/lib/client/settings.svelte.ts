@@ -6,12 +6,28 @@
  */
 export type Detail = 'adaptive' | 'all';
 
+/**
+ * How the canvas is drawn: `dom` as page elements (Svelte Flow, SVG lines), `webgl` on one
+ * WebGL canvas (PixiJS), which keeps its frame rate however much is drawn. WebGL is being built
+ * up beside the page elements, and replaces them once it draws and does all they do.
+ */
+export type Renderer = 'dom' | 'webgl';
+
 import { DEFAULT_LAYOUT, type LayoutOptions } from '#lib/landscape/layout.ts';
 
 const KEY = 'sdv-detail';
 const LAYOUT_KEY = 'sdv-layout';
 const FOLLOW_KEY = 'sdv-follow-calls';
 const MINIMAP_KEY = 'sdv-minimap';
+const RENDERER_KEY = 'sdv-renderer';
+
+function storedRenderer(): Renderer {
+	try {
+		return localStorage.getItem(RENDERER_KEY) === 'webgl' ? 'webgl' : 'dom';
+	} catch {
+		return 'dom';
+	}
+}
 
 function storedFollow(): boolean {
 	try {
@@ -85,6 +101,17 @@ class SettingsState {
 		this.minimap = on;
 		try {
 			localStorage.setItem(MINIMAP_KEY, on ? '1' : '0');
+		} catch {
+			// As for the detail: the choice then lasts for the session.
+		}
+	}
+
+	renderer = $state<Renderer>(typeof localStorage === 'undefined' ? 'dom' : storedRenderer());
+
+	setRenderer(renderer: Renderer) {
+		this.renderer = renderer;
+		try {
+			localStorage.setItem(RENDERER_KEY, renderer);
 		} catch {
 			// As for the detail: the choice then lasts for the session.
 		}

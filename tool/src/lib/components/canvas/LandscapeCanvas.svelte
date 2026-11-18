@@ -65,7 +65,7 @@
 		type LinkKind,
 		type RestLine
 	} from '#lib/landscape/connections.ts';
-	import { apiHosts, drawnInFull, READABLE } from '#lib/landscape/open.ts';
+	import { drawnInFull, READABLE } from '#lib/landscape/open.ts';
 	import { GLYPH, textWidth } from '#lib/render/text.ts';
 	import { sequenceOf, sequenceWidth } from '#lib/landscape/sequence.ts';
 	import SequenceDiagram from './SequenceDiagram.svelte';
@@ -80,8 +80,7 @@
 		railGroups,
 		railOf,
 		railRowY,
-		type ApiUse,
-		type Rail
+		type ApiUse
 	} from '#lib/landscape/apis.ts';
 	import { apiBodies } from '#lib/model/model.ts';
 	import { durationWords, nextRuns, scheduleWords } from '#lib/model/schedule.ts';
@@ -90,17 +89,12 @@
 		type Point,
 		type Rect,
 		type RouteEnd,
-		type RouteGroup,
 		type RouteLine,
 		type Side
 	} from '#lib/landscape/route.ts';
-	import {
-		keyedGroup,
-		RouteClient,
-		type RouteAhead,
-		type RoutePort
-	} from '#lib/landscape/route-client.ts';
+	import { RouteClient, type RouteAhead, type RoutePort } from '#lib/landscape/route-client.ts';
 	import { routeStore } from '#lib/landscape/route-store.ts';
+	import { headEnd, railsOf, restGroups, sides } from '#lib/landscape/scene.ts';
 	import { design } from '#lib/client/store.svelte.ts';
 	import RoutingProgress from './RoutingProgress.svelte';
 	import RouteWorker from '#lib/landscape/route-worker.ts?worker';
@@ -259,16 +253,7 @@
 
 	// Apis sit on a rail across the right border of their parent's box, or of the nearest shown
 	// box round it, one rail per box.
-	function railsFor(openSet: Set<string>): Map<string, Rail> {
-		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built and returned whole
-		const out = new Map<string, Rail>();
-		for (const [id, apis] of apiHosts(boxes, openSet)) {
-			const b = boxById.get(id)!;
-			out.set(id, railOf(model, railGroups(model, b.elementId, apis), b.height));
-		}
-		return out;
-	}
-	const rails = $derived(railsFor(open));
+	const rails = $derived(railsOf(model, boxes, boxById, open));
 	const uses = $derived(apiUses(model));
 	const hostOf = (api: string) => {
 		for (const [id, r] of rails)
@@ -450,14 +435,6 @@
 			peer: node !== home
 		};
 	}
-
-	/** The sides two ends leave and enter by: facing each other, or both right when stacked. */
-	const sides = (a: { x0: number; x1: number }, b: { x0: number; x1: number }) =>
-		b.x0 >= a.x1
-			? (['r', 'l'] as const)
-			: b.x1 <= a.x0
-				? (['l', 'r'] as const)
-				: (['r', 'r'] as const);
 
 	// ------------------------------------------------------------ routing
 	// In workers, one for what is wanted now and one routing ahead, so routing never holds up
@@ -912,58 +889,9 @@
 		)
 	);
 
-	/** A box's name bar as a line end: a card's bar, or the middle of any other box. */
-	const headEnd = (b: LandscapeBox) => ({
-		node: b,
-		anchor: 'head',
-		x0: b.absX,
-		x1: b.absX + b.width,
-		y: b.absY + (b.view || cardRows(b) ? TABLE.head / 2 : b.height / 2)
-	});
-
 	// Lines at rest and lit lines are routed apart, so a hover never moves the lines at rest.
 	// Each is drawn once routed, never first along a makeshift path.
-	const restWant = $derived.by(() => {
-		// A line at rest joins two children of one box and never leaves it, so each box routes
-		// its children's lines with only its children, rails and all, in the way.
-		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built and returned whole
-		const groups = new Map<string, RouteGroup>();
-		const group = (parent: string | undefined) => {
-			let g = groups.get(parent ?? '');
-			if (g) return g;
-			// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built and returned whole
-			const kids = new Map<string, Rect>();
-			for (const b of boxes)
-				if (b.parentId === parent) {
-					const r = rails.get(b.id);
-					kids.set(b.id, {
-						x0: b.absX,
-						y0: b.absY,
-						x1: b.absX + b.width + (r ? r.width / 2 : 0),
-						y1: b.absY + b.height,
-						clear: b.clear
-					});
-				}
-			g = { boxes: kids, lines: [] };
-			groups.set(parent ?? '', g);
-			return g;
-		};
-		// Each end leaves by the side facing the other box, so lines leaving a box one way share
-		// an exit and never set off the wrong way round it.
-		for (const l of rest) {
-			const [a, b] = [headEnd(boxById.get(l.source)!), headEnd(boxById.get(l.target)!)];
-			const [sa, sb] = sides(a, b);
-			group(l.parentId).lines.push({
-				id: l.id,
-				s: { on: l.source, x0: a.x0, x1: a.x1, y: a.y, sides: [sa] },
-				t: { on: l.target, x0: b.x0, x1: b.x1, y: b.y, sides: [sb] }
-			});
-		}
-		// Lines at rest leaving a box together share one exit (see the design's Routing rule).
-		// Each group is kept by its own boxes and lines, so a change routes only the groups it
-		// touched.
-		return [...groups.values()].map((g) => keyedGroup(g, true));
-	});
+	const restWant = $derived(restGroups(boxes, boxById, rails, rest));
 	/** The lines at rest routed so far, drawn as their groups come in. */
 	const restRoutes = $derived.by(() => {
 		void routedIn;
