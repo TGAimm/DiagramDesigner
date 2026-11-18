@@ -62,12 +62,12 @@ export function routeService(reply: (m: FromRouter) => void) {
 			const t0 = performance.now();
 			const out = { type: 'routed' as const, id: m.id, ver: m.ver };
 			try {
-				const routes =
-					m.ver !== ver
+				// Groups carry their own boxes, so they route whatever boxes were sent since.
+				const routes = m.groups
+					? routeGroups(m.groups, m.shareEnds)
+					: m.ver !== ver
 						? undefined
-						: m.groups
-							? routeGroups(m.groups, m.shareEnds)
-							: routeLines(boxes, m.lines, m.shareEnds);
+						: routeLines(boxes, m.lines, m.shareEnds);
 				reply({ ...out, routes, ms: performance.now() - t0 });
 			} catch (e) {
 				reply({ ...out, ms: performance.now() - t0, error: String(e) });

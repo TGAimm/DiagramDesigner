@@ -29,7 +29,7 @@
 
 	onMount(() => {
 		// Subscribe before loading; the store queues events behind the initial load.
-		import.meta.hot?.on('sdv:changed', (ev: ChangedEvent) => design.onExternalChange(ev));
+		import.meta.hot?.on('sdv:changed', (ev: ChangedEvent) => design.queueExternalChange(ev));
 		import.meta.hot?.on('sdv:landscape', () => landscapes.onServerSwitch());
 		// Landscapes first, so a closed landscape shows the start screen, not an empty canvas.
 		void landscapes

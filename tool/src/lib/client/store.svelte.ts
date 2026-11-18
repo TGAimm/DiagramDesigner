@@ -80,12 +80,47 @@ export class DesignStore {
 		return next;
 	}
 
-	/** A file changed on disk (editor save, git checkout, ...). */
+	/** A file changed on disk (editor save, git checkout, ...): applied at once. */
 	onExternalChange(ev: ChangedEvent): Promise<void> {
-		return this.#serial(async () => {
-			if (!fileKind(ev.path) || ev.hash === (this.meta[ev.path]?.hash ?? null)) return;
-			const meta = { ...this.meta };
-			const data = { ...this.data };
+		return this.#serial(async () => this.#apply([ev]));
+	}
+
+	/** Changes waiting to be applied together, by path, the newest of each. */
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- not state: read once, on applying
+	#queued = new Map<string, ChangedEvent>();
+	#queuedSince: number | undefined;
+	#queueTimer: ReturnType<typeof setTimeout> | undefined;
+
+	/**
+	 * A file changed on disk, as the watcher tells it. A burst of changes (a git checkout, a
+	 * script or an agent writing many files) is applied as one: rebuilding the model and laying
+	 * out a large landscape takes seconds, so once per file would hold up the page for minutes.
+	 * Applied once no change has come for QUIET ms, and at the latest MAX_WAIT ms after the first.
+	 */
+	queueExternalChange(ev: ChangedEvent) {
+		const QUIET = 100;
+		const MAX_WAIT = 1000;
+		const now = performance.now();
+		this.#queued.set(ev.path, ev);
+		this.#queuedSince ??= now;
+		clearTimeout(this.#queueTimer);
+		const wait = Math.max(0, Math.min(QUIET, this.#queuedSince + MAX_WAIT - now));
+		this.#queueTimer = setTimeout(() => {
+			const evs = [...this.#queued.values()];
+			this.#queued.clear();
+			this.#queuedSince = undefined;
+			void this.#serial(async () => this.#apply(evs));
+		}, wait);
+	}
+
+	#apply(evs: ChangedEvent[]) {
+		const changed = evs.filter(
+			(ev) => fileKind(ev.path) && ev.hash !== (this.meta[ev.path]?.hash ?? null)
+		);
+		if (!changed.length) return;
+		const meta = { ...this.meta };
+		const data = { ...this.data };
+		for (const ev of changed) {
 			if (ev.text === null || ev.hash === null) {
 				delete meta[ev.path];
 				delete data[ev.path];
@@ -95,9 +130,9 @@ export class DesignStore {
 				// A file with syntax errors keeps its last valid data so the diagram stays visible.
 				if (parsed.data !== undefined) data[ev.path] = parsed.data;
 			}
-			this.meta = meta;
-			this.data = data;
-		});
+		}
+		this.meta = meta;
+		this.data = data;
 	}
 }
 
