@@ -168,6 +168,20 @@ describe('layout options', () => {
 		expect(wide.w).toBeGreaterThan(wide.h);
 	});
 
+	it('grows a system or module with little inside to a share of the largest beside it', () => {
+		const [fitted, grown] = [at({ minShare: 0 }), at({ minShare: 0.8 })];
+		const most = (side: 'width' | 'height') =>
+			Math.max(...['a', 'b'].map((id) => fitted(id)[side]));
+		expect(fitted('c').width).toBeLessThan(0.8 * most('width'));
+		expect(fitted('c').height).toBeLessThan(0.8 * most('height'));
+		expect(grown('c').width).toBeCloseTo(0.8 * most('width'));
+		expect(grown('c').height).toBeCloseTo(0.8 * most('height'));
+		// Cards keep the size of what they list; the largest box keeps its own.
+		expect(grown('x').width).toBe(fitted('x').width);
+		const widest = fitted('a').width >= fitted('b').width ? 'a' : 'b';
+		expect(grown(widest).width).toBe(fitted(widest).width);
+	});
+
 	it('scales the room between systems and between boxes inside', () => {
 		const apart = (box: ReturnType<typeof at>) => box('b').absX - box('a').absX - box('a').width;
 		expect(apart(at({ spacing: 2 })) - apart(at({}))).toBeCloseTo(120);

@@ -8,8 +8,10 @@ import type { FromRouter, ToRouter } from './route-service.ts';
  * One worker routes what is wanted now: the lines at rest, then the lit lines of what is looked
  * at, the newest only. The other routes ahead: after each layout, the lit lines of everything
  * that can be looked at, those near the view first. Both keep to one set of lines at a time,
- * so the page can still reorder what waits. Routes are kept by their lines (`routeKey`) until
- * the boxes change.
+ * so the page can still reorder what waits. Routes are kept by their lines (`routeKey`) and the
+ * boxes they were routed among: those of the last few layouts are kept, so going back to one, as
+ * on leaving a focus, finds its lines ready. The lines at rest can also be kept across visits
+ * (`RouteStore`), so opening a landscape again draws them at once.
  */
 
 export type Routes = Map<string, Point[]>;
@@ -31,6 +33,37 @@ export interface RouteAhead {
 	y: number;
 	lines: () => RouteLine[];
 }
+
+/**
+ * Somewhere routes outlive the page, by a key standing for the lines and the boxes they were
+ * routed among (see route-store.ts).
+ */
+export interface RouteStore {
+	load(key: string): Routes | undefined;
+	save(key: string, routes: Routes): void;
+}
+
+/** What was routed among one layout's boxes. */
+interface Layout {
+	/** `boxesKey` of the boxes. */
+	id: string;
+	/** Told the workers with the boxes, so routes come back to the layout they were routed for. */
+	ver: number;
+	/** Routes by key, least lately used first. */
+	kept: Map<string, Routes>;
+	/** The lines at rest, kept apart so routing ahead never pushes them out. */
+	rest?: { key: string; routes: Routes };
+}
+
+/** Layouts looked at before whose routes are kept besides the current one's. */
+const EARLIER = 4;
+
+/** The boxes as one string, alike for boxes alike. */
+export const boxesKey = (boxes: Map<string, Rect>) => {
+	let out = '';
+	for (const [id, r] of boxes) out += `${id}:${r.x0},${r.y0},${r.x1},${r.y1};`;
+	return out;
+};
 
 /** What is wanted now, by priority: lines at rest before lit ones. */
 const SLOTS = ['rest', 'lit'] as const;
@@ -62,11 +95,11 @@ export class RouteClient {
 	onfail?: (error: string) => void;
 
 	private boxes?: Map<string, Rect>;
-	private ver = 0;
-	/** Routes by key, least lately used first. */
-	private readonly kept = new Map<string, Routes>();
-	/** The lines at rest, kept apart so routing ahead never pushes them out. */
-	private rest?: { key: string; routes: Routes };
+	/** What was routed among `boxes`. */
+	private cur: Layout = { id: '', ver: 0, kept: new Map() };
+	/** What was routed among the boxes of earlier layouts, by `boxesKey`, least lately used first. */
+	private readonly earlier = new Map<string, Layout>();
+	private vers = 0;
 	private keep = 256;
 	private readonly now: Lane;
 	private readonly later: Lane;
@@ -76,7 +109,12 @@ export class RouteClient {
 	private ids = 0;
 	private timer?: ReturnType<typeof setTimeout>;
 
-	constructor(now: RoutePort, later: RoutePort, wasmUrl?: string) {
+	constructor(
+		now: RoutePort,
+		later: RoutePort,
+		wasmUrl?: string,
+		private readonly store?: RouteStore
+	) {
 		this.now = { port: now };
 		this.later = { port: later };
 		this.ready = Promise.all([this.now, this.later].map((lane) => this.open(lane, wasmUrl))).then(
@@ -105,20 +143,21 @@ export class RouteClient {
 	get(boxes: Map<string, Rect>, key: string): Routes | undefined {
 		if (!key) return NONE;
 		if (!this.same(boxes)) return undefined;
-		if (this.rest?.key === key) return this.rest.routes;
-		const r = this.kept.get(key);
+		if (this.cur.rest?.key === key) return this.cur.rest.routes;
+		const r = this.cur.kept.get(key);
 		if (r) {
-			this.kept.delete(key);
-			this.kept.set(key, r);
+			this.cur.kept.delete(key);
+			this.cur.kept.set(key, r);
 		}
 		return r;
 	}
 
 	/**
 	 * Routes `lines` (known by `key`, see `routeKey`) among `boxes` before anything routed ahead,
-	 * unless they are kept, and tells `done` once `get` has them. What waits in `slot` is
-	 * dropped: only the newest is wanted. With `groups`, those are routed instead, each among
-	 * its own boxes; `boxes` still says which layout they belong to.
+	 * unless they are kept, and tells `done` once `get` has them, at once if it has. What waits
+	 * in `slot` is dropped: only the newest is wanted. Lines at rest kept in the store are taken
+	 * from there. With `groups`, those are routed instead, each among its own boxes; `boxes`
+	 * still says which layout they belong to.
 	 */
 	want(
 		boxes: Map<string, Rect>,
@@ -131,9 +170,16 @@ export class RouteClient {
 	) {
 		this.use(boxes);
 		this.waiting.delete(slot);
-		if (this.get(boxes, key)) return;
+		if (this.get(boxes, key)) return done();
+		if (slot === 'rest' && this.store) {
+			const routes = this.stored(key);
+			if (routes) {
+				this.cur.rest = { key, routes };
+				return done();
+			}
+		}
 		for (const lane of [this.now, this.later])
-			if (lane.busy?.key === key && lane.busy.ver === this.ver) {
+			if (lane.busy?.key === key && lane.busy.ver === this.cur.ver) {
 				lane.busy.done = done;
 				return;
 			}
@@ -167,6 +213,15 @@ export class RouteClient {
 		this.later.port.terminate();
 	}
 
+	/** The lines at rest by `key` among the current boxes, from the store. */
+	private stored(key: string) {
+		try {
+			return this.store!.load(`${this.cur.id}|${key}`);
+		} catch {
+			return undefined;
+		}
+	}
+
 	/**
 	 * Whether `boxes` are those routed among, as they are or rebuilt alike (taken on then), as
 	 * when what the boxes are worked out from changed but they did not.
@@ -183,25 +238,33 @@ export class RouteClient {
 		return true;
 	}
 
-	/** New boxes: what was routed or waits among the old ones is dropped. */
+	/**
+	 * New boxes: what waits among the old ones is dropped, and what was routed among them put
+	 * by, for if they come back; what was routed among the new ones before is taken up again.
+	 */
 	private use(boxes: Map<string, Rect>) {
 		if (this.same(boxes)) return;
+		if (this.boxes) this.earlier.set(this.cur.id, this.cur);
 		this.boxes = boxes;
-		this.ver++;
-		this.kept.clear();
-		this.rest = undefined;
+		const id = boxesKey(boxes);
+		this.cur = this.earlier.get(id) ?? { id, ver: ++this.vers, kept: new Map() };
+		this.earlier.delete(id);
+		for (const k of this.earlier.keys()) {
+			if (this.earlier.size <= EARLIER) break;
+			this.earlier.delete(k);
+		}
 		this.waiting.clear();
 		this.queue = [];
 		for (const lane of [this.now, this.later])
-			lane.port.postMessage({ type: 'boxes', ver: this.ver, boxes });
+			lane.port.postMessage({ type: 'boxes', ver: this.cur.ver, boxes });
 	}
 
 	private send(lane: Lane, job: Job) {
-		lane.busy = { ...job, id: ++this.ids, ver: this.ver };
+		lane.busy = { ...job, id: ++this.ids, ver: this.cur.ver };
 		lane.port.postMessage({
 			type: 'route',
 			id: lane.busy.id,
-			ver: this.ver,
+			ver: this.cur.ver,
 			lines: job.lines,
 			shareEnds: job.shareEnds,
 			groups: job.groups
@@ -214,7 +277,7 @@ export class RouteClient {
 			const job = this.waiting.get(slot);
 			if (!job) continue;
 			this.waiting.delete(slot);
-			if (this.rest?.key === job.key || this.kept.has(job.key)) job.done?.();
+			if (this.cur.rest?.key === job.key || this.cur.kept.has(job.key)) job.done?.();
 			else return this.send(this.now, job);
 		}
 	}
@@ -231,7 +294,7 @@ export class RouteClient {
 				// Gone since it was listed; the next layout lists what is there.
 			}
 			const key = routeKey(lines);
-			if (key && !this.kept.has(key) && this.now.busy?.key !== key)
+			if (key && !this.cur.kept.has(key) && this.now.busy?.key !== key)
 				return this.send(this.later, { key, lines, shareEnds: false });
 			if (performance.now() - t0 > 4) {
 				this.timer = setTimeout(() => {
@@ -247,17 +310,25 @@ export class RouteClient {
 		const job = lane.busy?.id === m.id ? lane.busy : undefined;
 		lane.busy = undefined;
 		if (m.error) return this.fail(m.error);
-		if (job && m.routes && m.ver === this.ver) {
-			if (job.slot === 'rest') this.rest = { key: job.key, routes: m.routes };
-			else {
-				this.kept.delete(job.key);
-				this.kept.set(job.key, m.routes);
-				for (const k of this.kept.keys()) {
-					if (this.kept.size <= this.keep) break;
-					this.kept.delete(k);
+		// Routed for the boxes of this layout or of one left meanwhile, kept for going back.
+		const at = [this.cur, ...this.earlier.values()].find((l) => l.ver === m.ver);
+		if (job && m.routes && at) {
+			if (job.slot === 'rest') {
+				at.rest = { key: job.key, routes: m.routes };
+				try {
+					this.store?.save(`${at.id}|${job.key}`, m.routes);
+				} catch {
+					// Not kept for next time; routed again then.
+				}
+			} else {
+				at.kept.delete(job.key);
+				at.kept.set(job.key, m.routes);
+				for (const k of at.kept.keys()) {
+					if (at.kept.size <= this.keep) break;
+					at.kept.delete(k);
 				}
 			}
-			job.done?.();
+			if (at === this.cur) job.done?.();
 		}
 		if (lane === this.now) this.sendWaiting();
 		else this.pump();

@@ -133,6 +133,28 @@
 			</div>
 			<span class="hint">Room between boxes, inside and out.</span>
 		</div>
+		<div class="fld">
+			<label class="lbl" for="min-share">Smallest box</label>
+			<div class="range">
+				<input
+					id="min-share"
+					type="range"
+					min="0"
+					max="0.5"
+					step="0.025"
+					value={settings.layout.minShare}
+					oninput={(e) => settings.setLayout({ minShare: Number(e.currentTarget.value) })}
+				/>
+				<output for="min-share"
+					>{settings.layout.minShare
+						? `${Math.round(settings.layout.minShare * 100)}%`
+						: 'Off'}</output
+				>
+			</div>
+			<span class="hint"
+				>Systems and modules with little inside grow to this share of the largest beside them.</span
+			>
+		</div>
 		<label class="fld" class:off={!layered}>
 			<span class="lbl">Placement</span>
 			<select
