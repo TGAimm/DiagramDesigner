@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
 	boxesNear,
+	clearanceOf,
 	loadRouter,
 	ROUTE,
 	routeGroups,
@@ -117,6 +118,39 @@ describe('routeLines', () => {
 	});
 });
 
+/** How near a straight piece comes to a box. */
+const distance = (a: Point, b: Point, r: Rect) =>
+	Math.hypot(
+		Math.max(r.x0 - Math.max(a.x, b.x), Math.min(a.x, b.x) - r.x1, 0),
+		Math.max(r.y0 - Math.max(a.y, b.y), Math.min(a.y, b.y) - r.y1, 0)
+	);
+
+describe('clearance', () => {
+	it('is buffer for a card and a share of the shorter side for a large box', () => {
+		expect(clearanceOf(200, 60)).toBe(ROUTE.buffer);
+		expect(clearanceOf(5000, 3000)).toBe(Math.round(3000 * ROUTE.share));
+	});
+
+	it('keeps lines a large box’s clearance off it, and still ends them on boxes’ sides', () => {
+		const boxes = new Map<string, Rect>([
+			['a', rect(0, 0, 100, 60)],
+			['big', { ...rect(150, -200, 200, 460), clear: 40 }],
+			['b', rect(400, 0, 100, 60)]
+		]);
+		const pts = routeLines(boxes, [
+			{
+				id: 'x',
+				s: { on: 'a', x0: 0, x1: 100, y: 30, sides: ['r'] },
+				t: { on: 'b', x0: 400, x1: 500, y: 30, sides: ['l'] }
+			}
+		]).get('x')!;
+		expect(pts[0]).toEqual({ x: 100, y: 30 });
+		expect(pts.at(-1)).toEqual({ x: 400, y: 30 });
+		for (let i = 1; i < pts.length; i++)
+			expect(distance(pts[i - 1], pts[i], boxes.get('big')!)).toBeGreaterThanOrEqual(40);
+	});
+});
+
 describe('frames', () => {
 	// Two open modules side by side, 40 apart, cards 32 inside. The line from `a` down to `b`
 	// runs between `a2` and `b`, whose middle is right on module `m`'s right edge.
@@ -170,6 +204,28 @@ describe('frames', () => {
 		expect(Math.min(nearest(x), nearest(y))).toBeGreaterThanOrEqual(ROUTE.buffer);
 		const upright = (pts: Point[]) => pts.find((p, i) => i && p.x === pts[i - 1].x)!.x;
 		expect(Math.abs(upright(x) - upright(y))).toBeGreaterThanOrEqual(ROUTE.spread);
+	});
+
+	it('keeps a large frame’s clearance off its edges', () => {
+		const big = new Map(
+			[...frames].map(([id, f]) => [id, id === 'frame:m' ? { ...f, clear: 20 } : f])
+		);
+		const pts = routeLines(new Map([...cards, ...big]), lines).get('x')!;
+		const upright = pts.find((p, i) => i && p.x === pts[i - 1].x)!.x;
+		expect(Math.abs(upright - 300)).toBeGreaterThanOrEqual(20);
+		expect(Math.abs(upright - 340)).toBeGreaterThanOrEqual(ROUTE.buffer);
+	});
+
+	it('does the best it can where frames leave too little room', () => {
+		// `a2` reaches 32 of `m`'s edge and both frames want 30: nowhere is clear of them all.
+		const tight = new Map([...cards, ['a2', rect(32, 300, 236, 60)]]);
+		const wide = new Map([...frames].map(([id, f]) => [id, { ...f, clear: 30 }]));
+		const pts = routeLines(new Map([...tight, ...wide]), lines).get('x')!;
+		const upright = pts.find((p, i) => i && p.x === pts[i - 1].x)!.x;
+		expect(Math.min(Math.abs(upright - 300), Math.abs(upright - 340))).toBeGreaterThanOrEqual(20);
+		for (let i = 1; i < pts.length; i++)
+			for (const r of [tight.get('a2')!, tight.get('c')!])
+				expect(distance(pts[i - 1], pts[i], r)).toBeGreaterThanOrEqual(ROUTE.buffer);
 	});
 
 	it('leaves lines that keep off the edges as they are', () => {
