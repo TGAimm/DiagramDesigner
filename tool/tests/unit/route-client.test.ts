@@ -244,7 +244,7 @@ describe('RouteClient', () => {
 			true
 		);
 
-		it('routes each group among its own boxes, the smaller first, the largest ahead only', async () => {
+		it('routes each group among its own boxes, the smaller first, on both workers', async () => {
 			const [now, later] = [new InProcess(), new InProcess()];
 			const client = new RouteClient(now, later);
 			const done = vi.fn();
@@ -261,9 +261,27 @@ describe('RouteClient', () => {
 			client.destroy();
 		});
 
+		it('routes a large group only on the worker routing ahead', async () => {
+			const [now, later] = [new InProcess(), new InProcess()];
+			const client = new RouteClient(now, later);
+			const many = keyedGroup(
+				{
+					boxes,
+					lines: Array.from({ length: 65 }, (_, i) => line(`l${i}`, 'a', 'b', 5 + i * 0.75))
+				},
+				true
+			);
+			client.wantGroups([many], true, vi.fn());
+			client.wantGroups([many, small], true, vi.fn());
+			await vi.waitFor(() => expect(client.groupRoutes([many, small]).done).toBe(true));
+			expect(now.routed()).toEqual([routeKey(small.lines, true)]);
+			expect(later.routed()).toEqual([routeKey(many.lines, true)]);
+			client.destroy();
+		});
+
 		it('routes again only the groups that changed, whatever else did', async () => {
-			const later = new InProcess();
-			const client = new RouteClient(new InProcess(), later);
+			const [now, later] = [new InProcess(), new InProcess()];
+			const client = new RouteClient(now, later);
 			const done = vi.fn();
 			client.wantGroups([big, small], true, done);
 			await vi.waitFor(() => expect(client.groupRoutes([big, small]).done).toBe(true));
@@ -274,13 +292,13 @@ describe('RouteClient', () => {
 			expect(client.groupRoutes([big, changed])).toMatchObject({ done: false });
 			expect(client.groupRoutes([big, changed]).routes.has('ab')).toBe(true);
 			await vi.waitFor(() => expect(client.groupRoutes([big, changed]).done).toBe(true));
-			expect(later.routed()).toHaveLength(2);
+			expect([...now.routed(), ...later.routed()]).toHaveLength(3);
 			client.destroy();
 		});
 
 		it('finds a group moved elsewhere whole, its lines moved with it', async () => {
-			const later = new InProcess();
-			const client = new RouteClient(new InProcess(), later);
+			const [now, later] = [new InProcess(), new InProcess()];
+			const client = new RouteClient(now, later);
 			client.wantGroups([big], true, vi.fn());
 			await vi.waitFor(() => expect(client.groupRoutes([big]).done).toBe(true));
 			const by = (r: Rect): Rect => ({
@@ -303,7 +321,7 @@ describe('RouteClient', () => {
 			client.wantGroups([there], true, done);
 			expect(done).toHaveBeenCalledOnce();
 			expect(client.groupRoutes([there]).routes).toEqual(routeLines(shifted, lines, true));
-			expect(later.routed()).toHaveLength(1);
+			expect([...now.routed(), ...later.routed()]).toHaveLength(1);
 			client.destroy();
 		});
 

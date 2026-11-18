@@ -102,6 +102,9 @@ export function keyedGroup(group: RouteGroup, shareEnds: boolean): KeyedGroup {
 const moved = (routes: Routes, dx: number, dy: number): Routes =>
 	new Map([...routes].map(([id, pts]) => [id, pts.map((p) => ({ x: p.x + dx, y: p.y + dy }))]));
 
+/** Groups of lines at rest of more lines than this are routed only ahead (see `nextGroup`). */
+const LARGE = 64;
+
 /** What is wanted now, by priority: lines at rest before lit ones. */
 const SLOTS = ['rest', 'lit'] as const;
 type Slot = (typeof SLOTS)[number];
@@ -231,9 +234,9 @@ export class RouteClient {
 	 * Routes the lines at rest group by group, each among its own boxes, and tells `done` as
 	 * each group's come in, and at once if all are kept. A group is kept by its own boxes and
 	 * lines, in the store too, so a change elsewhere in the layout routes only the groups it
-	 * touched. Smaller groups go first, on both workers, so most lines are drawn soon; the
-	 * largest only routes ahead of time, so lit lines never wait for it. Replaces the groups
-	 * wanted before.
+	 * touched. Smaller groups go first, on both workers, so most lines are drawn soon; large
+	 * ones only on the worker routing ahead, so lit lines never wait for them. Replaces the
+	 * groups wanted before.
 	 */
 	wantGroups(groups: KeyedGroup[], shareEnds: boolean, done: () => void) {
 		this.keepGroups = Math.max(256, 4 * groups.length);
@@ -374,12 +377,15 @@ export class RouteClient {
 	}
 
 	/**
-	 * The next group of lines at rest to route, the smallest; `last` lets the largest go too,
-	 * which only the worker routing ahead takes.
+	 * The next group of lines at rest to route, the smallest; `large` lets a group of over
+	 * LARGE lines go, which only the worker routing ahead takes: libavoid takes far longer the
+	 * more lines a group has (up to a minute), and lit lines must not wait for it.
 	 */
-	private nextGroup(last: boolean): Job | undefined {
-		while (this.groupQueue.length > (last ? 0 : 1)) {
-			const job = this.groupQueue.shift()!;
+	private nextGroup(large: boolean): Job | undefined {
+		while (this.groupQueue.length) {
+			const job = this.groupQueue[0];
+			if (!large && job.lines.length > LARGE) return undefined;
+			this.groupQueue.shift();
 			if (!this.grouped.has(job.key)) return job;
 			job.done?.();
 		}
