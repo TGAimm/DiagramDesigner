@@ -92,7 +92,7 @@ export function keyedGroup(group: RouteGroup, shareEnds: boolean): KeyedGroup {
 	if (!group.boxes.size) [x, y] = [0, 0];
 	const boxes = new Map<string, Rect>();
 	for (const [id, r] of group.boxes)
-		boxes.set(id, { x0: r.x0 - x, y0: r.y0 - y, x1: r.x1 - x, y1: r.y1 - y });
+		boxes.set(id, { ...r, x0: r.x0 - x, y0: r.y0 - y, x1: r.x1 - x, y1: r.y1 - y });
 	const end = (e: RouteEnd): RouteEnd => ({ ...e, x0: e.x0 - x, x1: e.x1 - x, y: e.y - y });
 	const lines = group.lines.map((l) => ({ ...l, s: end(l.s), t: end(l.t) }));
 	return { ...group, x, y, key: `${boxesKey(boxes)}|${routeKey(lines, shareEnds)}` };
