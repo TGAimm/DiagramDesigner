@@ -6,7 +6,7 @@ import { railGroups, railOf } from './apis';
 import { edgeKey, edgesOf, type Edge } from './connections';
 import type { ElkNode } from 'elkjs/lib/elk-api';
 import { elkLayout } from './elk';
-import { ROUTE } from './route';
+import { clearanceOf, ROUTE } from './route';
 
 /** A model is drawn as a class where it is owned, as a table where it is stored. */
 export type ModelView = 'class' | 'table';
@@ -47,6 +47,11 @@ export interface LandscapeBox {
 	logic?: { cols: TableColumn[]; rows: LogicRow[] };
 	/** A module's triggers, one row each, its schedule in words; set when the box is its triggers card. */
 	triggers?: { cols: TableColumn[]; rows: LogicRow[] };
+	/**
+	 * Room lines keep clear of the box, more the larger it is (see route.ts `clearanceOf`). The
+	 * layout leaves that much more room round it, and inside it if it holds boxes.
+	 */
+	clear: number;
 }
 
 interface Size {
@@ -723,6 +728,10 @@ export function layoutLandscape(
 		apis.length ? railOf(model, railGroups(model, el, apis), height).width : 0;
 	/** Half of the own rail, which sits inside the box, so children keep clear of it. */
 	const inner = new Map<string, number>();
+	/** Room lines keep clear of each box (see `LandscapeBox.clear`). */
+	const clear = new Map<string, number>();
+	/** What a box keeps clear beyond what every box does: the room the layout adds for it. */
+	const extra = (id: string) => (clear.get(id) ?? ROUTE.buffer) - ROUTE.buffer;
 
 	// The box tree, and the boxes each leaf (model, field, unit, api, api field) is drawn in.
 	const kidsBy = new Map<string, Item[]>();
@@ -807,6 +816,7 @@ export function layoutLandscape(
 		const right = Math.max(own, railWidth(item.el, deep, size.height) / 2);
 		if (right) size.right = right;
 		sizes.set(item.id, size);
+		clear.set(item.id, clearanceOf(size.width, size.height));
 		return size;
 	}
 
@@ -838,17 +848,19 @@ export function layoutLandscape(
 				foldAt: item.view ? foldAt.get(item.el) : undefined,
 				apis: apisOf(item),
 				logic: item.card === 'logic' ? logicCards.get(item.id) : undefined,
-				triggers: item.card === 'triggers' ? logicCards.get(item.id) : undefined
+				triggers: item.card === 'triggers' ? logicCards.get(item.id) : undefined,
+				clear: clear.get(item.id) ?? ROUTE.buffer
 			};
 			out.push(box);
+			const m = extra(item.id);
 			if (kids.length)
 				place(
 					kids,
 					{
-						x: absX + PAD,
-						y: absY + HEADER,
-						width: slot.width - 2 * PAD - (inner.get(item.id) ?? 0),
-						height: slot.height - HEADER - PAD
+						x: absX + PAD + m,
+						y: absY + HEADER + m,
+						width: slot.width - 2 * (PAD + m) - (inner.get(item.id) ?? 0),
+						height: slot.height - HEADER - PAD - 2 * m
 					},
 					box
 				);
@@ -956,9 +968,14 @@ export function layoutLandscape(
 			const right = fullRail(item);
 			const block = layout(item.id, inside, gap);
 			blocks.set(item.id, block);
+			// Lines keep more room off a larger box, so it keeps that much more round its children.
+			const width = block.width + 2 * PAD + (inner.get(item.id) ?? 0);
+			const height = block.height + HEADER + PAD;
+			clear.set(item.id, clearanceOf(width, height));
+			const m = extra(item.id);
 			sizes.set(item.id, {
-				width: block.width + 2 * PAD + (inner.get(item.id) ?? 0),
-				height: block.height + HEADER + PAD,
+				width: width + 2 * m,
+				height: height + 2 * m,
 				right: right || undefined
 			});
 		}
@@ -971,12 +988,30 @@ export function layoutLandscape(
 					g
 				);
 	};
-	/** Siblings `top`, `g` apart, as one ELK graph. */
+	/**
+	 * Siblings `top`, `g` apart and further by what each keeps clear beyond `buffer` (see
+	 * `extra`), as one ELK graph.
+	 */
 	const run = (top: Item[], g: number): Block => {
+		const block = placed(top, g);
+		for (const item of top) {
+			const at = block.at.get(item.id)!;
+			const m = extra(item.id);
+			block.at.set(item.id, { x: at.x + m, y: at.y + m });
+		}
+		return block;
+	};
+	/** Siblings `top` placed as `run` does, each grown by its `extra` all round. */
+	const placed = (top: Item[], g: number): Block => {
 		const ids = new Set(top.map((i) => i.id));
 		const children = top.map((item) => {
 			const size = sizes.get(item.id)!;
-			return { id: item.id, width: size.width + (size.right ?? 0), height: size.height };
+			const m = extra(item.id);
+			return {
+				id: item.id,
+				width: size.width + (size.right ?? 0) + 2 * m,
+				height: size.height + 2 * m
+			};
 		});
 		const among = lines.filter((l) => ids.has(l.source));
 		if (opts.method === 'stress' && among.length) return stress(children, among, g);

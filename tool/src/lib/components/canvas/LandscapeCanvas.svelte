@@ -476,24 +476,33 @@
 
 	/**
 	 * Boxes lines go round: every shown box but an open one, with its rail; open boxes' rails.
-	 * Open boxes are frames, which lines cross but keep off the edges of.
+	 * Open boxes are frames, which lines cross but keep off the edges of. Lines keep each box's
+	 * `clear` off it.
 	 */
 	const obstacles = $derived.by(() => {
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built and returned whole
 		const out = new Map<string, Rect>();
 		for (const b of boxes) {
 			if (b.parentId && !open.has(b.parentId)) continue;
+			const [x0, y0, clear] = [b.absX, b.absY, b.clear];
 			if (open.has(b.id)) {
-				const [x0, y0] = [b.absX, b.absY];
-				out.set(`frame:${b.id}`, { x0, y0, x1: x0 + b.width, y1: y0 + b.height, frame: true });
+				out.set(`frame:${b.id}`, {
+					x0,
+					y0,
+					x1: x0 + b.width,
+					y1: y0 + b.height,
+					clear,
+					frame: true
+				});
 				continue;
 			}
 			const r = rails.get(b.id);
 			out.set(b.id, {
-				x0: b.absX,
-				y0: b.absY,
-				x1: b.absX + b.width + (r ? r.width / 2 : 0),
-				y1: b.absY + b.height
+				x0,
+				y0,
+				x1: x0 + b.width + (r ? r.width / 2 : 0),
+				y1: y0 + b.height,
+				clear
 			});
 		}
 		for (const [id, r] of rails) {
@@ -921,7 +930,8 @@
 						x0: b.absX,
 						y0: b.absY,
 						x1: b.absX + b.width + (r ? r.width / 2 : 0),
-						y1: b.absY + b.height
+						y1: b.absY + b.height,
+						clear: b.clear
 					});
 				}
 			g = { boxes: kids, lines: [] };

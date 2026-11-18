@@ -3,6 +3,7 @@ import {
 	DEFAULT_LAYOUT,
 	fieldRowY,
 	FOLD,
+	HEADER,
 	LEAF,
 	layoutLandscape,
 	relationsOf,
@@ -13,6 +14,7 @@ import { railGroups, railOf } from '../../src/lib/landscape/apis';
 import { edgesOf, restLines } from '../../src/lib/landscape/connections';
 import { sequenceOf } from '../../src/lib/landscape/sequence';
 import { GLYPH, textWidth } from '../../src/lib/render/text';
+import { ROUTE } from '../../src/lib/landscape/route';
 import { loadFixture, loadStrings } from './helpers';
 
 const { model } = loadFixture();
@@ -628,5 +630,51 @@ describe('logic cards', () => {
 			[6, 'return', 'ok']
 		]);
 		expect(seq.rows).toBe(7);
+	});
+});
+
+describe('room for lines', () => {
+	/** The layout with lines keeping `share` of a box's shorter side clear of it. */
+	const withShare = (share: number) => {
+		const was = ROUTE.share;
+		ROUTE.share = share;
+		try {
+			return layoutLandscape(model).boxes;
+		} finally {
+			ROUTE.share = was;
+		}
+	};
+	const boxes = withShare(0.05);
+	const extra = (b: { clear: number }) => b.clear - ROUTE.buffer;
+	const byId = new Map(boxes.map((b) => [b.id, b]));
+
+	it('gives every box the clearance its size asks for', () => {
+		expect(boxes.some((b) => b.clear > ROUTE.buffer)).toBe(true);
+		for (const b of boxes) expect(b.clear).toBeGreaterThanOrEqual(ROUTE.buffer);
+		expect(layoutLandscape(model).boxes.every((b) => b.clear >= ROUTE.buffer)).toBe(true);
+	});
+
+	it('keeps that much more room inside a box round its children', () => {
+		for (const c of boxes) {
+			const p = c.parentId ? byId.get(c.parentId)! : undefined;
+			if (!p) continue;
+			expect(c.absX - p.absX).toBeGreaterThanOrEqual(32 + extra(p) - 0.5);
+			expect(c.absY - p.absY).toBeGreaterThanOrEqual(HEADER + extra(p) - 0.5);
+			expect(p.absY + p.height - (c.absY + c.height)).toBeGreaterThanOrEqual(32 + extra(p) - 0.5);
+		}
+	});
+
+	it('keeps siblings that much further apart', () => {
+		for (const a of boxes)
+			for (const b of boxes) {
+				if (a.id >= b.id || a.parentId !== b.parentId) continue;
+				const apart = Math.max(
+					b.absX - (a.absX + a.width),
+					a.absX - (b.absX + b.width),
+					b.absY - (a.absY + a.height),
+					a.absY - (b.absY + b.height)
+				);
+				expect(apart).toBeGreaterThanOrEqual(32 + extra(a) + extra(b) - 0.5);
+			}
 	});
 });
