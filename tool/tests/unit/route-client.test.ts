@@ -325,6 +325,19 @@ describe('RouteClient', () => {
 			client.destroy();
 		});
 
+		it('gives the same routes back until a group comes in', async () => {
+			const client = new RouteClient(new InProcess(), new InProcess());
+			const groups = [big, small];
+			client.wantGroups(groups, true, vi.fn());
+			const before = client.groupRoutes(groups);
+			expect(client.groupRoutes(groups)).toBe(before);
+			await vi.waitFor(() => expect(client.groupRoutes(groups).done).toBe(true));
+			const after = client.groupRoutes(groups);
+			expect(after).not.toBe(before);
+			expect(client.groupRoutes(groups)).toBe(after);
+			client.destroy();
+		});
+
 		it('takes groups from the store, and keeps them there once routed', async () => {
 			const kept = new Map<string, Map<string, { x: number; y: number }[]>>();
 			const store = { load: (k: string) => kept.get(k), save: vi.fn((k, r) => kept.set(k, r)) };

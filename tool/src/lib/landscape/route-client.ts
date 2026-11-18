@@ -256,18 +256,33 @@ export class RouteClient {
 		this.pump();
 	}
 
-	/** The routes of `groups` kept so far, all by line id, and whether every group's are. */
+	/**
+	 * The routes of `groups` kept so far, all by line id, and whether every group's are. The
+	 * same object while no group of them came in since, so what is worked out from it (lines
+	 * lit along the lines at rest) is not worked out, and routed, anew each time anything does.
+	 */
 	groupRoutes(groups: KeyedGroup[]): { routes: Routes; done: boolean } {
+		const kept = groups.map((g) => (g.lines.length ? this.keptGroup(g.key) : undefined));
+		const have = kept.map((r, i) => (r || !groups[i].lines.length ? 1 : 0)).join('');
+		if (this.lastGroups?.groups === groups && this.lastGroups.have === have)
+			return this.lastGroups.out;
 		const routes: Routes = new Map();
 		let done = true;
-		for (const g of groups) {
-			if (!g.lines.length) continue;
-			const r = this.keptGroup(g.key);
+		groups.forEach((g, i) => {
+			if (!g.lines.length) return;
+			const r = kept[i];
 			if (!r) done = false;
 			else for (const [id, pts] of moved(r, g.x, g.y)) routes.set(id, pts);
-		}
-		return { routes, done };
+		});
+		const out = { routes, done };
+		this.lastGroups = { groups, have, out };
+		return out;
 	}
+	private lastGroups?: {
+		groups: KeyedGroup[];
+		have: string;
+		out: { routes: Routes; done: boolean };
+	};
 
 	/** A group's routes from its top-left corner, kept here or in the store. */
 	private keptGroup(key: string): Routes | undefined {
