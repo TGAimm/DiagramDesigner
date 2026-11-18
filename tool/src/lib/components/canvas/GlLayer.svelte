@@ -78,6 +78,7 @@
 	import type { Model } from '#lib/model/model.ts';
 	import { tokenValues } from '#lib/theme/tokens.ts';
 	import { GLYPH_PX, glText } from './gl/font.ts';
+	import { LineLayer, lineShader, tokenRgba } from './gl/lines.ts';
 
 	/**
 	 * The landscape's boxes, rows and lines drawn on one WebGL canvas (PixiJS), for the Rendering
@@ -174,6 +175,7 @@
 		return () => {
 			gone = true;
 			made?.destroy(false, { children: true });
+			lineShading = undefined;
 			app = undefined;
 		};
 	});
@@ -209,8 +211,10 @@
 	/* eslint-disable svelte/prefer-svelte-reactivity -- the scene is drawn, not read: not state */
 	let names: Name[] = [];
 	let nameOf = new Map<string, Name>();
-	let lineLayers = new Map<number, Graphics>();
-	let litLayer: Graphics | undefined;
+	let lineLayers = new Map<number, LineLayer>();
+	let litLayer: LineLayer | undefined;
+	/** The lines' shader, made once per renderer. */
+	let lineShading: import('pixi.js').Shader | undefined;
 	let rowLayer: Container | undefined;
 	let outlineLayer: Graphics | undefined;
 	/** The row under the pointer, tinted over its card's rows. */
@@ -285,7 +289,7 @@
 		for (const badge of badgeLayer?.children ?? []) badge.alpha = dimOf(badge.label);
 	}
 
-	/** Boxes, names and badges, layer by layer; lines, rows and outlines are drawn per frame. */
+	/** Boxes, names and badges, layer by layer; lines are drawn as they change, rows and outlines per frame. */
 	function build() {
 		const P = pixi!;
 		const stage = world!;
@@ -306,6 +310,9 @@
 			height: app!.screen.height
 		});
 		app!.stage.addChildAt(dots, 0);
+		for (const l of lineLayers.values()) l.destroy();
+		litLayer?.destroy();
+		const shading = (lineShading ??= lineShader(P, app!.renderer.resolution));
 		names = [];
 		nameOf = new Map();
 		lineLayers = new Map();
@@ -319,9 +326,9 @@
 			byDepth.set(d, [...(byDepth.get(d) ?? []), b]);
 		}
 		const lineLayer = (d: number) => {
-			const g = new P.Graphics();
-			lineLayers.set(d, g);
-			stage.addChild(g);
+			const l = new LineLayer(P, shading);
+			lineLayers.set(d, l);
+			stage.addChild(l.mesh);
 		};
 		lineLayer(-1);
 		const deepest = Math.max(-1, ...byDepth.keys());
@@ -371,8 +378,8 @@
 		stage.addChild(rowLayer);
 		hoverLayer = new P.Graphics();
 		stage.addChild(hoverLayer);
-		litLayer = new P.Graphics();
-		stage.addChild(litLayer);
+		litLayer = new LineLayer(P, shading);
+		stage.addChild(litLayer.mesh);
 		outlineLayer = new P.Graphics();
 		stage.addChild(outlineLayer);
 		badgeLayer = new P.Container();
@@ -436,91 +443,25 @@
 	}
 
 	// ------------------------------------------------------------ lines
-	/** `pts` cut into dashes of `on` and gaps of `off`, all in canvas px. */
-	function dashed(pts: Point[], on: number, off: number): Point[][] {
-		const out: Point[][] = [];
-		let cur: Point[] = [];
-		let left = on;
-		let drawing = true;
-		for (let i = 1; i < pts.length; i++) {
-			let [a, b] = [pts[i - 1], pts[i]];
-			let len = Math.hypot(b.x - a.x, b.y - a.y);
-			if (drawing && !cur.length) cur.push(a);
-			while (len > left) {
-				const t = left / len;
-				const p = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
-				if (drawing) {
-					cur.push(p);
-					out.push(cur);
-					cur = [];
-				} else cur = [p];
-				drawing = !drawing;
-				[a, len, left] = [p, len - left, drawing ? on : off];
-			}
-			left -= len;
-			if (drawing) cur.push(b);
-		}
-		if (drawing && cur.length > 1) out.push(cur);
-		return out;
-	}
-
-	function drawLine(g: Graphics, l: GlLine, z: number) {
-		const pts = l.points;
-		if (pts.length < 2) return;
-		const a = l.dim ? 0.25 : 1;
-		const c = (t: Token) => {
-			const v = colour(t);
-			return { ...v, alpha: v.alpha * a };
-		};
-		const path = (pp: Point[]) => {
-			g.moveTo(pp[0].x, pp[0].y);
-			for (const p of pp.slice(1)) g.lineTo(p.x, p.y);
-		};
-		if (l.halo) {
-			path(pts);
-			g.stroke({ ...c('canvas-bg'), width: l.halo / z, join: 'miter', cap: 'butt' });
-		}
-		// The line stops under its head, so a wide line does not blunt the tip; a diamond sits at
-		// its start.
-		const atStart = l.head === 'diamond';
-		const [tip, from] = atStart ? [pts[0], pts[1]] : [pts.at(-1)!, pts.at(-2)!];
-		const len = Math.hypot(tip.x - from.x, tip.y - from.y) || 1;
-		const [ux, uy] = [(tip.x - from.x) / len, (tip.y - from.y) / len];
-		const back = l.head ? Math.min(5 / z, len) : 0;
-		const cut = { x: tip.x - ux * back, y: tip.y - uy * back };
-		const body = atStart ? [cut, ...pts.slice(1)] : [...pts.slice(0, -1), cut];
-		const stroke = {
-			...c(l.color),
-			width: l.width / z,
-			join: 'miter' as const,
-			cap: 'butt' as const
-		};
-		for (const d of l.dash ? dashed(body, l.dash[0] / z, l.dash[1] / z) : [body]) {
-			path(d);
-			g.stroke(stroke);
-		}
-		if (!l.head) return;
-		const [hl, hw] = l.head === 'diamond' ? [16 / z, 5 / z] : [10 / z, 4 / z];
-		const [px, py] = [-uy, ux];
-		const pt = (along: number, side: number) => [
-			tip.x - ux * along + px * side,
-			tip.y - uy * along + py * side
-		];
-		g.poly(
-			l.head === 'diamond'
-				? [...pt(0, 0), ...pt(hl / 2, hw), ...pt(hl, 0), ...pt(hl / 2, -hw)]
-				: [...pt(0, 0), ...pt(hl, hw), ...pt(hl, -hw)]
-		).fill(c(l.color));
-	}
-
-	function drawLines(z: number) {
-		for (const g of lineLayers.values()) g.clear();
+	/**
+	 * Lines at rest into the layers between the boxes of their depth, lit lines into theirs.
+	 * Widths, dashes and heads keep their size on screen in the lines' shader (see gl/lines.ts),
+	 * so the camera moving redraws no line.
+	 */
+	function drawRest() {
+		const rgba = tokenRgba(pixi!, values);
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built and used here
+		const byLayer = new Map<number, GlLine[]>();
 		for (const l of rest) {
-			const g = lineLayers.get(l.depth) ?? lineLayers.get(-1);
-			if (g) drawLine(g, l, z);
+			const d = lineLayers.has(l.depth) ? l.depth : -1;
+			const list = byLayer.get(d);
+			if (list) list.push(l);
+			else byLayer.set(d, [l]);
 		}
-		litLayer?.clear();
-		if (litLayer) for (const l of lit) drawLine(litLayer, l, z);
+		for (const [d, layer] of lineLayers) layer.set(byLayer.get(d) ?? [], rgba);
+	}
+	function drawLit() {
+		litLayer?.set(lit, tokenRgba(pixi!, values));
 	}
 
 	// ------------------------------------------------------------ names
@@ -1083,8 +1024,8 @@
 
 	// ------------------------------------------------------------ drawing
 	let frame = 0;
-	let drawnZoom = NaN;
-	let linesDirty = true;
+	let restDirty = true;
+	let litDirty = true;
 	let dimDirty = true;
 	/** Draws the next frame. */
 	function request() {
@@ -1102,11 +1043,9 @@
 				dots.tileScale.set(k);
 				dots.tilePosition.set(x - (DOT_GAP / 2) * zoom, y - (DOT_GAP / 2) * zoom);
 			}
-			if (zoom !== drawnZoom || linesDirty) {
-				drawLines(zoom);
-				drawnZoom = zoom;
-				linesDirty = false;
-			}
+			if (restDirty) drawRest();
+			if (litDirty) drawLit();
+			restDirty = litDirty = false;
 			placeRows(zoom);
 			placeNames(zoom);
 			placeFront(zoom);
@@ -1129,7 +1068,7 @@
 		void [pixi, boxes, boxById, rails, model, values, marks, comparing, changes.hidden];
 		if (!pixi || !app) return;
 		build();
-		linesDirty = true;
+		restDirty = litDirty = true;
 		request();
 	});
 	// Looking at something tones the rest down: alphas only.
@@ -1139,8 +1078,13 @@
 		request();
 	});
 	$effect(() => {
-		void [rest, lit];
-		linesDirty = true;
+		void rest;
+		restDirty = true;
+		request();
+	});
+	$effect(() => {
+		void lit;
+		litDirty = true;
 		request();
 	});
 	// The view moved, or what rows show and how they are lit changed.
