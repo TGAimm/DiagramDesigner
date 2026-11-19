@@ -91,3 +91,11 @@ export const MONO_STACK = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monosp
 
 /** Room an entity glyph and its gap take before a name, in em (see EntityGlyph). */
 export const GLYPH = 1.25;
+
+/**
+ * An identifier cut where a line may break in it: before a hump (`Order|Line`), after a dot,
+ * slash, underscore or dash, and before an angle bracket. A pane wraps one only when it is
+ * wider than the pane, and then never mid-word.
+ */
+export const identParts = (text: string): string[] =>
+	text.split(/(?<=[a-z0-9])(?=[A-Z])|(?<=[./_-])(?=[\w{])|(?=<)/);

@@ -51,7 +51,8 @@
 	} from '#lib/landscape/connections.ts';
 	import { drawnInFull, READABLE } from '#lib/landscape/open.ts';
 	import { GLYPH, textWidth } from '#lib/render/text.ts';
-	import { sequenceOf, sequenceWidth } from '#lib/landscape/sequence.ts';
+	import { sequenceCol, sequenceOf, sequenceWidth } from '#lib/landscape/sequence.ts';
+	import Ident from '#lib/components/Ident.svelte';
 	import SequenceDiagram from './SequenceDiagram.svelte';
 	import PlayerBar from './PlayerBar.svelte';
 	import { callOf, forwardGoesInto, runOf, stepOutOf, type PlayStep } from '#lib/landscape/play.ts';
@@ -1334,21 +1335,25 @@
 	function unitCardOf(id: string | undefined) {
 		const u = id && isUnit(id) ? el(id) : undefined;
 		if (!u) return undefined;
-		const typeOf = (x: LogicField) =>
-			[
-				typeText(x, (id) => refLabel(model, id)),
-				x.required && 'required',
-				x.nullable && 'nullable',
-				x.description
-			]
-				.filter(Boolean)
-				.join(' · ');
+		// An input not required is marked `name?`, as an api's params are; `[]` marks many.
+		const row = (x: LogicField, input: boolean) => ({
+			name: x.name + (input && !x.required ? '?' : ''),
+			type: typeText(x, (id) => refLabel(model, id)) + (x.nullable ? ' · nullable' : ''),
+			note: x.description
+		});
+		const groups = [
+			{ label: 'Inputs', fails: false, rows: (u.def.inputs ?? []).map((x) => row(x, true)) },
+			{ label: 'Returns', fails: false, rows: (u.def.outputs ?? []).map((x) => row(x, false)) },
+			{
+				label: 'Fails',
+				fails: true,
+				rows: (u.def.fails ?? []).map((x) => ({ name: x.name, type: '', note: x.description }))
+			}
+		].filter((g) => g.rows.length);
 		return {
 			title: u.name,
 			sub: `Logic unit · ${pathOf(u.parentId)}`,
-			inputs: (u.def.inputs ?? []).map((x) => ({ name: x.name, type: typeOf(x) })),
-			outputs: (u.def.outputs ?? []).map((x) => ({ name: x.name, type: typeOf(x) })),
-			fails: u.def.fails ?? [],
+			groups,
 			seq: u.def.steps?.length ? sequenceOf(model, u.id) : undefined
 		};
 	}
@@ -1374,13 +1379,14 @@
 						target: b && { box: b, field: l.field }
 					};
 				});
-		const row = (label: string, text: string | undefined, mono = false) =>
-			text === undefined ? [] : [{ label, text, mono }];
+		// `ident`: a name that sets the card's width rather than wrapping in it.
+		const row = (label: string, text: string | undefined, mono = false, ident = mono) =>
+			text === undefined ? [] : [{ label, text, mono, ident }];
 		const gate = d.when && el(d.when.flag);
 		const shared = [
 			...row('Timeout', d.timeout && durationWords(d.timeout)),
 			...row('Retries', d.retries?.toString()),
-			...row('With', d.with),
+			...row('With', d.with, false, true),
 			...row('Exists when', gate ? `${gate.name} is ${d.when!.is}` : undefined)
 		];
 		if (d.message) {
@@ -1538,12 +1544,32 @@
 		return { left: s.absX * zoom + vx, right: (s.absX + s.width) * zoom + vx, y: y * zoom + vy };
 	});
 
-	const API_W = 320;
-	const FIELD_W = 300;
-	// The shown card's height, so it is kept inside the canvas.
+	/**
+	 * A card is as wide as its names (a name, type, value or path), from PANE_MIN to 560 px;
+	 * a unit's is as wide as its sequence or signature, up to the canvas. Prose wraps inside
+	 * that width and never widens it. A card is at most the canvas tall; its body scrolls.
+	 */
+	const PANE_MIN = 300;
+	const UNIT_MIN = 420;
+	/** A unit card's least width: its sequence at full spacing, or its widest signature group. */
+	function unitWidth(u: NonNullable<ReturnType<typeof unitCardOf>>) {
+		const group = (g: (typeof u.groups)[number]) =>
+			24 +
+			Math.max(...g.rows.map((r) => textWidth(r.name, 13, true))) +
+			(g.fails ? 0 : 14 + Math.max(...g.rows.map((r) => textWidth(r.type, 12))));
+		return Math.min(
+			paneRoom,
+			Math.max(UNIT_MIN, u.seq ? sequenceWidth(u.seq) + 2 : 0, ...u.groups.map(group))
+		);
+	}
+	// The shown card's size, so it is placed beside its row and kept inside the canvas.
 	let cardH = $state(0);
+	let cardW = $state(0);
 	// The card folded to its header, so the lines it covers show; the pick stays.
 	let cardMin = $state(false);
+	/** An enum shows its first values; Show more shows all of the one keyed here. */
+	const VALUES_SHOWN = 12;
+	let shownValues = $state<string | null>(null);
 	$effect(() => {
 		void view.field;
 		void view.api;
@@ -1563,10 +1589,10 @@
 					: Math.max(8 + panelW, (cw + panelW - w) / 2);
 		return { left, top: Math.min(Math.max(8, a.y - 24), Math.max(8, ch - cardH - 8)) };
 	}
-	const cardPos = $derived(beside(apiAnchor, API_W));
-	const fieldPos = $derived(beside(fieldAnchor, FIELD_W));
-	const unitW = $derived(Math.max(420, unitCard?.seq ? sequenceWidth(unitCard.seq) + 2 : 0));
-	const unitPos = $derived(beside(fieldAnchor, unitW));
+	const cardPos = $derived(beside(apiAnchor, cardW || PANE_MIN));
+	const fieldPos = $derived(beside(fieldAnchor, cardW || PANE_MIN));
+	const unitW = $derived(unitCard ? unitWidth(unitCard) : UNIT_MIN);
+	const unitPos = $derived(beside(fieldAnchor, cardW || unitW));
 
 	// ------------------------------------------------------------ peek
 	/** What a card's entry names: an api, a field's or unit's row, or a whole card. */
@@ -1581,17 +1607,34 @@
 	 */
 	let peek = $state<{ at: PeekAt; from: string; dy: number; trail: PeekAt[] } | null>(null);
 	let peekH = $state(0);
+	let peekW = $state(0);
+	/** The part of a card under `target` that scrolls, if any: its body, or a wide sequence. */
+	function scroller(card: HTMLElement, target: EventTarget | null) {
+		for (let e = target as HTMLElement | null; e && e !== card; e = e.parentElement)
+			if (e.scrollHeight > e.clientHeight + 1 || e.scrollWidth > e.clientWidth + 1) return e;
+		return undefined;
+	}
 	/**
-	 * Cards over the canvas never scroll (they are as tall as what they show), so a wheel or a
-	 * drag on one zooms or pans the canvas under it, as it would off the card.
+	 * A wheel over a card that scrolls scrolls it; over one that does not, it zooms the canvas
+	 * under it, as it would off the card. Ctrl+wheel zooms the canvas anywhere. A drag on a card
+	 * pans the canvas, except one on a scrollbar.
 	 */
 	function toCanvas(card: HTMLElement) {
 		const wheel = (e: WheelEvent) => {
+			if (!e.ctrlKey && scroller(card, e.target)) return;
 			e.preventDefault();
-			stageEl?.dispatchEvent(new WheelEvent(e.type, e));
+			// Over the header of a card whose body scrolls: scroll the body.
+			const body = card.querySelector<HTMLElement>(':scope > .pane-body');
+			if (!e.ctrlKey && body && body.scrollHeight > body.clientHeight + 1)
+				body.scrollBy(e.deltaX, e.deltaY);
+			else stageEl?.dispatchEvent(new WheelEvent(e.type, e));
 		};
 		const down = (e: PointerEvent) => {
-			if (!e.button) stageEl?.dispatchEvent(new PointerEvent(e.type, e));
+			const s = scroller(card, e.target);
+			const r = s?.getBoundingClientRect();
+			const onBar =
+				!!s && !!r && (e.clientX >= r.left + s.clientWidth || e.clientY >= r.top + s.clientHeight);
+			if (!e.button && !onBar) stageEl?.dispatchEvent(new PointerEvent(e.type, e));
 		};
 		card.addEventListener('wheel', wheel, { passive: false });
 		card.addEventListener('pointerdown', down);
@@ -1639,11 +1682,11 @@
 	/** The card shown: its place on screen and width. */
 	const shownCard = $derived(
 		(inspector || triggerCard) && fieldPos
-			? { ...fieldPos, w: FIELD_W }
+			? { ...fieldPos, w: cardW || PANE_MIN }
 			: unitCard && unitPos
-				? { ...unitPos, w: cardMin ? FIELD_W : unitW }
+				? { ...unitPos, w: cardW || unitW }
 				: apiCard && cardPos
-					? { ...cardPos, w: API_W }
+					? { ...cardPos, w: cardW || PANE_MIN }
 					: undefined
 	);
 
@@ -1652,7 +1695,7 @@
 		const at = peek?.at;
 		if (at?.api) {
 			const api = apiCardOf(at.api);
-			return api && { kind: 'api' as const, api, w: API_W };
+			return api && { kind: 'api' as const, api, w: PANE_MIN };
 		}
 		const t = at?.target;
 		if (!t) return undefined;
@@ -1663,17 +1706,17 @@
 					kind: 'unit' as const,
 					unit,
 					from: t.box,
-					w: Math.max(420, unit.seq ? sequenceWidth(unit.seq) + 2 : 0)
+					w: unitWidth(unit)
 				}
 			);
 		}
 		if (t.field && isTrigger(t.field)) {
 			const trigger = triggerCardOf(t.field, t.box);
-			return trigger && { kind: 'trigger' as const, trigger, w: FIELD_W };
+			return trigger && { kind: 'trigger' as const, trigger, w: PANE_MIN };
 		}
 		if (t.field) {
 			const field = fieldCardOf({ box: t.box.id, field: t.field });
-			return field && { kind: 'field' as const, field, id: t.field, w: FIELD_W };
+			return field && { kind: 'field' as const, field, id: t.field, w: PANE_MIN };
 		}
 		// A model or logic card, drawn as on the canvas, its rows peeking in turn.
 		const data = cardOf(t.box, (field, ev) =>
@@ -1687,7 +1730,7 @@
 	/** Beside the card, right of it, else left of it, else over the canvas's right. */
 	const peekPos = $derived.by(() => {
 		const c = shownCard;
-		const w = peekCard?.w;
+		const w = peekCard && (peekCard.kind === 'box' ? peekCard.w : peekW || peekCard.w);
 		if (!c || !w || !peek) return undefined;
 		const right = c.left + c.w + 8;
 		const left =
@@ -1856,6 +1899,9 @@
 
 	/** The Changes or History panel covers the canvas's left; flying centres right of it. */
 	const panelW = $derived(changes.panel ? 340 : 0);
+	/** Room for a card across the canvas, and down it: 8 px clear on each side. */
+	const paneRoom = $derived(Math.max(PANE_MIN, cw - panelW - 16));
+	const paneTall = $derived(Math.max(120, ch - 16));
 
 	function goBack() {
 		const prev = view.trail.at(-1);
@@ -2263,7 +2309,14 @@
 	}}
 />
 
-<div class="canvas" bind:clientWidth={cw} bind:clientHeight={ch} data-testid="canvas">
+<div
+	class="canvas"
+	bind:clientWidth={cw}
+	bind:clientHeight={ch}
+	style:--pane-room="{paneRoom}px"
+	style:--pane-tall="{paneTall}px"
+	data-testid="canvas"
+>
 	<!-- The landscape on one WebGL canvas, moved by its camera (see CanvasCamera); what
 	     it draws takes the pointer through hit testing (see GlLayer.hitAt). -->
 	<div
@@ -2413,14 +2466,27 @@
 				{#each card.constraints as c, i (i)}
 					{@const e = enumOf(c)}
 					{#if e}
+						{@const key = `${card.title}|${i}`}
+						{@const all = shownValues === key || e.values.length <= VALUES_SHOWN + 1}
 						<div class="constraint">
-							<span class="badge">enum {e.name}</span><span class="where"
+							<span class="badge">enum {e.name}</span><span class="count"
 								>{e.values.length} values</span
 							>
 						</div>
 						<ul class="values">
-							{#each e.values as v, j (j)}<li>{v}</li>{/each}
+							{#each all ? e.values : e.values.slice(0, VALUES_SHOWN) as v, j (j)}<li>
+									<Ident text={v} />
+								</li>{/each}
 						</ul>
+						<!-- The longest value sets the width, shown or not, so Show more does not widen it. -->
+						<div class="values-sizer" aria-hidden="true">
+							{e.values.reduce((a, b) => (b.length > a.length ? b : a), '')}
+						</div>
+						{#if !all}
+							<button class="more" onclick={() => (shownValues = key)}
+								>Show {e.values.length - VALUES_SHOWN} more</button
+							>
+						{/if}
 					{:else}
 						<div class="constraint"><span class="badge">{c}</span></div>
 					{/if}
@@ -2442,7 +2508,7 @@
 							e.target?.field && hoverRow({ box: e.target.box.id, field: e.target.field }, false)}
 						title={e.target || e.api ? 'Show here' : undefined}
 					>
-						<span class="text" data-glyph={s.glyph}>{e.text}</span>
+						<span class="text" data-glyph={s.glyph}><Ident text={e.text} /></span>
 						<span class="where">{e.where}</span>
 					</button>
 				{/each}
@@ -2456,38 +2522,30 @@
 		u: NonNullable<ReturnType<typeof unitCardOf>>,
 		pick: (at: PeekAt) => void,
 		from: LandscapeBox | undefined,
-		id: string
+		id: string,
+		w: number
 	)}
-		<div class="io">
-			<section>
-				<h4>Inputs</h4>
-				{#each u.inputs as x (x.name)}
-					<div class="api-field">
-						<span class="name">{x.name}</span><span class="where">{x.type}</span>
-					</div>
-				{:else}
-					<p class="empty">None.</p>
+		<!-- Inputs, Returns and Fails side by side when they fit the card's width, else stacked. -->
+		{#if u.groups.length}
+			<div class="signature">
+				{#each u.groups as g (g.label)}
+					<section class="sig-group" class:fails={g.fails}>
+						<h4>{g.label}</h4>
+						<div class="sig-rows">
+							{#each g.rows as x (x.name)}
+								<span class="name"><Ident text={x.name} /></span><span class="where"
+									><Ident text={x.type} /></span
+								>
+								{#if x.note}<span class="sig-note">{x.note}</span>{/if}
+							{/each}
+						</div>
+					</section>
 				{/each}
-			</section>
-			<section>
-				<h4>Outputs</h4>
-				{#each u.outputs as x (x.name)}
-					<div class="api-field">
-						<span class="name">{x.name}</span><span class="where">{x.type}</span>
-					</div>
-				{/each}
-				{#each u.fails as x (x.name)}
-					<div class="api-field">
-						<span class="name">{x.name}</span><span class="where fail"
-							>fails{x.description ? ` · ${x.description}` : ''}</span
-						>
-					</div>
-				{/each}
-				{#if !u.outputs.length && !u.fails.length}<p class="empty">None.</p>{/if}
-			</section>
-		</div>
+			</div>
+		{/if}
 		{#if u.seq}
-			<section class="seq-section">
+			{@const col = sequenceCol(u.seq, w - 2)}
+			<section class="seq-section" class:wide={sequenceWidth(u.seq, col) > w - 2}>
 				<h4 class="seq-head">
 					Sequence
 					<button class="play" onclick={() => startPlay(id)} title="Walk the board step by step"
@@ -2496,6 +2554,7 @@
 				</h4>
 				<SequenceDiagram
 					seq={u.seq}
+					{col}
 					onpick={(to) => {
 						const at = seqAt(to, from);
 						if (at) pick(at);
@@ -2514,7 +2573,9 @@
 				<h4>Params</h4>
 				{#each api.params as p (p.in + p.name)}
 					<div class="entry">
-						<span class="text">{p.name}{p.required || p.in === 'path' ? '' : '?'}</span>
+						<span class="text"
+							><Ident text={p.name} />{p.required || p.in === 'path' ? '' : '?'}</span
+						>
 						<span class="where">{p.in} · {p.type}{p.description ? ` · ${p.description}` : ''}</span>
 					</div>
 				{/each}
@@ -2536,25 +2597,31 @@
 						onclick={() => m.target && pick({ target: m.target })}
 						title={m.target ? 'Show here' : undefined}
 					>
-						<span class="text">{m.text}</span>
+						<span class="text"><Ident text={m.text} /></span>
 						<span class="where">{m.note}</span>
 					</button>
 				{/if}
-				{#each b.fields as f (f.id)}
-					<div
-						class="api-field"
-						class:hot={view.apiField === f.id}
-						role="listitem"
-						title={f.title}
-						onmouseenter={() => (view.apiField = f.id)}
-						onmouseleave={() => (view.apiField = null)}
-					>
-						<span class="name">{f.name}</span>
-						<span class="where">{f.type}</span>
-						{#if !f.traced}<span class="untraced"><TriangleAlert size={12} /></span
-							>{:else if f.title}<span class="traced">{b.part === 'request' ? '⇠' : '⇢'}</span>{/if}
+				<!-- Names, types and marks in shared columns, so they line up. -->
+				{#if b.fields.length}
+					<div class="api-fields">
+						{#each b.fields as f (f.id)}
+							<div
+								class="api-field"
+								class:hot={view.apiField === f.id}
+								role="listitem"
+								title={f.title}
+								onmouseenter={() => (view.apiField = f.id)}
+								onmouseleave={() => (view.apiField = null)}
+							>
+								<span class="name"><Ident text={f.name} /></span>
+								<span class="where"><Ident text={f.type} /></span>
+								{#if !f.traced}<span class="untraced"><TriangleAlert size={12} /></span
+									>{:else if f.title}<span class="traced">{b.part === 'request' ? '⇠' : '⇢'}</span
+									>{:else}<span></span>{/if}
+							</div>
+						{/each}
 					</div>
-				{/each}
+				{/if}
 				{#if !b.model && !b.fields.length && !b.description}<p class="empty">No body.</p>{/if}
 			</section>
 		{/each}
@@ -2569,7 +2636,7 @@
 						onclick={() => e.target && pick({ target: e.target })}
 						title={e.target ? 'Show here' : undefined}
 					>
-						<span class="text" data-glyph="ƒ">{e.text}</span>
+						<span class="text" data-glyph="ƒ"><Ident text={e.text} /></span>
 						<span class="where">{e.where}</span>
 					</button>
 				{/each}
@@ -2585,11 +2652,14 @@
 			{#if s.rows.length}
 				<section>
 					<h4>{s.label}</h4>
-					{#each s.rows as r (r.label)}
-						<div class="api-field">
-							<span class="where">{r.label}</span><span class:mono={r.mono}>{r.text}</span>
-						</div>
-					{/each}
+					<!-- One label column for every section, so the values line up. -->
+					<div class="facts">
+						{#each s.rows as r (r.label)}
+							<span class="where">{r.label}</span><span class:mono={r.mono} class:prose={!r.ident}
+								>{#if r.ident}<Ident text={r.text} />{:else}{r.text}{/if}</span
+							>
+						{/each}
+					</div>
 				</section>
 			{/if}
 		{/each}
@@ -2605,7 +2675,7 @@
 							onclick={() => e.target && pick({ target: e.target })}
 							title={e.target ? 'Show here' : undefined}
 						>
-							<span class="text" data-glyph="ƒ">{e.text}</span>
+							<span class="text" data-glyph="ƒ"><Ident text={e.text} /></span>
 							<span class="where">{e.where}</span>
 						</button>
 					{/each}
@@ -2621,7 +2691,7 @@
 	{/snippet}
 	{#snippet triggerTitle(t: NonNullable<ReturnType<typeof triggerCardOf>>)}
 		<div class="head">
-			<div class="title"><EntityGlyph kind={t.glyph} /> {t.title}</div>
+			<div class="title"><EntityGlyph kind={t.glyph} /> <Ident text={t.title} /></div>
 			<div class="type">{t.sub}</div>
 		</div>
 	{/snippet}
@@ -2631,9 +2701,21 @@
 				<span style:color="var(--sdv-method-{api.method.toLowerCase()}, var(--sdv-text-muted))"
 					>{api.method}</span
 				>
-				<span class="mono">{api.path}</span>
+				<span class="mono"><Ident text={api.path} /></span>
 			</div>
 			<div class="type">{api.sub}</div>
+		</div>
+	{/snippet}
+	{#snippet fieldTitle(f: NonNullable<ReturnType<typeof fieldCardOf>>)}
+		<div class="head">
+			<div class="title"><Ident text={f.title} /></div>
+			<div class="type">{f.type}</div>
+		</div>
+	{/snippet}
+	{#snippet unitTitle(u: NonNullable<ReturnType<typeof unitCardOf>>)}
+		<div class="head">
+			<div class="title"><i class="fn">ƒ</i> <Ident text={u.title} /></div>
+			<div class="type">{u.sub}</div>
 		</div>
 	{/snippet}
 	{#snippet minButton()}
@@ -2664,15 +2746,18 @@
 			>
 		{/if}
 	{/snippet}
-	<!-- Beside the clicked row, moving with the canvas, so it reads next to what it describes. -->
+	<!--
+		Beside the clicked row, moving with the canvas, so it reads next to what it describes. The
+		header stays; the body under it scrolls once the card reaches the canvas's height.
+	-->
 	{#if inspector && fieldPos}
 		<aside
 			class="inspector"
 			class:min={cardMin}
 			style:left="{fieldPos.left}px"
 			style:top="{fieldPos.top}px"
-			style:width="{FIELD_W}px"
 			bind:clientHeight={cardH}
+			bind:clientWidth={cardW}
 			onpointerdowncapture={press}
 			{@attach toCanvas}
 			data-testid="field-inspector"
@@ -2683,14 +2768,13 @@
 						><ChevronLeft size={16} /></button
 					>
 				{/if}
-				<div class="head">
-					<div class="title">{inspector.title}</div>
-					<div class="type">{inspector.type}</div>
-				</div>
+				{@render fieldTitle(inspector)}
 				{@render minButton()}
 			</header>
-			<ChangeSection id={view.field!.field} go={goTo} />
-			{@render fieldBody(inspector, openPeek, peek?.from)}
+			<div class="pane-body">
+				<ChangeSection id={view.field!.field} go={goTo} />
+				{@render fieldBody(inspector, openPeek, peek?.from)}
+			</div>
 		</aside>
 	{:else if triggerCard && fieldPos}
 		<aside
@@ -2698,8 +2782,8 @@
 			class:min={cardMin}
 			style:left="{fieldPos.left}px"
 			style:top="{fieldPos.top}px"
-			style:width="{FIELD_W}px"
 			bind:clientHeight={cardH}
+			bind:clientWidth={cardW}
 			onpointerdowncapture={press}
 			{@attach toCanvas}
 			data-testid="trigger-card"
@@ -2713,8 +2797,10 @@
 				{@render triggerTitle(triggerCard)}
 				{@render minButton()}
 			</header>
-			<ChangeSection id={view.field!.field} go={goTo} />
-			{@render triggerBody(triggerCard, openPeek, peek?.from)}
+			<div class="pane-body">
+				<ChangeSection id={view.field!.field} go={goTo} />
+				{@render triggerBody(triggerCard, openPeek, peek?.from)}
+			</div>
 		</aside>
 	{:else if unitCard && unitPos}
 		{@const u = unitCard}
@@ -2723,8 +2809,9 @@
 			class:min={cardMin}
 			style:left="{unitPos.left}px"
 			style:top="{unitPos.top}px"
-			style:width="{cardMin ? FIELD_W : unitW}px"
+			style:min-width={cardMin ? undefined : `${unitW}px`}
 			bind:clientHeight={cardH}
+			bind:clientWidth={cardW}
 			onpointerdowncapture={press}
 			{@attach toCanvas}
 			data-testid="unit-card"
@@ -2735,14 +2822,13 @@
 						><ChevronLeft size={16} /></button
 					>
 				{/if}
-				<div class="head">
-					<div class="title"><i class="fn">ƒ</i> {u.title}</div>
-					<div class="type">{u.sub}</div>
-				</div>
+				{@render unitTitle(u)}
 				{@render minButton()}
 			</header>
-			<ChangeSection id={view.field!.field} go={goTo} />
-			{@render unitBody(u, openPeek, boxById.get(view.field!.box), view.field!.field)}
+			<div class="pane-body">
+				<ChangeSection id={view.field!.field} go={goTo} />
+				{@render unitBody(u, openPeek, boxById.get(view.field!.box), view.field!.field, unitW)}
+			</div>
 		</aside>
 	{:else if apiCard && cardPos}
 		<!-- Beside the picked row, moving with the canvas, so the api and what it uses share a view. -->
@@ -2751,8 +2837,8 @@
 			class:min={cardMin}
 			style:left="{cardPos.left}px"
 			style:top="{cardPos.top}px"
-			style:width="{API_W}px"
 			bind:clientHeight={cardH}
+			bind:clientWidth={cardW}
 			onpointerdowncapture={press}
 			{@attach toCanvas}
 			data-testid="api-inspector"
@@ -2761,8 +2847,10 @@
 				{@render apiTitle(apiCard)}
 				{@render minButton()}
 			</header>
-			<ChangeSection id={view.api!} go={goTo} />
-			{@render apiBody(apiCard, openPeek, peek?.from)}
+			<div class="pane-body">
+				<ChangeSection id={view.api!} go={goTo} />
+				{@render apiBody(apiCard, openPeek, peek?.from)}
+			</div>
 		</aside>
 	{/if}
 	<!-- What an entry of the card names, beside the card; the camera stays where it is. -->
@@ -2792,8 +2880,9 @@
 				class:unit={p.kind === 'unit'}
 				style:left="{peekPos.left}px"
 				style:top="{peekPos.top}px"
-				style:width="{p.w}px"
+				style:min-width={p.kind === 'unit' ? `${p.w}px` : undefined}
 				bind:clientHeight={peekH}
+				bind:clientWidth={peekW}
 				{@attach toCanvas}
 				data-testid="peek"
 			>
@@ -2802,29 +2891,25 @@
 					{#if p.kind === 'api'}
 						{@render apiTitle(p.api)}
 					{:else if p.kind === 'unit'}
-						<div class="head">
-							<div class="title"><i class="fn">ƒ</i> {p.unit.title}</div>
-							<div class="type">{p.unit.sub}</div>
-						</div>
+						{@render unitTitle(p.unit)}
 					{:else if p.kind === 'trigger'}
 						{@render triggerTitle(p.trigger)}
 					{:else}
-						<div class="head">
-							<div class="title">{p.field.title}</div>
-							<div class="type">{p.field.type}</div>
-						</div>
+						{@render fieldTitle(p.field)}
 					{/if}
 					{@render peekButtons()}
 				</header>
-				{#if p.kind === 'api'}
-					{@render apiBody(p.api, peekTo)}
-				{:else if p.kind === 'unit'}
-					{@render unitBody(p.unit, peekTo, p.from, peek!.at.target!.field!)}
-				{:else if p.kind === 'trigger'}
-					{@render triggerBody(p.trigger, peekTo)}
-				{:else}
-					{@render fieldBody(p.field, peekTo)}
-				{/if}
+				<div class="pane-body">
+					{#if p.kind === 'api'}
+						{@render apiBody(p.api, peekTo)}
+					{:else if p.kind === 'unit'}
+						{@render unitBody(p.unit, peekTo, p.from, peek!.at.target!.field!, p.w)}
+					{:else if p.kind === 'trigger'}
+						{@render triggerBody(p.trigger, peekTo)}
+					{:else}
+						{@render fieldBody(p.field, peekTo)}
+					{/if}
+				</div>
 			</aside>
 		{/if}
 	{/if}
@@ -3151,18 +3236,50 @@
 		border-top: 1px solid var(--sdv-model-stroke);
 		margin: 4px 0;
 	}
+	/*
+	 * As wide as its names, from 300 to 560 px (a unit's: its sequence, up to the canvas); prose
+	 * wraps inside that width. At most the canvas tall: the header stays, the body scrolls.
+	 */
 	.inspector {
 		position: absolute;
 		z-index: 10;
 		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+		width: max-content;
+		min-width: 300px;
+		max-width: min(560px, var(--pane-room));
+		max-height: var(--pane-tall);
 		background: var(--sdv-model-fill);
 		border: 1px solid var(--sdv-model-stroke);
 		box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
 		color: var(--sdv-model-text);
 		font-size: 13px;
 	}
+	.inspector.unit {
+		max-width: var(--pane-room);
+	}
+	.inspector .pane-body {
+		flex: 1;
+		min-height: 0;
+		overflow: auto;
+		overscroll-behavior: contain;
+	}
 	.inspector.min > :not(header) {
 		display: none;
+	}
+	/* Prose: never widens the card; wraps inside the width its names set. */
+	.inspector .type,
+	.inspector .entry .where,
+	.inspector .note,
+	.inspector .empty,
+	.inspector .sig-note,
+	.inspector .prose {
+		contain: inline-size;
+		overflow-wrap: anywhere;
+	}
+	.inspector .entry .where {
+		align-self: stretch;
 	}
 	.inspector.min header {
 		border-bottom: none;
@@ -3189,9 +3306,7 @@
 	}
 	.inspector .head {
 		flex: 1;
-	}
-	.inspector .type {
-		overflow-wrap: anywhere;
+		min-width: 0;
 	}
 	.inspector .constraint {
 		display: flex;
@@ -3208,17 +3323,40 @@
 		background: var(--sdv-model-header);
 		color: var(--sdv-text-muted);
 	}
-	/* An enum's values, one a line, scrolling past 12. */
+	/* An enum's values, one a line; the first 12, then Show more. */
 	.inspector .values {
 		list-style: none;
 		margin: 2px 12px 4px 14px;
 		padding: 2px 0 2px 8px;
-		max-height: calc(12 * 1.55em);
-		overflow: auto;
 		border-left: 2px solid var(--sdv-model-stroke);
 		font-size: 12px;
 		line-height: 1.55;
-		overflow-wrap: anywhere;
+	}
+	.inspector .values-sizer {
+		height: 0;
+		overflow: hidden;
+		visibility: hidden;
+		padding: 0 12px 0 24px;
+		font-size: 12px;
+	}
+	.inspector .count {
+		color: var(--sdv-text-muted);
+		font-size: 12px;
+		white-space: nowrap;
+	}
+	.inspector .more {
+		margin: 0 12px 4px 24px;
+		padding: 0;
+		border: none;
+		background: none;
+		font: inherit;
+		font-size: 12px;
+		font-weight: 600;
+		color: var(--sdv-selection);
+		cursor: pointer;
+	}
+	.inspector .more:hover {
+		text-decoration: underline;
 	}
 	.inspector .icon-btn {
 		border: none;
@@ -3233,7 +3371,7 @@
 		padding: 6px 0;
 		border-top: 1px solid var(--sdv-model-stroke);
 	}
-	.inspector header + section {
+	.inspector .pane-body > :global(:first-child) {
 		border-top: none;
 	}
 	.inspector h4 {
@@ -3293,18 +3431,62 @@
 		font-family: Georgia, serif;
 		color: var(--sdv-kind-logic-icon);
 	}
-	.inspector .io {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
+	/*
+	 * A unit's Inputs, Returns and Fails: side by side when each fits in 220 px or more of the
+	 * card's width, else stacked. They never widen the card: unitWidth makes room for the
+	 * widest group.
+	 */
+	.inspector .signature {
+		display: flex;
+		flex-wrap: wrap;
+		contain: inline-size;
+		overflow: hidden;
 	}
-	.inspector .io section {
+	.inspector .sig-group {
+		flex: 1 0 auto;
+		min-width: 220px;
 		border-top: none;
+		box-shadow: -1px 0 0 var(--sdv-model-stroke);
 	}
-	.inspector .io section + section {
-		border-left: 1px solid var(--sdv-model-stroke);
-	}
-	.inspector .where.fail {
+	.inspector .sig-group.fails h4 {
 		color: var(--sdv-method-put);
+	}
+	/* The type column takes the rest, so a description under a row spans the whole group. */
+	.inspector .sig-rows {
+		display: grid;
+		grid-template-columns: max-content 1fr;
+		column-gap: 14px;
+		row-gap: 2px;
+		padding: 0 12px 2px;
+		line-height: 18px;
+		align-items: baseline;
+	}
+	.inspector .sig-rows .name {
+		font-weight: 500;
+	}
+	.inspector .sig-note {
+		grid-column: 1 / -1;
+		color: var(--sdv-text-muted);
+		font-size: 12px;
+		line-height: 16px;
+		margin: -2px 0 3px;
+	}
+	.inspector .seq-section {
+		border-top: 1px solid var(--sdv-model-stroke);
+	}
+	/* Closed up to 120 px a lane and still wider than the card: it scrolls sideways. */
+	.inspector .seq-section.wide {
+		overflow-x: auto;
+	}
+	/* A trigger's facts: one label column across its sections. */
+	.inspector .facts {
+		display: grid;
+		grid-template-columns: 80px max-content;
+		column-gap: 10px;
+		row-gap: 2px;
+		padding: 3px 12px 3px;
+		line-height: 18px;
+		align-items: baseline;
 	}
 	.inspector .status {
 		font-variant-numeric: tabular-nums;
@@ -3393,9 +3575,15 @@
 	.status.bad {
 		color: var(--sdv-method-delete);
 	}
+	/* An api body's fields: names, types and marks in columns shared by its rows. */
+	.api-fields {
+		display: grid;
+		grid-template-columns: max-content max-content 1fr;
+	}
 	.api-field {
 		display: grid;
-		grid-template-columns: auto 1fr auto;
+		grid-column: 1 / -1;
+		grid-template-columns: subgrid;
 		gap: 8px;
 		align-items: baseline;
 		line-height: 18px;
@@ -3411,10 +3599,12 @@
 		font-weight: 500;
 	}
 	.api-field .traced {
+		justify-self: end;
 		color: var(--sdv-link-from);
 	}
 	/* One line tall and centred in it: an icon has no baseline to align by. */
 	.api-field .untraced {
+		justify-self: end;
 		align-self: start;
 		display: flex;
 		align-items: center;
