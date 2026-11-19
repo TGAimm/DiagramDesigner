@@ -1,22 +1,9 @@
 <script lang="ts">
 	import { X } from '@lucide/svelte';
-	import { settings, type Detail } from '#lib/client/settings.svelte.ts';
+	import { settings } from '#lib/client/settings.svelte.ts';
 	import { DEFAULT_LAYOUT, type LayoutOptions } from '#lib/landscape/layout.ts';
 
 	let { onclose }: { onclose: () => void } = $props();
-
-	const options: { value: Detail; title: string; text: string }[] = [
-		{
-			value: 'adaptive',
-			title: 'Adaptive',
-			text: 'Systems and modules are always drawn open. Model cards, logic cards and api rails list their rows only on or near the screen, and only while the rows would read at 4px; otherwise a card shows its name, kept readable as you zoom out. What you hover or pick, and everything its lines reach, is always drawn in full. Cards over 20 fields fold.'
-		},
-		{
-			value: 'all',
-			title: 'Render everything',
-			text: 'Every system, module, card, field and api rail is drawn at every zoom, open. Cards over 20 fields still fold. Large designs may pan and zoom slowly.'
-		}
-	];
 
 	const methods: { value: LayoutOptions['method']; label: string }[] = [
 		{ value: 'layered', label: 'Layered' },
@@ -57,21 +44,6 @@
 			><X size={16} /></button
 		>
 	</header>
-	<fieldset>
-		<legend>CANVAS DETAIL</legend>
-		{#each options as o (o.value)}
-			<label class:on={settings.detail === o.value}>
-				<input
-					type="radio"
-					name="detail"
-					value={o.value}
-					checked={settings.detail === o.value}
-					onchange={() => settings.setDetail(o.value)}
-				/>
-				<span><b>{o.title}</b><span class="text">{o.text}</span></span>
-			</label>
-		{/each}
-	</fieldset>
 	<section class="layout" aria-label="Layout" data-testid="layout-settings">
 		<div class="head">
 			<span class="legend">LAYOUT</span>
@@ -214,54 +186,8 @@
 		display: flex;
 		padding: 2px;
 	}
-	fieldset {
-		margin: 0;
-		border: none;
-		padding: 14px;
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-	}
-	legend {
-		float: left;
-		padding: 0;
-		margin-bottom: 8px;
-		font-size: 11px;
-		font-weight: 600;
-		letter-spacing: 0.02em;
-		color: var(--ui-muted);
-	}
-	label {
-		display: flex;
-		gap: 10px;
-		align-items: flex-start;
-		padding: 10px;
-		border: 1px solid var(--ui-border);
-		cursor: pointer;
-	}
-	label.on {
-		background: var(--ui-accent-bg);
-		border-color: var(--ui-accent);
-	}
-	input {
-		margin: 2px 0 0;
-		padding: 0;
-		accent-color: var(--ui-accent);
-	}
-	b {
-		display: block;
-		font-weight: 600;
-		font-size: 13px;
-	}
-	.text {
-		display: block;
-		font-size: 12px;
-		color: var(--ui-muted);
-		margin-top: 2px;
-		line-height: 1.4;
-	}
 	.layout {
-		padding: 0 14px 14px;
+		padding: 14px;
 		display: flex;
 		flex-direction: column;
 		gap: 12px;
@@ -290,14 +216,13 @@
 		color: var(--ui-muted);
 		cursor: default;
 	}
-	.layout label {
-		border: none;
-		padding: 0;
-	}
 	.fld {
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
+	}
+	label.fld {
+		align-items: flex-start;
 	}
 	.lbl {
 		font-size: 12px;
@@ -313,6 +238,8 @@
 		border: 1px solid var(--ui-border);
 	}
 	.layout .seg label {
+		display: flex;
+		cursor: pointer;
 		flex: 1;
 		justify-content: center;
 		font-size: 12px;

@@ -45,7 +45,7 @@ Technical / deployment architecture
   the camera. Systems and modules are always drawn open; zoomed out, model cards, logic cards
   and api rails list their rows only on or near the screen and once they read at 4px;
   otherwise a card shows its name, kept readable as you zoom out. What is hovered, picked or
-  lit is always drawn in full (Settings › Canvas detail). Models render as
+  lit is always drawn in full. Models render as
   classes where they are owned (grouped with the models they alone hold) and as stored
   tables where they are stored, with keys, foreign-key and composition lines, and field
   lineage. Connections follow one standard at every level: at rest only calls, reads and

@@ -67,7 +67,7 @@ responses:
 - A box owning apis has one **rail** across its right border, listing method (coloured) and
   path per endpoint. The layout keeps room for the half outside the box.
 - Rows are laid out at full size, then shrunk to fit the rail, however many endpoints there
-  are. The rail is as tall as its rows, centred on the border. In adaptive detail it lists
+  are. The rail is as tall as its rows, centred on the border. It lists
   them while it is on or near the screen and rows would read at 4px, or
   while its box or one of its apis is looked at or lit; until then it shows just "APIs", and
   clicking it zooms in until they read.
