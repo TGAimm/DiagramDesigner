@@ -62,6 +62,8 @@
 		indexKind,
 		keysOf,
 		kindWord,
+		LEAF,
+		LINK,
 		logicNote,
 		logicRowY,
 		ownerNote,
@@ -78,7 +80,7 @@
 	import type { Model } from '#lib/model/model.ts';
 	import { tokenValues } from '#lib/theme/tokens.ts';
 	import { LineLayer, lineShader, tokenRgba } from './gl/lines.ts';
-	import { GlTextLayer, LINE, type GlLabel } from './gl/text.ts';
+	import { GlTextLayer, leadEm, LINE, type GlLabel } from './gl/text.ts';
 
 	/**
 	 * The landscape's boxes, rows and lines drawn on one WebGL canvas (PixiJS), for the Rendering
@@ -193,21 +195,57 @@
 		return { color: c.toNumber(), alpha: c.alpha };
 	};
 
+	interface TextOpts {
+		bold?: boolean;
+		/** On an opaque fill, where page text gets subpixel antialiasing. */
+		lcd?: boolean;
+		/** An entity glyph before it (see EntityGlyph); with no text, the glyph alone. */
+		glyph?: string;
+		/** A change mark before it, on its badge. */
+		op?: string;
+		/** Space after the glyph and the mark, in em. */
+		gap?: number;
+		/** As LandscapeNode's `ƒ` marks: italic, in Georgia. */
+		serif?: boolean;
+	}
+	const SERIF = 'Georgia, serif';
+	/** A card kind's glyph wears that kind's icon colour; the others the name's, at 75%. */
+	const GLYPH_ICON: Record<string, Token> = {
+		class: 'kind-class-icon',
+		table: 'kind-table-icon',
+		logic: 'kind-logic-icon',
+		triggers: 'kind-trigger-icon',
+		trigger: 'kind-trigger-icon'
+	};
+
 	/**
-	 * Text `px` px tall in token `t`, drawn by the browser at its size on screen (see gl/text.ts);
-	 * `lcd` when it sits on an opaque fill, where page text gets subpixel antialiasing.
+	 * Text `px` px tall in token `t`, drawn by the browser at its size on screen (see gl/text.ts),
+	 * with its glyph and change mark coloured as LandscapeNode colours them.
 	 */
-	function textOf(
-		s: string,
-		t: Token,
-		px: number,
-		bold = false,
-		lcd = false,
-		glyph?: string
-	): GlLabel {
+	function textOf(s: string, t: Token, px: number, o: TextOpts = {}): GlLabel {
 		const c = colour(t);
-		const label = text!.label(s, { px, color: c.color, weight: bold ? 600 : 400, lcd, glyph });
-		label.alpha = c.alpha;
+		const icon = o.glyph ? GLYPH_ICON[o.glyph] : undefined;
+		const opFill = colour('op-fill');
+		const label = text!.label(s, {
+			px,
+			color: c.color,
+			weight: o.bold ? 600 : 400,
+			lcd: o.lcd,
+			glyph: o.glyph,
+			glyphColor: icon ? colour(icon).color : c.color,
+			glyphAlpha: icon ? 1 : 0.75,
+			op: o.op
+				? {
+						text: o.op,
+						color: colour('op-text').color,
+						fill: opFill.color,
+						fillAlpha: opFill.alpha
+					}
+				: undefined,
+			gap: o.gap,
+			...(o.serif ? { italic: true, family: SERIF } : {})
+		});
+		if (s || !o.glyph) label.alpha = c.alpha;
 		return label;
 	}
 
@@ -394,14 +432,12 @@
 							: isSystem(b)
 								? 'system'
 								: 'module';
-			const text = textOf(
-				op ? `${op} ${name}` : name,
-				tok,
-				NAME_MIN,
-				true,
-				isCard(b) && fadedOf(b) === 1,
-				glyph
-			);
+			const text = textOf(name, tok, NAME_MIN, {
+				bold: true,
+				lcd: isCard(b) && fadedOf(b) === 1,
+				glyph,
+				op
+			});
 			text.alpha *= fadedOf(b);
 			text.cullable = true;
 			nameLayer.addChild(text);
@@ -411,7 +447,11 @@
 		}
 		for (const [id] of rails) {
 			const b = boxById.get(id)!;
-			const text = textOf('APIs', 'api-text', NAME_MIN, true, fadedOf(b) === 1, 'api');
+			const text = textOf('APIs', 'api-text', NAME_MIN, {
+				bold: true,
+				lcd: fadedOf(b) === 1,
+				glyph: 'api'
+			});
 			text.alpha *= fadedOf(b);
 			nameLayer.addChild(text);
 			const n: Name = { text, b, kind: 'rail', w: text.width / text.px, alpha: text.alpha };
@@ -447,7 +487,7 @@
 			g.roundRect(-11, -11, Math.max(22, 10 + 7 * String(roll.count).length), 22, 11).fill(
 				colour(fill)
 			);
-			const t = textOf(String(roll.count), 'op-text', 12, true, true);
+			const t = textOf(String(roll.count), 'op-text', 12, { bold: true, lcd: true });
 			t.position.set(
 				-t.width / 2 + (Math.max(22, 10 + 7 * String(roll.count).length) - 22) / 2,
 				-7.5
@@ -467,6 +507,13 @@
 		if (isCard(b)) {
 			const k = kindToken(b);
 			const r = b.logic ? 10 : b.triggers ? 6 : b.view === 'table' ? 3 : 8;
+			// A logic card's ring, as LandscapeNode's box-shadow: 2 px of the card's fill outside
+			// its line, then 1 px in its kind's colour.
+			if (b.logic)
+				g.roundRect(b.absX - 1, b.absY - 1, b.width + 2, b.height + 2, r + 1)
+					.stroke({ ...fill('model-fill'), width: 2 })
+					.roundRect(b.absX - 2.5, b.absY - 2.5, b.width + 5, b.height + 5, r + 2.5)
+					.stroke({ ...fill(k), width: 1 });
 			g.roundRect(b.absX, b.absY, b.width, b.height, r).fill(fill('model-fill')).stroke(line(k));
 			if (b.triggers)
 				g.rect(b.absX + 1, b.absY + 1, b.width - 2, TABLE.head - 1).fill(fill('kind-trigger-head'));
@@ -483,7 +530,7 @@
 		}
 		const r = rails.get(b.id);
 		if (r)
-			g.roundRect(b.absX + b.width - r.width / 2, b.absY + r.top, r.width, r.height, 6)
+			g.roundRect(b.absX + b.width - r.width / 2, b.absY + r.top, r.width, r.height, 14)
 				.fill(fill('api-fill'))
 				.stroke(line('api-stroke'));
 	}
@@ -557,6 +604,10 @@
 			text.px = px;
 			text.position.set(x, y);
 			if (n.kind !== 'group' && n.kind !== 'rail') text.visible = px * z >= 2;
+			// Below 9 px on screen a glyph cannot be read: a closed box's and an open box's glyph
+			// fade out by their font's base size on screen, as LandscapeNode's --glyph-opacity.
+			if (n.kind === 'leaf') text.glyphFade = clamp(0, LEAF.font * z - 8, 1);
+			else if (n.kind === 'group') text.glyphFade = clamp(0, Math.min(13, (HEADER / 2) * z) - 8, 1);
 			n.at = {
 				x0: x - 4 / z,
 				y0: y - 2 / z,
@@ -591,14 +642,10 @@
 				const rail = m.glyph === 'api';
 				const c = new P.Container();
 				const bg = new P.Graphics();
-				const text = textOf(
-					m.name,
-					rail ? 'api-text' : 'system-text',
-					NAME_PX,
-					true,
-					false,
-					m.glyph
-				);
+				const text = textOf(m.name, rail ? 'api-text' : 'system-text', NAME_PX, {
+					bold: true,
+					glyph: m.glyph
+				});
 				c.addChild(bg, text);
 				frontLayer!.addChild(c);
 				f = { m, c, bg, text, rail };
@@ -639,7 +686,15 @@
 	const TEXT_MIN = 2;
 	/** Whether the rows being built draw their text (see TEXT_MIN). */
 	let readable = true;
-	const stub = (x = 0) => ({ x, width: 0, alpha: 1 }) as unknown as GlLabel;
+	/** A text not drawn, sized as if it were, so what is placed after it lands where it would. */
+	const stub = (x: number, s: string, px: number, o: TextOpts) => {
+		const advance = text!.measure(s, o.bold ? 600 : 400, px);
+		return { x, width: leadEm(o) * px + advance, advance, alpha: 1 } as unknown as GlLabel;
+	};
+	/** Badges, as LandscapeNode's `.badge`: 1.6 lines of TABLE.badge tall, 6 px each side. */
+	const BADGE_H = 1.6 * TABLE.badge;
+	/** A cell's items are this far apart (LandscapeNode's `.cell` gap), in em of a row's text. */
+	const CELL_GAP = TABLE.badgeGap / TABLE.row;
 
 	function placeRows(z: number) {
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built and used here
@@ -720,6 +775,46 @@
 		return { bg, bar };
 	}
 
+	/**
+	 * A row's ground, `w` × `h` at `x`, `y`, `k` canvas px to the row's px (a rail's rows are
+	 * scaled): its tint by how it is lit, else as LandscapeNode's `.gone` (hatched) when dropped,
+	 * else as `.sev-break` or `.sev-check` (its severity at 8 or 9%).
+	 */
+	function ground(
+		g: Graphics,
+		id: string,
+		bg: Token | undefined,
+		x: number,
+		y: number,
+		w: number,
+		h: number,
+		k = 1
+	) {
+		if (bg) g.rect(x, y, w, h).fill(colour(bg));
+		else if (marks.dropped.has(id)) hatch(g, x, y, w, h, k);
+		else if (level(id)) {
+			const breaking = level(id) === 'breaking';
+			const c = colour(breaking ? 'sev-break' : 'sev-check');
+			g.rect(x, y, w, h).fill({ ...c, alpha: c.alpha * (breaking ? 0.08 : 0.09) });
+		}
+	}
+
+	/**
+	 * `.gone`'s hatching: 1 px lines 7 px apart across a 135° gradient from the top-left
+	 * corner, in the lines' colour at 12%; `k` canvas px to the row's px.
+	 */
+	function hatch(g: Graphics, x: number, y: number, w: number, h: number, k = 1) {
+		const c = colour('edge');
+		// Along the gradient, a stripe from 6 to 7 px of every 7; its line is x + y = d.
+		const step = 7 * k * Math.SQRT2;
+		for (let d = 6.5 * k * Math.SQRT2; d < w + h; d += step) {
+			const u0 = Math.max(0, d - h);
+			const u1 = Math.min(w, d);
+			g.moveTo(x + u0, y + d - u0).lineTo(x + u1, y + d - u1);
+		}
+		g.stroke({ ...c, alpha: c.alpha * 0.12, width: k });
+	}
+
 	/** A card's or rail's rows: tints and rules, and texts (see rowTextLayer). */
 	interface Rows {
 		c: Container;
@@ -733,35 +828,59 @@
 		const g = new P.Graphics();
 		out.addChild(g);
 		const lcd = fadedOf(b) === 1;
-		const at = (s: string, x: number, y: number, px: number, t: Token, bold = false) => {
-			if (!readable) return stub(x);
-			const text = textOf(s, t, px, bold, lcd);
+		const at = (s: string, x: number, y: number, px: number, t: Token, o: TextOpts = {}) => {
+			if (!readable) return stub(x, s, px, o);
+			const text = textOf(s, t, px, { lcd, ...o });
 			text.position.set(x, y - (px * LINE) / 2);
 			words.addChild(text);
 			return text;
 		};
 		const k = kindToken(b);
+		const rule = { ...colour(`${k}-soft`), width: 1, pixelLine: true };
 		const sep = (y: number) =>
 			g
 				.moveTo(b.absX + 1, y)
 				.lineTo(b.absX + b.width - 1, y)
-				.stroke({ ...colour(`${k}-soft`), width: 1, pixelLine: true });
+				.stroke(rule);
+		/** The rule between two columns, from `y0` to `y1`, as a cell's left border. */
+		const divider = (x: number, y0: number, y1: number) =>
+			g.moveTo(x, y0).lineTo(x, y1).stroke(rule);
 		const tint = (y: number, h: number, t: Token) =>
 			g.rect(b.absX + 1, y, b.width - 2, h).fill(colour(t));
 		const bar = (y: number, h: number, t: Token) => g.rect(b.absX + 1, y, 3, h).fill(colour(t));
+		/** A badge at `x` on line `y`: a key's, or `plain` (constraints, an index's kind); its width. */
+		const badge = (s: string, x: number, y: number, plain: boolean, into?: GlLabel[]) => {
+			const t = at(s, x + 6, y, TABLE.badge, plain ? 'text-muted' : 'model-key-text', {
+				bold: true
+			});
+			g.rect(x, y - BADGE_H / 2, t.width + 12, BADGE_H).fill(
+				colour(plain ? 'model-header' : 'model-key-fill')
+			);
+			into?.push(t);
+			return t.width + 12;
+		};
+		/** A line through a gone row's name, not its glyph or mark. */
+		const strike = (t: GlLabel, y: number) =>
+			g
+				.moveTo(t.x + t.width - t.advance, y)
+				.lineTo(t.x + t.width, y)
+				.stroke({ ...colour('text-muted'), width: 1, pixelLine: true });
 		const rowsH = TABLE.rowHeight;
 		const rows = cardRows(b);
 		const el = elOf(b);
 		// The name bar's kind word and note; the name is drawn with the others (see placeNames).
 		if (b.table) {
+			// In the kind's name colour at 75%, as LandscapeNode's `.kind-word`.
 			const word = at(
 				kindWord(b.view ?? 'class'),
 				0,
 				b.absY + TABLE.head * 0.36,
 				TABLE.label,
-				'text-muted'
+				`${k}-text` as Token,
+				{ bold: true }
 			);
 			word.x = b.absX + b.width - TABLE.pad - word.width;
+			word.alpha *= 0.75;
 		}
 		const owner = b.ref ? model.elements.get(el?.parentId ?? '')?.name : undefined;
 		const parts = view.apiBoxes[b.id];
@@ -780,29 +899,34 @@
 			);
 		if (rows) {
 			const nameW = (b.logic ?? b.triggers)!.cols[0].width;
+			const top0 = b.absY + 1 + TABLE.head;
 			rows.forEach((r, i) => {
 				if (changes.hidden.has(r.id)) return;
 				const y = b.absY + logicRowY(i);
 				const top = y - rowsH / 2;
 				const s = rowState(b.id, r.id);
-				if (s.bg) tint(top, rowsH, s.bg);
+				ground(g, r.id, s.bg, b.absX + 1, top, b.width - 2, rowsH);
 				if (s.bar) bar(top, rowsH, s.bar);
 				if (i) sep(top);
-				const op = marks.glyph.get(r.id);
+				// A unit's ƒ (10 px wide) or a trigger's clock or envelope, then its mark and name.
+				const x = b.absX + TABLE.pad;
+				const mark = b.logic
+					? at('ƒ', x, y, TABLE.row, 'kind-logic-icon', { serif: true })
+					: at('', x, y, TABLE.row, 'model-text', { glyph: r.message ? 'message' : 'trigger' });
 				const name = at(
-					`${b.logic ? 'ƒ ' : ''}${op ? `${op} ` : ''}${r.name}`,
-					b.absX + TABLE.pad,
+					r.name,
+					x + (b.logic ? 10 : mark.width) + TABLE.badgeGap,
 					y,
 					TABLE.row,
-					'model-text'
+					'model-text',
+					{ op: marks.glyph.get(r.id), gap: CELL_GAP }
 				);
 				const sig = at(r.signature, b.absX + nameW + TABLE.pad, y, TABLE.signature, 'text-muted');
-				if (comparing && !marked(r.id)) name.alpha = sig.alpha = 0.38;
-				if (marks.dropped.has(r.id))
-					g.moveTo(name.x, y)
-						.lineTo(name.x + name.width, y)
-						.stroke({ ...colour('text-muted'), width: 1, pixelLine: true });
+				if (comparing && !marked(r.id)) for (const t of [mark, name, sig]) t.alpha *= 0.38;
+				if (marks.dropped.has(r.id)) strike(name, y);
 			});
+			// The name column's rule, down every row.
+			divider(b.absX + nameW, top0, top0 + rows.length * rowsH);
 			return { c: out, t: words };
 		}
 		const fields = b.fields ?? [];
@@ -823,17 +947,22 @@
 		const xs: number[] = [];
 		cols.reduce((x, c) => (xs.push(x), x + c.width), b.absX);
 		const headY = b.absY + 1 + TABLE.head + rowsH / 2;
+		// The column labels' row, on the header fill.
+		tint(headY - rowsH / 2, rowsH, 'model-header');
 		cols.forEach((c, ci) => {
 			if (c.key !== 'links')
-				at(c.label, xs[ci] + TABLE.pad, headY, TABLE.label, 'text-muted', true);
+				at(c.label, xs[ci] + TABLE.pad, headY, TABLE.label, 'text-muted', { bold: true });
 		});
+		// The columns' rules, from the labels' row down the rows shown (the fold toggle spans).
+		for (let ci = 1; ci < cols.length; ci++)
+			divider(xs[ci], headY - rowsH / 2, headY + (n + 0.5) * rowsH);
 		const dimRows = view.apiDim[b.id];
 		const label = (id: string) => refLabel(model, id);
 		fields.slice(0, n).forEach((f, i) => {
 			const y = b.absY + fieldRowY(i, fields.length, expanded, foldAt);
 			const top = y - rowsH / 2;
 			const s = rowState(b.id, f.id);
-			if (s.bg) tint(top, rowsH, s.bg);
+			ground(g, f.id, s.bg, b.absX + 1, top, b.width - 2, rowsH);
 			if (s.bar) bar(top, rowsH, s.bar);
 			sep(top);
 			const faded = (comparing && !marked(f.id)) || !!dimRows?.[f.id];
@@ -841,35 +970,29 @@
 			cols.forEach((c, ci) => {
 				const x = xs[ci] + TABLE.pad;
 				if (c.key === 'name') {
-					const op = marks.glyph.get(f.id);
 					const name = at(
-						`${op ? `${op} ` : ''}${f.name}`,
+						f.name,
 						x,
 						y,
 						TABLE.row,
-						marks.dropped.has(f.id) ? 'text-muted' : 'model-text'
+						marks.dropped.has(f.id) ? 'text-muted' : 'model-text',
+						{ op: marks.glyph.get(f.id), gap: CELL_GAP }
 					);
 					texts.push(name);
-					if (marks.dropped.has(f.id))
-						g.moveTo(name.x, y)
-							.lineTo(name.x + name.width, y)
-							.stroke({ ...colour('text-muted'), width: 1, pixelLine: true });
+					if (marks.dropped.has(f.id)) strike(name, y);
 					let bx = name.x + name.width + TABLE.badgeGap;
-					for (const key of b.view === 'table' ? keysOf(f) : []) {
-						const t = at(key, bx + 6, y, TABLE.badge, 'model-key-text', true);
-						g.roundRect(bx, y - 8, t.width + 12, 16, 4).fill(colour('model-key-fill'));
-						texts.push(t);
-						bx += t.width + 12 + TABLE.badgeGap;
-					}
+					for (const key of b.view === 'table' ? keysOf(f) : [])
+						bx += badge(key, bx, y, false, texts) + TABLE.badgeGap;
 				} else if (c.key === 'type')
 					texts.push(at(typeText(f, label), x, y, TABLE.row, 'text-muted'));
 				else if (c.key === 'required' && f.required)
 					texts.push(at(TABLE.check, x, y, TABLE.row, 'model-text'));
 				else if (c.key === 'nullable' && f.nullable)
 					texts.push(at(TABLE.check, x, y, TABLE.row, 'model-text'));
-				else if (c.key === 'constraints' && f.constraints?.length)
-					texts.push(at(f.constraints.join(' '), x, y, TABLE.badge, 'text-muted'));
-				else if (c.key === 'links') {
+				else if (c.key === 'constraints' && f.constraints?.length) {
+					let bx = x;
+					for (const k of f.constraints) bx += badge(k, bx, y, true, texts) + TABLE.badgeGap;
+				} else if (c.key === 'links') {
 					let sx = xs[ci];
 					for (const slot of c.slots ?? []) {
 						const kind =
@@ -882,17 +1005,23 @@
 										: undefined;
 						const count = kind ? incomingCount(rels, f.id, kind) : 0;
 						if (slot === 'ref' && f.ref)
-							texts.push(at('→', sx + 3, y, TABLE.row, 'link-ref', true));
-						else if (slot === 'from' && f.from?.length)
-							texts.push(at(f.derived ? '⇢ƒ' : '⇢', sx + 3, y, TABLE.row, 'link-from', true));
-						else if (count) {
+							texts.push(at('→', sx + 3, y, TABLE.row, 'link-ref', { bold: true }));
+						else if (slot === 'from' && f.from?.length) {
+							const arrow = at('⇢', sx + 3, y, TABLE.row, 'link-from', { bold: true });
+							texts.push(arrow);
+							// A derived field's ƒ, as `.slot i`: 11 px Georgia, italic.
+							if (f.derived)
+								texts.push(
+									at('ƒ', arrow.x + arrow.width, y, 11, 'link-from', { bold: true, serif: true })
+								);
+						} else if (count) {
 							const t = at(
 								slotCount(slot as 'inRef' | 'inFrom' | 'inApi', count),
 								sx + 5,
 								y,
-								10,
-								'op-text',
-								true
+								LINK.count,
+								'model-fill',
+								{ bold: true }
 							);
 							g.roundRect(sx + 1, y - 8, t.width + 8, 16, 8).fill(
 								colour(
@@ -932,17 +1061,28 @@
 				b.absY +
 				fieldRowY(n, fields.length, true, Number.MAX_SAFE_INTEGER) +
 				(foldable(fields.length, foldAt) ? rowsH : 0);
+			tint(y - rowsH / 2, rowsH, 'model-header');
 			sep(y - rowsH / 2);
-			at('Indexes', b.absX + TABLE.pad, y, TABLE.label, 'text-muted', true);
+			at('Indexes', b.absX + TABLE.pad, y, TABLE.label, 'text-muted', { bold: true });
+			// One index per row: its mark, its kind's badge (a key's when unique), name and fields.
 			for (const ix of indexes) {
 				y += rowsH;
-				at(
-					`${indexKind(ix)}  ${ix.name}  ${indexFields(ix, fields)}`,
-					b.absX + TABLE.pad,
-					y,
-					TABLE.row,
-					'model-text'
-				);
+				if (ix.id && marks.dropped.has(ix.id))
+					hatch(g, b.absX + 1, y - rowsH / 2, b.width - 2, rowsH);
+				sep(y - rowsH / 2);
+				const texts: GlLabel[] = [];
+				let x = b.absX + TABLE.pad;
+				const op = ix.id ? marks.glyph.get(ix.id) : undefined;
+				if (op) {
+					const t = at('', x, y, TABLE.row, 'model-text', { op, gap: CELL_GAP });
+					texts.push(t);
+					x += t.width;
+				}
+				x += badge(indexKind(ix), x, y, !ix.unique, texts) + TABLE.badgeGap;
+				const name = at(ix.name, x, y, TABLE.row, 'model-text');
+				x += name.width + TABLE.badgeGap + 4;
+				texts.push(name, at(indexFields(ix, fields), x, y, TABLE.row, 'text-muted'));
+				if (comparing && !(ix.id && marked(ix.id))) for (const t of texts) t.alpha = 0.38;
 			}
 		}
 		return { c: out, t: words };
@@ -959,14 +1099,37 @@
 		const y0 = b.absY + r.top;
 		const s = r.scale;
 		const lcd = fadedOf(b) === 1;
-		const at = (text: string, x: number, y: number, px: number, t: Token, bold = false) => {
-			if (!readable) return stub(x);
-			const o = textOf(text, t, px * s, bold, lcd);
-			o.position.set(x, y - (px * s * LINE) / 2);
-			words.addChild(o);
-			return o;
+		const at = (text: string, x: number, y: number, px: number, t: Token, o: TextOpts = {}) => {
+			if (!readable) return stub(x, text, px * s, o);
+			const l = textOf(text, t, px * s, { lcd, ...o });
+			l.position.set(x, y - (px * s * LINE) / 2);
+			words.addChild(l);
+			return l;
 		};
-		at('APIs', x0 + RAIL.pad * s, y0 + (RAIL.head / 2) * s, RAIL.label, 'text-muted', true);
+		const x1 = x0 + r.width;
+		/** The rule under a header or row, as LandscapeNode's rail rows' bottom border. */
+		const rule = (y: number) =>
+			g
+				.moveTo(x0 + 1, y)
+				.lineTo(x1 - 1, y)
+				.stroke({ ...colour('model-stroke'), width: 1, pixelLine: true });
+		const header = colour('model-header');
+		// The APIs header, its top corners rounded as the rail's border clips it.
+		const headH = RAIL.head * s;
+		const R = Math.min(13, headH);
+		g.moveTo(x0 + 1, y0 + headH)
+			.lineTo(x0 + 1, y0 + 1 + R)
+			.arcTo(x0 + 1, y0 + 1, x0 + 1 + R, y0 + 1, R)
+			.lineTo(x1 - 1 - R, y0 + 1)
+			.arcTo(x1 - 1, y0 + 1, x1 - 1, y0 + 1 + R, R)
+			.lineTo(x1 - 1, y0 + headH)
+			.closePath()
+			.fill(header);
+		rule(y0 + headH);
+		at('APIs', x0 + RAIL.pad * s, y0 + (RAIL.head / 2) * s, RAIL.label, 'text-muted', {
+			bold: true,
+			glyph: 'api'
+		});
 		const METHOD: Record<string, Token> = {
 			GET: 'method-get',
 			POST: 'method-post',
@@ -977,14 +1140,11 @@
 		let y = RAIL.head;
 		for (const grp of r.groups) {
 			if (grp.title) {
-				at(
-					grp.title,
-					x0 + RAIL.pad * s,
-					y0 + (y + RAIL.group / 2) * s,
-					RAIL.label,
-					'text-muted',
-					true
-				);
+				g.rect(x0 + 1, y0 + y * s, r.width - 2, RAIL.group * s).fill(header);
+				rule(y0 + (y + RAIL.group) * s);
+				at(grp.title, x0 + RAIL.pad * s, y0 + (y + RAIL.group / 2) * s, RAIL.label, 'text-muted', {
+					bold: true
+				});
 				y += RAIL.group;
 			}
 			for (const a of grp.apis) {
@@ -998,7 +1158,7 @@
 					: view.hotApis[a]
 						? 'row-peer'
 						: undefined;
-				if (bg) g.rect(x0 + 1, top, r.width - 2, RAIL.row * s).fill(colour(bg));
+				ground(g, a, bg, x0 + 1, top, r.width - 2, RAIL.row * s, s);
 				const bar: Token | undefined = picked
 					? 'selection'
 					: level(a) === 'breaking'
@@ -1007,18 +1167,19 @@
 							? 'sev-check'
 							: undefined;
 				if (bar) g.rect(x0 + 1, top, 3 * s, RAIL.row * s).fill(colour(bar));
-				const op = marks.glyph.get(a);
+				rule(top + RAIL.row * s);
+				// Its mark, the method in its column, then the path.
 				const m = at(
-					`${op ? `${op} ` : ''}${def?.method ?? ''}`,
+					def?.method ?? '',
 					x0 + RAIL.pad * s,
 					ry,
 					RAIL.font,
 					METHOD[def?.method ?? ''] ?? 'text-muted',
-					true
+					{ bold: true, op: marks.glyph.get(a), gap: RAIL.gap / RAIL.font }
 				);
 				const p = at(
 					def?.path ?? '',
-					x0 + (RAIL.pad + r.methodWidth + RAIL.gap) * s,
+					m.x + m.width - m.advance + (r.methodWidth + RAIL.gap) * s,
 					ry,
 					RAIL.font,
 					'api-text'
