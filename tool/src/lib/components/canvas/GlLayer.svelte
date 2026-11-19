@@ -62,6 +62,7 @@
 		indexKind,
 		keysOf,
 		kindWord,
+		LEAF,
 		LINK,
 		logicNote,
 		logicRowY,
@@ -204,7 +205,10 @@
 		op?: string;
 		/** Space after the glyph and the mark, in em. */
 		gap?: number;
+		/** As LandscapeNode's `ƒ` marks: italic, in Georgia. */
+		serif?: boolean;
 	}
+	const SERIF = 'Georgia, serif';
 	/** A card kind's glyph wears that kind's icon colour; the others the name's, at 75%. */
 	const GLYPH_ICON: Record<string, Token> = {
 		class: 'kind-class-icon',
@@ -238,7 +242,8 @@
 						fillAlpha: opFill.alpha
 					}
 				: undefined,
-			gap: o.gap
+			gap: o.gap,
+			...(o.serif ? { italic: true, family: SERIF } : {})
 		});
 		if (s || !o.glyph) label.alpha = c.alpha;
 		return label;
@@ -502,6 +507,13 @@
 		if (isCard(b)) {
 			const k = kindToken(b);
 			const r = b.logic ? 10 : b.triggers ? 6 : b.view === 'table' ? 3 : 8;
+			// A logic card's ring, as LandscapeNode's box-shadow: 2 px of the card's fill outside
+			// its line, then 1 px in its kind's colour.
+			if (b.logic)
+				g.roundRect(b.absX - 1, b.absY - 1, b.width + 2, b.height + 2, r + 1)
+					.stroke({ ...fill('model-fill'), width: 2 })
+					.roundRect(b.absX - 2.5, b.absY - 2.5, b.width + 5, b.height + 5, r + 2.5)
+					.stroke({ ...fill(k), width: 1 });
 			g.roundRect(b.absX, b.absY, b.width, b.height, r).fill(fill('model-fill')).stroke(line(k));
 			if (b.triggers)
 				g.rect(b.absX + 1, b.absY + 1, b.width - 2, TABLE.head - 1).fill(fill('kind-trigger-head'));
@@ -592,6 +604,10 @@
 			text.px = px;
 			text.position.set(x, y);
 			if (n.kind !== 'group' && n.kind !== 'rail') text.visible = px * z >= 2;
+			// Below 9 px on screen a glyph cannot be read: a closed box's and an open box's glyph
+			// fade out by their font's base size on screen, as LandscapeNode's --glyph-opacity.
+			if (n.kind === 'leaf') text.glyphFade = clamp(0, LEAF.font * z - 8, 1);
+			else if (n.kind === 'group') text.glyphFade = clamp(0, Math.min(13, (HEADER / 2) * z) - 8, 1);
 			n.at = {
 				x0: x - 4 / z,
 				y0: y - 2 / z,
@@ -759,6 +775,46 @@
 		return { bg, bar };
 	}
 
+	/**
+	 * A row's ground, `w` × `h` at `x`, `y`, `k` canvas px to the row's px (a rail's rows are
+	 * scaled): its tint by how it is lit, else as LandscapeNode's `.gone` (hatched) when dropped,
+	 * else as `.sev-break` or `.sev-check` (its severity at 8 or 9%).
+	 */
+	function ground(
+		g: Graphics,
+		id: string,
+		bg: Token | undefined,
+		x: number,
+		y: number,
+		w: number,
+		h: number,
+		k = 1
+	) {
+		if (bg) g.rect(x, y, w, h).fill(colour(bg));
+		else if (marks.dropped.has(id)) hatch(g, x, y, w, h, k);
+		else if (level(id)) {
+			const breaking = level(id) === 'breaking';
+			const c = colour(breaking ? 'sev-break' : 'sev-check');
+			g.rect(x, y, w, h).fill({ ...c, alpha: c.alpha * (breaking ? 0.08 : 0.09) });
+		}
+	}
+
+	/**
+	 * `.gone`'s hatching: 1 px lines 7 px apart across a 135° gradient from the top-left
+	 * corner, in the lines' colour at 12%; `k` canvas px to the row's px.
+	 */
+	function hatch(g: Graphics, x: number, y: number, w: number, h: number, k = 1) {
+		const c = colour('edge');
+		// Along the gradient, a stripe from 6 to 7 px of every 7; its line is x + y = d.
+		const step = 7 * k * Math.SQRT2;
+		for (let d = 6.5 * k * Math.SQRT2; d < w + h; d += step) {
+			const u0 = Math.max(0, d - h);
+			const u1 = Math.min(w, d);
+			g.moveTo(x + u0, y + d - u0).lineTo(x + u1, y + d - u1);
+		}
+		g.stroke({ ...c, alpha: c.alpha * 0.12, width: k });
+	}
+
 	/** A card's or rail's rows: tints and rules, and texts (see rowTextLayer). */
 	interface Rows {
 		c: Container;
@@ -849,13 +905,13 @@
 				const y = b.absY + logicRowY(i);
 				const top = y - rowsH / 2;
 				const s = rowState(b.id, r.id);
-				if (s.bg) tint(top, rowsH, s.bg);
+				ground(g, r.id, s.bg, b.absX + 1, top, b.width - 2, rowsH);
 				if (s.bar) bar(top, rowsH, s.bar);
 				if (i) sep(top);
 				// A unit's ƒ (10 px wide) or a trigger's clock or envelope, then its mark and name.
 				const x = b.absX + TABLE.pad;
 				const mark = b.logic
-					? at('ƒ', x, y, TABLE.row, 'kind-logic-icon')
+					? at('ƒ', x, y, TABLE.row, 'kind-logic-icon', { serif: true })
 					: at('', x, y, TABLE.row, 'model-text', { glyph: r.message ? 'message' : 'trigger' });
 				const name = at(
 					r.name,
@@ -906,7 +962,7 @@
 			const y = b.absY + fieldRowY(i, fields.length, expanded, foldAt);
 			const top = y - rowsH / 2;
 			const s = rowState(b.id, f.id);
-			if (s.bg) tint(top, rowsH, s.bg);
+			ground(g, f.id, s.bg, b.absX + 1, top, b.width - 2, rowsH);
 			if (s.bar) bar(top, rowsH, s.bar);
 			sep(top);
 			const faded = (comparing && !marked(f.id)) || !!dimRows?.[f.id];
@@ -950,11 +1006,15 @@
 						const count = kind ? incomingCount(rels, f.id, kind) : 0;
 						if (slot === 'ref' && f.ref)
 							texts.push(at('→', sx + 3, y, TABLE.row, 'link-ref', { bold: true }));
-						else if (slot === 'from' && f.from?.length)
-							texts.push(
-								at(f.derived ? '⇢ƒ' : '⇢', sx + 3, y, TABLE.row, 'link-from', { bold: true })
-							);
-						else if (count) {
+						else if (slot === 'from' && f.from?.length) {
+							const arrow = at('⇢', sx + 3, y, TABLE.row, 'link-from', { bold: true });
+							texts.push(arrow);
+							// A derived field's ƒ, as `.slot i`: 11 px Georgia, italic.
+							if (f.derived)
+								texts.push(
+									at('ƒ', arrow.x + arrow.width, y, 11, 'link-from', { bold: true, serif: true })
+								);
+						} else if (count) {
 							const t = at(
 								slotCount(slot as 'inRef' | 'inFrom' | 'inApi', count),
 								sx + 5,
@@ -1007,6 +1067,8 @@
 			// One index per row: its mark, its kind's badge (a key's when unique), name and fields.
 			for (const ix of indexes) {
 				y += rowsH;
+				if (ix.id && marks.dropped.has(ix.id))
+					hatch(g, b.absX + 1, y - rowsH / 2, b.width - 2, rowsH);
 				sep(y - rowsH / 2);
 				const texts: GlLabel[] = [];
 				let x = b.absX + TABLE.pad;
@@ -1096,7 +1158,7 @@
 					: view.hotApis[a]
 						? 'row-peer'
 						: undefined;
-				if (bg) g.rect(x0 + 1, top, r.width - 2, RAIL.row * s).fill(colour(bg));
+				ground(g, a, bg, x0 + 1, top, r.width - 2, RAIL.row * s, s);
 				const bar: Token | undefined = picked
 					? 'selection'
 					: level(a) === 'breaking'

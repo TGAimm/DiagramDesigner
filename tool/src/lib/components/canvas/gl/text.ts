@@ -132,8 +132,10 @@ export interface GlLabelOptions {
 	px: number;
 	/** Text colour, 0xRRGGBB; its alpha goes in `alpha`. */
 	color: number;
-	/** CSS font weight. */
+	/** CSS font weight, italic, and font family (the page's unless given). */
 	weight?: number;
+	italic?: boolean;
+	family?: string;
 	/**
 	 * Drawn on a fully opaque fill, so it may use subpixel antialiasing as the browser's own
 	 * text does there. On a translucent ground its colour fringes would show.
@@ -149,6 +151,8 @@ export interface GlLabel extends Container {
 	readonly width: number;
 	/** Its text's own width at `px`, without what goes before it. */
 	readonly advance: number;
+	/** How much of its glyph shows, 0 to 1, over the alpha it was made with (see EntityGlyph). */
+	glyphFade: number;
 	readonly text: string;
 }
 
@@ -220,7 +224,7 @@ export class GlTextLayer {
 	private readonly rasters = new Map<string, Raster>();
 	private readonly pages: Page[] = [];
 	private readonly pageOf = new WeakMap<TextureSource, Page>();
-	private readonly metrics = new Map<number, Metrics>();
+	private readonly metrics = new Map<string, Metrics>();
 	/** Widths measured, by weight, size and text; the font each canvas has. */
 	private readonly widths = new Map<string, number>();
 	private readonly fonts = new WeakMap<CanvasRenderingContext2D, string>();
@@ -271,6 +275,7 @@ export class GlTextLayer {
 	label(text: string, opts: GlLabelOptions): GlLabel {
 		const Label = (labelClass ??= makeLabelClass(this.P));
 		const weight = opts.weight ?? 400;
+		const face = `${opts.italic ? 'italic ' : ''}${weight}`;
 		const lcd = this.lcd && !!opts.lcd;
 		const sprite = new this.P.Sprite();
 		sprite.roundPixels = true;
@@ -286,7 +291,7 @@ export class GlTextLayer {
 		const glyph = opts.glyph && GLYPHS[opts.glyph] ? opts.glyph : undefined;
 		const alone = !!glyph && !text;
 		const color = (alone ? (opts.glyphColor ?? opts.color) : opts.color) & 0xffffff;
-		const l = new Label(this, text, color, weight, lcd, opts.px, sprite);
+		const l = new Label(this, text, color, face, opts.family ?? this.family, lcd, opts.px, sprite);
 		this.labels.add(l);
 		if (alone) {
 			l.glyph = glyph;
@@ -441,12 +446,12 @@ export class GlTextLayer {
 	}
 
 	/** Width of `text` at `px`, by the browser's layout of it. */
-	measure(text: string, weight: number, px: number): number {
-		const key = `${weight}|${px}|${text}`;
+	measure(text: string, face: string | number, px: number, family = this.family): number {
+		const key = `${face}|${family}|${px}|${text}`;
 		let w = this.widths.get(key);
 		if (w === undefined) {
 			if (this.widths.size > 50000) this.widths.clear();
-			w = this.measurer(`${weight} ${px}px ${this.family}`).measureText(text).width;
+			w = this.measurer(`${face} ${px}px ${family}`).measureText(text).width;
 			this.widths.set(key, w);
 		}
 		return w;
@@ -477,12 +482,13 @@ export class GlTextLayer {
 		return ctx;
 	}
 
-	private metricsOf(weight: number): Metrics {
-		let m = this.metrics.get(weight);
+	private metricsOf(face: string | number, family = this.family): Metrics {
+		const key = `${face}|${family}`;
+		let m = this.metrics.get(key);
 		if (!m) {
-			const t = this.measurer(`${weight} 100px ${this.family}`).measureText('Hg');
+			const t = this.measurer(`${face} 100px ${family}`).measureText('Hg');
 			m = { ascent: t.fontBoundingBoxAscent / 100, descent: t.fontBoundingBoxDescent / 100 };
-			this.metrics.set(weight, m);
+			this.metrics.set(key, m);
 		}
 		return m;
 	}
@@ -490,7 +496,7 @@ export class GlTextLayer {
 	/** Gives `n.l` a raster at `n.size`, shared with other labels drawing the same. */
 	private draw(n: Need, W: number, H: number, dpr: number, must: Need[]) {
 		const { l, size } = n;
-		const key = `${l.weight}|${l.color}|${l.lcd ? 1 : 0}|${size}|${l.glyph ?? ''}|${l.lead}|${l.text}`;
+		const key = `${l.face}|${l.family}|${l.color}|${l.lcd ? 1 : 0}|${size}|${l.glyph ?? ''}|${l.lead}|${l.text}`;
 		let r = this.rasters.get(key);
 		if (r && !r.clip) {
 			if (l.raster !== r) {
@@ -519,11 +525,11 @@ export class GlTextLayer {
 		dpr: number,
 		must: Need[]
 	): Raster | undefined {
-		const font = `${l.weight} ${size}px ${this.family}`;
+		const font = `${l.face} ${size}px ${l.family}`;
 		// The box drawn: the advance and the font's ascent and descent, and room around them for
 		// ink past them. (Measuring the ink would be exact, but measureText finds glyph bounds,
 		// which is slow for each new size.)
-		const fm = this.metricsOf(l.weight);
+		const fm = this.metricsOf(l.face, l.family);
 		const k = size / l.px;
 		const left = Math.ceil(OVERHANG * size) + PAD;
 		const right = Math.ceil(l.advance * k + OVERHANG * size) + PAD;
@@ -641,8 +647,8 @@ export class GlTextLayer {
 		ctx.fillStyle = `rgb(${fg.join(',')})`;
 		if (l.glyph) {
 			// Centred on the line, as the names' flex rows centre it; size px is the font size.
-			const size = parseFloat(font.split(' ')[1]);
-			const fm = this.metricsOf(l.weight);
+			const size = parseFloat(/([\d.]+)px/.exec(font)![1]);
+			const fm = this.metricsOf(l.face, l.family);
 			const em = GLYPH_EM * size;
 			const top = penY - ((fm.ascent - fm.descent) * size) / 2 - em / 2;
 			ctx.save();
@@ -908,7 +914,8 @@ function makeLabelClass(P: Pixi) {
 		/** Room before its text, in em, for the parts drawn there (see GlTextLayer.label). */
 		lead = 0;
 		/** Its glyph and change mark, each placed `at` em from its origin. */
-		private readonly parts: { l: LabelImpl; at: number; op?: Container }[] = [];
+		private readonly parts: { l: LabelImpl; at: number; op?: Container; alpha: number }[] = [];
+		private fade = 1;
 		/** Text width per px of font size, measured at the size it was made with when first asked. */
 		private perPx = -1;
 		private readonly px0: number;
@@ -917,7 +924,8 @@ function makeLabelClass(P: Pixi) {
 			private readonly layer: GlTextLayer,
 			readonly text: string,
 			readonly color: number,
-			readonly weight: number,
+			readonly face: string,
+			readonly family: string,
 			readonly lcd: boolean,
 			px: number,
 			private readonly sprite: Sprite
@@ -944,7 +952,7 @@ function makeLabelClass(P: Pixi) {
 				this.perPx = this.glyph
 					? GLYPH_EM
 					: this.px0 > 0
-						? this.layer.measure(this.text, this.weight, this.px0) / this.px0
+						? this.layer.measure(this.text, this.face, this.px0, this.family) / this.px0
 						: 0;
 			return this.perPx * this._px;
 		}
@@ -954,16 +962,25 @@ function makeLabelClass(P: Pixi) {
 		}
 		override set width(_: number) {}
 
+		get glyphFade() {
+			return this.fade;
+		}
+		set glyphFade(v: number) {
+			if (v === this.fade) return;
+			this.fade = v;
+			for (const p of this.parts) if (!p.op) p.l.alpha = p.alpha * v;
+		}
+
 		/** Adds its glyph, `at` em from its origin. */
 		addPart(l: GlLabel, at: number) {
-			this.parts.push({ l: l as LabelImpl, at });
+			this.parts.push({ l: l as LabelImpl, at, alpha: l.alpha });
 			this.addChild(l);
 			this.place();
 		}
 
 		/** Adds its change mark: badge `bg`, drawn 1 px to the em, and text `t` centred on it. */
 		addOp(bg: Container, t: GlLabel, at: number) {
-			this.parts.push({ l: t as LabelImpl, at, op: bg });
+			this.parts.push({ l: t as LabelImpl, at, op: bg, alpha: 1 });
 			this.addChild(bg, t);
 			this.place();
 		}
