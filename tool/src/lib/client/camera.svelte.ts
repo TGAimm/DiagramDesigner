@@ -2,9 +2,8 @@ import { getContext, setContext } from 'svelte';
 
 /**
  * The canvas camera: where the view is (`x`, `y` the screen position of canvas point 0,0, and
- * `zoom`), and how it moves. The canvas and what is drawn over it (cards, the minimap, the
- * player) move it only through this, so it does not matter what keeps it: Svelte Flow for the
- * page elements' canvas, `GlCamera` for the WebGL one.
+ * `zoom`), and how it moves. What is drawn over the canvas (cards, the minimap, the player)
+ * moves it only through this (see `CanvasCamera`).
  */
 export interface View {
 	x: number;
@@ -50,11 +49,11 @@ const WHEEL_END = 150;
 const CLICK_SLOP = 3;
 
 /**
- * A camera of its own, for the WebGL canvas: wheel zoom about the pointer (pinch on a
- * trackpad), drag to pan, two-finger pinch on touch, and animated moves. It tells when a
- * movement starts, steps and ends, as Svelte Flow's `onmovestart`, `onmove` and `onmoveend`.
+ * The canvas's camera: wheel zoom about the pointer (pinch on a trackpad), drag to pan,
+ * two-finger pinch on touch, and animated moves. It tells when a movement starts
+ * (`onmovestart`), steps (`onmove`) and ends (`onmoveend`).
  */
-export class GlCamera implements Camera {
+export class CanvasCamera implements Camera {
 	current = $state.raw<View>({ x: 0, y: 0, zoom: 1 });
 	/** The view's size in screen px. */
 	width = 1;
@@ -186,8 +185,9 @@ export class GlCamera implements Camera {
 	}
 
 	/**
-	 * Wheel, drag and pinch on `el` move the camera. Presses that do not move the view stay
-	 * clicks; `dragged` tells the click ending one that did. Returns a function undoing it.
+	 * Wheel, drag and pinch on `el` move the camera, and so do wheels and presses passed on to
+	 * it (from the cards over the canvas). Presses that do not move the view stay clicks; the
+	 * click ending one that did is dropped, and `dragged` tells it. Returns a function undoing it.
 	 */
 	attach(el: HTMLElement): () => void {
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- pointers held down, not state
@@ -206,17 +206,35 @@ export class GlCamera implements Camera {
 			e.preventDefault();
 			this.#stop();
 			const p = local(e);
-			// As d3-zoom, which Svelte Flow uses: a line or page is worth more than a pixel, and a
-			// trackpad pinch (ctrl + wheel) zooms faster.
+			// As d3-zoom: a line or page is worth more than a pixel, and a trackpad pinch
+			// (ctrl + wheel) zooms faster.
 			const unit = e.deltaMode === 1 ? 0.05 : e.deltaMode === 2 ? 1 : 0.002;
 			this.#zoomAt(p.x, p.y, 2 ** (-e.deltaY * unit * (e.ctrlKey ? 10 : 1)), e);
 			clearTimeout(this.#endTimer);
 			this.#endTimer = setTimeout(() => this.#end(), WHEEL_END);
 		};
+		// A press is followed on the window, not captured: a press passed on from a card must
+		// still click the card's button when it does not move.
+		const follow = (on: boolean) => {
+			if (on) {
+				window.addEventListener('pointermove', onmove);
+				window.addEventListener('pointerup', onup);
+				window.addEventListener('pointercancel', onup);
+			} else {
+				window.removeEventListener('pointermove', onmove);
+				window.removeEventListener('pointerup', onup);
+				window.removeEventListener('pointercancel', onup);
+			}
+		};
+		/** Drops the click a drag ends with, wherever it lands. */
+		const noClick = (e: MouseEvent) => {
+			e.stopPropagation();
+			e.preventDefault();
+		};
 		const ondown = (e: PointerEvent) => {
 			if (e.button !== 0 && e.pointerType === 'mouse') return;
 			this.#stop();
-			el.setPointerCapture(e.pointerId);
+			if (!pointers.size) follow(true);
 			pointers.set(e.pointerId, local(e));
 			if (pointers.size === 1) {
 				press = local(e);
@@ -250,22 +268,24 @@ export class GlCamera implements Camera {
 			if (pointers.size < 2) pinch = undefined;
 			if (!pointers.size) {
 				press = undefined;
+				follow(false);
 				this.#end();
+				if (this.dragged) {
+					// The click comes straight after the release, before any timer.
+					window.addEventListener('click', noClick, true);
+					setTimeout(() => window.removeEventListener('click', noClick, true));
+				}
 			}
 		};
 		el.addEventListener('wheel', onwheel, { passive: false });
 		el.addEventListener('pointerdown', ondown);
-		el.addEventListener('pointermove', onmove);
-		el.addEventListener('pointerup', onup);
-		el.addEventListener('pointercancel', onup);
 		return () => {
 			this.#stop();
 			clearTimeout(this.#endTimer);
+			follow(false);
+			window.removeEventListener('click', noClick, true);
 			el.removeEventListener('wheel', onwheel);
 			el.removeEventListener('pointerdown', ondown);
-			el.removeEventListener('pointermove', onmove);
-			el.removeEventListener('pointerup', onup);
-			el.removeEventListener('pointercancel', onup);
 		};
 	}
 }

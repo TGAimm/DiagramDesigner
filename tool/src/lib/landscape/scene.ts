@@ -7,9 +7,8 @@ import { keyedGroup, type KeyedGroup } from './route-client.ts';
 import type { Rect, RouteGroup } from './route.ts';
 
 /**
- * What the canvas draws, worked out from a layout the same way whichever renderer draws it
- * (see the Rendering technique setting): rails, line ends and the groups lines at rest are
- * routed in.
+ * What the canvas draws, worked out from a layout: rails, line ends and the groups lines at
+ * rest are routed in.
  */
 
 /** The rail on each box that has one, by box id: its apis, and those of hidden boxes inside. */

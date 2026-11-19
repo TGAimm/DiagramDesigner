@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { X } from '@lucide/svelte';
-	import { settings, type Detail, type Renderer } from '#lib/client/settings.svelte.ts';
+	import { settings, type Detail } from '#lib/client/settings.svelte.ts';
 	import { DEFAULT_LAYOUT, type LayoutOptions } from '#lib/landscape/layout.ts';
 
 	let { onclose }: { onclose: () => void } = $props();
@@ -15,19 +15,6 @@
 			value: 'all',
 			title: 'Render everything',
 			text: 'Every system, module, card, field and api rail is drawn at every zoom, open. Cards over 20 fields still fold. Large designs may pan and zoom slowly.'
-		}
-	];
-
-	const renderers: { value: Renderer; title: string; text: string }[] = [
-		{
-			value: 'dom',
-			title: 'Page elements',
-			text: 'Every box, row and line is an element of the page (Svelte Flow, SVG lines). Does everything; large landscapes pan and zoom slowly.'
-		},
-		{
-			value: 'webgl',
-			title: 'WebGL (experimental)',
-			text: 'Boxes, rows and lines are drawn on one WebGL canvas, which keeps its frame rate however much is drawn. Everything else works as with page elements: hover, picking, lit lines, the inspector, focus and play.'
 		}
 	];
 
@@ -80,21 +67,6 @@
 					value={o.value}
 					checked={settings.detail === o.value}
 					onchange={() => settings.setDetail(o.value)}
-				/>
-				<span><b>{o.title}</b><span class="text">{o.text}</span></span>
-			</label>
-		{/each}
-	</fieldset>
-	<fieldset>
-		<legend>RENDERING TECHNIQUE</legend>
-		{#each renderers as o (o.value)}
-			<label class:on={settings.renderer === o.value}>
-				<input
-					type="radio"
-					name="renderer"
-					value={o.value}
-					checked={settings.renderer === o.value}
-					onchange={() => settings.setRenderer(o.value)}
 				/>
 				<span><b>{o.title}</b><span class="text">{o.text}</span></span>
 			</label>

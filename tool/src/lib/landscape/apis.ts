@@ -62,7 +62,7 @@ export function bodyModels(
 	]);
 }
 
-/** Rail sizes in px at full size (scale 1), shared with LandscapeNode. */
+/** Rail sizes in px at full size (scale 1), shared with GlLayer. */
 export const RAIL = {
 	/** Endpoint rows; the rail lists them while they would read at LEGIBLE px (see open.ts). */
 	font: 12,
