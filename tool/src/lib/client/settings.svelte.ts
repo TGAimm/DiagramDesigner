@@ -1,14 +1,5 @@
-/**
- * How much of the canvas is drawn. Every box is open in both. `adaptive` draws cards and rails
- * as their frame and name unless their rows read at 4px near the screen, or they are looked at
- * or lit (see open.ts);
- * `all` draws everything at every zoom. Long cards fold in both.
- */
-export type Detail = 'adaptive' | 'all';
-
 import { DEFAULT_LAYOUT, type LayoutOptions } from '#lib/landscape/layout.ts';
 
-const KEY = 'sdv-detail';
 const LAYOUT_KEY = 'sdv-layout';
 const FOLLOW_KEY = 'sdv-follow-calls';
 const MINIMAP_KEY = 'sdv-minimap';
@@ -29,14 +20,6 @@ function storedMinimap(): boolean {
 	}
 }
 
-function stored(): Detail {
-	try {
-		return localStorage.getItem(KEY) === 'all' ? 'all' : 'adaptive';
-	} catch {
-		return 'adaptive';
-	}
-}
-
 function storedLayout(): LayoutOptions {
 	try {
 		return { ...DEFAULT_LAYOUT, ...JSON.parse(localStorage.getItem(LAYOUT_KEY) ?? '{}') };
@@ -47,8 +30,6 @@ function storedLayout(): LayoutOptions {
 
 /** Per-browser viewer settings, kept in localStorage like the theme. */
 class SettingsState {
-	detail = $state<Detail>(typeof localStorage === 'undefined' ? 'adaptive' : stored());
-
 	layout = $state<LayoutOptions>(
 		typeof localStorage === 'undefined' ? { ...DEFAULT_LAYOUT } : storedLayout()
 	);
@@ -58,7 +39,7 @@ class SettingsState {
 		try {
 			localStorage.setItem(LAYOUT_KEY, JSON.stringify(this.layout));
 		} catch {
-			// As for the detail: the choice then lasts for the session.
+			// Storage can be unavailable (private mode); the choice then lasts for the session.
 		}
 	}
 
@@ -74,7 +55,7 @@ class SettingsState {
 		try {
 			localStorage.setItem(FOLLOW_KEY, on ? '1' : '0');
 		} catch {
-			// As for the detail: the choice then lasts for the session.
+			// As for the layout: the choice then lasts for the session.
 		}
 	}
 
@@ -86,16 +67,7 @@ class SettingsState {
 		try {
 			localStorage.setItem(MINIMAP_KEY, on ? '1' : '0');
 		} catch {
-			// As for the detail: the choice then lasts for the session.
-		}
-	}
-
-	setDetail(detail: Detail) {
-		this.detail = detail;
-		try {
-			localStorage.setItem(KEY, detail);
-		} catch {
-			// Storage can be unavailable (private mode); the choice then lasts for the session.
+			// As for the layout: the choice then lasts for the session.
 		}
 	}
 }

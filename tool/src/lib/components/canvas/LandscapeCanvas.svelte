@@ -120,8 +120,6 @@
 	/** The key explaining the canvas's marks is shown. */
 	let keyOpen = $state(false);
 
-	// Render everything: every box and rail open at any zoom; long cards still fold.
-	const all = $derived(settings.detail === 'all');
 	// The design, or the state of a scenario or commit being compared (see changes.svelte.ts);
 	// in a focus, cut down to the subject and what connects to it, drawn the same. Playing, to
 	// what the run can touch, whatever focus it started in.
@@ -202,14 +200,13 @@
 	// Every system and module is drawn open at any zoom. Zoomed out, what thins out is the rows of
 	// cards and rails (see open.ts), which are most of what a large landscape draws.
 	const open = $derived(new Set(boxes.filter((b) => b.group).map((b) => b.id)));
-	// Render everything, or a focus, which is small: every card and rail in full at any zoom.
-	const everything = $derived(all || !!focused);
 	// Cards and rails drawing their rows: where they read and are on or near the screen (see
-	// open.ts). GlLayer reads it from the view state, and it is only replaced when it changes, so
-	// a pan rebuilds nothing and redraws only the boxes coming into or leaving view.
+	// open.ts), or all of them at any zoom in a focus, which is small. GlLayer reads it from the
+	// view state, and it is only replaced when it changes, so a pan rebuilds nothing and redraws
+	// only the boxes coming into or leaving view.
 	$effect(() => {
 		const { x, y, zoom } = camera.current;
-		const next = everything
+		const next = focused
 			? [...boxes.map((b) => b.id), ...rails.keys()]
 			: [...drawnInFull(boxes, rails, { x, y, zoom, width: cw, height: ch })];
 		const was = untrack(() => view.near);

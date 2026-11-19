@@ -5,7 +5,7 @@ import { TABLE, type LandscapeBox } from './layout.ts';
 export const READABLE = 12;
 
 /**
- * Adaptive detail: a card's rows and a rail's endpoints are drawn only while they would read
+ * A card's rows and a rail's endpoints are drawn only while they would read
  * at LEGIBLE px or more and are on or near the screen. Otherwise a card is its frame and name,
  * a rail its name. Systems and modules are always drawn open; layout never changes.
  */
