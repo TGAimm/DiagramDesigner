@@ -261,15 +261,27 @@ export function sequenceOf(model: Model, unitId: string): Sequence {
 
 /** Sequence diagram sizes in px, shared with SequenceDiagram. */
 export const SEQ = {
-	/** Between two lifelines. */
+	/** Between two lifelines, at most. */
 	col: 150,
+	/** Between two lifelines when closed up to fit a pane, at least. */
+	minCol: 120,
 	/** From the edge to the first lifeline's centre. */
 	edge: 70,
-	headW: 124,
+	/** A row with one line of text; rows grow to fit wrapped labels, notes and guards. */
 	row: 30,
 	/** Height of one line under a lifeline's name. */
 	sub: 15
 };
 
-/** How wide a sequence is drawn. */
-export const sequenceWidth = (seq: Sequence) => 2 * SEQ.edge + (seq.lifelines.length - 1) * SEQ.col;
+/** How wide a sequence is drawn, its lifelines `col` apart. */
+export const sequenceWidth = (seq: Sequence, col: number = SEQ.col) =>
+	2 * SEQ.edge + (seq.lifelines.length - 1) * col;
+
+/** The spacing that fits a sequence into `room` px: from SEQ.col down to SEQ.minCol. */
+export const sequenceCol = (seq: Sequence, room: number) =>
+	seq.lifelines.length < 2
+		? SEQ.col
+		: Math.max(
+				SEQ.minCol,
+				Math.min(SEQ.col, Math.floor((room - 2 * SEQ.edge) / (seq.lifelines.length - 1)))
+			);
