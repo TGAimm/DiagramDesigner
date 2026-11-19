@@ -50,7 +50,7 @@ Each view shows only the fields that exist there:
 | `required` | must be given on create |
 | `nullable` | may hold null (independent of `required`) |
 | `pk` / `pi` | part of primary key / primary index. A `pk` field cannot be nullable. |
-| `constraints` | free text: `[positive, max 200]` |
+| `constraints` | free text: `[positive, max 200]`; an enum as `"enum Name: A, B, C"` |
 | `ref` | foreign key: id of a model or field it holds the key of. Not with `model`. |
 | `from` | lineage: ids of fields (any model) this value comes from |
 | `derived` | free text: how the value is computed/changed from `from` |
@@ -93,6 +93,11 @@ impact can be traced.
   corners and says *Class*; a stored table is emerald, near-square (3px) with a ruled name bar,
   and says *Table*; logic is amber with 10px corners and a ring. A card drawn away from its
   owner adds *owned by …*; a referenced class (`models`) is dashed.
+- Name, Type and Constraints columns are as wide as their widest cell, up to 240, 200 and
+  240px; nothing wraps. A long name ends in …; a long type is cut at the front
+  (`…Contracts.SendMessage`); constraints that do not fit fold into a `+n` badge. An enum
+  constraint shows as `enum Name · 3`. The field inspector lists every constraint in full, an
+  enum one value per line.
 - Type column shows `Customer` / `OrderLine[]`. A link strip at the row end marks `ref` (→),
   `from` (dashed →, `ƒ` when `derived`), how many fields point at the field (count pill) and
   how many api fields send into or return it (`API n`, see [api](api.md)).

@@ -77,6 +77,14 @@ export function truncate(text: string, maxWidth: number, size: number, bold = fa
 	return text.slice(0, end).trimEnd() + '…';
 }
 
+/** `text` cut at the front to fit `maxWidth`, keeping its end: `…Contracts.SendMessage`. */
+export function truncateStart(text: string, maxWidth: number, size: number, bold = false): string {
+	if (textWidth(text, size, bold) <= maxWidth) return text;
+	let start = 0;
+	while (start < text.length && textWidth('…' + text.slice(start), size, bold) > maxWidth) start++;
+	return '…' + text.slice(start).trimStart();
+}
+
 export const FONT_STACK =
 	'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif';
 export const MONO_STACK = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';

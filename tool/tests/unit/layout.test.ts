@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+	COL_MAX,
+	constraintLabel,
 	DEFAULT_LAYOUT,
+	enumOf,
 	fieldRowY,
+	fitBadges,
 	FOLD,
 	HEADER,
 	LEAF,
@@ -13,7 +17,7 @@ import {
 import { railGroups, railOf } from '../../src/lib/landscape/apis';
 import { edgesOf, restLines } from '../../src/lib/landscape/connections';
 import { sequenceOf } from '../../src/lib/landscape/sequence';
-import { GLYPH, textWidth } from '../../src/lib/render/text';
+import { GLYPH, textWidth, truncateStart } from '../../src/lib/render/text';
 import { ROUTE } from '../../src/lib/landscape/route';
 import { loadFixture, loadStrings } from './helpers';
 
@@ -675,5 +679,56 @@ describe('room for lines', () => {
 				);
 				expect(apart).toBeGreaterThanOrEqual(32 + extra(a) + extra(b) - 0.5);
 			}
+	});
+});
+
+describe('long cells', () => {
+	const values = Array.from({ length: 44 }, (_, i) => `FiltersRemoveAllAlloyRimsInRegion${i}`);
+	const long = loadStrings({
+		's/sys.module.yaml': 'id: sys\nname: Sys\n',
+		's/dto.model.yaml': [
+			'id: dto',
+			'ownedBy: sys',
+			'fields:',
+			`  - { id: dto-e, name: errorType, type: string, constraints: ["enum ErrorType: ${values.join(', ')}"] }`,
+			'  - { id: dto-t, name: message, type: NDI.PBC.Communication.Application.Contracts.SendDeliveryMessage }'
+		].join('\n')
+	}).model;
+
+	it('reads an enum constraint and shows it by name and count', () => {
+		expect(enumOf('enum Priority: Critical, High, Low')).toEqual({
+			name: 'Priority',
+			values: ['Critical', 'High', 'Low']
+		});
+		expect(enumOf('read-only')).toBeUndefined();
+		expect(constraintLabel('enum Priority: Critical, High, Low')).toBe('enum Priority · 3');
+		expect(constraintLabel('max 200')).toBe('max 200');
+	});
+
+	it('caps the type and constraints columns, so the card stays narrow', () => {
+		const card = layoutLandscape(long).boxes.find((b) => b.elementId === 'dto' && b.table)!;
+		const col = (k: string) => card.table!.find((c) => c.key === k)!;
+		expect(col('type').width).toBeLessThanOrEqual(COL_MAX.type!);
+		expect(col('constraints').width).toBeLessThanOrEqual(COL_MAX.constraints!);
+		expect(card.width).toBeLessThan(800);
+	});
+
+	it('folds the badges that do not fit into +n, and cuts a lone one', () => {
+		const w = (s: string) => textWidth(s, TABLE.badge, true) + 12;
+		const fit = fitBadges(['read-only', 'category Specifications', 'label: Alloy wheel'], 150);
+		expect(fit).toEqual({ shown: ['read-only'], more: 2 });
+		expect(w('read-only') + TABLE.badgeGap + w('+2')).toBeLessThanOrEqual(150);
+		const lone = fitBadges(['label: Alloy wheel accessories included in the wheel box'], 120);
+		expect(lone.more).toBe(0);
+		expect(lone.shown[0].endsWith('…')).toBe(true);
+		expect(w(lone.shown[0])).toBeLessThanOrEqual(120);
+		expect(fitBadges(['a', 'b'], 200)).toEqual({ shown: ['a', 'b'], more: 0 });
+	});
+
+	it('cuts a long type at the front, keeping its end', () => {
+		const t = truncateStart('NDI.PBC.Contracts.SendDeliveryMessage', 170, TABLE.row);
+		expect(t.startsWith('…')).toBe(true);
+		expect(t.endsWith('SendDeliveryMessage')).toBe(true);
+		expect(textWidth(t, TABLE.row)).toBeLessThanOrEqual(170);
 	});
 });

@@ -1,6 +1,6 @@
 import { LOGIC_KEYS, type Model } from '../model/model';
 import type { Element, ModelField, ModelIndex } from '../model/schema';
-import { GLYPH, textWidth } from '../render/text';
+import { GLYPH, textWidth, truncate, truncateStart } from '../render/text';
 import { triggerWords } from '../model/message';
 import { railGroups, railOf } from './apis';
 import { edgeKey, edgesOf, type Edge } from './connections';
@@ -329,12 +329,74 @@ export const fieldRowY = (i: number, count: number, expanded: boolean, at = FOLD
 /** Vertical centre of unit row `i` of a logic card, which has no header row. */
 export const logicRowY = (i: number) => 1 + TABLE.head + (i + 0.5) * TABLE.rowHeight;
 
-/** Badges have 6px side padding (see GlLayer). */
+/** A badge's width: its text and 6px padding each side (see GlLayer). */
+export const badgeWidth = (label: string) => textWidth(label, TABLE.badge, true) + 12;
+
 const badgesWidth = (labels: string[]) =>
-	labels.reduce(
-		(w, k, i) => w + textWidth(k, TABLE.badge, true) + 12 + (i ? TABLE.badgeGap : 0),
-		0
-	);
+	labels.reduce((w, k, i) => w + badgeWidth(k) + (i ? TABLE.badgeGap : 0), 0);
+
+/**
+ * Widest a field column may be, padding included. A longer cell is cut: a name at its end, a
+ * type at its front, and constraints fold into `+n` (see `fitBadges`).
+ */
+export const COL_MAX: Partial<Record<FieldColumn, number>> = {
+	name: 240,
+	type: 200,
+	constraints: 240
+};
+
+/** Room for a cell's content in column `c`. */
+export const cellRoom = (c: TableColumn) => c.width - 2 * TABLE.pad;
+
+/** A constraint written `enum Name: a, b, c`: the enum's name and its values. */
+export function enumOf(constraint: string): { name: string; values: string[] } | undefined {
+	const m = /^enum\s+([^:]+?)\s*:(.*)$/s.exec(constraint.trim());
+	const values = m?.[2]
+		.split(',')
+		.map((v) => v.trim())
+		.filter(Boolean);
+	return m && values?.length ? { name: m[1], values } : undefined;
+}
+
+/** A constraint as a card shows it: an enum by its name and how many values it has. */
+export function constraintLabel(constraint: string): string {
+	const e = enumOf(constraint);
+	return e ? `enum ${e.name} · ${e.values.length}` : constraint;
+}
+
+/**
+ * The badges that fit in `max` px, left to right, and how many more fold into a `+n` badge
+ * after them. A first badge too wide on its own is cut, so a cell never shows none.
+ */
+export function fitBadges(labels: string[], max: number): { shown: string[]; more: number } {
+	const plus = (n: number) => (n ? TABLE.badgeGap + badgeWidth(`+${n}`) : 0);
+	const shown: string[] = [];
+	let w = 0;
+	for (const [i, k] of labels.entries()) {
+		const next = w + (i ? TABLE.badgeGap : 0) + badgeWidth(k);
+		if (next + plus(labels.length - i - 1) > max) break;
+		shown.push(k);
+		w = next;
+	}
+	if (!shown.length && labels.length)
+		shown.push(truncate(labels[0], max - plus(labels.length - 1) - 12, TABLE.badge, true));
+	return { shown, more: labels.length - shown.length };
+}
+
+/** A field's constraint badges in `max` px. */
+export const constraintBadges = (f: ModelField, max: number) =>
+	fitBadges((f.constraints ?? []).map(constraintLabel), max);
+
+/** A field's name in `max` px, leaving room for its key badges in a table. */
+export function nameText(f: ModelField, view: ModelView | undefined, max: number): string {
+	const keys = view === 'table' ? keysOf(f) : [];
+	const room = max - (keys.length ? TABLE.badgeGap + badgesWidth(keys) : 0);
+	return truncate(f.name, room, TABLE.row);
+}
+
+/** A field's type in `max` px, cut at the front so a qualified name keeps its end. */
+export const typeCell = (f: ModelField, label: (id: string) => string | undefined, max: number) =>
+	truncateStart(typeText(f, label), max, TABLE.row);
 
 /**
  * Field columns. Required and nullable are always shown, so a blank reads as "no"; the
@@ -365,18 +427,22 @@ function fieldColumns(
 			'constraints',
 			'Constraints',
 			undefined,
-			fields.map((f) => badgesWidth(f.constraints ?? [])),
+			fields.map((f) => badgesWidth((f.constraints ?? []).map(constraintLabel))),
 			false
 		]
 	];
 	const cols: TableColumn[] = defs
 		.filter(([, , , ws, always]) => always || ws.some((w) => w > 0))
-		.map(([key, label, title, ws]) => ({
-			key,
-			label,
-			title,
-			width: Math.max(textWidth(label, TABLE.label, true), ...ws) + 2 * TABLE.pad
-		}));
+		.map(([key, label, title, ws]) => {
+			const cap = (COL_MAX[key] ?? Infinity) - 2 * TABLE.pad;
+			const widest = Math.min(cap, Math.max(...ws));
+			return {
+				key,
+				label,
+				title,
+				width: Math.max(textWidth(label, TABLE.label, true), widest) + 2 * TABLE.pad
+			};
+		});
 	const slots = linkSlots(fields, rels);
 	if (slots.length)
 		cols.push({
