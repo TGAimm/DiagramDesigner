@@ -8,24 +8,8 @@
 		TriangleAlert,
 		X
 	} from '@lucide/svelte';
-	import {
-		Background,
-		BackgroundVariant,
-		ConnectionMode,
-		ControlButton,
-		Controls,
-		SvelteFlow,
-		ViewportPortal,
-		useStore,
-		useSvelteFlow,
-		useViewport,
-		type Edge,
-		type Node,
-		type NodeProps
-	} from '@xyflow/svelte';
-	import '@xyflow/svelte/dist/style.css';
 	import { changes } from '#lib/client/changes.svelte.ts';
-	import { GlCamera, setCamera, type Camera } from '#lib/client/camera.svelte.ts';
+	import { CanvasCamera, setCamera } from '#lib/client/camera.svelte.ts';
 	import { search } from '#lib/client/search.svelte.ts';
 	import SearchPalette from '#lib/components/SearchPalette.svelte';
 	import type { Hit } from '#lib/landscape/search.ts';
@@ -33,7 +17,6 @@
 	import FocusBar from './FocusBar.svelte';
 	import Minimap from './Minimap.svelte';
 	import { settings } from '#lib/client/settings.svelte.ts';
-	import { theme } from '#lib/client/theme.svelte.ts';
 	import {
 		HOVER_DELAY,
 		type FieldRef,
@@ -63,8 +46,7 @@
 		leavesOf,
 		restLines,
 		within,
-		type LinkKind,
-		type RestLine
+		type LinkKind
 	} from '#lib/landscape/connections.ts';
 	import { drawnInFull, READABLE } from '#lib/landscape/open.ts';
 	import { GLYPH, textWidth } from '#lib/render/text.ts';
@@ -101,8 +83,7 @@
 	import RouteWorker from '#lib/landscape/route-worker.ts?worker';
 	import wasmUrl from 'libavoid-js/dist/libavoid.wasm?url';
 	import { untrack } from 'svelte';
-	import LandscapeNode, { type LandscapeNodeData } from './LandscapeNode.svelte';
-	import ConnectionEdge from './ConnectionEdge.svelte';
+	import CardPeek, { type CardData } from './CardPeek.svelte';
 	import GlLayer, { type GlHit, type GlLine } from './GlLayer.svelte';
 	import EntityGlyph from './EntityGlyph.svelte';
 	import ChangeSection from '#lib/components/ChangeSection.svelte';
@@ -117,30 +98,12 @@
 
 	const MIN_ZOOM = 0.05;
 	const MAX_ZOOM = 64;
-	const flow = useSvelteFlow();
-	const viewport = useViewport();
-	/** The WebGL canvas's own camera (see GlCamera); Svelte Flow keeps the page elements'. */
-	const glCam = new GlCamera();
-	/** Whichever camera the canvas is drawn with; the cards, minimap and player move it too. */
-	const camera: Camera = {
-		get current() {
-			return gl ? glCam.current : viewport.current;
-		},
-		getViewport: () => (gl ? glCam.getViewport() : flow.getViewport()),
-		setViewport: (v, move) => (gl ? glCam.setViewport(v, move) : flow.setViewport(v, move)),
-		setCenter: (x, y, move) => (gl ? glCam.setCenter(x, y, move) : flow.setCenter(x, y, move)),
-		fitBounds: (b, move) => (gl ? glCam.fitBounds(b, move) : flow.fitBounds(b, move)),
-		zoomBy: (k, move) =>
-			gl ? glCam.zoomBy(k, move) : k > 1 ? flow.zoomIn(move) : flow.zoomOut(move)
-	};
+	/** The canvas's camera (see CanvasCamera); the cards, minimap and player move it too. */
+	const camera = new CanvasCamera();
 	setCamera(camera);
-	const nodeTypes = { landscape: LandscapeNode };
-	const edgeTypes = { connection: ConnectionEdge };
 
 	let cw = $state(1);
 	let ch = $state(1);
-	let nodes = $state.raw<Node[]>([]);
-	let edges = $state.raw<Edge[]>([]);
 	/** The layout the view was last fitted to: a new one is fitted again. */
 	let fittedTo: unknown;
 	let fittedFocus: unknown;
@@ -159,9 +122,6 @@
 
 	// Render everything: every box and rail open at any zoom; long cards still fold.
 	const all = $derived(settings.detail === 'all');
-	// Drawn on one WebGL canvas (see GlLayer) instead of as page elements; Svelte Flow still pans,
-	// zooms and carries everything over the landscape, given no nodes or edges.
-	const gl = $derived(settings.renderer === 'webgl');
 	// The design, or the state of a scenario or commit being compared (see changes.svelte.ts);
 	// in a focus, cut down to the subject and what connects to it, drawn the same. Playing, to
 	// what the run can touch, whatever focus it started in.
@@ -197,13 +157,11 @@
 			Math.max(...boxes.map((b) => b.absY + b.height)) - Math.min(...boxes.map((b) => b.absY));
 		return Math.min(MIN_ZOOM, Math.min(cw / w, ch / h) / 2);
 	});
-	const flowStore = useStore();
-	$effect(() => flowStore.setMinZoom(minZoom));
 	$effect(() => {
-		glCam.minZoom = minZoom;
-		glCam.maxZoom = MAX_ZOOM;
-		glCam.width = cw;
-		glCam.height = ch;
+		camera.minZoom = minZoom;
+		camera.maxZoom = MAX_ZOOM;
+		camera.width = cw;
+		camera.height = ch;
 	});
 	const rels = $derived(relationsOf(model));
 	// The minimap draws the root boxes, named, and the modules directly in them.
@@ -247,8 +205,8 @@
 	// Render everything, or a focus, which is small: every card and rail in full at any zoom.
 	const everything = $derived(all || !!focused);
 	// Cards and rails drawing their rows: where they read and are on or near the screen (see
-	// open.ts). Nodes read it from the view state, and it is only replaced when it changes, so a
-	// pan rebuilds nothing and redraws only the boxes coming into or leaving view.
+	// open.ts). GlLayer reads it from the view state, and it is only replaced when it changes, so
+	// a pan rebuilds nothing and redraws only the boxes coming into or leaving view.
 	$effect(() => {
 		const { x, y, zoom } = camera.current;
 		const next = everything
@@ -258,22 +216,8 @@
 		if (next.length === Object.keys(was).length && next.every((id) => was[id])) return;
 		view.near = Object.fromEntries(next.map((id) => [id, true as const]));
 	});
-	// The zoom, `--z`, for what keeps a size on screen, set by one rule on the elements that use
-	// it (class `screen-sized`, see app.css). Set on the canvas, every element in it would be
-	// styled anew at each step of a zoom.
-	const zoomSheet = new CSSStyleSheet();
-	zoomSheet.insertRule('.canvas .screen-sized { --z: 1 }');
-	const zoomRule = zoomSheet.cssRules[0] as CSSStyleRule;
-	$effect(() => {
-		document.adoptedStyleSheets = [...document.adoptedStyleSheets, zoomSheet];
-		return () => {
-			document.adoptedStyleSheets = document.adoptedStyleSheets.filter((s) => s !== zoomSheet);
-		};
-	});
-	// The zoom alone, so what reads it is left alone while the view pans. Each write to the rule
-	// restyles every `screen-sized` element, so it is written only when the zoom changes.
+	// The zoom alone, so what reads it is left alone while the view pans.
 	const zoom = $derived(camera.current.zoom);
-	$effect(() => zoomRule.style.setProperty('--z', String(zoom)));
 	/** The rail on box `id` lists its endpoints: they read near the screen, or are looked at. */
 	const listed = (id: string) => !!view.near[id] || !!view.full[id];
 
@@ -296,7 +240,7 @@
 	 * An open module's name keeps NAME_PX on screen as the canvas zooms out, and so does a
 	 * closed rail's. Past where a module's fits the room above its children (half of HEADER),
 	 * both are drawn here, in front of everything, never wider than their box nor taller than
-	 * half of it; until then the box draws them (see LandscapeNode's `.header` and `.rail-name`).
+	 * half of it; until then the box draws them (see GlLayer).
 	 * A module's sits in its top-left corner, a rail's on the rail's middle. `em` is the name's
 	 * width in ems: the text, its glyph and its backing's padding and margin (1.2em); it is
 	 * 1.6em tall with its margin. `max` is the cap, in canvas px.
@@ -621,34 +565,12 @@
 	 * canvas leaves it as it is; looking from one thing to the next keeps it toned down.
 	 */
 	const DIM_AFTER = 3000;
-	/** How much of a toned-down box, and its name, still shows. */
-	const DIM_OPACITY = 0.2;
 	const looking = $derived(!!focus);
 	let dimming = $state(false);
 	$effect(() => {
 		if (!looking) return void (dimming = false);
 		const t = setTimeout(() => (dimming = true), DIM_AFTER);
 		return () => clearTimeout(t);
-	});
-	// Toned down by a style sheet of its own, so looking at something restyles boxes without
-	// rebuilding them.
-	let dimSheet: HTMLStyleElement | undefined;
-	$effect(() => {
-		dimSheet = document.createElement('style');
-		document.head.append(dimSheet);
-		return () => dimSheet?.remove();
-	});
-	$effect(() => {
-		const ids = dimming ? related : undefined;
-		if (!dimSheet) return;
-		// Boxes, and the names drawn over them while zoomed out.
-		const kept = [...(ids ?? [])].flatMap((id) => [
-			`.canvas .svelte-flow__node[data-id=${JSON.stringify(id)}]`,
-			`.canvas .front-name[data-id=${JSON.stringify(id)}]`
-		]);
-		dimSheet.textContent = ids
-			? `.canvas .svelte-flow__node, .canvas .front-name { opacity: ${DIM_OPACITY}; }\n${kept.join(',\n')} { opacity: 1; }`
-			: '';
 	});
 
 	// ------------------------------------------------------------ hover
@@ -662,7 +584,6 @@
 	let overRow: FieldRef | null = null;
 	let overBox: string | null = null;
 	let moving = false;
-	let canvasEl: HTMLDivElement | undefined;
 	let hoverFrame = 0;
 	let hoverTimer: ReturnType<typeof setTimeout> | undefined;
 	function hoverLater() {
@@ -698,31 +619,6 @@
 			view.apiField = null;
 			view.selectedNodes = [];
 		}
-	}
-
-	function railView(id: string) {
-		const r = rails.get(id);
-		if (!r) return undefined;
-		return {
-			top: r.top,
-			width: r.width,
-			height: r.height,
-			scale: r.scale,
-			methodWidth: r.methodWidth,
-			groups: r.groups.map((g) => ({
-				title: g.title,
-				apis: g.apis.map((a) => {
-					const def = el(a)!.def;
-					return {
-						id: a,
-						name: el(a)!.name,
-						method: def.method ?? '',
-						path: def.path ?? '',
-						y: railRowY(r, a) ?? 0
-					};
-				})
-			}))
-		};
 	}
 
 	// Boxes the picked api's bodies use, outlined with the parts using them, and the rows a
@@ -762,7 +658,7 @@
 	}
 
 	// Rows to light, by box: the focused row, and the rows at the ends of its lines; apis on
-	// rails likewise. Nodes read them from the view state, so focus changes never rebuild them.
+	// rails likewise. GlLayer reads them from the view state, as the peek's card does.
 	// An end on a box round its leaf outlines that box. Every box looked at, picked or played,
 	// and every box its lines end on, is drawn in full at any zoom. That holds for the hovered
 	// card and the pick while a row's lines are lit too, so hovering the rows of a card never
@@ -823,8 +719,6 @@
 	});
 
 	$effect(() => {
-		if (gl) nodes = [];
-		else buildNodes();
 		// A new layout or focus is fitted; leaving a focus or stopping goes back to where the view
 		// was.
 		if ((fittedTo !== settings.layout || fittedFocus !== focusKey) && boxes.length) {
@@ -844,9 +738,8 @@
 			}
 		}
 	});
-	/** Fits the whole of what is drawn: the nodes, or on the WebGL canvas every box and rail. */
+	/** Fits the whole of what is drawn: every box and rail. */
 	function fitAll(duration?: number) {
-		if (!gl) return flow.fitView({ padding: 0.08, duration });
 		const x = Math.min(...boxes.map((b) => b.absX));
 		const y = Math.min(...boxes.map((b) => b.absY));
 		const right = Math.max(
@@ -858,70 +751,42 @@
 			{ padding: 0.08, duration }
 		);
 	}
-	function buildNodes() {
-		const counts = Object.fromEntries(
-			[...model.fields.keys()].map((id) => [
-				id,
-				{
-					ref: incomingCount(rels, id, 'ref'),
-					from: incomingCount(rels, id, 'from'),
-					api: incomingCount(rels, id, 'api')
-				}
-			])
-		);
-		nodes = boxes.map((b) => {
-			const info = el(b.elementId)!;
-			return {
-				id: b.id,
-				type: 'landscape',
-				position: { x: b.x, y: b.y },
-				parentId: b.parentId,
-				width: b.width,
-				height: b.height,
-				draggable: false,
-				connectable: false,
-				class: open.has(b.id) ? 'open' : undefined,
-				data: {
-					name: info.name,
-					element: b.elementId,
-					// A closed boundary reads as the model it is drawn round; a root module is a system.
-					kind: b.boundary
-						? 'model'
-						: info.def.kind === 'module' && !info.parentId
-							? 'system'
-							: info.def.kind,
-					group: b.group,
-					owner: b.ref ? el(info.parentId ?? '')?.name : undefined,
-					fields: b.fields,
-					foldAt: b.foldAt,
-					indexes: b.view === 'table' ? info.def.indexes : undefined,
-					table: b.table,
-					logic: b.logic,
-					triggers: b.triggers,
-					view: b.view,
-					labels: Object.fromEntries(
-						(b.fields ?? [])
-							.flatMap((f) => [f.ref, f.model, ...(f.from ?? [])])
-							.flatMap((id) => {
-								const label = id && refLabel(model, id);
-								return label ? [[id, label]] : [];
-							})
-					),
-					incoming: counts,
-					state: view,
-					onfield: (field, ev) => onfield(b.id, field, ev),
-					open: open.has(b.id),
-					onbox: (ev) => {
-						if (ev === 'enter') overBox = b.id;
-						else if (overBox === b.id) overBox = null;
-						hoverLater();
-					},
-					rail: railView(b.id),
-					onapi,
-					onmenu: editing ? (target, x, y) => (menu = { target, x, y }) : undefined
-				} satisfies LandscapeNodeData
-			};
-		});
+	/** A model, logic or triggers card as the peek draws it; none for any other box. */
+	function cardOf(b: LandscapeBox, onfield: CardData['onfield']): CardData | undefined {
+		if (!b.table && !b.logic && !b.triggers) return undefined;
+		const info = el(b.elementId)!;
+		return {
+			name: info.name,
+			element: b.elementId,
+			owner: b.ref ? el(info.parentId ?? '')?.name : undefined,
+			fields: b.fields,
+			foldAt: b.foldAt,
+			indexes: b.view === 'table' ? info.def.indexes : undefined,
+			table: b.table,
+			logic: b.logic,
+			triggers: b.triggers,
+			view: b.view,
+			labels: Object.fromEntries(
+				(b.fields ?? [])
+					.flatMap((f) => [f.ref, f.model, ...(f.from ?? [])])
+					.flatMap((id) => {
+						const label = id && refLabel(model, id);
+						return label ? [[id, label]] : [];
+					})
+			),
+			incoming: Object.fromEntries(
+				(b.fields ?? []).map((f) => [
+					f.id,
+					{
+						ref: incomingCount(rels, f.id, 'ref'),
+						from: incomingCount(rels, f.id, 'from'),
+						api: incomingCount(rels, f.id, 'api')
+					}
+				])
+			),
+			state: view,
+			onfield
+		};
 	}
 
 	// At rest only who talks to whom: calls, handles, reads and writes. Keys, holds, lineage
@@ -1095,63 +960,7 @@
 		untrack(() => router.ahead(among, looksAhead(), viewCentre()));
 	});
 
-	/** A line at rest: grey, on the two boxes' name bars, wider the more it merges. */
-	function restEdge(l: RestLine, dim: boolean) {
-		const [ss, ts] = sides(headEnd(boxById.get(l.source)!), headEnd(boxById.get(l.target)!));
-		return {
-			id: `rest:${l.id}`,
-			source: l.source,
-			target: l.target,
-			sourceHandle: `head:${ss}`,
-			targetHandle: `head:${ts}`,
-			type: 'connection',
-			// Svelte Flow adds this to the higher level of the two boxes, so the line sits under
-			// them, over the box they share.
-			zIndex: -1,
-			data: {
-				points: restRoutes.routes.get(l.id),
-				halo: true,
-				head: 'arrow',
-				color: 'var(--sdv-edge-rest)',
-				title: `${l.count} connection${l.count > 1 ? 's' : ''}: ${l.kinds.map((k) => KIND_NAME[k]).join(', ')}`
-			},
-			class: ['conn rest', l.count >= 10 ? 'w3' : l.count > 1 ? 'w2' : 'w1', dim && 'dim']
-				.filter(Boolean)
-				.join(' ')
-		};
-	}
-
-	/** A lit line: in its kind's colour, over the cards, from row to row where they show. */
-	function litEdge(l: LitLine) {
-		return {
-			id: `lit:${l.id}`,
-			source: l.s.node.id,
-			target: l.t.node.id,
-			sourceHandle: `${l.s.anchor}:${l.sides[0]}`,
-			targetHandle: `${l.t.anchor}:${l.sides[1]}`,
-			type: 'connection',
-			zIndex: 1000,
-			data: {
-				points: litPoints(l),
-				head: l.kind === 'model' ? 'diamond' : 'arrow',
-				color: `var(--sdv-link-${LINK_TOKEN[l.kind]})`
-			},
-			class: `conn lit ${l.kind}`
-		};
-	}
-
-	$effect(() => {
-		if (gl) return void (edges = []);
-		edges = [
-			// Each line at rest once routed, never first along a makeshift path.
-			...rest
-				.filter((l) => unrouted || restRoutes.routes.has(l.id))
-				.map((l) => restEdge(l, !!focus)),
-			...(litRoutes || unrouted ? lit.map(litEdge) : [])
-		];
-	});
-
-	// ------------------------------------------------------------ WebGL
+	// ------------------------------------------------------------ drawing
 	let glLayer: ReturnType<typeof GlLayer> | undefined = $state();
 	/** Depth of a box: 0 for a root, -1 for none. */
 	const depthOf = (id: string | undefined) => {
@@ -1175,10 +984,13 @@
 		const mx = ss === ts ? Math.max(a.x, b.x) + 24 : (a.x + b.x) / 2;
 		return [a, { x: mx, y: a.y }, { x: mx, y: b.y }, b];
 	}
-	/** Lines at rest as the WebGL canvas draws them, as `restEdge` does for Svelte Flow. */
-	const glRest = $derived.by((): GlLine[] => {
-		if (!gl) return [];
-		return rest
+	/**
+	 * Lines at rest: grey, on the two boxes' name bars, wider the more they merge, under the
+	 * boxes they leave and over the box they share. Each once routed, never first along a
+	 * makeshift path.
+	 */
+	const glRest = $derived.by((): GlLine[] =>
+		rest
 			.filter((l) => unrouted || restRoutes.routes.has(l.id))
 			.map((l) => {
 				const [a, b] = [headEnd(boxById.get(l.source)!), headEnd(boxById.get(l.target)!)];
@@ -1194,11 +1006,11 @@
 					title: `${l.count} connection${l.count > 1 ? 's' : ''}: ${l.kinds.map((k) => KIND_NAME[k]).join(', ')}`,
 					depth: depthOf(l.parentId)
 				};
-			});
-	});
-	/** Lit lines as the WebGL canvas draws them, as `litEdge` does for Svelte Flow. */
+			})
+	);
+	/** Lit lines: in their kind's colour, over the cards, from row to row where they show. */
 	const glLit = $derived.by((): GlLine[] => {
-		if (!gl || !(litRoutes || unrouted)) return [];
+		if (!(litRoutes || unrouted)) return [];
 		return lit.map((l) => ({
 			id: `lit:${l.id}`,
 			points: litPoints(l) ?? straight(l.s, l.t, l.sides),
@@ -1220,17 +1032,17 @@
 		hoverLater();
 		router.aheadFrom(viewCentre());
 	}
-	glCam.onmovestart = () => (moving = true);
-	glCam.onmoveend = movedEnd;
+	camera.onmovestart = () => (moving = true);
+	camera.onmoveend = movedEnd;
 	let stageEl: HTMLDivElement | undefined = $state();
-	$effect(() => (stageEl ? glCam.attach(stageEl) : undefined));
+	$effect(() => (stageEl ? camera.attach(stageEl) : undefined));
 
-	/** What the pointer is over on the WebGL canvas, told as the nodes' enter and leave events. */
+	/** What the pointer is over on the canvas, as GlLayer's hit testing finds it. */
 	let glPointer = $state.raw<GlHit | null>(null);
 	let railTimer: ReturnType<typeof setTimeout> | undefined;
 	$effect(() => () => clearTimeout(railTimer));
 	const leafOf = (h: GlHit | null) => (h && (h.part === 'row' || h.part === 'api') ? h : undefined);
-	/** The card face or name bar a hit is on, as a node's `onbox` tells it. */
+	/** The card face or name bar a hit is on. */
 	const boxIn = (h: GlHit | null) =>
 		h && (h.part === 'head' || h.part === 'row' || h.part === 'fold') ? h.box : undefined;
 	const railIn = (h: GlHit | null) =>
@@ -1261,7 +1073,7 @@
 		return glLayer?.hitAt(e.clientX - r.left, e.clientY - r.top) ?? null;
 	}
 	function glMove(e: PointerEvent) {
-		// While the view is dragged nothing is hovered, as the nodes take no pointer then.
+		// While the view is dragged nothing is hovered: everything slides under the pointer.
 		if (e.buttons || moving) return glHover(null);
 		const hit = glAt(e);
 		glHover(hit);
@@ -1271,10 +1083,10 @@
 			? ''
 			: (glLayer?.restLineAt(e.clientX - r.left, e.clientY - r.top)?.title ?? '');
 	}
-	/** A click on what the WebGL canvas draws, as on a node; else on through to the pane. */
+	/** A click on what the canvas draws: a row, an api, a fold, a box; else on the empty canvas. */
 	function glClick(e: MouseEvent) {
 		// The end of a drag is not a click.
-		if (glCam.dragged) return;
+		if (camera.dragged) return;
 		const hit = glAt(e);
 		if (!hit || hit.part === 'body') {
 			view.selectedNodes = hit ? [hit.box] : [];
@@ -1774,19 +1586,18 @@
 	 * drag on one zooms or pans the canvas under it, as it would off the card.
 	 */
 	function toCanvas(card: HTMLElement) {
-		const pane = () => card.parentElement?.querySelector('.svelte-flow__pane');
 		const wheel = (e: WheelEvent) => {
 			e.preventDefault();
-			pane()?.dispatchEvent(new WheelEvent(e.type, e));
+			stageEl?.dispatchEvent(new WheelEvent(e.type, e));
 		};
-		const down = (e: MouseEvent) => {
-			if (!e.button) pane()?.dispatchEvent(new MouseEvent(e.type, e));
+		const down = (e: PointerEvent) => {
+			if (!e.button) stageEl?.dispatchEvent(new PointerEvent(e.type, e));
 		};
 		card.addEventListener('wheel', wheel, { passive: false });
-		card.addEventListener('mousedown', down);
+		card.addEventListener('pointerdown', down);
 		return () => {
 			card.removeEventListener('wheel', wheel);
-			card.removeEventListener('mousedown', down);
+			card.removeEventListener('pointerdown', down);
 		};
 	}
 	/** Where in the card the last press was. */
@@ -1864,21 +1675,13 @@
 			const field = fieldCardOf({ box: t.box.id, field: t.field });
 			return field && { kind: 'field' as const, field, id: t.field, w: FIELD_W };
 		}
-		// A model or logic card: the canvas's own card, its rows peeking in turn.
-		const node = nodes.find((n) => n.id === t.box.id);
-		if (!node) return undefined;
-		const data: LandscapeNodeData = {
-			...(node.data as LandscapeNodeData),
-			peek: true,
-			onfield: (field, ev) =>
-				ev === 'click'
-					? peekTo({ target: { box: t.box, field } })
-					: hoverRow({ box: t.box.id, field }, ev === 'enter'),
-			onbox: undefined,
-			onmenu: undefined,
-			rail: undefined
-		};
-		return { kind: 'box' as const, box: t.box, data, w: t.box.width };
+		// A model or logic card, drawn as on the canvas, its rows peeking in turn.
+		const data = cardOf(t.box, (field, ev) =>
+			ev === 'click'
+				? peekTo({ target: { box: t.box, field } })
+				: hoverRow({ box: t.box.id, field }, ev === 'enter')
+		);
+		return data && { kind: 'box' as const, box: t.box, data, w: t.box.width };
 	});
 
 	/** Beside the card, right of it, else left of it, else over the canvas's right. */
@@ -2150,7 +1953,7 @@
 			minZoom,
 			Math.min(1, (cw - 2 * MARGIN) / (right - left), (ch - PLAYER - 2 * MARGIN) / (bottom - top))
 		);
-		void flow
+		void camera
 			.setViewport({
 				x: cw / 2 - ((left + right) / 2) * zoom,
 				y: (ch - PLAYER) / 2 - ((top + bottom) / 2) * zoom,
@@ -2460,199 +2263,79 @@
 	}}
 />
 
-<div
-	class="canvas"
-	bind:this={canvasEl}
-	bind:clientWidth={cw}
-	bind:clientHeight={ch}
-	data-testid="canvas"
->
-	{#if gl}
-		<!-- The landscape on one WebGL canvas, moved by a camera of its own (see GlCamera); what
-		     it draws takes the pointer through hit testing (see GlLayer.hitAt). -->
-		<div
-			class="gl-stage"
-			class:pointing={!!glPointer}
-			bind:this={stageEl}
-			role="presentation"
-			onpointermove={glMove}
-			onpointerleave={() => glHover(null)}
-			onclick={glClick}
-			oncontextmenu={glMenu}
+<div class="canvas" bind:clientWidth={cw} bind:clientHeight={ch} data-testid="canvas">
+	<!-- The landscape on one WebGL canvas, moved by its camera (see CanvasCamera); what
+	     it draws takes the pointer through hit testing (see GlLayer.hitAt). -->
+	<div
+		class="stage"
+		class:pointing={!!glPointer}
+		bind:this={stageEl}
+		role="presentation"
+		onpointermove={glMove}
+		onpointerleave={() => glHover(null)}
+		onclick={glClick}
+		oncontextmenu={glMenu}
+	>
+		<GlLayer
+			bind:this={glLayer}
+			{boxes}
+			{boxById}
+			{rails}
+			{model}
+			{rels}
+			{view}
+			rest={glRest}
+			lit={glLit}
+			dim={dimming ? related : undefined}
+			front={namesInFront ? namesShown : []}
+			pointer={glPointer}
+		/>
+	</div>
+	<div class="controls" role="toolbar" aria-label="Canvas controls">
+		<button
+			title="Zoom in"
+			aria-label="Zoom in"
+			onclick={() => void camera.zoomBy(1.2, { duration: 200 })}
+			><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg></button
 		>
-			<GlLayer
-				bind:this={glLayer}
-				{boxes}
-				{boxById}
-				{rails}
-				{model}
-				{rels}
-				{view}
-				rest={glRest}
-				lit={glLit}
-				dim={dimming ? related : undefined}
-				front={namesInFront ? namesShown : []}
-				pointer={glPointer}
-			/>
-		</div>
-		<div class="gl-controls" role="toolbar" aria-label="Canvas controls">
-			<button
-				title="Zoom in"
-				aria-label="Zoom in"
-				onclick={() => void camera.zoomBy(1.2, { duration: 200 })}
-				><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg></button
-			>
-			<button
-				title="Zoom out"
-				aria-label="Zoom out"
-				onclick={() => void camera.zoomBy(1 / 1.2, { duration: 200 })}
-				><svg viewBox="0 0 24 24"><path d="M5 12h14" /></svg></button
-			>
-			<button title="Fit view" aria-label="Fit view" onclick={() => void fitAll(200)}
-				><svg viewBox="0 0 24 24"
-					><path
-						d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"
-					/></svg
-				></button
-			>
-			<button
-				class:on={settings.minimap}
-				title="Map"
-				aria-label="Map"
-				aria-pressed={settings.minimap}
-				onclick={() => settings.setMinimap(!settings.minimap)}
-				><svg viewBox="0 0 24 24"
-					><path
-						d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"
-					/><path d="M15 5.764v15" /><path d="M9 3.236v15" /></svg
-				></button
-			>
-			<button
-				class:on={keyOpen}
-				title="Key"
-				aria-label="Key"
-				aria-pressed={keyOpen}
-				onclick={() => (keyOpen = !keyOpen)}
-				><svg viewBox="0 0 13 13" stroke-width="1.4"
-					><rect x="1" y="1.5" width="3" height="3" /><rect
-						x="1"
-						y="8.5"
-						width="3"
-						height="3"
-					/><path d="M6.5 3h5.5M6.5 10h5.5" /></svg
-				></button
-			>
-		</div>
-	{:else}
-		<SvelteFlow
-			bind:nodes
-			{edges}
-			{nodeTypes}
-			{edgeTypes}
-			connectionMode={ConnectionMode.Loose}
-			colorMode={theme.current}
-			{minZoom}
-			maxZoom={MAX_ZOOM}
-			nodesDraggable={false}
-			nodesConnectable={false}
-			elementsSelectable={false}
-			zoomOnDoubleClick={false}
-			onmovestart={() => (moving = true)}
-			onmove={(e) => {
-				// While the view is dragged, nothing on it takes the pointer: each step would hit-test
-				// and restyle (`:hover`) the boxes sliding under it. Set at the first step, not the
-				// start, which a click on a row or box also makes. Not for the wheel: its gestures end
-				// at each pause, and each switch restyles the whole canvas.
-				if (!e || e instanceof WheelEvent || canvasEl?.classList.contains('moving')) return;
-				canvasEl?.classList.add('moving');
-			}}
-			onmoveend={() => {
-				canvasEl?.classList.remove('moving');
-				movedEnd();
-			}}
-			onnodeclick={({ node }) => {
-				view.selectedNodes = [node.id];
-				unpin();
-			}}
-			onpaneclick={() => {
-				view.selectedNodes = [];
-				unpin();
-			}}
+		<button
+			title="Zoom out"
+			aria-label="Zoom out"
+			onclick={() => void camera.zoomBy(1 / 1.2, { duration: 200 })}
+			><svg viewBox="0 0 24 24"><path d="M5 12h14" /></svg></button
 		>
-			<Background
-				variant={BackgroundVariant.Dots}
-				gap={20}
-				patternColor="var(--sdv-grid)"
-				bgColor="var(--sdv-canvas-bg)"
-			/>
-			<Controls showLock={false}>
-				<ControlButton
-					class={settings.minimap ? 'on' : undefined}
-					aria-label="Map"
-					aria-pressed={settings.minimap}
-					title="Map"
-					onclick={() => settings.setMinimap(!settings.minimap)}
-				>
-					<svg
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					>
-						<path
-							d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"
-						/>
-						<path d="M15 5.764v15" /><path d="M9 3.236v15" />
-					</svg>
-				</ControlButton>
-				<ControlButton
-					class={keyOpen ? 'on' : undefined}
-					aria-label="Key"
-					aria-pressed={keyOpen}
-					title="Key"
-					onclick={() => (keyOpen = !keyOpen)}
-				>
-					<svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4">
-						<rect x="1" y="1.5" width="3" height="3" /><rect x="1" y="8.5" width="3" height="3" />
-						<path d="M6.5 3h5.5M6.5 10h5.5" />
-					</svg>
-				</ControlButton>
-			</Controls>
-			{#if namesInFront}
-				<ViewportPortal target="front">
-					{#each namesShown as m (m.id)}
-						<!-- svelte-ignore a11y_click_events_have_key_events -->
-						<div
-							class="front-name screen-sized"
-							class:rail={m.glyph === 'api'}
-							data-id={m.b.id}
-							role="button"
-							tabindex="-1"
-							style:left="{m.x}px"
-							style:top="{m.y}px"
-							style:font-size="min(calc({NAME_PX}px / var(--z)), {m.max}px)"
-							onmouseenter={() => {
-								overBox = m.b.id;
-								hoverLater();
-							}}
-							onmouseleave={() => {
-								if (overBox === m.b.id) overBox = null;
-								hoverLater();
-							}}
-							onclick={() => {
-								view.selectedNodes = [m.b.id];
-								unpin();
-							}}
-						>
-							<EntityGlyph kind={m.glyph} />{m.name}
-						</div>
-					{/each}
-				</ViewportPortal>
-			{/if}
-		</SvelteFlow>
-	{/if}
+		<button title="Fit view" aria-label="Fit view" onclick={() => void fitAll(200)}
+			><svg viewBox="0 0 24 24"
+				><path
+					d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"
+				/></svg
+			></button
+		>
+		<button
+			class:on={settings.minimap}
+			title="Map"
+			aria-label="Map"
+			aria-pressed={settings.minimap}
+			onclick={() => settings.setMinimap(!settings.minimap)}
+			><svg viewBox="0 0 24 24"
+				><path
+					d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"
+				/><path d="M15 5.764v15" /><path d="M9 3.236v15" /></svg
+			></button
+		>
+		<button
+			class:on={keyOpen}
+			title="Key"
+			aria-label="Key"
+			aria-pressed={keyOpen}
+			onclick={() => (keyOpen = !keyOpen)}
+			><svg viewBox="0 0 13 13" stroke-width="1.4"
+				><rect x="1" y="1.5" width="3" height="3" /><rect x="1" y="8.5" width="3" height="3" /><path
+					d="M6.5 3h5.5M6.5 10h5.5"
+				/></svg
+			></button
+		>
+	</div>
 	{#if settings.minimap}
 		<Minimap boxes={mapBoxes} {cw} {ch} {minZoom} maxZoom={MAX_ZOOM} />
 	{/if}
@@ -3077,13 +2760,7 @@
 				data-testid="peek"
 			>
 				{#key p.box.id}
-					<LandscapeNode
-						{...{} as NodeProps}
-						id={p.box.id}
-						data={p.data}
-						width={p.box.width}
-						height={p.box.height}
-					/>
+					<CardPeek id={p.box.id} data={p.data} />
 				{/key}
 				<div class="peek-head" style:height="{TABLE.head}px">
 					{@render peekBackButton()}{@render peekButtons()}
@@ -3241,7 +2918,7 @@
 </div>
 
 <style>
-	.gl-stage {
+	.stage {
 		position: absolute;
 		inset: 0;
 		background: var(--sdv-canvas-bg);
@@ -3249,13 +2926,13 @@
 		touch-action: none;
 		user-select: none;
 	}
-	.gl-stage.pointing {
+	.stage.pointing {
 		cursor: pointer;
 	}
-	.gl-stage:active {
+	.stage:active {
 		cursor: grabbing;
 	}
-	.gl-controls {
+	.controls {
 		position: absolute;
 		left: 15px;
 		bottom: 15px;
@@ -3264,7 +2941,7 @@
 		flex-direction: column;
 		box-shadow: var(--ui-shadow);
 	}
-	.gl-controls button {
+	.controls button {
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -3277,13 +2954,13 @@
 		color: var(--ui-text);
 		cursor: pointer;
 	}
-	.gl-controls button:hover {
+	.controls button:hover {
 		background: var(--ui-hover);
 	}
-	.gl-controls button.on {
+	.controls button.on {
 		color: var(--ui-accent);
 	}
-	.gl-controls svg {
+	.controls svg {
 		width: 100%;
 		height: 100%;
 		fill: none;
@@ -3297,131 +2974,6 @@
 		flex: 1;
 		min-width: 0;
 		min-height: 0;
-	}
-	/* Nodes and edges set their own pointer-events, so every one is overruled. */
-	.canvas.moving :global(.svelte-flow__viewport),
-	.canvas.moving :global(.svelte-flow__viewport *) {
-		pointer-events: none !important;
-	}
-	/* Drawn over the module's children, as its in-box name is (see LandscapeNode's `.header`),
-	   on a backing so it reads over them. */
-	.front-name {
-		position: absolute;
-		display: flex;
-		align-items: center;
-		gap: 0.4em;
-		margin: 0.4em 0 0 0.3em;
-		padding: 0 0.3em;
-		border-radius: 0.3em;
-		line-height: 1.2;
-		font-weight: 600;
-		white-space: nowrap;
-		color: var(--ui-text);
-		background: color-mix(in srgb, var(--sdv-canvas-bg) 85%, transparent);
-		pointer-events: auto;
-		cursor: pointer;
-		/* Over the boxes (z-index up to 2), lit lines (1000) and an expanded card (999). */
-		z-index: 1001;
-	}
-	/* A rail's name, on the rail's middle, drawn as the rail is. Hovering goes through to the
-	   rail, which then lists its endpoints. */
-	.front-name.rail {
-		transform: translate(-50%, -50%);
-		margin: 0;
-		padding: 0 0.4em;
-		border: 1px solid var(--sdv-system-stroke);
-		background: var(--sdv-api-fill);
-		color: var(--sdv-api-text);
-		pointer-events: none;
-	}
-	.canvas :global(.svelte-flow__node) {
-		border: none;
-		background: transparent;
-		padding: 0;
-		border-radius: 0;
-		box-shadow: none;
-	}
-	/* Boxes and lines fade in when mounted. */
-	.canvas :global(.svelte-flow__node),
-	.canvas :global(.svelte-flow__edge.conn.rest) {
-		transition: opacity 0.18s ease-out 0.1s;
-		@starting-style {
-			opacity: 0;
-		}
-	}
-	/* Every line keeps its width on screen at any zoom: at rest 1.5, 2.5 or 3.5px by how many
-	   connections it merges (hover one for the count), solid, over a halo in the canvas colour;
-	   lit 2px. Lit, solid is structure, dashed lineage, dotted control. Widths and dashes are
-	   divided by the zoom, not kept by `vector-effect: non-scaling-stroke`: browsers leave the
-	   canvas's CSS zoom out of that, so lines thinned to a hairline when zoomed out. */
-	.canvas :global(.conn .svelte-flow__edge-path) {
-		--w: 1px;
-		stroke: var(--sdv-edge);
-		stroke-width: calc(var(--w) / var(--z));
-		/* Ends 5px into its head, so a wide line does not blunt the head's tip; never short of
-		   its last bend, so it still meets the head. */
-		stroke-dasharray: calc(var(--len) - min(5px / var(--z), var(--stub))) var(--len);
-		transition: opacity 0.12s;
-	}
-	.canvas :global(.conn.model .svelte-flow__edge-path) {
-		stroke-dasharray: 0 min(5px / var(--z), var(--stub)) var(--len) 0;
-	}
-	.canvas :global(.conn.rest .svelte-flow__edge-path) {
-		--w: 1.5px;
-		stroke: var(--sdv-edge-rest);
-	}
-	.canvas :global(.conn.rest.w2 .svelte-flow__edge-path) {
-		--w: 2.5px;
-	}
-	.canvas :global(.conn.rest.w3 .svelte-flow__edge-path) {
-		--w: 3.5px;
-	}
-	.canvas :global(.conn .halo) {
-		--w: 5.5px;
-		fill: none;
-		stroke: var(--sdv-canvas-bg);
-		stroke-width: calc(var(--w) / var(--z));
-		transition: opacity 0.12s;
-	}
-	.canvas :global(.conn.w2 .halo) {
-		--w: 6.5px;
-	}
-	.canvas :global(.conn.w3 .halo) {
-		--w: 7.5px;
-	}
-	.canvas :global(.conn.from .svelte-flow__edge-path) {
-		stroke-dasharray: calc(5px / var(--z)) calc(4px / var(--z));
-	}
-	.canvas :global(.conn.calls .svelte-flow__edge-path),
-	.canvas :global(.conn.handles .svelte-flow__edge-path) {
-		stroke-dasharray: calc(2px / var(--z)) calc(3px / var(--z));
-	}
-	.canvas :global(.conn .head) {
-		transform: scale(calc(1 / var(--z)));
-		transition: opacity 0.12s;
-	}
-	.canvas :global(.conn.dim .svelte-flow__edge-path),
-	.canvas :global(.conn.dim .halo),
-	.canvas :global(.conn.dim .head) {
-		opacity: 0.25;
-	}
-	/* Lit lines are over the cards, so they never take the pointer from a row. */
-	.canvas :global(.svelte-flow__edge.conn.lit) {
-		pointer-events: none;
-	}
-	.canvas :global(.conn.lit .svelte-flow__edge-path) {
-		--w: 2px;
-		stroke: var(--sdv-link-ref);
-	}
-	.canvas :global(.conn.lit.from .svelte-flow__edge-path) {
-		stroke: var(--sdv-link-from);
-	}
-	.canvas :global(.conn.lit.writes .svelte-flow__edge-path) {
-		stroke: var(--sdv-link-write);
-	}
-	.canvas :global(.conn.lit.calls .svelte-flow__edge-path),
-	.canvas :global(.conn.lit.handles .svelte-flow__edge-path) {
-		stroke: var(--sdv-link-call);
 	}
 	.wedge {
 		position: absolute;
@@ -3465,10 +3017,6 @@
 		font-size: 11px;
 		line-height: 1.35;
 		color: var(--sdv-text-muted);
-	}
-	.canvas :global(.svelte-flow__controls-button.on) {
-		color: var(--sdv-selection);
-		background: color-mix(in srgb, var(--sdv-selection) 14%, var(--sdv-model-fill));
 	}
 	.key {
 		position: absolute;
@@ -3755,10 +3303,6 @@
 	}
 	.peek-card:has(> :global(.node.expanded)) {
 		height: auto;
-	}
-	/* Outlines mark a card's place on the canvas; the peek is not on it. */
-	.peek-card :global(.node) {
-		outline: none;
 	}
 	.peek-head {
 		position: absolute;

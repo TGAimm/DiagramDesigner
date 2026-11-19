@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { SvelteFlowProvider } from '@xyflow/svelte';
 	import { ViewState } from '#lib/client/view-state.svelte.ts';
 	import LandscapeCanvas from '#lib/components/canvas/LandscapeCanvas.svelte';
 
@@ -8,9 +7,7 @@
 
 <div class="landscape">
 	<div class="workspace">
-		<SvelteFlowProvider>
-			<LandscapeCanvas {view} />
-		</SvelteFlowProvider>
+		<LandscapeCanvas {view} />
 	</div>
 </div>
 

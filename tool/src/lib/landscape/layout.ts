@@ -26,9 +26,6 @@ export interface LandscapeBox {
 	/** Has boxes inside. */
 	group: boolean;
 	parentId?: string;
-	/** Relative to the parent box (Svelte Flow convention). */
-	x: number;
-	y: number;
 	/** Absolute canvas coordinates. */
 	absX: number;
 	absY: number;
@@ -112,7 +109,7 @@ const PAD = 32;
 /** Room above the children for the open box's header. */
 export const HEADER = 48;
 
-/** Model tables: font sizes and spacing in px, shared with LandscapeNode. */
+/** Model tables: font sizes and spacing in px, shared with GlLayer and CardPeek. */
 export const TABLE = {
 	title: 14,
 	note: 11,
@@ -146,7 +143,7 @@ export type LogicColumn = 'name' | 'signature';
  */
 export type LinkSlot = 'ref' | 'from' | 'inRef' | 'inFrom' | 'inApi';
 
-/** Link strip sizes in px, shared with LandscapeNode. */
+/** Link strip sizes in px, shared with GlLayer and CardPeek. */
 export const LINK = { icon: 14, slot: 20, count: 10 };
 
 export interface TableColumn {
@@ -332,7 +329,7 @@ export const fieldRowY = (i: number, count: number, expanded: boolean, at = FOLD
 /** Vertical centre of unit row `i` of a logic card, which has no header row. */
 export const logicRowY = (i: number) => 1 + TABLE.head + (i + 0.5) * TABLE.rowHeight;
 
-/** Badges have 6px side padding (see LandscapeNode). */
+/** Badges have 6px side padding (see GlLayer). */
 const badgesWidth = (labels: string[]) =>
 	labels.reduce(
 		(w, k, i) => w + textWidth(k, TABLE.badge, true) + 12 + (i ? TABLE.badgeGap : 0),
@@ -636,7 +633,7 @@ export interface LaidLine {
 	edges: Edge[];
 }
 
-/** The boxes, parents before their children as Svelte Flow requires, and the lines between them. */
+/** The boxes, parents before their children, and the lines between them. */
 export interface Landscape {
 	boxes: LandscapeBox[];
 	lines: LaidLine[];
@@ -836,8 +833,6 @@ export function layoutLandscape(
 				boundary: item.boundary ?? false,
 				group: kids.length > 0,
 				parentId: parent?.id,
-				x: absX - (parent?.absX ?? 0),
-				y: absY - (parent?.absY ?? 0),
 				absX,
 				absY,
 				width: slot.width,

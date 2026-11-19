@@ -101,7 +101,7 @@ const GLYPHS: Record<string, string[]> = {
 const GLYPH_EM = 0.85;
 const GLYPH_GAP = 0.4;
 /**
- * A change mark's badge, as LandscapeNode's `.op`: its text 0.85em, the badge 1.15 of that
+ * A change mark's badge, as CardPeek's `.op`: its text 0.85em, the badge 1.15 of that
  * square with corners 0.2 of it, and 0.35 of it before what follows.
  */
 const OP_EM = 0.85;

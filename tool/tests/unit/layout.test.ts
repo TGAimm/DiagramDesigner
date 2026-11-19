@@ -224,7 +224,6 @@ describe('landscape layout', () => {
 		for (const b of boxes.filter((b) => b.parentId)) {
 			const parent = box(b.parentId!);
 			expect(inside(b, parent)).toBe(true);
-			expect([b.x, b.y]).toEqual([b.absX - parent.absX, b.absY - parent.absY]);
 		}
 	});
 

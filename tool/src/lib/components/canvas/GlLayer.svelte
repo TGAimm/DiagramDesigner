@@ -83,15 +83,15 @@
 	import { GlTextLayer, leadEm, LINE, type GlLabel } from './gl/text.ts';
 
 	/**
-	 * The landscape's boxes, rows and lines drawn on one WebGL canvas (PixiJS), for the Rendering
-	 * technique setting's `webgl`. It sits in the canvas under Svelte Flow, which is given no
-	 * nodes or edges and still pans, zooms and carries everything over the landscape (cards,
-	 * peeks, the player, the key). Nothing it draws is an element of the page, so the browser has
-	 * nothing to restyle, lay out or hit-test as the view moves.
+	 * The landscape's boxes, rows and lines drawn on one WebGL canvas (PixiJS), which keeps its
+	 * frame rate however much is drawn. It sits under everything the canvas carries over the
+	 * landscape (cards, peeks, the player, the key), moved by the canvas's camera (see
+	 * CanvasCamera). Nothing it draws is an element of the page, so the browser has nothing to
+	 * restyle, lay out or hit-test as the view moves.
 	 *
-	 * It reads the same view state the page elements' nodes do (lit rows, the pick, rails listed,
-	 * cards expanded, change marks), and `hitAt` tells the canvas what is under the pointer, so
-	 * the canvas handles hover and clicks as it does for the nodes.
+	 * It reads the view state (lit rows, the pick, rails listed, cards expanded, change marks),
+	 * and `hitAt` tells the canvas what is under the pointer, so the canvas handles hover and
+	 * clicks.
 	 *
 	 * Draw order is layering: lines at rest among the roots, each depth's boxes then the lines
 	 * at rest among their children, names, rows, lit lines, outlines.
@@ -130,7 +130,7 @@
 
 	const viewport = getCamera();
 	const DIM_OPACITY = 0.2;
-	/** Names drawn in front keep this size on screen, as the page elements' do. */
+	/** Names drawn in front keep this size on screen. */
 	const NAME_PX = 13;
 	/** The dots' spacing in canvas px, and the size their tile is drawn at. */
 	const DOT_GAP = 20;
@@ -205,7 +205,7 @@
 		op?: string;
 		/** Space after the glyph and the mark, in em. */
 		gap?: number;
-		/** As LandscapeNode's `ƒ` marks: italic, in Georgia. */
+		/** As the cards' `ƒ` marks (see CardPeek): italic, in Georgia. */
 		serif?: boolean;
 	}
 	const SERIF = 'Georgia, serif';
@@ -220,7 +220,7 @@
 
 	/**
 	 * Text `px` px tall in token `t`, drawn by the browser at its size on screen (see gl/text.ts),
-	 * with its glyph and change mark coloured as LandscapeNode colours them.
+	 * with its glyph and change mark coloured as CardPeek colours them.
 	 */
 	function textOf(s: string, t: Token, px: number, o: TextOpts = {}): GlLabel {
 		const c = colour(t);
@@ -322,7 +322,7 @@
 		return !b.boundary && el?.def.kind === 'module' && !el.parentId;
 	};
 
-	// Change marks while a scenario or commit is compared, as LandscapeNode draws them.
+	// Change marks while a scenario or commit is compared, as CardPeek draws them.
 	const marks = $derived(changes.marks);
 	const comparing = $derived(!!changes.comparison);
 	const level = (id: string) => {
@@ -354,8 +354,8 @@
 		const P = pixi!;
 		const stage = world!;
 		for (const child of stage.removeChildren()) child.destroy({ children: true });
-		// The canvas's dots, 20 canvas px apart and 1 across, as Svelte Flow's background draws
-		// them: one tile, repeated and scaled with the zoom.
+		// The canvas's dots, 20 canvas px apart and 1 across: one tile, repeated and scaled with
+		// the zoom.
 		dots?.destroy({ texture: true, textureSource: true });
 		const tile = document.createElement('canvas');
 		tile.width = tile.height = DOT_TILE;
@@ -418,7 +418,7 @@
 						: 'module-text';
 			const kind = b.group ? 'group' : isCard(b) ? 'card' : 'leaf';
 			// The mark of what it is: a system, module, class (a boundary is the model it holds),
-			// stored table, logic or triggers card, as LandscapeNode draws it.
+			// stored table, logic or triggers card.
 			const glyph = b.logic
 				? 'logic'
 				: b.triggers
@@ -507,7 +507,7 @@
 		if (isCard(b)) {
 			const k = kindToken(b);
 			const r = b.logic ? 10 : b.triggers ? 6 : b.view === 'table' ? 3 : 8;
-			// A logic card's ring, as LandscapeNode's box-shadow: 2 px of the card's fill outside
+			// A logic card's ring, as CardPeek's box-shadow: 2 px of the card's fill outside
 			// its line, then 1 px in its kind's colour.
 			if (b.logic)
 				g.roundRect(b.absX - 1, b.absY - 1, b.width + 2, b.height + 2, r + 1)
@@ -605,7 +605,7 @@
 			text.position.set(x, y);
 			if (n.kind !== 'group' && n.kind !== 'rail') text.visible = px * z >= 2;
 			// Below 9 px on screen a glyph cannot be read: a closed box's and an open box's glyph
-			// fade out by their font's base size on screen, as LandscapeNode's --glyph-opacity.
+			// fade out by their font's base size on screen.
 			if (n.kind === 'leaf') text.glyphFade = clamp(0, LEAF.font * z - 8, 1);
 			else if (n.kind === 'group') text.glyphFade = clamp(0, Math.min(13, (HEADER / 2) * z) - 8, 1);
 			n.at = {
@@ -624,9 +624,9 @@
 	}
 
 	/**
-	 * Names in front, as the page elements' canvas draws them (`.front-name`): NAME_PX on screen
-	 * (13), never past `max`, on a backing in the canvas colour in an open box's top-left corner,
-	 * or a rail's, framed like a rail, on the rail's middle. Kept while shown, dropped when not.
+	 * Names in front (see LandscapeCanvas's `namesShown`): NAME_PX on screen (13), never past
+	 * `max`, on a backing in the canvas colour in an open box's top-left corner, or a rail's,
+	 * framed like a rail, on the rail's middle. Kept while shown, dropped when not.
 	 */
 	function placeFront(z: number) {
 		const P = pixi!;
@@ -691,9 +691,9 @@
 		const advance = text!.measure(s, o.bold ? 600 : 400, px);
 		return { x, width: leadEm(o) * px + advance, advance, alpha: 1 } as unknown as GlLabel;
 	};
-	/** Badges, as LandscapeNode's `.badge`: 1.6 lines of TABLE.badge tall, 6 px each side. */
+	/** Badges, as CardPeek's `.badge`: 1.6 lines of TABLE.badge tall, 6 px each side. */
 	const BADGE_H = 1.6 * TABLE.badge;
-	/** A cell's items are this far apart (LandscapeNode's `.cell` gap), in em of a row's text. */
+	/** A cell's items are this far apart (CardPeek's `.cell` gap), in em of a row's text. */
 	const CELL_GAP = TABLE.badgeGap / TABLE.row;
 
 	function placeRows(z: number) {
@@ -748,7 +748,7 @@
 	}
 
 	/**
-	 * A row's tint by how it is lit, as LandscapeNode's rows: flash, self or picked, lit. The row
+	 * A row's tint by how it is lit, as CardPeek's rows: flash, self or picked, lit. The row
 	 * under the pointer is tinted apart (see `drawHover`), so hovering rebuilds no rows.
 	 */
 	function rowState(box: string, id: string) {
@@ -777,7 +777,7 @@
 
 	/**
 	 * A row's ground, `w` × `h` at `x`, `y`, `k` canvas px to the row's px (a rail's rows are
-	 * scaled): its tint by how it is lit, else as LandscapeNode's `.gone` (hatched) when dropped,
+	 * scaled): its tint by how it is lit, else as CardPeek's `.gone` (hatched) when dropped,
 	 * else as `.sev-break` or `.sev-check` (its severity at 8 or 9%).
 	 */
 	function ground(
@@ -870,7 +870,7 @@
 		const el = elOf(b);
 		// The name bar's kind word and note; the name is drawn with the others (see placeNames).
 		if (b.table) {
-			// In the kind's name colour at 75%, as LandscapeNode's `.kind-word`.
+			// In the kind's name colour at 75%, as CardPeek's `.kind-word`.
 			const word = at(
 				kindWord(b.view ?? 'class'),
 				0,
@@ -1107,7 +1107,7 @@
 			return l;
 		};
 		const x1 = x0 + r.width;
-		/** The rule under a header or row, as LandscapeNode's rail rows' bottom border. */
+		/** The rule under a header or row: 1 screen px, in the model stroke colour. */
 		const rule = (y: number) =>
 			g
 				.moveTo(x0 + 1, y)
@@ -1354,7 +1354,7 @@
 		const inside = (x0: number, y0: number, w: number, h: number) =>
 			wx >= x0 && wx <= x0 + w && wy >= y0 && wy <= y0 + h;
 		// Names drawn in front take the pointer first, an open box's as its name bar; a rail's
-		// takes none, as with page elements.
+		// takes none, so hovering it lists the rail's endpoints.
 		for (const [, f] of frontOf)
 			if (!f.rail && f.at && inside(f.at.x, f.at.y, f.at.w, f.at.h))
 				return { part: 'head', box: f.m.b.id, card: false };
@@ -1442,7 +1442,10 @@
 <div class="gl-layer" bind:this={host} aria-hidden="true">
 	<canvas bind:this={canvas}></canvas>
 	{#if failed}
-		<p class="failed">WebGL could not start: {failed}. Choose Page elements in Settings.</p>
+		<p class="failed">
+			WebGL could not start: {failed}. The canvas needs WebGL: turn on hardware acceleration in the
+			browser, or use another browser.
+		</p>
 	{/if}
 </div>
 

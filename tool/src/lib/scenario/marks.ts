@@ -9,7 +9,7 @@ import { worse, type Level } from './impact';
  */
 export type Glyph = '+' | '−' | '~' | '↦';
 
-/** What the canvas marks, read by the nodes so marks never rebuild them. */
+/** What the canvas marks, read by GlLayer and CardPeek as they draw. */
 export interface Marks {
 	/** Items changed directly. */
 	glyph: Map<string, Glyph>;

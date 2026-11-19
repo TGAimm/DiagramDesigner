@@ -18,8 +18,8 @@ export type Hot = 'self' | 'peer' | 'caller';
 export const HOVER_DELAY = 250;
 
 /**
- * Per-page UI state shared by the canvas and its nodes. Nodes read it directly, so a hover
- * never rebuilds the node list (which would drop Svelte Flow's measurements mid-gesture).
+ * Per-page UI state shared by the canvas, what draws it (GlLayer) and the cards over it. They
+ * read it directly, so a hover rebuilds nothing.
  */
 export class ViewState {
 	selectedNodes = $state.raw<string[]>([]);
