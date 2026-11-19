@@ -100,10 +100,34 @@ const GLYPHS: Record<string, string[]> = {
 /** A glyph is 0.85em square and 0.4em from its name, as EntityGlyph and the names lay it out. */
 const GLYPH_EM = 0.85;
 const GLYPH_GAP = 0.4;
+/**
+ * A change mark's badge, as LandscapeNode's `.op`: its text 0.85em, the badge 1.15 of that
+ * square with corners 0.2 of it, and 0.35 of it before what follows.
+ */
+const OP_EM = 0.85;
+const OP_BOX = 1.15 * OP_EM;
+const OP_RADIUS = 0.2 * OP_EM;
+const OP_MARGIN = 0.35 * OP_EM;
+
+/** Room before a label's text for its glyph and change mark, in em (see GlTextLayer.label). */
+export function leadEm(o: { glyph?: string; op?: unknown; gap?: number }): number {
+	const gap = o.gap ?? GLYPH_GAP;
+	return (o.glyph ? GLYPH_EM + gap : 0) + (o.op ? OP_BOX + OP_MARGIN + gap : 0);
+}
 
 export interface GlLabelOptions {
-	/** An entity glyph drawn before the text (see GLYPHS), in the text's colour at 75%. */
+	/**
+	 * An entity glyph drawn before the text (see GLYPHS); with no text, the label is the glyph
+	 * alone.
+	 */
 	glyph?: string;
+	/** The glyph's colour, 0xRRGGBB, and alpha: a card kind's icon colour, else the text's at 75%. */
+	glyphColor?: number;
+	glyphAlpha?: number;
+	/** A change mark (`+`, `~`, `−`) in a badge before the text, after the glyph. */
+	op?: { text: string; color: number; fill: number; fillAlpha?: number };
+	/** Space after the glyph and after the mark, in em; 0.4 as names lay them out. */
+	gap?: number;
 	/** Font size in px of the label's parent (canvas px, unless a parent scales it). */
 	px: number;
 	/** Text colour, 0xRRGGBB; its alpha goes in `alpha`. */
@@ -121,8 +145,10 @@ export interface GlLabelOptions {
 export interface GlLabel extends Container {
 	/** Font size, in the parent's px; may change every frame. Its origin is the top of a LINE × px line box. */
 	px: number;
-	/** Its advance width at `px`, in the parent's px (measureText), for fitting. */
+	/** Its advance width at `px`, in the parent's px (measureText), with what goes before its text. */
 	readonly width: number;
+	/** Its text's own width at `px`, without what goes before it. */
+	readonly advance: number;
 	readonly text: string;
 }
 
@@ -257,9 +283,37 @@ export class GlTextLayer {
 			};
 			pipes.sprite._getGpuSprite(sprite).batcherName = BLEND;
 		}
-		const l = new Label(this, text, opts.color & 0xffffff, weight, lcd, opts.px, sprite);
-		if (opts.glyph && GLYPHS[opts.glyph]) l.glyph = opts.glyph;
+		const glyph = opts.glyph && GLYPHS[opts.glyph] ? opts.glyph : undefined;
+		const alone = !!glyph && !text;
+		const color = (alone ? (opts.glyphColor ?? opts.color) : opts.color) & 0xffffff;
+		const l = new Label(this, text, color, weight, lcd, opts.px, sprite);
 		this.labels.add(l);
+		if (alone) {
+			l.glyph = glyph;
+			l.alpha = opts.glyphAlpha ?? 0.75;
+			return l;
+		}
+		// What goes before the text is drawn apart, each in its own colour: the glyph, then the
+		// change mark on its badge.
+		const gap = opts.gap ?? GLYPH_GAP;
+		let lead = 0;
+		if (glyph) {
+			l.addPart(this.label('', { ...opts, op: undefined }), 0);
+			lead += GLYPH_EM + gap;
+		}
+		if (opts.op) {
+			const bg = new this.P.Graphics()
+				.roundRect(0, -OP_BOX / 2, OP_BOX, OP_BOX, OP_RADIUS)
+				.fill({ color: opts.op.fill, alpha: opts.op.fillAlpha ?? 1 });
+			const t = this.label(opts.op.text, {
+				px: opts.px * OP_EM,
+				color: opts.op.color,
+				weight: 700,
+				lcd: opts.lcd
+			});
+			l.addOp(bg, t, lead);
+		}
+		l.lead = leadEm(opts);
 		return l;
 	}
 
@@ -280,7 +334,8 @@ export class GlTextLayer {
 		const must: Need[] = [];
 		const soon: Need[] = [];
 		for (const l of this.labels) {
-			if (!l.visible || !l.renderable || l.alpha <= 0) continue;
+			// A label holding only a change mark draws nothing itself; its parts are labels.
+			if (!l.visible || !l.renderable || l.alpha <= 0 || (!l.glyph && !l.text.trim())) continue;
 			const parent = l.parent ? worldOf(l.parent, worlds) : IDENTITY;
 			if (!parent) continue;
 			const a = parent.a * l.scale.x;
@@ -435,7 +490,7 @@ export class GlTextLayer {
 	/** Gives `n.l` a raster at `n.size`, shared with other labels drawing the same. */
 	private draw(n: Need, W: number, H: number, dpr: number, must: Need[]) {
 		const { l, size } = n;
-		const key = `${l.weight}|${l.color}|${l.lcd ? 1 : 0}|${size}|${l.glyph ?? ''}|${l.text}`;
+		const key = `${l.weight}|${l.color}|${l.lcd ? 1 : 0}|${size}|${l.glyph ?? ''}|${l.lead}|${l.text}`;
 		let r = this.rasters.get(key);
 		if (r && !r.clip) {
 			if (l.raster !== r) {
@@ -471,7 +526,7 @@ export class GlTextLayer {
 		const fm = this.metricsOf(l.weight);
 		const k = size / l.px;
 		const left = Math.ceil(OVERHANG * size) + PAD;
-		const right = Math.ceil(l.width * k + OVERHANG * size) + PAD;
+		const right = Math.ceil(l.advance * k + OVERHANG * size) + PAD;
 		const asc = Math.ceil((fm.ascent + OVERHANG) * size) + PAD;
 		const desc = Math.ceil((fm.descent + OVERHANG) * size) + PAD;
 		const w = left + right;
@@ -480,7 +535,8 @@ export class GlTextLayer {
 		// label's size, rounded to whole px, centred in the line box.
 		const baseline =
 			(LINE * l.px + Math.round(fm.ascent * l.px) - Math.round(fm.descent * l.px)) / 2;
-		const ox = -left;
+		// What goes before the text (see `label`) moves it right.
+		const ox = l.lead * size - left;
 		const oy = baseline * k - asc;
 		if (!l.text.trim() && !l.glyph) return undefined;
 		if (w > PAGE || h > SHELF_MAX) {
@@ -592,7 +648,6 @@ export class GlTextLayer {
 			ctx.save();
 			ctx.translate(penX, top);
 			ctx.scale(em / 24, em / 24);
-			ctx.globalAlpha = 0.75;
 			ctx.strokeStyle = ctx.fillStyle;
 			ctx.lineWidth = 2.2;
 			ctx.lineCap = 'round';
@@ -848,9 +903,13 @@ function makeLabelClass(P: Pixi) {
 		seen = 0;
 		need: Need | undefined;
 		private _px: number;
-		/** An entity glyph drawn before the text (see GLYPHS). */
+		/** The entity glyph it is, if it is one alone (see GLYPHS). */
 		glyph: string | undefined = undefined;
-		/** Width per px of font size, measured at the size it was made with when first asked. */
+		/** Room before its text, in em, for the parts drawn there (see GlTextLayer.label). */
+		lead = 0;
+		/** Its glyph and change mark, each placed `at` em from its origin. */
+		private readonly parts: { l: LabelImpl; at: number; op?: Container }[] = [];
+		/** Text width per px of font size, measured at the size it was made with when first asked. */
 		private perPx = -1;
 		private readonly px0: number;
 
@@ -876,16 +935,57 @@ function makeLabelClass(P: Pixi) {
 			if (v === this._px) return;
 			this._px = v;
 			this.fit();
+			this.place();
+		}
+
+		/** Its text's width (or its glyph's, if it is one alone) at `px`. */
+		get advance() {
+			if (this.perPx < 0)
+				this.perPx = this.glyph
+					? GLYPH_EM
+					: this.px0 > 0
+						? this.layer.measure(this.text, this.weight, this.px0) / this.px0
+						: 0;
+			return this.perPx * this._px;
 		}
 
 		override get width() {
-			if (this.perPx < 0)
-				this.perPx =
-					(this.px0 > 0 ? this.layer.measure(this.text, this.weight, this.px0) / this.px0 : 0) +
-					(this.glyph ? GLYPH_EM + GLYPH_GAP : 0);
-			return this.perPx * this._px;
+			return this.lead * this._px + this.advance;
 		}
 		override set width(_: number) {}
+
+		/** Adds its glyph, `at` em from its origin. */
+		addPart(l: GlLabel, at: number) {
+			this.parts.push({ l: l as LabelImpl, at });
+			this.addChild(l);
+			this.place();
+		}
+
+		/** Adds its change mark: badge `bg`, drawn 1 px to the em, and text `t` centred on it. */
+		addOp(bg: Container, t: GlLabel, at: number) {
+			this.parts.push({ l: t as LabelImpl, at, op: bg });
+			this.addChild(bg, t);
+			this.place();
+		}
+
+		/** Places its parts for its size, each centred on the line as a flex row centres it. */
+		private place() {
+			const px = this._px;
+			for (const p of this.parts) {
+				if (!p.op) {
+					p.l.px = px;
+					p.l.position.set(p.at * px, 0);
+					continue;
+				}
+				p.op.scale.set(px);
+				p.op.position.set(p.at * px, (LINE / 2) * px);
+				p.l.px = OP_EM * px;
+				p.l.position.set(
+					(p.at + OP_BOX / 2) * px - p.l.width / 2,
+					((LINE - LINE * OP_EM) / 2) * px
+				);
+			}
+		}
 
 		/** Shows raster `r`, or none; releasing the one it showed is the layer's part. */
 		show(r: Raster | undefined) {
@@ -905,6 +1005,11 @@ function makeLabelClass(P: Pixi) {
 		}
 
 		override destroy(options?: Parameters<Container['destroy']>[0]) {
+			for (const p of this.parts) {
+				p.op?.destroy();
+				p.l.destroy();
+			}
+			this.parts.length = 0;
 			this.layer.forget(this);
 			super.destroy(options);
 		}
