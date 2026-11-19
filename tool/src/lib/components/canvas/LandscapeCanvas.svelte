@@ -31,6 +31,7 @@
 		layoutLandscape,
 		linkTarget,
 		logicRowY,
+		enumOf,
 		refLabel,
 		relationsOf,
 		shownRows,
@@ -1263,7 +1264,7 @@
 	/** A field's card: what it refers to, holds, comes from, and what uses it. */
 	function fieldCardOf(
 		f: FieldRef | null
-	): { title: string; type: string; sections: Section[] } | undefined {
+	): { title: string; type: string; constraints: string[]; sections: Section[] } | undefined {
 		const b = f && boxById.get(f.box);
 		const info = f && model.fields.get(f.field);
 		if (!f || !b || !info) return undefined;
@@ -1291,6 +1292,8 @@
 		return {
 			title: `${el(info.modelId)?.name}.${def.name}`,
 			type: typeText(def, (id) => refLabel(model, id)),
+			// In full: the card cuts them to its column.
+			constraints: def.constraints ?? [],
 			// Glyphs point at what depends on what: → this field on the entry, ← the entry on
 			// this field; dashed for lineage.
 			sections: [
@@ -2404,6 +2407,26 @@
 		pick: (at: PeekAt) => void,
 		open?: string
 	)}
+		{#if card.constraints.length}
+			<section class="constraints">
+				<h4>Constraints</h4>
+				{#each card.constraints as c, i (i)}
+					{@const e = enumOf(c)}
+					{#if e}
+						<div class="constraint">
+							<span class="badge">enum {e.name}</span><span class="where"
+								>{e.values.length} values</span
+							>
+						</div>
+						<ul class="values">
+							{#each e.values as v, j (j)}<li>{v}</li>{/each}
+						</ul>
+					{:else}
+						<div class="constraint"><span class="badge">{c}</span></div>
+					{/if}
+				{/each}
+			</section>
+		{/if}
 		{#each card.sections as s (s.label)}
 			<section class={s.kind}>
 				<h4>{s.label}</h4>
@@ -3166,6 +3189,36 @@
 	}
 	.inspector .head {
 		flex: 1;
+	}
+	.inspector .type {
+		overflow-wrap: anywhere;
+	}
+	.inspector .constraint {
+		display: flex;
+		align-items: baseline;
+		gap: 6px;
+		padding: 2px 12px;
+	}
+	.inspector .constraint .badge {
+		padding: 0 6px;
+		line-height: 1.6;
+		font-size: 11px;
+		font-weight: 600;
+		overflow-wrap: anywhere;
+		background: var(--sdv-model-header);
+		color: var(--sdv-text-muted);
+	}
+	/* An enum's values, one a line, scrolling past 12. */
+	.inspector .values {
+		list-style: none;
+		margin: 2px 12px 4px 14px;
+		padding: 2px 0 2px 8px;
+		max-height: calc(12 * 1.55em);
+		overflow: auto;
+		border-left: 2px solid var(--sdv-model-stroke);
+		font-size: 12px;
+		line-height: 1.55;
+		overflow-wrap: anywhere;
 	}
 	.inspector .icon-btn {
 		border: none;

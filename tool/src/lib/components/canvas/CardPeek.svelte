@@ -36,6 +36,8 @@
 <script lang="ts">
 	import { ChevronDown, ChevronUp } from '@lucide/svelte';
 	import {
+		cellRoom,
+		constraintBadges,
 		FOLD,
 		foldable,
 		indexFields,
@@ -44,12 +46,14 @@
 		keysOf,
 		LINK,
 		logicNote,
+		nameText,
 		triggersNote,
 		kindWord,
 		ownerNote,
 		slotCount,
 		shownRows,
 		TABLE,
+		typeCell,
 		typeText
 	} from '#lib/landscape/layout.ts';
 	import { changes } from '#lib/client/changes.svelte.ts';
@@ -180,20 +184,31 @@
 								>
 									{#if c.key === 'name'}{#if marks.glyph.has(f.id)}<span class="op"
 												>{marks.glyph.get(f.id)}</span
-											>{/if}<span class="fname">{f.name}</span
+											>{/if}<span
+											class="fname"
+											title={nameText(f, d.view, cellRoom(c)) === f.name ? undefined : f.name}
+											>{nameText(f, d.view, cellRoom(c))}</span
 										>{#each d.view === 'table' ? keysOf(f) : [] as k (k)}<span
 												class="badge"
 												style:font-size="{TABLE.badge}px"
 												title={KEY_TITLES[k]}>{k}</span
 											>{/each}
-									{:else if c.key === 'type'}{typeText(f, label)}
+									{:else if c.key === 'type'}{@const t = typeCell(f, label, cellRoom(c))}<span
+											title={t === typeText(f, label) ? undefined : typeText(f, label)}>{t}</span
+										>
 									{:else if c.key === 'required'}{f.required ? TABLE.check : ''}
 									{:else if c.key === 'nullable'}{f.nullable ? TABLE.check : ''}
 									{:else if c.key === 'constraints'}
-										{#each f.constraints ?? [] as k (k)}<span
+										{@const fit = constraintBadges(f, cellRoom(c))}
+										{#each fit.shown as k, i (i)}<span
 												class="badge plain"
-												style:font-size="{TABLE.badge}px">{k}</span
-											>{/each}
+												style:font-size="{TABLE.badge}px"
+												title={f.constraints?.[i]}>{k}</span
+											>{/each}{#if fit.more}<span
+												class="badge more"
+												style:font-size="{TABLE.badge}px"
+												title={f.constraints?.slice(fit.shown.length).join('\n')}>+{fit.more}</span
+											>{/if}
 									{:else}
 										{#each c.slots ?? [] as s (s)}
 											{@const n =
@@ -615,6 +630,13 @@
 		font-weight: 600;
 		background: var(--sdv-model-key-fill);
 		color: var(--sdv-model-key-text);
+	}
+	.badge.more {
+		padding: 0 5px;
+		line-height: calc(1.6em - 2px);
+		background: none;
+		border: 1px solid var(--sdv-model-stroke);
+		color: var(--sdv-text-muted);
 	}
 	.badge.plain {
 		background: var(--sdv-model-header);

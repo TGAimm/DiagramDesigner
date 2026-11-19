@@ -53,6 +53,8 @@
 	import { RAIL, railRowY, type Rail } from '#lib/landscape/apis.ts';
 	import {
 		cardRows,
+		cellRoom,
+		constraintBadges,
 		fieldRowY,
 		FOLD,
 		foldable,
@@ -66,13 +68,14 @@
 		LINK,
 		logicNote,
 		logicRowY,
+		nameText,
 		ownerNote,
 		refLabel,
 		shownRows,
 		slotCount,
 		TABLE,
 		triggersNote,
-		typeText,
+		typeCell,
 		type LandscapeBox,
 		type Relations
 	} from '#lib/landscape/layout.ts';
@@ -971,7 +974,7 @@
 				const x = xs[ci] + TABLE.pad;
 				if (c.key === 'name') {
 					const name = at(
-						f.name,
+						nameText(f, b.view, cellRoom(c)),
 						x,
 						y,
 						TABLE.row,
@@ -984,14 +987,25 @@
 					for (const key of b.view === 'table' ? keysOf(f) : [])
 						bx += badge(key, bx, y, false, texts) + TABLE.badgeGap;
 				} else if (c.key === 'type')
-					texts.push(at(typeText(f, label), x, y, TABLE.row, 'text-muted'));
+					texts.push(at(typeCell(f, label, cellRoom(c)), x, y, TABLE.row, 'text-muted'));
 				else if (c.key === 'required' && f.required)
 					texts.push(at(TABLE.check, x, y, TABLE.row, 'model-text'));
 				else if (c.key === 'nullable' && f.nullable)
 					texts.push(at(TABLE.check, x, y, TABLE.row, 'model-text'));
 				else if (c.key === 'constraints' && f.constraints?.length) {
+					const { shown, more } = constraintBadges(f, cellRoom(c));
 					let bx = x;
-					for (const k of f.constraints) bx += badge(k, bx, y, true, texts) + TABLE.badgeGap;
+					for (const k of shown) bx += badge(k, bx, y, true, texts) + TABLE.badgeGap;
+					if (more) {
+						// Outlined, not filled: it stands for badges, it is not one.
+						const t = at(`+${more}`, bx + 6, y, TABLE.badge, 'text-muted', { bold: true });
+						g.rect(bx + 0.5, y - BADGE_H / 2 + 0.5, t.width + 11, BADGE_H - 1).stroke({
+							...colour('model-stroke'),
+							width: 1,
+							pixelLine: true
+						});
+						texts.push(t);
+					}
 				} else if (c.key === 'links') {
 					let sx = xs[ci];
 					for (const slot of c.slots ?? []) {
