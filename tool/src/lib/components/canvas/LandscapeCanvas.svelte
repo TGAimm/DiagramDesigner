@@ -25,6 +25,7 @@
 	} from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
 	import { changes } from '#lib/client/changes.svelte.ts';
+	import { GlCamera, setCamera, type Camera } from '#lib/client/camera.svelte.ts';
 	import { search } from '#lib/client/search.svelte.ts';
 	import SearchPalette from '#lib/components/SearchPalette.svelte';
 	import type { Hit } from '#lib/landscape/search.ts';
@@ -118,6 +119,21 @@
 	const MAX_ZOOM = 64;
 	const flow = useSvelteFlow();
 	const viewport = useViewport();
+	/** The WebGL canvas's own camera (see GlCamera); Svelte Flow keeps the page elements'. */
+	const glCam = new GlCamera();
+	/** Whichever camera the canvas is drawn with; the cards, minimap and player move it too. */
+	const camera: Camera = {
+		get current() {
+			return gl ? glCam.current : viewport.current;
+		},
+		getViewport: () => (gl ? glCam.getViewport() : flow.getViewport()),
+		setViewport: (v, move) => (gl ? glCam.setViewport(v, move) : flow.setViewport(v, move)),
+		setCenter: (x, y, move) => (gl ? glCam.setCenter(x, y, move) : flow.setCenter(x, y, move)),
+		fitBounds: (b, move) => (gl ? glCam.fitBounds(b, move) : flow.fitBounds(b, move)),
+		zoomBy: (k, move) =>
+			gl ? glCam.zoomBy(k, move) : k > 1 ? flow.zoomIn(move) : flow.zoomOut(move)
+	};
+	setCamera(camera);
 	const nodeTypes = { landscape: LandscapeNode };
 	const edgeTypes = { connection: ConnectionEdge };
 
@@ -183,6 +199,12 @@
 	});
 	const flowStore = useStore();
 	$effect(() => flowStore.setMinZoom(minZoom));
+	$effect(() => {
+		glCam.minZoom = minZoom;
+		glCam.maxZoom = MAX_ZOOM;
+		glCam.width = cw;
+		glCam.height = ch;
+	});
 	const rels = $derived(relationsOf(model));
 	// The minimap draws the root boxes, named, and the modules directly in them.
 	const mapBoxes = $derived(
@@ -228,7 +250,7 @@
 	// open.ts). Nodes read it from the view state, and it is only replaced when it changes, so a
 	// pan rebuilds nothing and redraws only the boxes coming into or leaving view.
 	$effect(() => {
-		const { x, y, zoom } = viewport.current;
+		const { x, y, zoom } = camera.current;
 		const next = everything
 			? [...boxes.map((b) => b.id), ...rails.keys()]
 			: [...drawnInFull(boxes, rails, { x, y, zoom, width: cw, height: ch })];
@@ -250,7 +272,7 @@
 	});
 	// The zoom alone, so what reads it is left alone while the view pans. Each write to the rule
 	// restyles every `screen-sized` element, so it is written only when the zoom changes.
-	const zoom = $derived(viewport.current.zoom);
+	const zoom = $derived(camera.current.zoom);
 	$effect(() => zoomRule.style.setProperty('--z', String(zoom)));
 	/** The rail on box `id` lists its endpoints: they read near the screen, or are looked at. */
 	const listed = (id: string) => !!view.near[id] || !!view.full[id];
@@ -831,7 +853,7 @@
 			...boxes.map((b) => b.absX + b.width + (rails.get(b.id)?.width ?? 0) / 2)
 		);
 		const bottom = Math.max(...boxes.map((b) => b.absY + b.height));
-		return flow.fitBounds(
+		return camera.fitBounds(
 			{ x, y, width: right - x, height: bottom - y },
 			{ padding: 0.08, duration }
 		);
@@ -1037,7 +1059,7 @@
 
 	/** The view's centre on the canvas. */
 	function viewCentre() {
-		const { x, y, zoom } = viewport.current;
+		const { x, y, zoom } = camera.current;
 		return { x: (cw / 2 - x) / zoom, y: (ch / 2 - y) / zoom };
 	}
 	/** Everything that can be looked at, with its lit lines: every box, row and api. */
@@ -1192,6 +1214,17 @@
 			depth: Infinity
 		}));
 	});
+	/** A move of the view ended: what the pointer rests on is looked at, and routed ahead. */
+	function movedEnd() {
+		moving = false;
+		hoverLater();
+		router.aheadFrom(viewCentre());
+	}
+	glCam.onmovestart = () => (moving = true);
+	glCam.onmoveend = movedEnd;
+	let stageEl: HTMLDivElement | undefined = $state();
+	$effect(() => (stageEl ? glCam.attach(stageEl) : undefined));
+
 	/** What the pointer is over on the WebGL canvas, told as the nodes' enter and leave events. */
 	let glPointer = $state.raw<GlHit | null>(null);
 	let railTimer: ReturnType<typeof setTimeout> | undefined;
@@ -1223,32 +1256,31 @@
 		}
 		glPointer = next;
 	}
-	/** The pane under an event: the canvas itself, not a card or bar over it. */
-	const paneOf = (e: Event) =>
-		(e.target as Element | null)?.closest?.('.svelte-flow__pane') as HTMLElement | null;
 	function glAt(e: MouseEvent) {
-		const r = canvasEl!.getBoundingClientRect();
+		const r = stageEl!.getBoundingClientRect();
 		return glLayer?.hitAt(e.clientX - r.left, e.clientY - r.top) ?? null;
 	}
 	function glMove(e: PointerEvent) {
-		if (!gl) return;
-		const pane = paneOf(e);
 		// While the view is dragged nothing is hovered, as the nodes take no pointer then.
-		if (!pane || e.buttons || moving) return glHover(null);
+		if (e.buttons || moving) return glHover(null);
 		const hit = glAt(e);
 		glHover(hit);
-		pane.style.cursor = hit ? 'pointer' : '';
-		const r = canvasEl!.getBoundingClientRect();
+		const pane = stageEl!;
+		const r = stageEl!.getBoundingClientRect();
 		pane.title = hit
 			? ''
 			: (glLayer?.restLineAt(e.clientX - r.left, e.clientY - r.top)?.title ?? '');
 	}
 	/** A click on what the WebGL canvas draws, as on a node; else on through to the pane. */
 	function glClick(e: MouseEvent) {
-		if (!gl || !paneOf(e)) return;
+		// The end of a drag is not a click.
+		if (glCam.dragged) return;
 		const hit = glAt(e);
-		if (!hit) return;
-		e.stopPropagation();
+		if (!hit || hit.part === 'body') {
+			view.selectedNodes = hit ? [hit.box] : [];
+			unpin();
+			return;
+		}
 		if (hit.part === 'row') onfield(hit.box, hit.id, 'click');
 		else if (hit.part === 'api') onapi(hit.id);
 		else if (hit.part === 'fold') {
@@ -1263,7 +1295,7 @@
 	}
 	/** While a scenario is edited: a field row or a class card's name bar opens the edit menu. */
 	function glMenu(e: MouseEvent) {
-		if (!gl || !editing || !paneOf(e)) return;
+		if (!editing) return;
 		const hit = glAt(e);
 		const b = hit && boxById.get(hit.box);
 		const target =
@@ -1306,7 +1338,7 @@
 	 * end and pointing at it. Clicking it flies there.
 	 */
 	const wedges = $derived.by(() => {
-		const { x: vx, y: vy, zoom } = viewport.current;
+		const { x: vx, y: vy, zoom } = camera.current;
 		const cx = cw / 2;
 		const cy = ch / 2;
 		const inset = 16;
@@ -1675,7 +1707,7 @@
 		const host = view.api ? hostOf(view.api) : undefined;
 		const r = host && rails.get(host.id);
 		if (!view.api || !host || !r) return undefined;
-		const { x: vx, y: vy, zoom } = viewport.current;
+		const { x: vx, y: vy, zoom } = camera.current;
 		const left = host.absX + host.width - r.width / 2;
 		const row = listed(host.id) ? railRowY(r, view.api) : undefined;
 		const y = host.absY + r.top + (row !== undefined ? row * r.scale : r.height / 2);
@@ -1689,7 +1721,7 @@
 		if (!f || !b) return undefined;
 		const s = shownBox(b);
 		const row = s === b ? rowOf(b, f.field) : -1;
-		const { x: vx, y: vy, zoom } = viewport.current;
+		const { x: vx, y: vy, zoom } = camera.current;
 		const y = row >= 0 ? b.absY + rowY(b, row) : s.absY + s.height / 2;
 		return { left: s.absX * zoom + vx, right: (s.absX + s.width) * zoom + vx, y: y * zoom + vy };
 	});
@@ -1886,7 +1918,7 @@
 		const t = target.box;
 		const area = (t.parentId && boxById.get(t.parentId)) || t;
 		const fill = (b: LandscapeBox) => Math.max(b.width / cw, b.height / ch);
-		const zoom = Math.min(Math.max(viewport.current.zoom, 0.8 / fill(area)), 0.92 / fill(t));
+		const zoom = Math.min(Math.max(camera.current.zoom, 0.8 / fill(area)), 0.92 / fill(t));
 		const row = rowOf(t, target.field);
 		// A row hidden in a folded card is shown by expanding the card.
 		if (t.fields && row >= shownRows(t.fields.length, !!view.expanded[t.id], t.foldAt))
@@ -1896,7 +1928,7 @@
 			const half = side / 2 / zoom;
 			return size <= 2 * half ? Math.min(Math.max(c, start + size - half), start + half) : c;
 		};
-		flow.setCenter(
+		camera.setCenter(
 			keep(t.absX + t.width / 2, area.absX, area.width, cw - panelW) - panelW / 2 / zoom,
 			keep(t.absY + (row >= 0 ? rowY(t, row) : t.height / 2), area.absY, area.height, ch),
 			{ zoom, duration: 700 }
@@ -1936,7 +1968,7 @@
 				: 0;
 			const w = t.width + rail;
 			const zoom = 0.9 / Math.max(w / cw, t.height / ch);
-			flow.setCenter(t.absX + w / 2 - panelW / 2 / zoom, t.absY + t.height / 2, {
+			camera.setCenter(t.absX + w / 2 - panelW / 2 / zoom, t.absY + t.height / 2, {
 				zoom,
 				duration: 700
 			});
@@ -1962,7 +1994,7 @@
 	}
 
 	function setFocus(next: Focus) {
-		if (!view.focused) beforeFocus = view.play ? beforePlay : { ...viewport.current };
+		if (!view.focused) beforeFocus = view.play ? beforePlay : { ...camera.current };
 		unpin();
 		view.play = null;
 		beforePlay = undefined;
@@ -1991,7 +2023,7 @@
 		view.expanded = {};
 		view.focused = null;
 		keepCamera = true;
-		if (beforeFocus) flow.setViewport(beforeFocus);
+		if (beforeFocus) camera.setViewport(beforeFocus);
 		beforeFocus = undefined;
 	}
 
@@ -2147,7 +2179,7 @@
 				e.row >= shownRows(e.box.fields.length, !!view.expanded[e.box.id], e.box.foldAt)
 			)
 				view.expanded = { ...view.expanded, [e.box.id]: true };
-		const v = flow.getViewport();
+		const v = camera.getViewport();
 		const h = ch - PLAYER;
 		const span = (list: ReturnType<typeof placeOf>[]) => {
 			const f = {
@@ -2182,7 +2214,7 @@
 					}
 				: { x: shift(f.left, f.right, v.x, cw), y: shift(f.top, f.bottom, v.y, h), zoom: z };
 		if (next.x !== v.x || next.y !== v.y || next.zoom !== v.zoom)
-			void flow.setViewport(next, { duration: 400 });
+			void camera.setViewport(next, { duration: 400 });
 	}
 	// Each new step brings its ends into view; panning between steps is free.
 	$effect(() => {
@@ -2195,7 +2227,7 @@
 
 	/** An end on screen: the edges of what is drawn for it and the height of its row. */
 	function screenOf(e: PlayEnd) {
-		const { x: vx, y: vy, zoom } = viewport.current;
+		const { x: vx, y: vy, zoom } = camera.current;
 		const host = e.api ? hostOf(e.api) : undefined;
 		const r = host && rails.get(host.id);
 		if (e.api && host && r) {
@@ -2325,7 +2357,7 @@
 	});
 
 	function startPlay(unit: string) {
-		if (!view.play) beforePlay = flow.getViewport();
+		if (!view.play) beforePlay = camera.getViewport();
 		unpin();
 		view.expanded = {};
 		view.play = { unit, choices: {}, into: [], over: [], at: 0 };
@@ -2335,7 +2367,7 @@
 		view.play = null;
 		view.expanded = {};
 		keepCamera = true;
-		if (beforePlay) void flow.setViewport(beforePlay);
+		if (beforePlay) void camera.setViewport(beforePlay);
 		beforePlay = undefined;
 	}
 	function jump(at: number) {
@@ -2434,50 +2466,20 @@
 	bind:clientWidth={cw}
 	bind:clientHeight={ch}
 	data-testid="canvas"
-	role="presentation"
-	onpointermove={glMove}
-	onpointerleave={() => gl && glHover(null)}
-	onclickcapture={glClick}
-	oncontextmenucapture={glMenu}
 >
-	<SvelteFlow
-		bind:nodes
-		{edges}
-		{nodeTypes}
-		{edgeTypes}
-		connectionMode={ConnectionMode.Loose}
-		colorMode={theme.current}
-		{minZoom}
-		maxZoom={MAX_ZOOM}
-		nodesDraggable={false}
-		nodesConnectable={false}
-		elementsSelectable={false}
-		zoomOnDoubleClick={false}
-		onmovestart={() => (moving = true)}
-		onmove={(e) => {
-			// While the view is dragged, nothing on it takes the pointer: each step would hit-test
-			// and restyle (`:hover`) the boxes sliding under it. Set at the first step, not the
-			// start, which a click on a row or box also makes. Not for the wheel: its gestures end
-			// at each pause, and each switch restyles the whole canvas.
-			if (!e || e instanceof WheelEvent || canvasEl?.classList.contains('moving')) return;
-			canvasEl?.classList.add('moving');
-		}}
-		onmoveend={() => {
-			moving = false;
-			canvasEl?.classList.remove('moving');
-			hoverLater();
-			router.aheadFrom(viewCentre());
-		}}
-		onnodeclick={({ node }) => {
-			view.selectedNodes = [node.id];
-			unpin();
-		}}
-		onpaneclick={() => {
-			view.selectedNodes = [];
-			unpin();
-		}}
-	>
-		{#if gl}
+	{#if gl}
+		<!-- The landscape on one WebGL canvas, moved by a camera of its own (see GlCamera); what
+		     it draws takes the pointer through hit testing (see GlLayer.hitAt). -->
+		<div
+			class="gl-stage"
+			class:pointing={!!glPointer}
+			bind:this={stageEl}
+			role="presentation"
+			onpointermove={glMove}
+			onpointerleave={() => glHover(null)}
+			onclick={glClick}
+			oncontextmenu={glMenu}
+		>
 			<GlLayer
 				bind:this={glLayer}
 				{boxes}
@@ -2489,19 +2491,108 @@
 				rest={glRest}
 				lit={glLit}
 				dim={dimming ? related : undefined}
-				{namesInFront}
+				front={namesInFront ? namesShown : []}
 				pointer={glPointer}
 			/>
-		{/if}
-		<Background
-			variant={BackgroundVariant.Dots}
-			gap={20}
-			patternColor="var(--sdv-grid)"
-			bgColor="var(--sdv-canvas-bg)"
-		/>
-		<Controls showLock={false} showFitView={!gl}>
-			{#if gl}
-				<ControlButton aria-label="Fit View" title="Fit View" onclick={() => void fitAll(200)}>
+		</div>
+		<div class="gl-controls" role="toolbar" aria-label="Canvas controls">
+			<button
+				title="Zoom in"
+				aria-label="Zoom in"
+				onclick={() => void camera.zoomBy(1.2, { duration: 200 })}
+				><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg></button
+			>
+			<button
+				title="Zoom out"
+				aria-label="Zoom out"
+				onclick={() => void camera.zoomBy(1 / 1.2, { duration: 200 })}
+				><svg viewBox="0 0 24 24"><path d="M5 12h14" /></svg></button
+			>
+			<button title="Fit view" aria-label="Fit view" onclick={() => void fitAll(200)}
+				><svg viewBox="0 0 24 24"
+					><path
+						d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"
+					/></svg
+				></button
+			>
+			<button
+				class:on={settings.minimap}
+				title="Map"
+				aria-label="Map"
+				aria-pressed={settings.minimap}
+				onclick={() => settings.setMinimap(!settings.minimap)}
+				><svg viewBox="0 0 24 24"
+					><path
+						d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"
+					/><path d="M15 5.764v15" /><path d="M9 3.236v15" /></svg
+				></button
+			>
+			<button
+				class:on={keyOpen}
+				title="Key"
+				aria-label="Key"
+				aria-pressed={keyOpen}
+				onclick={() => (keyOpen = !keyOpen)}
+				><svg viewBox="0 0 13 13" stroke-width="1.4"
+					><rect x="1" y="1.5" width="3" height="3" /><rect
+						x="1"
+						y="8.5"
+						width="3"
+						height="3"
+					/><path d="M6.5 3h5.5M6.5 10h5.5" /></svg
+				></button
+			>
+		</div>
+	{:else}
+		<SvelteFlow
+			bind:nodes
+			{edges}
+			{nodeTypes}
+			{edgeTypes}
+			connectionMode={ConnectionMode.Loose}
+			colorMode={theme.current}
+			{minZoom}
+			maxZoom={MAX_ZOOM}
+			nodesDraggable={false}
+			nodesConnectable={false}
+			elementsSelectable={false}
+			zoomOnDoubleClick={false}
+			onmovestart={() => (moving = true)}
+			onmove={(e) => {
+				// While the view is dragged, nothing on it takes the pointer: each step would hit-test
+				// and restyle (`:hover`) the boxes sliding under it. Set at the first step, not the
+				// start, which a click on a row or box also makes. Not for the wheel: its gestures end
+				// at each pause, and each switch restyles the whole canvas.
+				if (!e || e instanceof WheelEvent || canvasEl?.classList.contains('moving')) return;
+				canvasEl?.classList.add('moving');
+			}}
+			onmoveend={() => {
+				canvasEl?.classList.remove('moving');
+				movedEnd();
+			}}
+			onnodeclick={({ node }) => {
+				view.selectedNodes = [node.id];
+				unpin();
+			}}
+			onpaneclick={() => {
+				view.selectedNodes = [];
+				unpin();
+			}}
+		>
+			<Background
+				variant={BackgroundVariant.Dots}
+				gap={20}
+				patternColor="var(--sdv-grid)"
+				bgColor="var(--sdv-canvas-bg)"
+			/>
+			<Controls showLock={false}>
+				<ControlButton
+					class={settings.minimap ? 'on' : undefined}
+					aria-label="Map"
+					aria-pressed={settings.minimap}
+					title="Map"
+					onclick={() => settings.setMinimap(!settings.minimap)}
+				>
 					<svg
 						viewBox="0 0 24 24"
 						fill="none"
@@ -2511,77 +2602,57 @@
 						stroke-linejoin="round"
 					>
 						<path
-							d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"
+							d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"
 						/>
+						<path d="M15 5.764v15" /><path d="M9 3.236v15" />
 					</svg>
 				</ControlButton>
-			{/if}
-			<ControlButton
-				class={settings.minimap ? 'on' : undefined}
-				aria-label="Map"
-				aria-pressed={settings.minimap}
-				title="Map"
-				onclick={() => settings.setMinimap(!settings.minimap)}
-			>
-				<svg
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
+				<ControlButton
+					class={keyOpen ? 'on' : undefined}
+					aria-label="Key"
+					aria-pressed={keyOpen}
+					title="Key"
+					onclick={() => (keyOpen = !keyOpen)}
 				>
-					<path
-						d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"
-					/>
-					<path d="M15 5.764v15" /><path d="M9 3.236v15" />
-				</svg>
-			</ControlButton>
-			<ControlButton
-				class={keyOpen ? 'on' : undefined}
-				aria-label="Key"
-				aria-pressed={keyOpen}
-				title="Key"
-				onclick={() => (keyOpen = !keyOpen)}
-			>
-				<svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4">
-					<rect x="1" y="1.5" width="3" height="3" /><rect x="1" y="8.5" width="3" height="3" />
-					<path d="M6.5 3h5.5M6.5 10h5.5" />
-				</svg>
-			</ControlButton>
-		</Controls>
-		{#if namesInFront}
-			<ViewportPortal target="front">
-				{#each namesShown as m (m.id)}
-					<!-- svelte-ignore a11y_click_events_have_key_events -->
-					<div
-						class="front-name screen-sized"
-						class:rail={m.glyph === 'api'}
-						data-id={m.b.id}
-						role="button"
-						tabindex="-1"
-						style:left="{m.x}px"
-						style:top="{m.y}px"
-						style:font-size="min(calc({NAME_PX}px / var(--z)), {m.max}px)"
-						onmouseenter={() => {
-							overBox = m.b.id;
-							hoverLater();
-						}}
-						onmouseleave={() => {
-							if (overBox === m.b.id) overBox = null;
-							hoverLater();
-						}}
-						onclick={() => {
-							view.selectedNodes = [m.b.id];
-							unpin();
-						}}
-					>
-						<EntityGlyph kind={m.glyph} />{m.name}
-					</div>
-				{/each}
-			</ViewportPortal>
-		{/if}
-	</SvelteFlow>
+					<svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4">
+						<rect x="1" y="1.5" width="3" height="3" /><rect x="1" y="8.5" width="3" height="3" />
+						<path d="M6.5 3h5.5M6.5 10h5.5" />
+					</svg>
+				</ControlButton>
+			</Controls>
+			{#if namesInFront}
+				<ViewportPortal target="front">
+					{#each namesShown as m (m.id)}
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<div
+							class="front-name screen-sized"
+							class:rail={m.glyph === 'api'}
+							data-id={m.b.id}
+							role="button"
+							tabindex="-1"
+							style:left="{m.x}px"
+							style:top="{m.y}px"
+							style:font-size="min(calc({NAME_PX}px / var(--z)), {m.max}px)"
+							onmouseenter={() => {
+								overBox = m.b.id;
+								hoverLater();
+							}}
+							onmouseleave={() => {
+								if (overBox === m.b.id) overBox = null;
+								hoverLater();
+							}}
+							onclick={() => {
+								view.selectedNodes = [m.b.id];
+								unpin();
+							}}
+						>
+							<EntityGlyph kind={m.glyph} />{m.name}
+						</div>
+					{/each}
+				</ViewportPortal>
+			{/if}
+		</SvelteFlow>
+	{/if}
 	{#if settings.minimap}
 		<Minimap boxes={mapBoxes} {cw} {ch} {minZoom} maxZoom={MAX_ZOOM} />
 	{/if}
@@ -3170,6 +3241,57 @@
 </div>
 
 <style>
+	.gl-stage {
+		position: absolute;
+		inset: 0;
+		background: var(--sdv-canvas-bg);
+		cursor: grab;
+		touch-action: none;
+		user-select: none;
+	}
+	.gl-stage.pointing {
+		cursor: pointer;
+	}
+	.gl-stage:active {
+		cursor: grabbing;
+	}
+	.gl-controls {
+		position: absolute;
+		left: 15px;
+		bottom: 15px;
+		z-index: 5;
+		display: flex;
+		flex-direction: column;
+		box-shadow: var(--ui-shadow);
+	}
+	.gl-controls button {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 26px;
+		height: 26px;
+		padding: 5px;
+		border: none;
+		border-bottom: 1px solid var(--ui-border);
+		background: var(--ui-panel, var(--ui-bg));
+		color: var(--ui-text);
+		cursor: pointer;
+	}
+	.gl-controls button:hover {
+		background: var(--ui-hover);
+	}
+	.gl-controls button.on {
+		color: var(--ui-accent);
+	}
+	.gl-controls svg {
+		width: 100%;
+		height: 100%;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 2;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
 	.canvas {
 		position: relative;
 		flex: 1;
