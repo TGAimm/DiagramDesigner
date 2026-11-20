@@ -48,8 +48,9 @@ Technical / deployment architecture
   lit is always drawn in full. Models render as
   classes where they are owned (grouped with the models they alone hold) and as stored
   tables where they are stored, with keys, foreign-key and composition lines, and field
-  lineage. Connections follow one standard at every level: at rest only calls, reads and
-  writes, merged into one line between the visible boxes; lit one hop each way on hover, pinned on click
+  lineage. Connections follow one standard at every level: at rest, Module Dependency Lines
+  between modules, inside a module once it fills a quarter of the view; hover a module to light
+  its dependencies, anything else for its Flow Lines one hop each way; click to pin
   ([docs/schema/README.md](docs/schema/README.md#connections)). Clicking selects.
 - **Scenarios and history:** pending renames, adds and drops live in scenario files
   ([docs/schema/scenario.md](docs/schema/scenario.md)), edited on the canvas and shown as a

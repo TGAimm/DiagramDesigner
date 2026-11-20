@@ -2,7 +2,6 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import { edgesOf, restLines } from '../../src/lib/landscape/connections';
 import { layoutLandscape } from '../../src/lib/landscape/layout';
 import {
 	loadRouter,
@@ -84,7 +83,7 @@ function example() {
 		const r = rect(b.absX, b.absY, b.width, b.height);
 		return boxes.has(id) ? on(id, r) : { ...on(id, r), on: undefined, sides: ['r'] };
 	};
-	const lines: RouteLine[] = restLines(laidLines, edgesOf(model)).map((l) => ({
+	const lines: RouteLine[] = laidLines.map((l) => ({
 		id: l.id,
 		s: end(l.source),
 		t: end(l.target)

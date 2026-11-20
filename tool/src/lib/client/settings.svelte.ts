@@ -3,6 +3,19 @@ import { DEFAULT_LAYOUT, type LayoutOptions } from '#lib/landscape/layout.ts';
 const LAYOUT_KEY = 'sdv-layout';
 const FOLLOW_KEY = 'sdv-follow-calls';
 const MINIMAP_KEY = 'sdv-minimap';
+const REST_SHARE_KEY = 'sdv-rest-share';
+
+/** Lines at rest inside a box show once it covers this share of the view (see open.ts). */
+export const DEFAULT_REST_SHARE = 0.25;
+
+function storedRestShare(): number {
+	try {
+		const n = Number(localStorage.getItem(REST_SHARE_KEY) ?? NaN);
+		return n >= 0 && n <= 1 ? n : DEFAULT_REST_SHARE;
+	} catch {
+		return DEFAULT_REST_SHARE;
+	}
+}
 
 function storedFollow(): boolean {
 	try {
@@ -66,6 +79,22 @@ class SettingsState {
 		this.minimap = on;
 		try {
 			localStorage.setItem(MINIMAP_KEY, on ? '1' : '0');
+		} catch {
+			// As for the layout: the choice then lasts for the session.
+		}
+	}
+
+	/**
+	 * Module Dependency Lines between top-level modules always show; those inside a module once
+	 * it covers this share of the view, so zoomed out the landscape shows how its top-level
+	 * modules depend on each other, not every module's wiring.
+	 */
+	restShare = $state(typeof localStorage === 'undefined' ? DEFAULT_REST_SHARE : storedRestShare());
+
+	setRestShare(share: number) {
+		this.restShare = share;
+		try {
+			localStorage.setItem(REST_SHARE_KEY, String(share));
 		} catch {
 			// As for the layout: the choice then lasts for the session.
 		}

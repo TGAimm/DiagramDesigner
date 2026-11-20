@@ -5,6 +5,8 @@ import {
 	cardsLegible,
 	drawnInFull,
 	railOpen,
+	restShownIn,
+	screenShare,
 	type Camera
 } from '../../src/lib/landscape/open';
 import type { Rail } from '../../src/lib/landscape/apis';
@@ -68,5 +70,33 @@ describe('api rail', () => {
 		// Rows 12 × 0.25 × 1.34 = 4.02px; × 1.33 = 3.99px.
 		expect(railOpen(rail, 1.34)).toBe(true);
 		expect(railOpen(rail, 1.33)).toBe(false);
+	});
+});
+
+describe('lines at rest inside a box', () => {
+	const at = (id: string, absX: number, absY: number, size: number) =>
+		({ id, absX, absY, width: size, height: size }) as unknown as LandscapeBox;
+	const cam = (zoom: number, x = 0, y = 0): Camera => ({ x, y, zoom, width: 1000, height: 1000 });
+
+	it('measure the part of a box on screen', () => {
+		expect(screenShare(0, 0, 500, 500, cam(1))).toBe(0.25);
+		// Half of it off the left edge.
+		expect(screenShare(-250, 0, 500, 500, cam(1))).toBe(0.125);
+		expect(screenShare(2000, 0, 500, 500, cam(1))).toBe(0);
+		// Larger than the screen: all of it.
+		expect(screenShare(-100, -100, 5000, 5000, cam(1))).toBe(1);
+	});
+
+	it('show once their box fills the share of the view, zooming in', () => {
+		const byId = new Map([['m', at('m', 0, 0, 400)]]);
+		// 400 × 400 of 1000 × 1000 is 16%; zoomed in 1.25 times, 25%.
+		expect([...restShownIn(byId, ['m'], cam(1), 0.25)]).toEqual([]);
+		expect([...restShownIn(byId, ['m'], cam(1.25), 0.25)]).toEqual(['m']);
+		expect([...restShownIn(byId, ['m'], cam(1), 0)]).toEqual(['m']);
+	});
+
+	it('hide while their box is off the screen', () => {
+		const byId = new Map([['m', at('m', 0, 0, 400)]]);
+		expect([...restShownIn(byId, ['m'], cam(2, -5000), 0.1)]).toEqual([]);
 	});
 });

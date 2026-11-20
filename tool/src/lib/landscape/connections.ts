@@ -1,6 +1,6 @@
 import { LOGIC_KEYS, type Model } from '../model/model';
 import { bodyModels } from './apis';
-import { cardRows, linkTarget, type LaidLine, type LandscapeBox } from './layout';
+import { cardRows, linkTarget, type LandscapeBox } from './layout';
 
 /**
  * Every kind of connection. A field refers to a key (`ref`), holds a model (`model`) or
@@ -102,26 +102,144 @@ export function within(boxes: LandscapeBox[], id: string): LandscapeBox[] {
 	return boxes.filter((b) => ids.has(b.id));
 }
 
-/** A line drawn at rest: a laid out line (see `LaidLine`) with only the connections shown. */
+/** What makes a module depend on another: a connection, or storing a model it owns. */
+export type DependencyKind = LinkKind | 'stores';
+
+/**
+ * A Module Dependency Line, drawn at rest: module `source` depends on module `target`. The two
+ * are siblings, the children of the deepest module both sit in, so the line never crosses a
+ * border. It merges every connection between anything owned inside the one and anything
+ * owned inside the other, one line per pair and direction.
+ */
 export interface RestLine {
+	/** `<source>><target>`. */
 	id: string;
 	source: string;
 	target: string;
-	/** The box both sit in; none for two top-level boxes. */
+	/** The module both sit in; none for two top-level modules. */
 	parentId?: string;
 	/** The kinds of the connections merged, each once. */
-	kinds: LinkKind[];
+	kinds: DependencyKind[];
 	/** How many connections it merges. */
 	count: number;
+	/**
+	 * The innermost modules owning the two ends of each connection merged, each pair once:
+	 * which modules inside `source` depend on which inside `target`.
+	 */
+	pairs: { from: string; to: string }[];
 }
 
-/** The laid out lines holding any of `edges`, each with only those. */
-export function restLines(laid: LaidLine[], edges: Edge[]): RestLine[] {
-	const shown = new Set(edges.map(edgeKey));
-	return laid.flatMap(({ edges: all, ...l }) => {
-		const es = all.filter((e) => shown.has(edgeKey(e)));
-		return es.length
-			? [{ ...l, kinds: [...new Set(es.map((e) => e.kind))], count: es.length }]
-			: [];
-	});
+/** The element a leaf belongs to: a field's model, an api field's api, a port's channel. */
+export const elementOf = (model: Model, leaf: string) =>
+	model.fields.get(leaf)?.modelId ??
+	model.apiFields.get(leaf)?.apiId ??
+	model.ports.get(leaf)?.channel ??
+	leaf;
+
+/** The modules round element `id` that `drawn` holds, innermost first, `id` too if a module. */
+export function modulesOf(model: Model, id: string, drawn: (id: string) => boolean): string[] {
+	const out: string[] = [];
+	for (
+		let e = model.elements.get(id);
+		e;
+		e = e.parentId ? model.elements.get(e.parentId) : undefined
+	)
+		if (e.def.kind === 'module' && drawn(e.id)) out.push(e.id);
+	return out;
+}
+
+/**
+ * The Module Dependency Lines: every connection in `edges` whose two ends are owned by
+ * different modules, and every model stored in a module other than its owner's (the store
+ * depends on the owner), lifted to the two sibling modules holding the ends. Where a leaf is
+ * owned decides, never where it is drawn. A connection inside one module, or between a module
+ * and one inside it, makes no line. `drawn` tells the modules that have a box.
+ */
+export function moduleLines(
+	model: Model,
+	edges: Edge[],
+	drawn: (id: string) => boolean
+): RestLine[] {
+	const lines = new Map<string, RestLine>();
+	const seen = new Set<string>();
+	const add = (kind: DependencyKind, key: string, from: string, to: string) => {
+		const [ca, cb] = [modulesOf(model, from, drawn), modulesOf(model, to, drawn)];
+		if (!ca.length || !cb.length) return;
+		const shared = ca.find((id) => cb.includes(id));
+		if (shared === ca[0] || shared === cb[0]) return;
+		const source = shared ? ca[ca.indexOf(shared) - 1] : ca.at(-1)!;
+		const target = shared ? cb[cb.indexOf(shared) - 1] : cb.at(-1)!;
+		const id = `${source}>${target}`;
+		if (seen.has(`${id}|${key}`)) return;
+		seen.add(`${id}|${key}`);
+		let l = lines.get(id);
+		if (!l)
+			lines.set(id, (l = { id, source, target, parentId: shared, kinds: [], count: 0, pairs: [] }));
+		l.count++;
+		if (!l.kinds.includes(kind)) l.kinds.push(kind);
+		if (!l.pairs.some((p) => p.from === ca[0] && p.to === cb[0]))
+			l.pairs.push({ from: ca[0], to: cb[0] });
+	};
+	for (const e of edges) add(e.kind, edgeKey(e), elementOf(model, e.from), elementOf(model, e.to));
+	for (const [id, info] of model.elements)
+		if (info.def.kind === 'model' && info.storedIn && info.storedIn !== info.parentId)
+			add('stores', `stores:${id}`, info.storedIn, id);
+	return [...lines.values()].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+}
+
+/** A box and every box round it, innermost first. */
+export function chainOf(boxById: Map<string, LandscapeBox>, id: string): LandscapeBox[] {
+	const out: LandscapeBox[] = [];
+	for (let b = boxById.get(id); b; b = b.parentId ? boxById.get(b.parentId) : undefined)
+		out.push(b);
+	return out;
+}
+
+/** What hovering or picking module `m` lights: see `moduleLook`. */
+export interface ModuleLook {
+	/** Lines carrying a dependency of `m` or of something inside it, lit. */
+	lit: Set<string>;
+	/** Lines inside `m`, left as they are at rest. */
+	inside: Set<string>;
+	/**
+	 * The boxes kept bright: `m` and everything in it and round it, and for every module it
+	 * depends on or that depends on it, that module, everything in it and round it.
+	 */
+	bright: Set<string>;
+}
+
+/**
+ * Looking at module `m`: the lines carrying its dependencies (its own lines, and the lines of
+ * the modules round it that carry them) light up, and so do the modules at their far ends,
+ * the very modules depended on, not the whole box the line ends on. Lines inside `m` are left
+ * at rest.
+ */
+export function moduleLook(
+	boxes: LandscapeBox[],
+	boxById: Map<string, LandscapeBox>,
+	lines: RestLine[],
+	m: string
+): ModuleLook {
+	const inM = (id: string | undefined) => !!id && chainOf(boxById, id).some((b) => b.id === m);
+	const lit = new Set<string>();
+	const inside = new Set<string>();
+	const bright = new Set<string>();
+	const keep = (id: string) => {
+		for (const b of within(boxes, id)) bright.add(b.id);
+		for (const b of chainOf(boxById, id)) bright.add(b.id);
+	};
+	keep(m);
+	for (const l of lines) {
+		if (inM(l.parentId)) {
+			inside.add(l.id);
+			continue;
+		}
+		for (const p of l.pairs) {
+			const [a, b] = [inM(p.from), inM(p.to)];
+			if (a === b) continue;
+			lit.add(l.id);
+			keep(a ? p.to : p.from);
+		}
+	}
+	return { lit, inside, bright };
 }

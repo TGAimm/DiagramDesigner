@@ -53,11 +53,14 @@
 		edgesOf,
 		homeOf,
 		leavesOf,
-		restLines,
+		moduleLines,
+		moduleLook,
+		type DependencyKind,
+		type RestLine,
 		within,
 		type LinkKind
 	} from '#lib/landscape/connections.ts';
-	import { drawnInFull, READABLE } from '#lib/landscape/open.ts';
+	import { drawnInFull, READABLE, restShownIn } from '#lib/landscape/open.ts';
 	import { GLYPH, textWidth } from '#lib/render/text.ts';
 	import { sequenceCol, sequenceOf, sequenceWidth } from '#lib/landscape/sequence.ts';
 	import Ident from '#lib/components/Ident.svelte';
@@ -262,6 +265,12 @@
 	const isApiEl = (id: string) => el(id)?.def.kind === 'api';
 	const isTrigger = (id: string) => el(id)?.def.kind === 'trigger';
 	const isChannel = (id: string) => el(id)?.def.kind === 'channel';
+	/**
+	 * A module's own box, not one of its row cards (whose element is the module too); a top-level
+	 * module is a module like any other.
+	 */
+	const isModuleBox = (b: LandscapeBox) =>
+		b.id === b.elementId && el(b.elementId)?.def.kind === 'module';
 
 	// Every system and module is drawn open at any zoom. Zoomed out, what thins out is the rows of
 	// cards and rails (see open.ts), which are most of what a large landscape draws.
@@ -572,7 +581,8 @@
 	 */
 	function linesOf(focus: Look): LitLine[] {
 		const f = focus && boxById.get(focus.box);
-		if (!focus || !f) return [];
+		// A module lights its Module Dependency Lines instead (see `modLook`).
+		if (!focus || !f || (!focus.leaf && isModuleBox(f))) return [];
 		// A trigger on a channel's port lights the sends into the channel too, so the whole way a
 		// message comes (sender, channel, event, trigger, unit) lights at once.
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built and used here
@@ -628,11 +638,13 @@
 
 	/**
 	 * While something is looked at, the boxes it relates to: itself and everything in it, the
-	 * boxes its lit lines end on, and every box round those. The rest is toned down, so the lines
-	 * that matter stand out.
+	 * boxes its lit lines end on, and every box round those; for a module, the modules it depends
+	 * on or that depend on it (see `moduleLook`). The rest is toned down, so the lines that
+	 * matter stand out.
 	 */
 	const related = $derived.by(() => {
 		if (!focus) return undefined;
+		if (modLook) return modLook.bright;
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built and returned whole
 		const ids = new Set(within(boxes, focus.box).map((b) => b.id));
 		for (const id of [focus.box, ...lit.flatMap((l) => [l.s.node.id, l.t.node.id])])
@@ -885,15 +897,16 @@
 		};
 	}
 
-	// At rest only who talks to whom: calls, handles, reads and writes. Keys, holds, lineage
-	// and bodies light up on hover.
-	const rest = $derived(
-		restLines(
-			laid.lines,
-			shownEdges.filter((e) =>
-				['calls', 'handles', 'reads', 'writes', 'sends', 'on'].includes(e.kind)
-			)
-		)
+	// Module Dependency Lines, the lines at rest: which module depends on which, from every kind
+	// of connection shown, by where its ends are owned (see `moduleLines`).
+	const rest = $derived(moduleLines(model, shownEdges, (id) => boxById.has(id)));
+	/** Looking at a module lights its Module Dependency Lines, not the flows inside it. */
+	const lookedModule = $derived.by(() => {
+		const b = focus && !focus.leaf ? boxById.get(focus.box) : undefined;
+		return b && isModuleBox(b) ? b.id : undefined;
+	});
+	const modLook = $derived(
+		lookedModule ? moduleLook(boxes, boxById, rest, lookedModule) : undefined
 	);
 
 	// Lines at rest and lit lines are routed apart, so a hover never moves the lines at rest.
@@ -935,62 +948,20 @@
 	const unroutedCount = $derived(rest.filter((l) => !restRoutes.routes.has(l.id)).length);
 
 	/**
-	 * The line at rest a lit line runs along: the one joining, the same way, the two children
-	 * of the box both its ends share that hold them. Where the lit line joins it, where it leaves
-	 * it, and its corners between. The joins are where the line at rest first and last turns, in
-	 * the open between boxes; the middle of a straight one. None when no such line is drawn or
-	 * routed yet, or one end holds the other.
-	 */
-	function trunkOf(l: LitLine) {
-		const chain = (b: LandscapeBox) => {
-			const out = [b];
-			for (let p = b.parentId; p; p = boxById.get(p)?.parentId) out.push(boxById.get(p)!);
-			return out;
-		};
-		const [cs, ct] = [chain(l.s.node), chain(l.t.node)];
-		const shared = cs.find((b) => ct.includes(b));
-		const a = shared ? cs[cs.indexOf(shared) - 1] : cs.at(-1);
-		const b = shared ? ct[ct.indexOf(shared) - 1] : ct.at(-1);
-		if (!a || !b || a === b) return undefined;
-		const pts = restRoutes.routes.get(`${a.id}>${b.id}`);
-		if (!pts || pts.length < 2) return undefined;
-		const n = pts.length;
-		const mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
-		const [join, leave] = n > 2 ? [pts[1], pts[n - 2]] : [mid, mid];
-		return { join, leave, between: n > 3 ? pts.slice(2, -2) : [] };
-	}
-	/** A bare point at `p` as a line end, met from any side. */
-	const freeAt = (p: Point): RouteEnd => ({ point: true, x0: p.x, x1: p.x, y: p.y, sides: [] });
-
-	/**
-	 * Lit lines as the router takes them. One that runs along a line at rest is two short lines:
-	 * from its start out to where it joins that line, and from where it leaves it to its end.
+	 * Flow Lines (lit lines) as the router takes them: each its own route, row to row. A flow is
+	 * not a module dependency, so it never runs along a Module Dependency Line.
 	 */
 	const routeLinesOf = (lines: LitLine[]): RouteLine[] =>
-		lines.flatMap((l) => {
+		lines.map((l) => {
 			const sameCard = l.s.node === l.t.node;
-			const trunk = sameCard ? undefined : trunkOf(l);
-			if (!trunk)
-				return [
-					{
-						id: l.id,
-						s: routeEnd(l.s, l.sides[0], sameCard ? 'r' : undefined),
-						t: routeEnd(l.t, l.sides[1], sameCard ? 'r' : undefined)
-					}
-				];
-			return [
-				{ id: `${l.id}|s`, s: routeEnd(l.s, l.sides[0]), t: freeAt(trunk.join) },
-				{ id: `${l.id}|t`, s: freeAt(trunk.leave), t: routeEnd(l.t, l.sides[1]) }
-			];
+			return {
+				id: l.id,
+				s: routeEnd(l.s, l.sides[0], sameCard ? 'r' : undefined),
+				t: routeEnd(l.t, l.sides[1], sameCard ? 'r' : undefined)
+			};
 		});
-	/** A lit line's corners: its own route, or its two short lines joined along the line at rest. */
-	function litPoints(l: LitLine): Point[] | undefined {
-		const own = litRoutes?.get(l.id);
-		if (own) return own;
-		const trunk = trunkOf(l);
-		const [s, t] = [litRoutes?.get(`${l.id}|s`), litRoutes?.get(`${l.id}|t`)];
-		return trunk && s && t ? [...s, ...trunk.between, ...t] : undefined;
-	}
+	/** A lit line's corners, once routed. */
+	const litPoints = (l: LitLine): Point[] | undefined => litRoutes?.get(l.id);
 	// Lit lines are mostly routed ahead (below). Those that are not are routed before anything
 	// else and drawn when they come, a moment after the rows they join light up.
 	const litWant = $derived.by(() => {
@@ -1076,50 +1047,86 @@
 	const headRoom = (b: LandscapeBox) =>
 		(b.view || cardRows(b) ? TABLE.head / 2 : b.height / 2) - LANE.standoff;
 	/**
-	 * Lines at rest, each once routed, never first along a makeshift path, in their lanes where
-	 * they share a stretch (see lanes.ts): those leaving a box together run beside each other.
+	 * The modules whose inside lines at rest are drawn: those covering the share of the view set
+	 * in the settings, or all of them in a focus, which is small. Kept as a key, so a pan or zoom
+	 * redraws the lines only when a module crosses the share.
+	 */
+	const restInside = $derived(new Set(rest.flatMap((l) => (l.parentId ? [l.parentId] : []))));
+	const restShownKey = $derived.by(() => {
+		const inside = restInside;
+		if (focused) return [...inside].join('\n');
+		const { x, y, zoom } = camera.current;
+		const cam = { x, y, zoom, width: cw, height: ch };
+		return [...restShownIn(boxById, inside, cam, settings.restShare)].join('\n');
+	});
+	const restShown = $derived(new Set(restShownKey.split('\n')));
+	/** Each line at rest once routed, never first along a makeshift path, before its lanes. */
+	const restOf = (l: RestLine) => {
+		const [s, t] = [boxById.get(l.source)!, boxById.get(l.target)!];
+		const [a, b] = [headEnd(s), headEnd(t)];
+		const w = l.count >= 10 ? 3 : l.count > 1 ? 2 : 1;
+		return {
+			l,
+			w,
+			id: l.id,
+			points: restRoutes.routes.get(l.id) ?? straight(a, b, sides(a, b)),
+			width: 0.5 + w,
+			ends: [headRoom(s), headRoom(t)] as const
+		};
+	};
+	const routedRest = (l: RestLine) => unrouted || restRoutes.routes.has(l.id);
+	/**
+	 * Lines at rest drawn: between top-level modules always, inside a module once it fills
+	 * enough of the view (see `restShown`); in their lanes where they share a stretch (see
+	 * lanes.ts), so those leaving a box together run beside each other.
 	 */
 	const restLaid = $derived.by(() => {
 		const lines = rest
-			.filter((l) => unrouted || restRoutes.routes.has(l.id))
-			.map((l) => {
-				const [s, t] = [boxById.get(l.source)!, boxById.get(l.target)!];
-				const [a, b] = [headEnd(s), headEnd(t)];
-				const w = l.count >= 10 ? 3 : l.count > 1 ? 2 : 1;
-				return {
-					l,
-					w,
-					id: l.id,
-					points: restRoutes.routes.get(l.id) ?? straight(a, b, sides(a, b)),
-					width: 0.5 + w,
-					ends: [headRoom(s), headRoom(t)] as const
-				};
-			});
+			.filter((l) => routedRest(l) && (!l.parentId || restShown.has(l.parentId)))
+			.map(restOf);
 		const laned = laneLines(lines, obstacles.values());
 		return lines.map((x) => ({ ...x, ...laned.get(x.id)! }));
 	});
 	/**
-	 * Lines at rest: grey, on the two boxes' name bars, wider the more they merge, under the
-	 * boxes they leave and over the box they share.
+	 * A looked at module's lines the share hides, shown while it is looked at, laned among
+	 * those drawn, which keep their own lanes, so a hover moves no line at rest.
+	 */
+	const restRevealed = $derived.by(() => {
+		if (!modLook) return [];
+		const drawn = new Set(restLaid.map((x) => x.id));
+		const extra = rest.filter((l) => modLook.lit.has(l.id) && !drawn.has(l.id) && routedRest(l));
+		if (!extra.length) return [];
+		const lines = extra.map(restOf);
+		const laned = laneLines([...restLaid, ...lines], obstacles.values());
+		return lines.map((x) => ({ ...x, ...laned.get(x.id)! }));
+	});
+	/**
+	 * Module Dependency Lines: grey at rest, on the two modules' name bars, wider the more they
+	 * merge, under the boxes they leave and over the box they share. Looking at a module lights
+	 * its lines in the selection colour, leaves those inside it as they are and tones down the
+	 * rest; looking at anything else tones them all down.
 	 */
 	const glRest = $derived.by((): GlLine[] =>
-		restLaid.map(({ l, w, points, lanes }) => ({
-			id: `rest:${l.id}`,
-			points,
-			lanes,
-			width: 0.5 + w,
-			halo: 4.5 + w,
-			color: 'edge-rest',
-			head: 'arrow',
-			dim: !!focus,
-			title: `${l.count} connection${l.count > 1 ? 's' : ''}: ${l.kinds.map((k) => KIND_NAME[k]).join(', ')}`,
-			depth: depthOf(l.parentId)
-		}))
+		[...restLaid, ...restRevealed].map(({ l, w, points, lanes }) => {
+			const on = !!modLook?.lit.has(l.id);
+			return {
+				id: `rest:${l.id}`,
+				points,
+				lanes,
+				width: on ? Math.max(0.5 + w, 2.5) : 0.5 + w,
+				halo: 4.5 + w,
+				color: on ? 'selection' : 'edge-rest',
+				head: 'arrow',
+				dim: !!focus && !on && !modLook?.inside.has(l.id),
+				title: `${l.count} connection${l.count > 1 ? 's' : ''}: ${l.kinds.map((k) => KIND_NAME[k]).join(', ')}`,
+				depth: depthOf(l.parentId)
+			};
+		})
 	);
 	/**
-	 * Lit lines: in their kind's colour, over the cards, from row to row where they show, in
-	 * their lanes where they share a stretch: those along one line at rest run beside each other
-	 * there, and those from one row leave it side by side.
+	 * Flow Lines (lit lines): in their kind's colour, over the cards, from row to row where they
+	 * show, in their lanes where they share a stretch, so those from one row leave it side by
+	 * side.
 	 */
 	const glLit = $derived.by((): GlLine[] => {
 		if (!(litRoutes || unrouted)) return [];
@@ -1317,7 +1324,7 @@
 	}
 
 	/** What each kind is called in the key and a line's hover text. */
-	const KIND_NAME: Record<LinkKind, string> = {
+	const KIND_NAME: Record<DependencyKind, string> = {
 		ref: 'refers to',
 		body: 'api body uses',
 		model: 'holds',
@@ -1327,7 +1334,8 @@
 		calls: 'calls',
 		handles: 'handled by',
 		sends: 'sends on',
-		on: 'listens to'
+		on: 'listens to',
+		stores: 'stores'
 	};
 
 	// ------------------------------------------------------------ inspector
@@ -2764,8 +2772,9 @@
 			<div class="k"><span class="ex"><span class="dashed"></span></span>Owned elsewhere</div>
 			<hr />
 			<p class="hint">
-				Grey at rest; hover or click to light. The arrow points at what the start depends on. Click
-				to hide a kind.
+				Grey lines at rest: which module depends on which; hover a module to light them blue. Hover
+				anything else for its flows, in these colours. The arrow points at what the start depends
+				on. Click to hide a kind.
 			</p>
 			{#each KEY_LINES as k (k.id)}
 				<button
