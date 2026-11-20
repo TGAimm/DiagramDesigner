@@ -38,8 +38,12 @@
 		TABLE,
 		typeText,
 		type FieldLink,
+		type Landscape,
 		type LandscapeBox
 	} from '#lib/landscape/layout.ts';
+	import type { LayoutInput } from '#lib/landscape/layout-worker.ts';
+	import LayoutWorker from '#lib/landscape/layout-worker.ts?worker';
+	import { OffThread, type OffThreadPort } from '#lib/client/off-thread.ts';
 	import {
 		apiOf,
 		edgesOf,
@@ -67,7 +71,7 @@
 		railRowY,
 		type ApiUse
 	} from '#lib/landscape/apis.ts';
-	import { apiBodies } from '#lib/model/model.ts';
+	import { apiBodies, type Model } from '#lib/model/model.ts';
 	import { durationWords, nextRuns, scheduleWords } from '#lib/model/schedule.ts';
 	import {
 		routeKey,
@@ -80,6 +84,7 @@
 	import { RouteClient, type RouteAhead, type RoutePort } from '#lib/landscape/route-client.ts';
 	import { routeStore } from '#lib/landscape/route-store.ts';
 	import { LANE, laneLines } from '#lib/landscape/lanes.ts';
+	import { RoutingClock, type RoutingRun } from '#lib/landscape/routing-clock.ts';
 	import { headEnd, railsOf, restGroups, sides } from '#lib/landscape/scene.ts';
 	import { design } from '#lib/client/store.svelte.ts';
 	import RoutingProgress from './RoutingProgress.svelte';
@@ -127,26 +132,78 @@
 	// in a focus, cut down to the subject and what connects to it, drawn the same. Playing, to
 	// what the run can touch, whatever focus it started in.
 	const playing = $derived(view.play?.unit);
-	const focused = $derived(
+	/** The focus wanted now; what is drawn catches up with it once it is laid out. */
+	const wantFocused = $derived(
 		playing
 			? focusOnRun(changes.shown, playing)
 			: view.focused
 				? focusOn(changes.shown, view.focused)
 				: undefined
 	);
-	const focusKey = $derived(playing ? `run:${playing}` : view.focused);
-	const model = $derived(focused?.model ?? changes.shown);
-	/** The whole landscape's layout, kept while it holds, so leaving a focus lays out nothing. */
-	let whole:
-		{ model: unknown; opts: unknown; laid: ReturnType<typeof layoutLandscape> } | undefined;
+	const wantFocusKey = $derived(playing ? `run:${playing}` : view.focused);
 	// Laid out with every flag branch and gated item in, so setting a flag moves nothing.
-	const laid = $derived.by(() => {
-		if (focused) return layoutLandscape(focused.model, settings.layout, focused.foldAt);
-		const [model, opts] = [changes.layoutModel, settings.layout];
-		if (whole?.model !== model || whole.opts !== opts)
-			whole = { model, opts, laid: layoutLandscape(model, opts) };
-		return whole.laid;
+	const wantLayout = $derived<LayoutInput>(
+		wantFocused
+			? { model: wantFocused.model, opts: settings.layout, foldAt: wantFocused.foldAt }
+			: { model: changes.layoutModel, opts: settings.layout }
+	);
+	const sameLayout = (a: LayoutInput, b: LayoutInput) =>
+		a.model === b.model && a.opts === b.opts && a.foldAt === b.foldAt;
+
+	/**
+	 * Laying out a large landscape takes seconds, so it is laid out in a worker
+	 * (layout-worker.ts), and the canvas draws the last layout that came in, with the model and
+	 * focus it was laid out for, until the one wanted comes in. The last few are kept, so going
+	 * back to one, as on leaving a focus, draws it at once.
+	 */
+	const layouts = new OffThread<LayoutInput, Landscape>(
+		({ model, opts, foldAt }) => layoutLandscape(model, opts, foldAt),
+		typeof Worker === 'undefined'
+			? undefined
+			: () => new LayoutWorker() as unknown as OffThreadPort<LayoutInput, Landscape>
+	);
+	$effect(() => () => layouts.destroy());
+	const keptLayouts: { input: LayoutInput; laid: Landscape }[] = [];
+	interface Shown {
+		input: LayoutInput;
+		laid: Landscape;
+		focused: typeof wantFocused;
+		focusKey: typeof wantFocusKey;
+		/** The model drawn with it: the focus's, or the design shown when it was wanted. */
+		model: Model;
+	}
+	/** The layout drawn, with what it was laid out for; none until the first comes in. */
+	let shown = $state.raw<Shown>();
+	$effect(() => {
+		const input = wantLayout;
+		const [focus, key] = [wantFocused, wantFocusKey];
+		if (untrack(() => shown && sameLayout(shown.input, input) && shown.focusKey === key)) return;
+		const show = (laid: Landscape) => {
+			shown = {
+				input,
+				laid,
+				focused: focus,
+				focusKey: key,
+				model: untrack(() => focus?.model ?? changes.shown)
+			};
+		};
+		const kept = keptLayouts.find((k) => sameLayout(k.input, input));
+		if (kept) return show(kept.laid);
+		// The options are state, which a worker cannot be sent: a copy of them.
+		layouts.run({ ...input, opts: $state.snapshot(input.opts) }, (laid) => {
+			keptLayouts.unshift({ input, laid });
+			keptLayouts.length = Math.min(keptLayouts.length, 4);
+			show(laid);
+		});
 	});
+	/** The layout drawn is the one wanted: the model and focus wanted now are drawn. */
+	const fresh = $derived(!!shown && sameLayout(shown.input, wantLayout));
+	const focused = $derived(fresh ? wantFocused : shown?.focused);
+	const focusKey = $derived(fresh ? wantFocusKey : shown?.focusKey);
+	const model = $derived(
+		fresh ? (wantFocused?.model ?? changes.shown) : (shown?.model ?? changes.shown)
+	);
+	const laid = $derived<Landscape>(shown?.laid ?? { boxes: [], lines: [] });
 	const boxes = $derived(laid.boxes);
 	// However large the landscape, it can be zoomed out until all of it is in view, with room
 	// to spare.
@@ -731,7 +788,14 @@
 				requestAnimationFrame(() =>
 					requestAnimationFrame(() => {
 						if (playing) fitRun();
-						else void fitAll().then(() => (ready = true));
+						else
+							void fitAll().then(() => {
+								ready = true;
+								// A hit picked before there was a layout to go to.
+								const hit = pickLater;
+								pickLater = undefined;
+								if (hit) pick(hit);
+							});
 						fitting = false;
 					})
 				);
@@ -809,46 +873,32 @@
 	$effect(() => router.wantGroups(restWant, true, routeCame));
 
 	// While the lines at rest are routed, a bar says how long is left, judged by how long they
-	// took last time for this landscape and focus (see RoutingProgress).
+	// took last time for this landscape and focus (see RoutingProgress, routing-clock.ts). The
+	// effect only starts and stops the clock; the bar ticks on its own.
 	const routing = $derived(!restRoutes.done && !unrouted);
-	/** Ms since routing the lines at rest started, while it goes on. */
-	let routingFor = $state<number>();
-	const TOOK_KEY = 'sdv-route-ms';
 	const tookKey = $derived(
 		JSON.stringify([design.landscape?.path ?? design.landscape?.name ?? '', focusKey ?? ''])
 	);
-	function took(): Record<string, number> {
-		try {
-			return JSON.parse(localStorage.getItem(TOOK_KEY) ?? '{}');
-		} catch {
-			return {};
-		}
-	}
-	let expected = $state<number>();
+	const clock = new RoutingClock(typeof localStorage === 'undefined' ? undefined : localStorage);
+	/** The routing of the lines at rest going on, if any. */
+	let routingRun = $state.raw<RoutingRun>();
 	$effect(() => {
 		if (!routing) return;
-		const key = untrack(() => tookKey);
-		expected = took()[key];
-		const t0 = performance.now();
-		routingFor = 0;
-		const tick = setInterval(() => (routingFor = performance.now() - t0), 250);
+		routingRun = clock.start(
+			untrack(() => tookKey),
+			performance.now()
+		);
 		return () => {
-			clearInterval(tick);
-			routingFor = undefined;
 			// Only a routing that came to an end is a measure, not one cut short by leaving.
-			if (untrack(() => unrouted || !restRoutes.done)) return;
-			const ms = performance.now() - t0;
-			// The last 50 kept, newest last.
-			const others = Object.entries(took())
-				.filter(([k]) => k !== key)
-				.slice(-49);
-			try {
-				localStorage.setItem(TOOK_KEY, JSON.stringify(Object.fromEntries([...others, [key, ms]])));
-			} catch {
-				// Not kept; the bar then has nothing to judge by next time.
-			}
+			clock.stop(
+				performance.now(),
+				untrack(() => !unrouted && restRoutes.done)
+			);
+			routingRun = undefined;
 		};
 	});
+	/** Lines at rest not routed yet. */
+	const unroutedCount = $derived(rest.filter((l) => !restRoutes.routes.has(l.id)).length);
 
 	/**
 	 * The line at rest a lit line runs along: the one joining, the same way, the two children
@@ -1827,8 +1877,11 @@
 	}
 
 	/** Goes to a search hit: frames a system or module, flies to a model or row, picks an api. */
+	/** A hit picked before the first layout came in, gone to once it has. */
+	let pickLater: Pick<Hit, 'kind' | 'id'> | undefined;
 	function pick(hit: Pick<Hit, 'kind' | 'id'>) {
 		search.open = false;
+		if (!ready) return void (pickLater = hit);
 		const outside = () => !model.elements.has(hit.id) && !model.fields.has(hit.id);
 		if (view.play && outside()) stopPlay();
 		if (view.focused && outside()) leaveFocus();
@@ -3043,8 +3096,15 @@
 			onleave={leaveFocus}
 		/>
 	{/if}
-	{#if routingFor !== undefined && routingFor > 400}
-		<RoutingProgress count={rest.length} elapsed={routingFor} {expected} />
+	{#if !shown}
+		<p class="laying" role="status">Laying out the landscape…</p>
+	{/if}
+	{#if routingRun}
+		<RoutingProgress
+			count={unroutedCount}
+			since={routingRun.since}
+			expected={routingRun.expected}
+		/>
 	{/if}
 	{#if search.open}
 		<SearchPalette onpick={pick} onfocus={focusHit} onclose={() => (search.open = false)} />
@@ -3066,6 +3126,17 @@
 	}
 	.stage.pointing {
 		cursor: pointer;
+	}
+	/* Before the first layout comes in from the worker. */
+	.laying {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		margin: 0;
+		transform: translate(-50%, -50%);
+		color: var(--ui-muted);
+		font-size: 13px;
+		pointer-events: none;
 	}
 	.stage:active {
 		cursor: grabbing;

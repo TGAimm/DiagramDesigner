@@ -3,20 +3,31 @@
 	 * Shown while the lines at rest are routed, which on a large landscape takes seconds: how
 	 * many, and how long is left, judged by how long they took last time. Routing is one call
 	 * into libavoid that cannot tell how far it has got, so the bar runs on time. The first
-	 * time there is nothing to judge by, and it only says how long it has taken so far.
+	 * time there is nothing to judge by, and it only says how long it has taken so far. It ticks
+	 * on its own clock, from when routing started, and shows only once routing has taken a
+	 * moment, so routing that ends at once shows nothing.
 	 */
 	let {
 		count,
-		elapsed,
+		since,
 		expected
 	}: {
-		/** Lines being routed. */
+		/** Lines still being routed. */
 		count: number;
-		/** Ms since routing started. */
-		elapsed: number;
+		/** `performance.now()` when routing started. */
+		since: number;
 		/** Ms they took last time, if known. */
 		expected?: number;
 	} = $props();
+
+	/** Shown once routing has taken this long. */
+	const AFTER = 400;
+	let now = $state(performance.now());
+	$effect(() => {
+		const tick = setInterval(() => (now = performance.now()), 250);
+		return () => clearInterval(tick);
+	});
+	const elapsed = $derived(Math.max(0, now - since));
 
 	const share = $derived(expected ? Math.min(0.97, elapsed / expected) : undefined);
 	const secs = (ms: number) => Math.max(1, Math.round(ms / 1000));
@@ -29,26 +40,28 @@
 	);
 </script>
 
-<div class="routing" role="status" aria-live="polite">
-	<div class="text">
-		<span>Routing {count} connection{count === 1 ? '' : 's'}</span>
-		<span class="left">{left}</span>
-	</div>
-	<div
-		class="track"
-		role="progressbar"
-		aria-label="Routing connections"
-		aria-valuemin="0"
-		aria-valuemax="100"
-		aria-valuenow={share === undefined ? undefined : Math.round(share * 100)}
-	>
+{#if elapsed > AFTER}
+	<div class="routing" role="status" aria-live="polite">
+		<div class="text">
+			<span>Routing {count} connection{count === 1 ? '' : 's'}</span>
+			<span class="left">{left}</span>
+		</div>
 		<div
-			class="bar"
-			class:unknown={share === undefined}
-			style:width={share === undefined ? undefined : `${share * 100}%`}
-		></div>
+			class="track"
+			role="progressbar"
+			aria-label="Routing connections"
+			aria-valuemin="0"
+			aria-valuemax="100"
+			aria-valuenow={share === undefined ? undefined : Math.round(share * 100)}
+		>
+			<div
+				class="bar"
+				class:unknown={share === undefined}
+				style:width={share === undefined ? undefined : `${share * 100}%`}
+			></div>
+		</div>
 	</div>
-</div>
+{/if}
 
 <style>
 	.routing {

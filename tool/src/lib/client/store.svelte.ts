@@ -1,10 +1,13 @@
 import type { ClientConfig } from '../config';
 import type { Diagnostic } from '../model/diagnostics';
-import { flagSplits } from '../model/flags';
+import { flagSplitsOf } from '../model/flags';
+import FlagWorker from '../model/flag-worker.ts?worker';
 import { placed, type SourceFile } from '../model/loader';
 import { buildModel, type Locator, type Model } from '../model/model';
 import { fileKind, locate, parseFile, type ParsedFile } from '../model/parse';
 import type { ChangedEvent } from '../server/vite-plugin';
+import { OffThread, type OffThreadPort } from './off-thread';
+import { yieldToPage } from './yield';
 
 type DesignData = Record<string, unknown>;
 
@@ -35,13 +38,29 @@ export class DesignStore {
 		return m ? locate(m.parsed.doc, m.parsed.lines, path, key) : undefined;
 	};
 
+	/**
+	 * What breaks with a flag set otherwise than its default (see `flagSplits`). Checking it
+	 * builds the design once for each flag state, seconds on a large landscape, so it is checked
+	 * in a worker (flag-worker.ts) whenever the files change, and shown once checked.
+	 */
+	#splits = $state.raw<Diagnostic[]>([]);
+	#checks = new OffThread<DesignData, Diagnostic[]>(
+		flagSplitsOf,
+		typeof Worker === 'undefined'
+			? undefined
+			: () => new FlagWorker() as unknown as OffThreadPort<DesignData, Diagnostic[]>
+	);
+	#check() {
+		this.#checks.run(this.data, (splits) => (this.#splits = splits));
+	}
+
 	/** The whole design: every flag branch and gated item in. */
 	model: Model = $derived.by(() => buildModel(this.data, this.#locate));
 
 	diagnostics: Diagnostic[] = $derived([
 		...Object.values(this.meta).flatMap((m) => m.parsed.diagnostics),
 		...this.model.diagnostics,
-		...placed(flagSplits(this.model, this.data), this.#locate)
+		...placed(this.#splits, this.#locate)
 	]);
 
 	#chain: Promise<unknown> = Promise.resolve();
@@ -60,7 +79,13 @@ export class DesignStore {
 			this.landscape = body.landscape ?? null;
 			const meta: Record<string, FileMeta> = {};
 			const data: DesignData = {};
+			// Thousands of files take seconds to parse: a slice at a time, so the page stays live.
+			let slice = performance.now();
 			for (const f of body.files) {
+				if (performance.now() - slice > 40) {
+					await yieldToPage();
+					slice = performance.now();
+				}
 				if (!fileKind(f.path)) continue;
 				const parsed = parseFile(f.path, f.text);
 				meta[f.path] = { text: f.text, hash: f.hash!, parsed };
@@ -69,6 +94,7 @@ export class DesignStore {
 			this.meta = meta;
 			this.data = data;
 			this.loaded = true;
+			this.#check();
 		} catch (e) {
 			this.loadError = (e as Error).message;
 		}
@@ -133,6 +159,7 @@ export class DesignStore {
 		}
 		this.meta = meta;
 		this.data = data;
+		this.#check();
 	}
 }
 

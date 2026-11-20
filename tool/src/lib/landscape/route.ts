@@ -147,6 +147,10 @@ export function routeLines(
 	// No crossing penalty: libavoid calls it experimental, and it doubles the time lines take
 	// together. Nudging still orders lines in a shared channel so they cross no more than needed.
 	router.setRoutingOption(A.nudgeSharedPathsWithCommonEndPoint, !shareEnds);
+	// No unifying pass before nudging: it only slides segments within their channels (lines
+	// keep their bends and length), but costs more than all else together, and grows so fast
+	// with the lines in a channel that a group of 100 lines took minutes and 200 never ended.
+	router.setRoutingOption(A.performUnifyingNudgingPreprocessingStep, false);
 	const temps: unknown[] = [];
 	const temp = <T>(o: T) => (temps.push(o), o);
 	const pt = (x: number, y: number) => temp(new A.Point(x, y));
@@ -324,7 +328,18 @@ export function clearFrames(
 			}
 		return all;
 	};
-	const beside = (s: Span) => walls.filter((w) => w.axis === s.axis && overlap(w, s));
+	// Walls never move, and a piece runs along a few of thousands: which are beside a piece is
+	// worked out once for its span, and a piece found clear of every frame is not tested again
+	// while its route stays as it is.
+	const byAxis = { x: walls.filter((w) => w.axis === 'x'), y: walls.filter((w) => w.axis === 'y') };
+	const besides = new Map<string, Wall[]>();
+	const beside = (s: Span) => {
+		const key = `${s.axis}|${s.lo}|${s.hi}`;
+		let out = besides.get(key);
+		if (!out) besides.set(key, (out = byAxis[s.axis].filter((w) => overlap(w, s))));
+		return out;
+	};
+	const clear = new Set<string>();
 	/** Whether a piece comes nearer than `g` to a box. */
 	const nears = (s: Span, r: Rect, g: number) =>
 		s.axis === 'x'
@@ -376,7 +391,14 @@ export function clearFrames(
 	const stuck = new Set<string>();
 	for (let tries = 1000; tries > 0; tries--) {
 		const all = pieces();
-		const s = all.find((p) => !stuck.has(`${p.id}|${p.i}`) && onFrame(p));
+		const s = all.find((p) => {
+			if (stuck.has(`${p.id}|${p.i}`)) return false;
+			const key = `${p.id}|${p.i}|${p.axis}|${p.at}|${p.lo}|${p.hi}`;
+			if (clear.has(key)) return false;
+			if (onFrame(p)) return true;
+			clear.add(key);
+			return false;
+		});
 		if (!s) break;
 		// The pieces of lines running beside it, `spread` apart, move with it.
 		const bundle = [s];

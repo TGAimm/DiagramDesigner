@@ -87,5 +87,5 @@ export function restGroups(
 		});
 	}
 	// Lines at rest leaving a box together share one exit (see the design's Routing rule).
-	return [...groups.values()].map((g) => keyedGroup(g, true));
+	return [...groups].map(([parent, g]) => keyedGroup(g, true, parent));
 }
