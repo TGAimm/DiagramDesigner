@@ -18,4 +18,9 @@ files and validated. App and CLI in `tool/`; example design in `examples/commerc
   4. Remove the worktree and delete the branch. The user reviews on `main`.
 - Follow-ups and corrections are new tasks in a new worktree.
 - App design lives in this artifact: https://claude.ai/artifact/SLDH7syQim113x4bTbZoMw?sk=jtig3xAajYzEC0L6-8d83g#page-dcb81aee8d83
-  Design new features there and get them reviewed before implementing; keep it in sync with the app.
+  Its **Spec** page is the design spec, not a history: each section is one feature, its first
+  board holds every rule once, entity looks live only on Entity identity and tokens only on
+  Atoms. No before/after, options or review questions there; approved but unbuilt parts carry
+  a Planned tag. Design new or changed features on the **Explorations** page and get them
+  reviewed before implementing; once approved, fold them into the Spec boards and remove the
+  exploration. Keep the Spec in sync with the app.
