@@ -46,7 +46,7 @@ steps:                           # the sequence, top to bottom
 
 ## Rendering
 
-- A module's units share one **Logic** card, the first box inside the module: one row per
+- A module's units share one **Logic** card, the first box inside the module after its Triggers card: one row per
   unit, its name and signature, `(productId, quantity) → Cart Line` (an output that is a
   model goes by the model's name). Nothing else: the rest is behind a click.
 - Hover a row to draw what its steps read and write (arrow at the model), call (dotted, arrow
