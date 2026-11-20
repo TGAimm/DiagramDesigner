@@ -79,6 +79,7 @@
 	} from '#lib/landscape/route.ts';
 	import { RouteClient, type RouteAhead, type RoutePort } from '#lib/landscape/route-client.ts';
 	import { routeStore } from '#lib/landscape/route-store.ts';
+	import { LANE, laneLines } from '#lib/landscape/lanes.ts';
 	import { headEnd, railsOf, restGroups, sides } from '#lib/landscape/scene.ts';
 	import { design } from '#lib/client/store.svelte.ts';
 	import RoutingProgress from './RoutingProgress.svelte';
@@ -984,35 +985,67 @@
 		return [a, { x: mx, y: a.y }, { x: mx, y: b.y }, b];
 	}
 	/**
-	 * Lines at rest: grey, on the two boxes' name bars, wider the more they merge, under the
-	 * boxes they leave and over the box they share. Each once routed, never first along a
-	 * makeshift path.
+	 * How far a line's end may slide along a box's side to its lane, in canvas px: within a
+	 * card's name bar, or the side of any other box (where lines at rest end), clear of its
+	 * corners.
 	 */
-	const glRest = $derived.by((): GlLine[] =>
-		rest
+	const headRoom = (b: LandscapeBox) =>
+		(b.view || cardRows(b) ? TABLE.head / 2 : b.height / 2) - LANE.standoff;
+	/**
+	 * Lines at rest, each once routed, never first along a makeshift path, in their lanes where
+	 * they share a stretch (see lanes.ts): those leaving a box together run beside each other.
+	 */
+	const restLaid = $derived.by(() => {
+		const lines = rest
 			.filter((l) => unrouted || restRoutes.routes.has(l.id))
 			.map((l) => {
-				const [a, b] = [headEnd(boxById.get(l.source)!), headEnd(boxById.get(l.target)!)];
+				const [s, t] = [boxById.get(l.source)!, boxById.get(l.target)!];
+				const [a, b] = [headEnd(s), headEnd(t)];
 				const w = l.count >= 10 ? 3 : l.count > 1 ? 2 : 1;
 				return {
-					id: `rest:${l.id}`,
+					l,
+					w,
+					id: l.id,
 					points: restRoutes.routes.get(l.id) ?? straight(a, b, sides(a, b)),
 					width: 0.5 + w,
-					halo: 4.5 + w,
-					color: 'edge-rest',
-					head: 'arrow',
-					dim: !!focus,
-					title: `${l.count} connection${l.count > 1 ? 's' : ''}: ${l.kinds.map((k) => KIND_NAME[k]).join(', ')}`,
-					depth: depthOf(l.parentId)
+					ends: [headRoom(s), headRoom(t)] as const
 				};
-			})
+			});
+		const laned = laneLines(lines, obstacles.values());
+		return lines.map((x) => ({ ...x, ...laned.get(x.id)! }));
+	});
+	/**
+	 * Lines at rest: grey, on the two boxes' name bars, wider the more they merge, under the
+	 * boxes they leave and over the box they share.
+	 */
+	const glRest = $derived.by((): GlLine[] =>
+		restLaid.map(({ l, w, points, lanes }) => ({
+			id: `rest:${l.id}`,
+			points,
+			lanes,
+			width: 0.5 + w,
+			halo: 4.5 + w,
+			color: 'edge-rest',
+			head: 'arrow',
+			dim: !!focus,
+			title: `${l.count} connection${l.count > 1 ? 's' : ''}: ${l.kinds.map((k) => KIND_NAME[k]).join(', ')}`,
+			depth: depthOf(l.parentId)
+		}))
 	);
-	/** Lit lines: in their kind's colour, over the cards, from row to row where they show. */
+	/**
+	 * Lit lines: in their kind's colour, over the cards, from row to row where they show, in
+	 * their lanes where they share a stretch: those along one line at rest run beside each other
+	 * there, and those from one row leave it side by side.
+	 */
 	const glLit = $derived.by((): GlLine[] => {
 		if (!(litRoutes || unrouted)) return [];
+		const laned = laneLines(
+			lit.map((l) => ({ id: l.id, points: litPoints(l) ?? straight(l.s, l.t, l.sides), width: 2 })),
+			obstacles.values()
+		);
 		return lit.map((l) => ({
 			id: `lit:${l.id}`,
-			points: litPoints(l) ?? straight(l.s, l.t, l.sides),
+			...laned.get(l.id)!,
 			width: 2,
 			color: `link-${LINK_TOKEN[l.kind]}` as GlLine['color'],
 			head: l.kind === 'model' ? 'diamond' : 'arrow',

@@ -15,8 +15,13 @@
  * wider, in the canvas colour), its body, its head; the mesh draws them in that order, so a
  * later line's halo cuts through an earlier line where they cross, as each line drawn on its
  * own would.
+ *
+ * A segment sharing a stretch with other lines is drawn in its lane beside them (see
+ * landscape/lanes.ts): its vertices carry its lane and that of the segment it bends into, and
+ * the shader moves them by both, in screen px, so the corners of lanes meet square too.
  */
 import type { Buffer, Geometry, Mesh, Shader } from 'pixi.js';
+import type { Lane } from '#lib/landscape/lanes.ts';
 import type { Point } from '#lib/landscape/route.ts';
 import type { Token } from '#lib/theme/tokens.ts';
 
@@ -35,6 +40,11 @@ export interface LineSpec {
 	dash?: readonly [number, number];
 	/** Faded, as lines at rest are while something is looked at. */
 	dim?: boolean;
+	/**
+	 * The lane of each segment, `points[i]` to `points[i + 1]`, none for one on its route (see
+	 * landscape/lanes.ts); `points` then has no repeated point, so the two match.
+	 */
+	lanes?: readonly (Lane | undefined)[];
 }
 
 /** Heads in screen px: length along the line and width across it. */
@@ -60,10 +70,21 @@ const DIAMOND = [0, 1, 2, 0, 2, 3];
  * and half width, screen px), along (distance along the line in canvas px, plus screen px),
  * dash (dash, gap, phase), head (+1 or -1 towards the tip, where the tip is along the line,
  * how much of the body the head covers in screen px, its segment's length), colour (four
- * bytes).
+ * bytes), lane (its segment's: steps across, screen px a step, canvas px a step at most), bend
+ * (the lane of the segment it bends into at this corner, likewise).
  */
-const F = { offset: 2, shift: 4, edge: 8, along: 10, dash: 12, head: 15, colour: 19 } as const;
-export const STRIDE = 20;
+const F = {
+	offset: 2,
+	shift: 4,
+	edge: 8,
+	along: 10,
+	dash: 12,
+	head: 15,
+	colour: 19,
+	lane: 20,
+	bend: 24
+} as const;
+export const STRIDE = 28;
 
 /** A layer's vertices and indices, kept and grown across builds. */
 export class LineBuffers {
@@ -192,6 +213,18 @@ export function buildLines(
 		return vc++;
 	};
 
+	/** The line's lanes by segment, when they match its cleaned points. */
+	let lanes: LineSpec['lanes'];
+	/** Puts the lane of segment `s` (none past either end) into vertex word `k`'s field `f`. */
+	const lane = (k: number, f: number, s: number) => {
+		const l = lanes?.[s];
+		if (!l) return;
+		v[k + f] = l.nx;
+		v[k + f + 1] = l.ny;
+		v[k + f + 2] = l.step;
+		v[k + f + 3] = l.room;
+	};
+
 	/**
 	 * Quads along the cleaned points, `hw` screen px either side of them, mitered; for a line's
 	 * body, with its head (where its end draws back, what the head covers) and dash.
@@ -226,6 +259,8 @@ export function buildLines(
 				const along = ox * ux + oy * uy;
 				for (const sign of SIDES) {
 					const k = vertex(xs[i], ys[i], sign * ox, sign * oy, sign * e, hw, colour) * STRIDE;
+					lane(k, F.lane, s);
+					lane(k, F.bend, i === s ? s - 1 : s + 1);
 					if (!head && !dash) continue;
 					// The end under the head draws back HEAD_INSET px, never past its segment's other end.
 					if ((head === 'arrow' && i === n - 1) || (head === 'diamond' && i === 0)) {
@@ -262,6 +297,7 @@ export function buildLines(
 		if (l.points.length < 2) continue;
 		const n = clean(l.points);
 		if (n < 2) continue;
+		lanes = l.lanes?.length === n - 1 ? l.lanes : undefined;
 		const a = l.dim ? DIM_ALPHA : 1;
 		if (l.halo) strip(n, l.halo / 2, fade(rgba('canvas-bg'), a), undefined, undefined);
 		const colour = fade(rgba(l.color), a);
@@ -274,8 +310,19 @@ export function buildLines(
 		const len = Math.abs(ds[end] - ds[from]);
 		const ux = (xs[end] - xs[from]) / len;
 		const uy = (ys[end] - ys[from]) / len;
-		const at = (along: number, side: number) =>
-			vertex(xs[end], ys[end], -ux * along - uy * side, -uy * along + ux * side, 0, 1e4, colour);
+		const at = (along: number, side: number) => {
+			const k = vertex(
+				xs[end],
+				ys[end],
+				-ux * along - uy * side,
+				-uy * along + ux * side,
+				0,
+				1e4,
+				colour
+			);
+			lane(k * STRIDE, F.lane, Math.min(end, from));
+			return k;
+		};
 		const tip = at(0, 0);
 		if (l.head === 'arrow') {
 			at(hl, hw / 2);
@@ -326,6 +373,8 @@ in vec2 aAlong;
 in vec3 aDash;
 in vec4 aHead;
 in vec4 aColor;
+in vec4 aLane;
+in vec4 aBend;
 
 uniform mat3 uProjectionMatrix;
 uniform mat3 uWorldTransformMatrix;
@@ -344,7 +393,9 @@ void main() {
 	float zoom = length(model[0].xy);
 	// An end under a head draws back ${HEAD_INSET} px, never past its segment's other end.
 	float pull = min(${HEAD_INSET.toFixed(1)}, aShift.z * zoom);
-	vec2 p = aPosition + (aOffset + aShift.xy * pull) / zoom;
+	// Lanes: steps across, each its screen px but no more than its canvas px allow.
+	vec2 lane = aLane.xy * min(aLane.z, aLane.w * zoom) + aBend.xy * min(aBend.z, aBend.w * zoom);
+	vec2 p = aPosition + (aOffset + aShift.xy * pull + lane) / zoom;
 	gl_Position = vec4((uProjectionMatrix * model * vec3(p, 1.0)).xy, 0.0, 1.0);
 	vColor = vec4(aColor.rgb * aColor.a, aColor.a) * uColor * uWorldColorAlpha;
 	vEdge = aEdge;
@@ -431,7 +482,9 @@ export class LineLayer {
 				aAlong: at(F.along, 'float32x2'),
 				aDash: at(F.dash, 'float32x3'),
 				aHead: at(F.head, 'float32x4'),
-				aColor: at(F.colour, 'unorm8x4')
+				aColor: at(F.colour, 'unorm8x4'),
+				aLane: at(F.lane, 'float32x4'),
+				aBend: at(F.bend, 'float32x4')
 			},
 			indexBuffer: this.#ib
 		});
