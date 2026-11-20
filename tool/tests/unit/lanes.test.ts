@@ -78,8 +78,8 @@ describe('lanes', () => {
 		expect(up.lanes[1]).toBeUndefined();
 		// Drawn: apart, both ends included, and not crossing.
 		const [a, b] = [lanePoints(up, 1), lanePoints(down, 1)];
-		expect(a[0]).toEqual({ x: 0, y: -2 });
-		expect(b[0]).toEqual({ x: 0, y: 2 });
+		expect(a[0]).toEqual({ x: 0, y: -(2 + LANE.gap) / 2 });
+		expect(b[0]).toEqual({ x: 0, y: (2 + LANE.gap) / 2 });
 		expect(shared(a, b)).toBe(0);
 		expect(cross(a, b)).toBe(false);
 	});
@@ -140,7 +140,7 @@ describe('lanes', () => {
 			const y = lanePoints(out.get('a')!, zoom)[1].y;
 			expect(Math.abs(y)).toBeLessThanOrEqual(10 - LANE.standoff + 1e-9);
 			// On screen: a step apart until the room runs out.
-			expect(Math.abs(y * zoom)).toBeCloseTo(Math.min(2, 6 * zoom));
+			expect(Math.abs(y * zoom)).toBeCloseTo(Math.min((2 + LANE.gap) / 2, 6 * zoom));
 		}
 	});
 
@@ -149,7 +149,7 @@ describe('lanes', () => {
 		const boxes: Rect[] = [{ x0: 0, y0: -100, x1: 200, y1: -8 }];
 		// Each turns down at its own x: lanes 0 to 4. Their ends have room to slide.
 		const lines = [0, 1, 2, 3, 4].map((k) => ({
-			...line(`l${k}`, -50, 0, 250 + 10 * k, 0, 250 + 10 * k, 80),
+			...line(`l${k}`, -50, 0, 250 + 10 * k, 0, 250 + 10 * k, 160),
 			ends: [100, 100] as const
 		}));
 		const out = laneLines(lines, boxes);

@@ -49,7 +49,7 @@ export interface Laned {
  * Screen px of clear space between two lines in neighbouring lanes; canvas px a lane keeps off
  * a box at least; canvas px an end slides along what it ends on, unless told.
  */
-export const LANE = { gap: 2, standoff: 4, end: 10 };
+export const LANE = { gap: 5, standoff: 4, end: 10 };
 
 const EPS = 0.5;
 /** No limit to a lane's room. */
