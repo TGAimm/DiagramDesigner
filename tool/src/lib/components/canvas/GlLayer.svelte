@@ -1,4 +1,5 @@
 <script lang="ts" module>
+	import type { Lane } from '#lib/landscape/lanes.ts';
 	import type { Point } from '#lib/landscape/route.ts';
 	import type { Token } from '#lib/theme/tokens.ts';
 
@@ -14,6 +15,8 @@
 		dash?: readonly [number, number];
 		/** Faded, as lines at rest are while something is looked at. */
 		dim?: boolean;
+		/** Each segment's lane beside lines sharing its stretch (see lanes.ts). */
+		lanes?: (Lane | undefined)[];
 		/** Hover text. */
 		title?: string;
 		/** Depth of the box the line is in, -1 for none; lit lines go over everything. */
@@ -83,6 +86,7 @@
 	import type { Model } from '#lib/model/model.ts';
 	import { tokenValues } from '#lib/theme/tokens.ts';
 	import { LineLayer, lineShader, tokenRgba } from './gl/lines.ts';
+	import { lanePoints } from '#lib/landscape/lanes.ts';
 	import { GlTextLayer, leadEm, LINE, type GlLabel } from './gl/text.ts';
 
 	/**
@@ -1436,9 +1440,11 @@
 		const wx = (px - x) / zoom;
 		const wy = (py - y) / zoom;
 		const reach = 4 / zoom;
-		for (const l of rest)
-			for (let i = 1; i < l.points.length; i++) {
-				const [a, b] = [l.points[i - 1], l.points[i]];
+		for (const l of rest) {
+			// Where it is drawn: in its lanes.
+			const pts = l.lanes ? lanePoints({ points: l.points, lanes: l.lanes }, zoom) : l.points;
+			for (let i = 1; i < pts.length; i++) {
+				const [a, b] = [pts[i - 1], pts[i]];
 				const t = Math.max(
 					0,
 					Math.min(
@@ -1450,6 +1456,7 @@
 				if (Math.hypot(wx - (a.x + t * (b.x - a.x)), wy - (a.y + t * (b.y - a.y))) <= reach)
 					return l;
 			}
+		}
 	}
 </script>
 

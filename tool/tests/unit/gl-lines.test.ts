@@ -9,6 +9,8 @@ import {
 
 const rgba = () => 0xff336699;
 const at = (b: LineBuffers, v: number, f: number) => b.vertices[v * STRIDE + f];
+/** A vertex's colour word. */
+const colour = (b: LineBuffers, v: number) => b.words[v * STRIDE + 19];
 
 describe('WebGL lines', () => {
 	it('joins an orthogonal corner with a miter and ends with butt caps', () => {
@@ -31,7 +33,7 @@ describe('WebGL lines', () => {
 		expect(at(b, 2, 2)).toBeCloseTo(-2);
 		expect(at(b, 2, 3)).toBeCloseTo(2);
 		expect([at(b, 2, 8), at(b, 2, 9)]).toEqual([2, 1]);
-		expect(b.words[3 * STRIDE - 1]).toBe(0xff336699);
+		expect(colour(b, 2)).toBe(0xff336699);
 	});
 
 	it('keeps a segment that doubles back on its own side of the line', () => {
@@ -67,12 +69,54 @@ describe('WebGL lines', () => {
 		expect(b.vertexCount).toBe(11);
 		expect(b.indexCount).toBe(6 + 6 + 3);
 		// The halo is in the canvas colour, faded with the line.
-		expect(b.words[STRIDE - 1] >>> 24).toBe(64);
+		expect(colour(b, 0) >>> 24).toBe(64);
 		// The line's end draws back up its segment, which is 40 canvas px long.
 		expect([at(b, 6, 4), at(b, 6, 5), at(b, 6, 6), at(b, 6, 7)]).toEqual([-0, -1, 40, -1]);
 		// The arrow's base corners are 10 px back from the tip, 4 px aside.
 		expect([at(b, 9, 2), at(b, 9, 3)]).toEqual([-4, -10]);
 		expect(HEAD_INSET).toBe(5);
+	});
+
+	it('moves each corner by the lanes of its segments, and the head with its segment', () => {
+		const b = new LineBuffers();
+		const lane = { nx: 0, ny: -0.5, step: 4, room: 6 };
+		const bend = { nx: 0.5, ny: 0, step: 4, room: 2 };
+		buildLines(
+			[
+				{
+					points: [
+						{ x: 0, y: 0 },
+						{ x: 100, y: 0 },
+						{ x: 100, y: 50 }
+					],
+					width: 2,
+					color: 'edge-rest',
+					head: 'arrow',
+					lanes: [lane, bend]
+				}
+			],
+			rgba,
+			b
+		);
+		const fields = (v: number, f: number) => [0, 1, 2, 3].map((k) => at(b, v, f + k));
+		// The first segment's start: its own lane, no bend.
+		expect(fields(0, 20)).toEqual([0, -0.5, 4, 6]);
+		expect(fields(0, 24)).toEqual([0, 0, 0, 0]);
+		// Its end, at the corner: its lane, and the lane of the segment it bends into.
+		expect(fields(2, 24)).toEqual([0.5, 0, 4, 2]);
+		// The second segment's start, at the corner: its lane, bent from the first's.
+		expect(fields(4, 20)).toEqual([0.5, 0, 4, 2]);
+		expect(fields(4, 24)).toEqual([0, -0.5, 4, 6]);
+		// The arrow, on the last segment: in its lane.
+		expect(fields(8, 20)).toEqual([0.5, 0, 4, 2]);
+	});
+
+	it('draws a line on its route when its lanes do not match its points', () => {
+		const b = new LineBuffers();
+		const points = [0, 0, 40].map((y) => ({ x: 0, y }));
+		const lanes = [{ nx: 1, ny: 0, step: 4, room: 9 }, undefined];
+		buildLines([{ points, width: 2, color: 'edge-rest', lanes }], rgba, b);
+		expect(at(b, 0, 20)).toBe(0);
 	});
 
 	it('rebuilds 500 lit lines of 6 points quickly (target: under 2 ms)', () => {
