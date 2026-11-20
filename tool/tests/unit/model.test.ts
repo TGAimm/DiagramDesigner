@@ -467,7 +467,7 @@ describe('logic units', () => {
 			[
 				'error',
 				'logic-step',
-				'empty step; give call, read, write, if, each, flag, return, fail or note'
+				'empty step; give call, send, read, write, if, each, flag, return, fail or note'
 			]
 		]);
 	});
@@ -505,7 +505,8 @@ describe('logic units', () => {
 			handles: ['a'],
 			reads: ['c'],
 			writes: ['c-n'],
-			calls: ['v', 'a']
+			calls: ['v', 'a'],
+			sends: []
 		});
 	});
 });

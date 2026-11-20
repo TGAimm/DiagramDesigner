@@ -2,7 +2,7 @@
 
 One entity per file: `<name>.<kind>.yaml`. Kinds: [module](module.md),
 [model](model.md), [logic-unit](logic-unit.md), [api](api.md), [trigger](trigger.md),
-[flag](flag.md). Pending changes over the design
+[channel](channel.md), [flag](flag.md). Pending changes over the design
 live in [scenario](scenario.md) files. A module with no parent is a
 root, drawn as a system; one folder per root, and everything in it lives under it.
 
@@ -35,12 +35,14 @@ drawn by one standard (`tool/src/lib/landscape/connections.ts`):
 
 - **Direction:** the arrow points at what the start depends on: a `ref` at its key, `from` at
   its source, a unit's reads and writes at the model, a call at the callee, an api at the unit
-  handling it and at the models its bodies use. A held model (`model`) has a UML diamond at
+  handling it and at the models its bodies use, a send at the channel. A trigger's event
+  line is the one drawn the way things flow: from the channel's port, model or field it
+  listens to, arrow at the trigger. A held model (`model`) has a UML diamond at
   the holder. So change impact follows arrows backwards.
 - **Style:** solid for structure (ref, holds, reads, writes, bodies), dashed for lineage,
-  dotted for calls and handles. Grey at rest, the kind's colour when lit; widths stay the
+  dotted for calls and handles, dashed for events. Grey at rest, the kind's colour when lit; widths stay the
   same on screen at any zoom.
-- **At rest:** only who talks to whom: calls, handles, reads and writes. Keys, holds,
+- **At rest:** only who talks to whom: calls, handles, reads, writes, sends and events. Keys, holds,
   lineage and api bodies show only when lit. Each end is lifted to the child of the box both
   ends share, and connections landing on one pair, one way, merge into one line between the
   two boxes' name bars (1, 2–9, 10+: thicker; hover for the count). So a line never crosses a border. Connections inside

@@ -27,6 +27,7 @@ import type {
 	TextureSource,
 	WebGLRenderer
 } from 'pixi.js';
+import { GLYPHS } from '../../../render/glyphs';
 
 type Pixi = typeof import('pixi.js');
 
@@ -58,45 +59,6 @@ const MOVING_DOWN = 0.7;
 const BLEND = 'sdv-text';
 const UPLOAD = 'sdv-text';
 
-/**
- * The entity glyphs drawn before names (EntityGlyph's marks: Lucide's app-window, box,
- * braces, table, square-function, plug, zap, clock and mail), as SVG path data on a 24-unit
- * grid, stroked 2.2 units wide with round ends and joins, as EntityGlyph styles them.
- */
-const GLYPHS: Record<string, string[]> = {
-	system: [
-		'M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',
-		'M10 4v4',
-		'M2 8h20',
-		'M6 4v4'
-	],
-	module: [
-		'M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z',
-		'm3.3 7 8.7 5 8.7-5',
-		'M12 22V12'
-	],
-	class: [
-		'M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1',
-		'M16 21h1a2 2 0 0 0 2-2v-5c0-1.1.9-2 2-2a2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1'
-	],
-	table: [
-		'M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18'
-	],
-	logic: [
-		'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z',
-		'M9 17c2 0 2.8-1 2.8-2.8V10c0-2 1-3.3 3.2-3',
-		'M9 11.2h5.7'
-	],
-	triggers: [
-		'M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z'
-	],
-	trigger: ['M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0z', 'M12 6v6l4 2'],
-	message: [
-		'M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z',
-		'm22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7'
-	],
-	api: ['M12 22v-5', 'M9 8V2', 'M15 8V2', 'M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z']
-};
 /** A glyph is 0.85em square and 0.4em from its name, as EntityGlyph and the names lay it out. */
 const GLYPH_EM = 0.85;
 const GLYPH_GAP = 0.4;

@@ -67,6 +67,8 @@
 		indexKind,
 		keysOf,
 		kindWord,
+		channelNote,
+		channelWord,
 		LEAF,
 		LINK,
 		logicNote,
@@ -214,6 +216,8 @@
 		gap?: number;
 		/** As the cards' `ƒ` marks (see CardPeek): italic, in Georgia. */
 		serif?: boolean;
+		/** The glyph's colour, over its kind's (an event on a channel wears the channel's). */
+		glyphToken?: Token;
 	}
 	const SERIF = 'Georgia, serif';
 	/** A card kind's glyph wears that kind's icon colour; the others the name's, at 75%. */
@@ -222,7 +226,16 @@
 		table: 'kind-table-icon',
 		logic: 'kind-logic-icon',
 		triggers: 'kind-trigger-icon',
-		trigger: 'kind-trigger-icon'
+		trigger: 'kind-trigger-icon',
+		message: 'kind-trigger-icon',
+		file: 'kind-table-icon',
+		channel: 'kind-channel-icon',
+		topic: 'kind-channel-icon',
+		received: 'kind-trigger-icon',
+		'dead-lettered': 'kind-trigger-icon',
+		created: 'kind-trigger-icon',
+		updated: 'kind-trigger-icon',
+		deleted: 'kind-trigger-icon'
 	};
 
 	/**
@@ -231,7 +244,7 @@
 	 */
 	function textOf(s: string, t: Token, px: number, o: TextOpts = {}): GlLabel {
 		const c = colour(t);
-		const icon = o.glyph ? GLYPH_ICON[o.glyph] : undefined;
+		const icon = o.glyph ? (o.glyphToken ?? GLYPH_ICON[o.glyph]) : undefined;
 		const opFill = colour('op-fill');
 		const label = text!.label(s, {
 			px,
@@ -313,16 +326,18 @@
 		depthCache.set(b.id, d);
 		return d;
 	};
-	const isCard = (b: LandscapeBox) => !!(b.table || b.logic || b.triggers);
-	type KindToken = 'kind-class' | 'kind-table' | 'kind-logic' | 'kind-trigger';
+	const isCard = (b: LandscapeBox) => !!(b.table || b.logic || b.triggers || b.channel);
+	type KindToken = 'kind-class' | 'kind-table' | 'kind-logic' | 'kind-trigger' | 'kind-channel';
 	const kindToken = (b: LandscapeBox): KindToken =>
 		b.logic
 			? 'kind-logic'
 			: b.triggers
 				? 'kind-trigger'
-				: b.view === 'table'
-					? 'kind-table'
-					: 'kind-class';
+				: b.channel
+					? 'kind-channel'
+					: b.view === 'table'
+						? 'kind-table'
+						: 'kind-class';
 	const elOf = (b: LandscapeBox) => model.elements.get(b.elementId);
 	const isSystem = (b: LandscapeBox) => {
 		const el = elOf(b);
@@ -425,20 +440,26 @@
 						: 'module-text';
 			const kind = b.group ? 'group' : isCard(b) ? 'card' : 'leaf';
 			// The mark of what it is: a system, module, class (a boundary is the model it holds),
-			// stored table, logic or triggers card.
+			// stored table or file, logic, triggers or channel card.
 			const glyph = b.logic
 				? 'logic'
 				: b.triggers
 					? 'triggers'
-					: b.table
-						? b.view === 'table'
-							? 'table'
-							: 'class'
-						: b.boundary
-							? 'class'
-							: isSystem(b)
-								? 'system'
-								: 'module';
+					: b.channel
+						? el?.def.type === 'topic'
+							? 'topic'
+							: 'channel'
+						: b.table
+							? b.view === 'table'
+								? b.files
+									? 'file'
+									: 'table'
+								: 'class'
+							: b.boundary
+								? 'class'
+								: isSystem(b)
+									? 'system'
+									: 'module';
 			const text = textOf(name, tok, NAME_MIN, {
 				bold: true,
 				lcd: isCard(b) && fadedOf(b) === 1,
@@ -504,6 +525,43 @@
 		}
 	}
 
+	/** How far a file's corner is folded, in canvas px. */
+	const FOLD_CORNER = 14;
+	/**
+	 * A card's outline as a path: rounded by `r`; a channel's 3 px where messages come in (left)
+	 * and round where they leave (right), a pipe; a file's top right corner cut for its fold.
+	 */
+	function cardShape(g: Graphics, b: LandscapeBox, r: number): Graphics {
+		const [x, y, w, h] = [b.absX, b.absY, b.width, b.height];
+		if (b.channel) {
+			const [l, rr] = [3, Math.min(18, h / 2)];
+			return g
+				.moveTo(x + l, y)
+				.lineTo(x + w - rr, y)
+				.arcTo(x + w, y, x + w, y + rr, rr)
+				.lineTo(x + w, y + h - rr)
+				.arcTo(x + w, y + h, x + w - rr, y + h, rr)
+				.lineTo(x + l, y + h)
+				.arcTo(x, y + h, x, y + h - l, l)
+				.lineTo(x, y + l)
+				.arcTo(x, y, x + l, y, l)
+				.closePath();
+		}
+		if (b.files)
+			return g
+				.moveTo(x + r, y)
+				.lineTo(x + w - FOLD_CORNER, y)
+				.lineTo(x + w, y + FOLD_CORNER)
+				.lineTo(x + w, y + h - r)
+				.arcTo(x + w, y + h, x + w - r, y + h, r)
+				.lineTo(x + r, y + h)
+				.arcTo(x, y + h, x, y + h - r, r)
+				.lineTo(x, y + r)
+				.arcTo(x, y, x + r, y, r)
+				.closePath();
+		return g.roundRect(x, y, w, h, r);
+	}
+
 	function drawBox(g: Graphics, b: LandscapeBox) {
 		const a = fadedOf(b);
 		const fill = (t: Token) => {
@@ -521,7 +579,15 @@
 					.stroke({ ...fill('model-fill'), width: 2 })
 					.roundRect(b.absX - 2.5, b.absY - 2.5, b.width + 5, b.height + 5, r + 2.5)
 					.stroke({ ...fill(k), width: 1 });
-			g.roundRect(b.absX, b.absY, b.width, b.height, r).fill(fill('model-fill')).stroke(line(k));
+			cardShape(g, b, r).fill(fill('model-fill')).stroke(line(k));
+			// A file's folded corner, in its kind's soft colour under the line.
+			if (b.files)
+				g.moveTo(b.absX + b.width - FOLD_CORNER, b.absY)
+					.lineTo(b.absX + b.width - FOLD_CORNER, b.absY + FOLD_CORNER)
+					.lineTo(b.absX + b.width, b.absY + FOLD_CORNER)
+					.closePath()
+					.fill(fill(`${k}-soft` as Token))
+					.stroke(line(k));
 			if (b.triggers)
 				g.rect(b.absX + 1, b.absY + 1, b.width - 2, TABLE.head - 1).fill(fill('kind-trigger-head'));
 			g.moveTo(b.absX, b.absY + TABLE.head)
@@ -876,17 +942,19 @@
 		const rows = cardRows(b);
 		const el = elOf(b);
 		// The name bar's kind word and note; the name is drawn with the others (see placeNames).
-		if (b.table) {
+		if (b.table || b.channel) {
 			// In the kind's name colour at 75%, as CardPeek's `.kind-word`.
 			const word = at(
-				kindWord(b.view ?? 'class'),
+				b.channel ? channelWord(el?.def.type) : kindWord(b.view ?? 'class', b.files),
 				0,
 				b.absY + TABLE.head * 0.36,
 				TABLE.label,
 				`${k}-text` as Token,
 				{ bold: true }
 			);
-			word.x = b.absX + b.width - TABLE.pad - word.width;
+			// Clear of a channel's round end and a file's fold.
+			word.x =
+				b.absX + b.width - TABLE.pad - word.width - (b.channel ? 6 : b.files ? FOLD_CORNER - 4 : 0);
 			word.alpha *= 0.75;
 		}
 		const owner = b.ref ? model.elements.get(el?.parentId ?? '')?.name : undefined;
@@ -894,7 +962,9 @@
 		const note = rows
 			? b.logic
 				? logicNote(rows.length)
-				: triggersNote(rows.length)
+				: b.channel
+					? channelNote(model, b.elementId)
+					: triggersNote(rows.length)
 			: [ownerNote(owner), parts?.join(', ')].filter(Boolean).join(' · ');
 		if (note)
 			at(
@@ -905,7 +975,7 @@
 				parts ? 'link-ref' : 'text-muted'
 			);
 		if (rows) {
-			const nameW = (b.logic ?? b.triggers)!.cols[0].width;
+			const nameW = (b.logic ?? b.triggers ?? b.channel)!.cols[0].width;
 			const top0 = b.absY + 1 + TABLE.head;
 			rows.forEach((r, i) => {
 				if (changes.hidden.has(r.id)) return;
@@ -915,20 +985,25 @@
 				ground(g, r.id, s.bg, b.absX + 1, top, b.width - 2, rowsH);
 				if (s.bar) bar(top, rowsH, s.bar);
 				if (i) sep(top);
-				// A unit's ƒ (10 px wide) or a trigger's clock or envelope, then its mark and name.
+				// A unit's ƒ (10 px wide), a trigger's clock, envelope or event, or a port's event,
+				// then its mark and name. A port nothing listens to is muted.
 				const x = b.absX + TABLE.pad;
 				const mark = b.logic
 					? at('ƒ', x, y, TABLE.row, 'kind-logic-icon', { serif: true })
-					: at('', x, y, TABLE.row, 'model-text', { glyph: r.message ? 'message' : 'trigger' });
+					: at('', x, y, TABLE.row, 'model-text', {
+							glyph: r.glyph ?? 'trigger',
+							glyphToken: b.channel ? 'kind-channel-icon' : undefined
+						});
 				const name = at(
 					r.name,
 					x + (b.logic ? 10 : mark.width) + TABLE.badgeGap,
 					y,
 					TABLE.row,
-					'model-text',
+					r.idle ? 'text-muted' : 'model-text',
 					{ op: marks.glyph.get(r.id), gap: CELL_GAP }
 				);
 				const sig = at(r.signature, b.absX + nameW + TABLE.pad, y, TABLE.signature, 'text-muted');
+				if (r.idle) mark.alpha *= 0.6;
 				if (comparing && !marked(r.id)) for (const t of [mark, name, sig]) t.alpha *= 0.38;
 				if (marks.dropped.has(r.id)) strike(name, y);
 			});

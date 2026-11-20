@@ -35,6 +35,7 @@ const light = {
 	'link-from': '#2f8a6b',
 	'link-write': '#b5533c',
 	'link-call': '#7a5bb5',
+	'link-event': '#a21caf',
 	// Card kinds: line (400), icon (500), name (700, 200 in dark), separators (100).
 	'kind-class': '#38bdf8',
 	'kind-class-icon': '#0ea5e9',
@@ -54,6 +55,11 @@ const light = {
 	'kind-trigger-text': '#6d28d9',
 	'kind-trigger-soft': '#ede9fe',
 	'kind-trigger-head': '#f5f3ff',
+	// Channels: fuchsia, beside the triggers they feed; corners say which way messages flow.
+	'kind-channel': '#e879f9',
+	'kind-channel-icon': '#d946ef',
+	'kind-channel-text': '#a21caf',
+	'kind-channel-soft': '#fae8ff',
 
 	'api-fill': '#ffffff',
 	'api-stroke': '#8d8a83',
@@ -102,6 +108,7 @@ const dark: Record<Token, string> = {
 	'link-from': '#5cc29d',
 	'link-write': '#ec8a6f',
 	'link-call': '#b49be8',
+	'link-event': '#f0abfc',
 	'kind-class': '#38bdf8',
 	'kind-class-icon': '#0ea5e9',
 	'kind-class-text': '#bae6fd',
@@ -119,6 +126,10 @@ const dark: Record<Token, string> = {
 	'kind-trigger-text': '#ddd6fe',
 	'kind-trigger-soft': '#3b2d63',
 	'kind-trigger-head': '#251f38',
+	'kind-channel': '#e879f9',
+	'kind-channel-icon': '#d946ef',
+	'kind-channel-text': '#f5d0fe',
+	'kind-channel-soft': '#4a1d4f',
 
 	'api-fill': '#1b1c20',
 	'api-stroke': '#76746f',

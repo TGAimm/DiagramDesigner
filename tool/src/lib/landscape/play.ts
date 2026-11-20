@@ -1,3 +1,4 @@
+import { receivers, startedBy } from '../model/events';
 import { flagOn, type Model } from '../model/model';
 import type { LogicStep } from '../model/schema';
 import { inputText } from './sequence';
@@ -114,6 +115,30 @@ export function runOf(
 					if (target && into.has(key)) unit(target, self, [...frame, target], `${key}>`);
 					else if (s.gets && !sends)
 						push({ key: `${key}<`, kind: 'gets', text: s.gets, from: t.id, to: self }, frame);
+				} else if (s.send !== undefined) {
+					const c = el(s.send);
+					if (!c) continue;
+					// Sent on a channel without waiting. Follow (as Into) steps into the unit the
+					// first trigger receiving it starts.
+					const target = receivers(model, c.id)
+						.flatMap((t) => startedBy(model, t))
+						.find((u) => hasSteps(u) && !frame.includes(u));
+					push(
+						{
+							key,
+							kind: 'call',
+							text: withNote(`sends on ${c.name}${s.with ? ` (${s.with})` : ''}`, s),
+							from: self,
+							to: c.id,
+							...(target && {
+								into: target,
+								intoSteps: el(target)!.def.steps!.length,
+								entered: into.has(key)
+							})
+						},
+						frame
+					);
+					if (target && into.has(key)) unit(target, self, [...frame, target], `${key}>`);
 				} else if (s.read !== undefined || s.write !== undefined) {
 					const target = (s.read ?? s.write)!;
 					if (!known(target)) continue;

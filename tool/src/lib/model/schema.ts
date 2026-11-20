@@ -48,6 +48,11 @@ export interface Element {
 	when?: FlagGate;
 	schedule?: Schedule;
 	message?: Message;
+	on?: TriggerOn;
+	type?: ChannelType;
+	carries?: string;
+	via?: string;
+	store?: Store;
 	overlap?: Overlap;
 	timeout?: string;
 	retries?: number;
@@ -55,7 +60,15 @@ export interface Element {
 }
 
 /** Kinds an entity file can have; the file name `<name>.<kind>.yaml` gives it. */
-export const ENTITY_KINDS = ['module', 'model', 'logic-unit', 'api', 'flag', 'trigger'] as const;
+export const ENTITY_KINDS = [
+	'module',
+	'model',
+	'logic-unit',
+	'api',
+	'flag',
+	'trigger',
+	'channel'
+] as const;
 export type EntityFileKind = (typeof ENTITY_KINDS)[number];
 
 /** Kinds a parent must have, for kinds that may only sit under certain parents. */
@@ -64,7 +77,8 @@ export const PARENT_KINDS: Partial<Record<EntityFileKind, EntityFileKind[]>> = {
 	api: ['module'],
 	model: ['module'],
 	flag: ['module'],
-	trigger: ['module']
+	trigger: ['module'],
+	channel: ['module']
 };
 
 /**
@@ -82,8 +96,8 @@ export const Schedule = z
 export type Schedule = z.infer<typeof Schedule>;
 
 /**
- * What a trigger receives: each message on a queue, or on a topic through a subscription. A
- * logic unit step that calls the trigger sends one.
+ * The old message source, before channels: a queue, or a topic through a subscription, named
+ * in words. Still read, with a warning; `sdv migrate triggers` turns it into a channel and `on`.
  */
 export const Message = z
 	.strictObject({
@@ -95,19 +109,67 @@ export const Message = z
 	.describe('Triggers only: the messages it receives; exactly one of queue and topic');
 export type Message = z.infer<typeof Message>;
 
+/** Events a channel raises: a message arrived, or was given up on after its retries. */
+export const MESSAGE_EVENTS = ['received', 'dead-lettered'] as const;
+/** Events a stored model raises, a row or a file alike. */
+export const DATA_EVENTS = ['created', 'updated', 'deleted'] as const;
+export type MessageEvent = (typeof MESSAGE_EVENTS)[number];
+export type DataEvent = (typeof DATA_EVENTS)[number];
+export type SourceEvent = MessageEvent | DataEvent;
+
+/**
+ * What a trigger listens to: one event of one source, a channel or a stored model. The events
+ * each source raises are fixed (MESSAGE_EVENTS, DATA_EVENTS).
+ */
+export const TriggerOn = z
+	.strictObject({
+		channel: Id.optional().describe('Id of the channel it listens to'),
+		model: Id.optional().describe('Id of the stored model it listens to (a table or a file)'),
+		event: z
+			.enum([...MESSAGE_EVENTS, ...DATA_EVENTS])
+			.describe(
+				'A channel: received or dead-lettered; a stored model: created, updated or deleted'
+			),
+		subscription: Text.optional().describe(
+			'Topics only: the subscription it receives through; default the trigger name'
+		),
+		fields: z
+			.array(Id)
+			.optional()
+			.describe('Tables only, with updated: ids of the fields whose change raises it'),
+		path: Text.optional().describe('Files only: a glob of the paths it watches'),
+		filter: Text.optional().describe('Free text: which events it takes, e.g. entity type Item')
+	})
+	.describe('Triggers only: the event it listens to; exactly one of channel and model');
+export type TriggerOn = z.infer<typeof TriggerOn>;
+
+/** A queue gives each message to one receiver; a topic gives a copy to each subscription. */
+export const ChannelType = z.enum(['queue', 'topic']);
+export type ChannelType = z.infer<typeof ChannelType>;
+
+/** What a module keeps the models stored in it as: rows of tables (default) or files. */
+export const Store = z.enum(['rows', 'files']);
+export type Store = z.infer<typeof Store>;
+
+/** What a write does, so which events it raises on its model. */
+export const WriteOp = z.enum(['create', 'update', 'delete']);
+export type WriteOp = z.infer<typeof WriteOp>;
+
 export const Overlap = z.enum(['skip', 'queue', 'allow']);
 export type Overlap = z.infer<typeof Overlap>;
 
 export const FlagValue = z.enum(['on', 'off']);
 export type FlagValue = z.infer<typeof FlagValue>;
 
-/** An api, logic unit or trigger that exists only while a flag has one value. */
+/** An api, logic unit, trigger or channel that exists only while a flag has one value. */
 export const FlagGate = z
 	.strictObject({
 		flag: Id.describe('Id of the flag'),
 		is: FlagValue.describe('The value the flag must have for this to exist')
 	})
-	.describe('Apis, logic units and triggers only: exists only while the flag has this value');
+	.describe(
+		'Apis, logic units, triggers and channels only: exists only while the flag has this value'
+	);
 export type FlagGate = z.infer<typeof FlagGate>;
 
 /**
@@ -248,13 +310,15 @@ export const LogicFail = z
 export type LogicFail = z.infer<typeof LogicFail>;
 
 /**
- * One step of a logic unit's sequence. Each step is one of call, read, write, if, each,
- * return or fail; a step with only a note is work the unit does itself.
+ * One step of a logic unit's sequence. Each step is one of call, send, read, write, if, each,
+ * flag, return or fail; a step with only a note is work the unit does itself.
  */
 export interface LogicStep {
 	call?: string;
+	send?: string;
 	read?: string;
 	write?: string;
+	does?: WriteOp | WriteOp[];
 	with?: string;
 	gets?: string;
 	if?: string;
@@ -271,12 +335,15 @@ export interface LogicStep {
 }
 export const LogicStep: z.ZodType<LogicStep> = z
 	.strictObject({
-		call: Id.optional().describe(
-			'Id of the logic unit or api it calls, or message trigger it sends'
-		),
+		call: Id.optional().describe('Id of the logic unit or api it calls'),
+		send: Id.optional().describe('Id of the channel it sends a message on, without waiting'),
 		read: Id.optional().describe('Id of the model, or single model field, it reads'),
 		write: Id.optional().describe('Id of the model, or single model field, it writes'),
-		with: Text.optional().describe('With call or read: what it passes, free text'),
+		does: z
+			.union([WriteOp, z.array(WriteOp).min(1)])
+			.optional()
+			.describe('With write: what it does (create, update, delete), so which events it raises'),
+		with: Text.optional().describe('With call, send or read: what it passes, free text'),
 		gets: Text.optional().describe('With call or read: what it gets back, free text'),
 		if: Text.optional().describe('A condition; then and else hold the steps of each branch'),
 		get then() {
@@ -354,18 +421,36 @@ export const EntityFile = z
 		default: FlagValue.optional().describe('Flags only: the value production runs; default off'),
 		when: FlagGate.optional(),
 		schedule: Schedule.optional(),
-		message: Message.optional(),
+		on: TriggerOn.optional(),
+		message: Message.optional().describe(
+			'Triggers only, replaced by on: a queue or topic in words; see sdv migrate triggers'
+		),
 		overlap: Overlap.optional().describe(
 			'Schedule triggers only: a run due while the last is going is skipped (default), queued or allowed'
 		),
 		timeout: z.string().optional().describe('Triggers only: how long a run may take, e.g. 10m'),
-		retries: z.number().int().min(0).optional().describe('Triggers only: retries of a failed run'),
+		retries: z
+			.number()
+			.int()
+			.min(0)
+			.optional()
+			.describe(
+				'Triggers and channels: retries of a failed run or delivery; a channel sets the default for its triggers'
+			),
+		type: ChannelType.optional().describe('Channels only, required: queue or topic'),
+		carries: Id.optional().describe('Channels only: id of the model its messages are'),
+		via: Text.optional().describe(
+			'Channels only: free text, the broker or component it runs on (e.g. a Dapr pub/sub)'
+		),
+		store: Store.optional().describe(
+			'Modules only: what models stored here are kept as, rows (default) or files'
+		),
 		with: Text.optional().describe('Triggers only: what a run passes the unit, free text'),
 		external: z
 			.boolean()
 			.optional()
 			.describe(
-				'Modules and apis: used by consumers the design does not show, so every rename or drop behind it breaks'
+				'Modules, apis and channels: used by consumers or senders the design does not show, so every rename or drop behind it breaks'
 			),
 		name: Text.optional().describe('Display name; defaults to the file name'),
 		tags: z.array(z.string()).optional(),

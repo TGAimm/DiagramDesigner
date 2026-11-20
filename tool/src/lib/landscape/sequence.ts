@@ -1,6 +1,7 @@
 import { flagOn, type Model } from '../model/model';
 import type { LogicStep } from '../model/schema';
-import { triggerWords } from '../model/message';
+import { triggerGlyph, triggerWords } from '../model/message';
+import { raised } from '../model/events';
 
 /** A line of text under a lifeline's name; clicking one with a target goes there. */
 export interface LifelineSub {
@@ -9,8 +10,8 @@ export interface LifelineSub {
 	method?: string;
 	/** A trigger, marked with its glyph. */
 	trigger?: boolean;
-	/** A message trigger, marked with an envelope rather than a clock. */
-	message?: boolean;
+	/** The trigger's glyph: a clock, an envelope, or the event it listens to. */
+	glyph?: string;
 	/** Id of the api or element it stands for. */
 	target?: string;
 }
@@ -91,9 +92,18 @@ export function sequenceOf(model: Model, unitId: string): Sequence {
 	const route = (id: string) => `${el(id)!.def.method} ${el(id)!.def.path}`;
 	const callers = [...model.elements.values()].filter((e) => e.logic?.calls.includes(unitId));
 	const handles = info.logic?.handles ?? [];
-	// Units sending a message trigger that starts this one call it too, by way of the broker.
-	const senders = [...model.elements.values()].filter((e) =>
-		e.logic?.calls.some((t) => handles.includes(t) && el(t)?.def.kind === 'trigger')
+	// Units sending a message that starts this one call it too, by way of the broker: on the
+	// channel a trigger handled listens to, or, before channels, by calling the trigger.
+	const channels = new Set(
+		handles.flatMap((t) => (el(t)?.listens ?? []).flatMap((p) => model.ports.get(p)?.channel ?? []))
+	);
+	// Units writing a stored model a handled trigger listens to start it too.
+	const watched = new Set(handles.flatMap((t) => el(t)?.def.on?.model ?? []));
+	const senders = [...model.elements.values()].filter(
+		(e) =>
+			e.logic?.calls.some((t) => handles.includes(t) && el(t)?.def.kind === 'trigger') ||
+			e.logic?.sends.some((c) => channels.has(c)) ||
+			e.logic?.writes.some((w) => watched.has(model.fields.get(w)?.modelId ?? w))
 	);
 	const lifelines: Lifeline[] = [
 		{
@@ -104,9 +114,9 @@ export function sequenceOf(model: Model, unitId: string): Sequence {
 				...handles.map((id) =>
 					el(id)!.def.kind === 'trigger'
 						? {
-								text: `${el(id)!.name} · ${triggerWords(el(id)!.def)}`,
+								text: `${el(id)!.name} · ${triggerWords(el(id)!.def, model, el(id)!.name)}`,
 								trigger: true,
-								...(el(id)!.def.message ? { message: true } : {}),
+								glyph: triggerGlyph(el(id)!.def),
 								target: id
 							}
 						: { text: route(id), method: el(id)!.def.method, target: id }
@@ -141,6 +151,24 @@ export function sequenceOf(model: Model, unitId: string): Sequence {
 		if (text) msg({ from, to: 1, tone: 'return', dashed: true, text });
 	};
 	const withNote = (text: string, s: LogicStep) => (s.note ? `${text} · ${s.note}` : text);
+	/**
+	 * What a send or a write starts: the triggers on the events it raises and the units they
+	 * start, as a note beside the unit's lifeline.
+	 */
+	const starts = (triggers: string[], may = false) => {
+		const said = triggers.map((t) => {
+			const units = [...model.elements.values()]
+				.filter((u) => u.logic?.handles.includes(t))
+				.map((u) => u.name);
+			return `${el(t)!.name}${units.length ? ` → ${units.join(', ')}` : ''}`;
+		});
+		if (said.length)
+			notes.push({
+				row: row - 1,
+				text: `${may ? 'may start' : 'starts'} ${said.join('; ')}`,
+				...(dim ? { dim } : {})
+			});
+	};
 
 	msg({
 		from: 0,
@@ -190,6 +218,28 @@ export function sequenceOf(model: Model, unitId: string): Sequence {
 					msg({ to, tone: 'call', text: withNote(`${t.name}(${s.with ?? ''})`, s), target: t.id });
 					ret(to, s.gets);
 				}
+			} else if (s.send !== undefined) {
+				const c = el(s.send);
+				if (!c) continue;
+				// Sent on a channel without waiting: nothing comes back. What it starts is noted.
+				const to = lane(c.id, () => ({
+					kind: 'owner',
+					name: c.name,
+					target: c.id,
+					subs: [{ text: `${c.def.type ?? 'queue'} · ${path(c.parentId)}` }]
+				}));
+				msg({
+					to,
+					tone: 'call',
+					async: true,
+					text: withNote(`sends${s.with ? ` (${s.with})` : ''}`, s),
+					target: c.id
+				});
+				starts(
+					[...model.ports.values()]
+						.filter((p) => p.channel === c.id && p.event === 'received')
+						.flatMap((p) => p.triggers)
+				);
 			} else if (s.read !== undefined || s.write !== undefined) {
 				const id = (s.read ?? s.write)!;
 				if (!known(id)) continue;
@@ -211,6 +261,10 @@ export function sequenceOf(model: Model, unitId: string): Sequence {
 					target: id
 				});
 				ret(to, s.gets);
+				if (s.write !== undefined) {
+					const r = raised(model, s, m.id);
+					starts(r.triggers, !r.sure);
+				}
 			} else if (s.if !== undefined || s.each !== undefined) {
 				const f: SeqFrag = {
 					label: s.if !== undefined ? 'alt' : 'loop',

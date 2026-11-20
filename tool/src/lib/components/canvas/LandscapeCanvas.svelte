@@ -33,6 +33,9 @@
 		logicRowY,
 		enumOf,
 		refLabel,
+		channelNote,
+		channelWord,
+		storedAsFile,
 		relationsOf,
 		shownRows,
 		TABLE,
@@ -93,7 +96,8 @@
 	import { untrack } from 'svelte';
 	import CardPeek, { type CardData } from './CardPeek.svelte';
 	import GlLayer, { type GlHit, type GlLine } from './GlLayer.svelte';
-	import EntityGlyph from './EntityGlyph.svelte';
+	import EntityGlyph, { type GlyphKind } from './EntityGlyph.svelte';
+	import { onWords } from '#lib/model/message.ts';
 	import ChangeSection from '#lib/components/ChangeSection.svelte';
 	import ChangesPanel from '#lib/components/ChangesPanel.svelte';
 	import EditMenu from '#lib/components/EditMenu.svelte';
@@ -256,6 +260,7 @@
 	const isUnit = (id: string) => el(id)?.def.kind === 'logic-unit';
 	const isApiEl = (id: string) => el(id)?.def.kind === 'api';
 	const isTrigger = (id: string) => el(id)?.def.kind === 'trigger';
+	const isChannel = (id: string) => el(id)?.def.kind === 'channel';
 
 	// Every system and module is drawn open at any zoom. Zoomed out, what thins out is the rows of
 	// cards and rails (see open.ts), which are most of what a large landscape draws.
@@ -370,7 +375,9 @@
 		reads: 'reads',
 		writes: 'writes',
 		calls: 'calls',
-		handles: 'calls'
+		handles: 'calls',
+		sends: 'sends',
+		on: 'on'
 	};
 	/** The colour token of each kind of line. */
 	const LINK_TOKEN: Record<LinkKind, string> = {
@@ -381,7 +388,9 @@
 		reads: 'ref',
 		writes: 'write',
 		calls: 'call',
-		handles: 'call'
+		handles: 'call',
+		sends: 'call',
+		on: 'event'
 	};
 
 	/** A box looked at, or a row or api in it. */
@@ -563,12 +572,25 @@
 	function linesOf(focus: Look): LitLine[] {
 		const f = focus && boxById.get(focus.box);
 		if (!focus || !f) return [];
+		// A trigger on a channel's port lights the sends into the channel too, so the whole way a
+		// message comes (sender, channel, event, trigger, unit) lights at once.
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built and used here
+		const via = new Set<string>();
+		if (focus.leaf)
+			for (const id of el(focus.leaf)?.listens ?? []) {
+				const port = model.ports.get(id);
+				if (port) via.add(port.channel);
+			}
 		const leaves = focus.leaf
-			? new Set([focus.leaf, ...(focus.leaf === view.api && view.apiField ? [view.apiField] : [])])
+			? new Set([
+					focus.leaf,
+					...(focus.leaf === view.api && view.apiField ? [view.apiField] : []),
+					...via
+				])
 			: new Set(within(boxes, f.id).flatMap((b) => [...(leavesBy.get(b.id) ?? [])]));
 		const inside = within(boxes, f.id);
 		const homeIn = (leaf: string) =>
-			apiOf(model, leaf)
+			apiOf(model, leaf) || via.has(leaf)
 				? homeOf(model, boxes, f, leaf)
 				: inside.find((b) => leavesBy.get(b.id)?.has(leaf));
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built and returned whole
@@ -583,7 +605,9 @@
 			const a = mineHome && endOf(mine, mineHome);
 			const b = theirHome && endOf(theirs, theirHome);
 			if (!a || !b) continue;
-			const [s, t] = fromIn ? [a, b] : [b, a];
+			// A trigger depends on the event it listens to, but the event flows to the trigger, so
+			// its line is drawn from the event, its arrow at the trigger.
+			const [s, t] = fromIn !== (e.kind === 'on') ? [a, b] : [b, a];
 			const sameCard = s.node === t.node;
 			// One box: only two of a card's rows are joined.
 			if (
@@ -815,9 +839,9 @@
 			{ padding: 0.08, duration }
 		);
 	}
-	/** A model, logic or triggers card as the peek draws it; none for any other box. */
+	/** A model, logic, triggers or channel card as the peek draws it; none for any other box. */
 	function cardOf(b: LandscapeBox, onfield: CardData['onfield']): CardData | undefined {
-		if (!b.table && !b.logic && !b.triggers) return undefined;
+		if (!b.table && !b.logic && !b.triggers && !b.channel) return undefined;
 		const info = el(b.elementId)!;
 		return {
 			name: info.name,
@@ -829,6 +853,15 @@
 			table: b.table,
 			logic: b.logic,
 			triggers: b.triggers,
+			channel: b.channel,
+			...(b.channel
+				? {
+						channelWord: channelWord(info.def.type),
+						channelNote: channelNote(model, info.id),
+						topic: info.def.type === 'topic'
+					}
+				: {}),
+			files: b.files,
 			view: b.view,
 			labels: Object.fromEntries(
 				(b.fields ?? [])
@@ -858,7 +891,9 @@
 	const rest = $derived(
 		restLines(
 			laid.lines,
-			shownEdges.filter((e) => ['calls', 'handles', 'reads', 'writes'].includes(e.kind))
+			shownEdges.filter((e) =>
+				['calls', 'handles', 'reads', 'writes', 'sends', 'on'].includes(e.kind)
+			)
 		)
 	);
 
@@ -1102,9 +1137,11 @@
 			dash:
 				l.kind === 'from'
 					? ([5, 4] as const)
-					: l.kind === 'calls' || l.kind === 'handles'
-						? ([2, 3] as const)
-						: undefined,
+					: l.kind === 'on'
+						? ([5, 3] as const)
+						: l.kind === 'calls' || l.kind === 'handles'
+							? ([2, 3] as const)
+							: undefined,
 			depth: Infinity
 		}));
 	});
@@ -1220,7 +1257,9 @@
 		{ id: 'from', label: 'Derives from', token: 'from', dash: '4 3' },
 		{ id: 'reads', label: 'Reads', token: 'ref' },
 		{ id: 'writes', label: 'Writes', token: 'write' },
-		{ id: 'calls', label: 'Calls, handled by', token: 'call', dash: '1.5 2.5' }
+		{ id: 'calls', label: 'Calls, handled by', token: 'call', dash: '1.5 2.5' },
+		{ id: 'sends', label: 'Sends on', token: 'call' },
+		{ id: 'on', label: 'Listens to', token: 'event', dash: '4 2.5' }
 	];
 
 	/** What an end shows: an api by method and path, else its name. */
@@ -1287,7 +1326,9 @@
 		reads: 'reads',
 		writes: 'writes',
 		calls: 'calls',
-		handles: 'handled by'
+		handles: 'handled by',
+		sends: 'sends on',
+		on: 'listens to'
 	};
 
 	// ------------------------------------------------------------ inspector
@@ -1445,61 +1486,207 @@
 	}
 	const unitCard = $derived(unitCardOf(view.field?.field));
 
+	/** A pane entry: a unit or trigger, where it lives, and where clicking it goes. */
+	interface PaneEntry {
+		id: string;
+		text: string;
+		where: string;
+		/** The glyph before it; a unit's ƒ when unset. */
+		glyph?: GlyphKind;
+		target?: { box: LandscapeBox; field: string };
+	}
+	interface PaneFact {
+		label: string;
+		text: string;
+		mono: boolean;
+		ident: boolean;
+	}
+	/** A pane section listing entries, with facts above them, and what it says when it has none. */
+	interface PaneGroup {
+		label: string;
+		facts?: PaneFact[];
+		units: PaneEntry[];
+		empty?: string;
+	}
+	interface TriggerPane {
+		title: string;
+		sub: string;
+		glyph: GlyphKind;
+		source: { label: string; rows: PaneFact[] };
+		run: PaneFact[];
+		groups: PaneGroup[];
+	}
+
+	/** `ident`: a name that sets the card's width rather than wrapping in it. */
+	const fact = (label: string, text: string | undefined, mono = false, ident = mono): PaneFact[] =>
+		text === undefined ? [] : [{ label, text, mono, ident }];
+
+	/** An entry for a unit, trigger, channel or model, seen from box `near`. */
+	function paneEntry(
+		near: LandscapeBox,
+		leaf: string,
+		glyph?: GlyphKind,
+		where?: string
+	): PaneEntry {
+		const b = linkTarget(model, boxes, near, leaf);
+		return {
+			id: leaf,
+			text: el(leaf)!.name,
+			where: where ?? pathOf(el(leaf)!.parentId),
+			glyph,
+			target: b && { box: b, field: leaf }
+		};
+	}
+
 	/**
-	 * The clicked trigger: its schedule in words and as written, with its next runs, or the
-	 * queue or topic of its message; how a run behaves, the units sending it and those it starts.
+	 * The clicked trigger: its schedule in words and as written, with its next runs; or the event
+	 * it listens to, its source, the units sending or writing it and what happens when a run
+	 * fails; or the queue or topic of its old message. Then how a run behaves and the units it
+	 * starts. A channel's row (a port) shows the channel's card instead (see `channelCardOf`).
 	 */
-	function triggerCardOf(id: string | undefined, near: LandscapeBox | undefined) {
-		const t = id && isTrigger(id) ? el(id) : undefined;
-		if (!t || !near) return undefined;
+	function triggerCardOf(
+		id: string | undefined,
+		near: LandscapeBox | undefined
+	): TriggerPane | undefined {
+		if (!id || !near) return undefined;
+		const port = model.ports.get(id);
+		if (port) return channelCardOf(port.channel, near);
+		if (el(id)?.def.kind === 'channel') return channelCardOf(id, near);
+		const t = isTrigger(id) ? el(id) : undefined;
+		if (!t) return undefined;
 		const d = t.def;
 		const units = (kind: 'handles' | 'calls') =>
-			(rels.in.get(t.id) ?? [])
-				.filter((l) => l.kind === kind)
-				.map((l) => {
-					const b = linkTarget(model, boxes, near, l.field);
-					return {
-						id: l.field,
-						text: el(l.field)!.name,
-						where: pathOf(el(l.field)!.parentId),
-						target: b && { box: b, field: l.field }
-					};
-				});
-		// `ident`: a name that sets the card's width rather than wrapping in it.
-		const row = (label: string, text: string | undefined, mono = false, ident = mono) =>
-			text === undefined ? [] : [{ label, text, mono, ident }];
+			(rels.in.get(t.id) ?? []).filter((l) => l.kind === kind).map((l) => paneEntry(near, l.field));
 		const gate = d.when && el(d.when.flag);
 		const shared = [
-			...row('Timeout', d.timeout && durationWords(d.timeout)),
-			...row('Retries', d.retries?.toString()),
-			...row('With', d.with, false, true),
-			...row('Exists when', gate ? `${gate.name} is ${d.when!.is}` : undefined)
+			...fact('Timeout', d.timeout && durationWords(d.timeout)),
+			...(d.on?.channel ? [] : fact('Retries', d.retries?.toString())),
+			...fact('With', d.with, false, true),
+			...fact('Exists when', gate ? `${gate.name} is ${d.when!.is}` : undefined)
 		];
+		const handled: PaneGroup = {
+			label: 'Handled by',
+			units: units('handles'),
+			empty: 'No logic unit handles it, so it starts nothing.'
+		};
+		if (d.on) {
+			const on = d.on;
+			const src = el(on.channel ?? on.model ?? '');
+			const file = !!src && !on.channel && storedAsFile(model, src.id);
+			const kind = on.channel
+				? src?.def.type === 'topic'
+					? 'Topic'
+					: 'Queue'
+				: file
+					? 'File'
+					: 'Table';
+			const groups: PaneGroup[] = [];
+			if (src)
+				groups.push({
+					label: 'Listens to',
+					units: [
+						paneEntry(
+							near,
+							src.id,
+							on.channel
+								? src.def.type === 'topic'
+									? 'topic'
+									: 'channel'
+								: file
+									? 'file'
+									: 'table'
+						)
+					]
+				});
+			if (on.channel && src) {
+				groups.push({
+					label: 'Sent by',
+					units: (rels.in.get(src.id) ?? [])
+						.filter((l) => l.kind === 'sends')
+						.map((l) => paneEntry(near, l.field)),
+					empty: src.def.external
+						? 'Sent from outside the design.'
+						: 'No logic unit here sends on it; it comes from outside.'
+				});
+				// What happens when a run fails: the retries, then the message is dead-lettered,
+				// and whatever handles that.
+				const sub = src.def.type === 'topic' ? (on.subscription ?? t.name) : undefined;
+				const dead = [...model.ports.values()].find(
+					(p) => p.channel === src.id && p.event === 'dead-lettered' && p.subscription === sub
+				);
+				const retries = d.retries ?? src.def.retries;
+				if (on.event === 'received')
+					groups.push({
+						label: 'On failure',
+						facts: fact(
+							'Retries',
+							retries === undefined ? 'not stated' : `${retries}, then dead-lettered`
+						),
+						units: (dead?.triggers ?? []).map((x) => paneEntry(near, x, 'dead-lettered')),
+						empty: 'Dead-lettered: nothing handles it.'
+					});
+			} else if (src) {
+				// A stored model's event: the units writing the model or any of its fields.
+				// eslint-disable-next-line svelte/prefer-svelte-reactivity -- built and used here
+				const writers = new Set<string>();
+				for (const [to, ls] of rels.in)
+					if (to === src.id || model.fields.get(to)?.modelId === src.id)
+						for (const l of ls) if (l.kind === 'writes') writers.add(l.field);
+				groups.push({
+					label: 'Written by',
+					units: [...writers].map((u) => paneEntry(near, u)),
+					empty: 'No logic unit here writes it; it is written from outside.'
+				});
+			}
+			return {
+				title: t.name,
+				sub: `Trigger · ${pathOf(t.parentId)}`,
+				glyph: on.event as GlyphKind,
+				source: {
+					label: 'Source',
+					rows: [
+						...fact('Event', onWords(model, on, t.name), false, true),
+						...fact('Kind', kind + (src?.def.via ? `, via ${src.def.via}` : '')),
+						...fact('Carries', src?.def.carries ? el(src.def.carries)?.name : undefined),
+						...fact('Path', on.path, true),
+						...fact('Filter', on.filter)
+					]
+				},
+				run: shared,
+				groups: [...groups, handled]
+			};
+		}
 		if (d.message) {
 			const m = d.message;
 			return {
 				title: t.name,
 				sub: `Message trigger · ${pathOf(t.parentId)}`,
-				glyph: 'message' as const,
+				glyph: 'message',
 				source: {
 					label: 'Message',
 					rows: [
-						...row('Kind', m.queue !== undefined ? 'Queue' : 'Topic'),
-						...row('Queue', m.queue, true),
-						...row('Topic', m.topic, true),
-						...row('Subscription', m.subscription, true),
-						...row('Via', m.via)
+						...fact('Kind', m.queue !== undefined ? 'Queue' : 'Topic'),
+						...fact('Queue', m.queue, true),
+						...fact('Topic', m.topic, true),
+						...fact('Subscription', m.subscription, true),
+						...fact('Via', m.via)
 					]
 				},
 				run: shared,
-				sentBy: units('calls'),
-				handledBy: units('handles')
+				groups: [
+					{
+						label: 'Sent by',
+						units: units('calls'),
+						empty: 'No logic unit here sends it; it comes from outside.'
+					},
+					handled
+				]
 			};
 		}
-		const s = d.schedule ?? {};
-		const zone = s.cron !== undefined || s.at !== undefined ? `, ${s.tz ?? 'UTC'}` : '';
-		const written = s.cron ?? (s.every !== undefined ? `every ${s.every}` : `at ${s.at}`);
-		const next = nextRuns(s, 3);
+		const sch = d.schedule ?? {};
+		const zone = sch.cron !== undefined || sch.at !== undefined ? `, ${sch.tz ?? 'UTC'}` : '';
+		const written = sch.cron ?? (sch.every !== undefined ? `every ${sch.every}` : `at ${sch.at}`);
+		const next = nextRuns(sch, 3);
 		const OVERLAP = {
 			skip: 'skip a run due while one is going',
 			queue: 'queue a run due while one is going',
@@ -1508,18 +1695,78 @@
 		return {
 			title: t.name,
 			sub: `Trigger · ${pathOf(t.parentId)}`,
-			glyph: 'trigger' as const,
+			glyph: 'trigger',
 			source: {
 				label: 'Schedule',
 				rows: [
-					...row('When', scheduleWords(s) + zone),
-					...row('As written', s.cron !== undefined ? `cron ${written}` : written, true),
-					...row('Next', next.length ? next.join(' · ') : undefined)
+					...fact('When', scheduleWords(sch) + zone),
+					...fact('As written', sch.cron !== undefined ? `cron ${written}` : written, true),
+					...fact('Next', next.length ? next.join(' · ') : undefined)
 				]
 			},
-			run: [...row('Overlap', OVERLAP[d.overlap ?? 'skip']), ...shared],
-			sentBy: undefined,
-			handledBy: units('handles')
+			run: [...fact('Overlap', OVERLAP[d.overlap ?? 'skip']), ...shared],
+			groups: [handled]
+		};
+	}
+
+	/**
+	 * A channel's card: what it is and carries, the units sending on it, and each of its events
+	 * (its ports) with the triggers listening and the units those start.
+	 */
+	function channelCardOf(id: string, near: LandscapeBox): TriggerPane | undefined {
+		const c = el(id);
+		if (!c) return undefined;
+		const d = c.def;
+		const gate = d.when && el(d.when.flag);
+		const events: PaneGroup[] = [...model.ports.values()]
+			.filter((p) => p.channel === id)
+			.map((p) => ({
+				label: p.subscription !== undefined ? `${p.subscription} · ${p.event}` : p.event,
+				units: p.triggers.map((x) => {
+					const starts = (rels.in.get(x) ?? [])
+						.filter((l) => l.kind === 'handles')
+						.map((l) => el(l.field)!.name);
+					return paneEntry(
+						near,
+						x,
+						p.event as GlyphKind,
+						starts.length ? `starts ${starts.join(', ')}` : 'starts nothing'
+					);
+				}),
+				empty:
+					p.event === 'dead-lettered'
+						? 'Nothing handles a message given up on.'
+						: 'No trigger listens to it.'
+			}));
+		return {
+			title: c.name,
+			sub: `Channel · ${d.type === 'topic' ? 'Topic' : 'Queue'} · ${pathOf(c.parentId)}`,
+			glyph: d.type === 'topic' ? 'topic' : 'channel',
+			source: {
+				label: 'Channel',
+				rows: [
+					...fact('Carries', d.carries ? el(d.carries)?.name : undefined),
+					...fact('Via', d.via),
+					...fact(
+						'Retries',
+						d.retries === undefined ? 'not stated' : `${d.retries}, then dead-lettered`
+					),
+					...fact('Exists when', gate ? `${gate.name} is ${d.when!.is}` : undefined)
+				]
+			},
+			run: [],
+			groups: [
+				{
+					label: 'Sent by',
+					units: (rels.in.get(id) ?? [])
+						.filter((l) => l.kind === 'sends')
+						.map((l) => paneEntry(near, l.field)),
+					empty: d.external
+						? 'Sent from outside the design.'
+						: 'No logic unit here sends on it; it comes from outside.'
+				},
+				...events
+			]
 		};
 	}
 	const triggerCard = $derived(
@@ -1796,7 +2043,7 @@
 				}
 			);
 		}
-		if (t.field && isTrigger(t.field)) {
+		if (t.field && (isTrigger(t.field) || model.ports.has(t.field) || isChannel(t.field))) {
 			const trigger = triggerCardOf(t.field, t.box);
 			return trigger && { kind: 'trigger' as const, trigger, w: PANE_MIN };
 		}
@@ -1914,7 +2161,9 @@
 		const fits = (b: LandscapeBox) =>
 			hit.kind === 'logic-unit' || hit.kind === 'trigger'
 				? !!cardRows(b) && rowOf(b, field) >= 0
-				: !!b.view && b.elementId === modelId && (!field || rowOf(b, field) >= 0);
+				: hit.kind === 'channel'
+					? !!b.channel && b.elementId === hit.id
+					: !!b.view && b.elementId === modelId && (!field || rowOf(b, field) >= 0);
 		const box = boxes.find((b) => fits(b) && !b.ref) ?? boxes.find(fits);
 		if (box) flyTo({ box, field });
 	}
@@ -2505,7 +2754,11 @@
 				<EntityGlyph kind="class" />Model, where owned<span class="sw class"></span>
 			</div>
 			<div class="k"><EntityGlyph kind="table" />Stored table<span class="sw table"></span></div>
+			<div class="k"><EntityGlyph kind="file" />Stored file<span class="sw file"></span></div>
 			<div class="k"><EntityGlyph kind="triggers" />Triggers<span class="sw triggers"></span></div>
+			<div class="k">
+				<EntityGlyph kind="channel" />Channel, its events<span class="sw channel"></span>
+			</div>
 			<div class="k"><EntityGlyph kind="logic" />Logic<span class="sw logic"></span></div>
 			<div class="k"><EntityGlyph kind="api" />APIs<span class="sw api"></span></div>
 			<hr />
@@ -2732,11 +2985,7 @@
 			</section>
 		{/each}
 	{/snippet}
-	{#snippet triggerBody(
-		t: NonNullable<ReturnType<typeof triggerCardOf>>,
-		pick: (at: PeekAt) => void,
-		open?: string
-	)}
+	{#snippet triggerBody(t: TriggerPane, pick: (at: PeekAt) => void, open?: string)}
 		{#each [t.source, { label: 'Run', rows: t.run }] as s (s.label)}
 			{#if s.rows.length}
 				<section>
@@ -2752,10 +3001,17 @@
 				</section>
 			{/if}
 		{/each}
-		{#each [{ label: 'Sent by', units: t.sentBy ?? [] }, { label: 'Handled by', units: t.handledBy }] as g (g.label)}
-			{#if g.units.length}
+		{#each t.groups as g (g.label)}
+			{#if g.units.length || g.facts?.length || g.empty}
 				<section class="calls">
 					<h4>{g.label}</h4>
+					{#if g.facts?.length}
+						<div class="facts">
+							{#each g.facts as r (r.label)}
+								<span class="where">{r.label}</span><span class:prose={!r.ident}>{r.text}</span>
+							{/each}
+						</div>
+					{/if}
 					{#each g.units as e (e.id)}
 						<button
 							class="entry"
@@ -2764,21 +3020,20 @@
 							onclick={() => e.target && pick({ target: e.target })}
 							title={e.target ? 'Show here' : undefined}
 						>
-							<span class="text" data-glyph="ƒ"><Ident text={e.text} /></span>
+							{#if e.glyph}
+								<span class="text"><EntityGlyph kind={e.glyph} /> <Ident text={e.text} /></span>
+							{:else}
+								<span class="text" data-glyph="ƒ"><Ident text={e.text} /></span>
+							{/if}
 							<span class="where">{e.where}</span>
 						</button>
 					{/each}
+					{#if !g.units.length && g.empty}<p class="empty">{g.empty}</p>{/if}
 				</section>
 			{/if}
 		{/each}
-		{#if t.sentBy && !t.sentBy.length}
-			<p class="empty">No logic unit here sends it; it comes from outside.</p>
-		{/if}
-		{#if !t.handledBy.length}
-			<p class="empty">No logic unit handles it, so it starts nothing.</p>
-		{/if}
 	{/snippet}
-	{#snippet triggerTitle(t: NonNullable<ReturnType<typeof triggerCardOf>>)}
+	{#snippet triggerTitle(t: TriggerPane)}
 		<div class="head">
 			<div class="title"><EntityGlyph kind={t.glyph} /> <Ident text={t.title} /></div>
 			<div class="type">{t.sub}</div>
@@ -3334,6 +3589,20 @@
 			transparent 4.5px
 		);
 	}
+	.key .sw.file {
+		border: 1.5px solid var(--sdv-kind-table);
+		border-radius: 1px;
+		background: linear-gradient(
+			225deg,
+			var(--sdv-model-fill) 4px,
+			var(--sdv-kind-table) 4px 5.5px,
+			transparent 5.5px
+		);
+	}
+	.key .sw.channel {
+		border: 1.5px solid var(--sdv-kind-channel);
+		border-radius: 1px 7px 7px 1px;
+	}
 	.key .sw.api {
 		border-color: var(--sdv-system-stroke);
 		border-radius: 4px;
@@ -3588,7 +3857,8 @@
 	/* A trigger's facts: one label column across its sections. */
 	.inspector .facts {
 		display: grid;
-		grid-template-columns: 80px max-content;
+		/* Names set the width (max-content); prose fills what the pane has. */
+		grid-template-columns: 80px minmax(max-content, 1fr);
 		column-gap: 10px;
 		row-gap: 2px;
 		padding: 3px 12px 3px;

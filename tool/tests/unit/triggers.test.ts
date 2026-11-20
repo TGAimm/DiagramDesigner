@@ -105,7 +105,7 @@ describe('triggers', () => {
 		const inM = boxes.filter((b) => b.parentId === 'm');
 		expect(inM.map((b) => b.id)).toEqual(['m#triggers', 'm#logic', 'cart']);
 		expect(inM[0].triggers!.rows).toEqual([
-			{ id: 'nightly', name: 'purgeOldCarts', signature: 'At 03:00' }
+			{ id: 'nightly', name: 'purgeOldCarts', signature: 'At 03:00', glyph: 'trigger' }
 		]);
 		expect(boxes.some((b) => b.elementId === 'nightly')).toBe(false);
 	});
@@ -121,7 +121,7 @@ describe('triggers', () => {
 		const model = load();
 		const seq = sequenceOf(model, 'purge');
 		expect(seq.lifelines[0].subs).toEqual([
-			{ text: 'purgeOldCarts · At 03:00', trigger: true, target: 'nightly' }
+			{ text: 'purgeOldCarts · At 03:00', trigger: true, glyph: 'trigger', target: 'nightly' }
 		]);
 		expect(seq.messages[0].text).toBe('carts older than 30 days');
 		const first = runOf(model, 'purge', {}, new Set()).steps[0];
@@ -167,9 +167,9 @@ describe('message triggers', () => {
 	const codesM = (extra: Record<string, string>) => loadM(extra).diagnostics.map((d) => d.code);
 	const trigger = (body: string) => ({ 's/stock.trigger.yaml': `id: stock\nparent: m\n${body}\n` });
 
-	it('are sent by the units calling them', () => {
+	it('are sent by the units calling them, and ask to be migrated', () => {
 		const model = loadM();
-		expect(model.diagnostics).toEqual([]);
+		expect(model.diagnostics.map((d) => d.code)).toEqual(['trigger-message-legacy']);
 		expect(model.elements.get('push')!.logic!.calls).toEqual(['stock']);
 		expect(edgesOf(model)).toContainEqual({ kind: 'calls', from: 'push', to: 'stock' });
 		expect(edgesOf(model)).toContainEqual({ kind: 'handles', from: 'stock', to: 'apply' });
@@ -182,7 +182,9 @@ describe('message triggers', () => {
 		expect(codesM(trigger('retries: 1'))).toContain('trigger-source');
 		for (const bad of ['{ via: dapr }', '{ queue: q, topic: t }', '{ queue: q, subscription: s }'])
 			expect(codesM(trigger(`message: ${bad}`)), bad).toContain('trigger-message');
-		expect(codesM(trigger('message: { topic: t, subscription: s }'))).toEqual([]);
+		expect(codesM(trigger('message: { topic: t, subscription: s }'))).toEqual([
+			'trigger-message-legacy'
+		]);
 		expect(codesM(trigger('message: { queue: q }\noverlap: skip'))).toContain('trigger-overlap');
 		expect(codesM({ 's/m.module.yaml': 'id: m\nparent: s\nmessage: { queue: q }\n' })).toContain(
 			'trigger-only'
@@ -205,8 +207,8 @@ describe('message triggers', () => {
 		);
 		const card = layoutLandscape(loadM()).boxes.find((b) => b.id === 'm#triggers')!;
 		expect(card.triggers!.rows).toEqual([
-			{ id: 'nightly', name: 'purgeOldCarts', signature: 'At 03:00' },
-			{ id: 'stock', name: 'stockChanged', signature: 'Queue erp-stock', message: true }
+			{ id: 'nightly', name: 'purgeOldCarts', signature: 'At 03:00', glyph: 'trigger' },
+			{ id: 'stock', name: 'stockChanged', signature: 'Queue erp-stock', glyph: 'message' }
 		]);
 	});
 
@@ -234,7 +236,7 @@ describe('message triggers', () => {
 	it('are the caller of their handler, which lists who sends them', () => {
 		const seq = sequenceOf(loadM(), 'apply');
 		expect(seq.lifelines[0].subs).toEqual([
-			{ text: 'stockChanged · Queue erp-stock', trigger: true, message: true, target: 'stock' },
+			{ text: 'stockChanged · Queue erp-stock', trigger: true, glyph: 'message', target: 'stock' },
 			{ text: 'ƒ pushStock', target: 'push' }
 		]);
 		expect(seq.messages[0].text).toBe('AX stock lines');

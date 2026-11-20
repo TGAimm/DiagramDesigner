@@ -1,7 +1,7 @@
 import { LOGIC_KEYS, type Model } from '../model/model';
 import type { Element, ModelField, ModelIndex } from '../model/schema';
 import { GLYPH, textWidth, truncate, truncateStart } from '../render/text';
-import { triggerWords } from '../model/message';
+import { triggerGlyph, triggerWords } from '../model/message';
 import { railGroups, railOf } from './apis';
 import { edgeKey, edgesOf, type Edge } from './connections';
 import type { ElkNode } from 'elkjs/lib/elk-api';
@@ -44,6 +44,10 @@ export interface LandscapeBox {
 	logic?: { cols: TableColumn[]; rows: LogicRow[] };
 	/** A module's triggers, one row each, its schedule in words; set when the box is its triggers card. */
 	triggers?: { cols: TableColumn[]; rows: LogicRow[] };
+	/** A channel's events (its ports), one row each with the triggers on it; set on a channel card. */
+	channel?: { cols: TableColumn[]; rows: LogicRow[] };
+	/** A table card of a model stored in a module that keeps files (`store: files`): a file. */
+	files?: true;
 	/**
 	 * Room lines keep clear of the box, more the larger it is (see route.ts `clearanceOf`). The
 	 * layout leaves that much more room round it, and inside it if it holds boxes.
@@ -66,8 +70,8 @@ interface Item {
 	ref: boolean;
 	boundary?: boolean;
 	view?: ModelView;
-	/** The logic or triggers card of module `el`. */
-	card?: 'logic' | 'triggers';
+	/** The logic or triggers card of module `el`, or the card of channel `el`. */
+	card?: 'logic' | 'triggers' | 'channel';
 }
 
 /** A box without children: its name at a fixed size, the box fitted round it. */
@@ -242,8 +246,15 @@ export const typeText = (f: ModelField, label: (id: string) => string | undefine
 export const indexFields = (ix: ModelIndex, fields: ModelField[]) =>
 	ix.fields.map((id) => fields.find((f) => f.id === id)?.name ?? id).join(', ');
 
-/** A model card's type word, at the right of its name: CLASS or TABLE. */
-export const kindWord = (view: ModelView) => (view === 'table' ? 'TABLE' : 'CLASS');
+/** A model card's type word, at the right of its name: CLASS, TABLE or FILE. */
+export const kindWord = (view: ModelView, files?: boolean) =>
+	view === 'table' ? (files ? 'FILE' : 'TABLE') : 'CLASS';
+/** A channel card's type word: QUEUE or TOPIC. */
+export const channelWord = (type: string | undefined) => (type ?? 'queue').toUpperCase();
+
+/** Whether a model's stored form is a file: the module storing it keeps files. */
+export const storedAsFile = (model: Model, modelId: string) =>
+	model.elements.get(model.elements.get(modelId)?.storedIn ?? '')?.def.store === 'files';
 /** Line under a model's name: its owner, when it is owned elsewhere. */
 export const ownerNote = (owner?: string) => (owner ? `Owned by ${owner}` : '');
 
@@ -527,8 +538,13 @@ export interface LogicRow {
 	 * name; a trigger's schedule or message in words.
 	 */
 	signature: string;
-	/** A trigger row whose source is a message, marked with an envelope instead of a clock. */
-	message?: true;
+	/**
+	 * The glyph before a trigger's or port's name: its event's (`received`, `updated`, …), a
+	 * clock (`trigger`) for a schedule, an envelope (`message`) for an old message trigger.
+	 */
+	glyph?: string;
+	/** A port nothing listens to: drawn muted. */
+	idle?: true;
 }
 
 export function logicRow(model: Model, id: string): LogicRow {
@@ -547,14 +563,45 @@ export function logicRow(model: Model, id: string): LogicRow {
 const FN_GLYPH = 14;
 
 export const triggerRow = (model: Model, id: string): LogicRow => {
-	const def = model.elements.get(id)!.def;
+	const el = model.elements.get(id)!;
 	return {
 		id,
-		name: model.elements.get(id)!.name,
-		signature: triggerWords(def),
-		...(def.message ? { message: true as const } : {})
+		name: el.name,
+		signature: triggerWords(el.def, model, el.name),
+		glyph: triggerGlyph(el.def)
 	};
 };
+
+/**
+ * A channel's rows: one per port, its event (after its subscription, on a topic) and the
+ * triggers listening to it, or `none`.
+ */
+export const channelRows = (model: Model, id: string): LogicRow[] =>
+	[...model.ports.values()]
+		.filter((p) => p.channel === id)
+		.map((p) => ({
+			id: p.id,
+			name: p.subscription !== undefined ? `${p.subscription} · ${p.event}` : p.event,
+			signature: p.triggers.length
+				? p.triggers.map((t) => model.elements.get(t)?.name ?? t).join(', ')
+				: 'none',
+			glyph: p.event,
+			...(p.triggers.length ? {} : { idle: true as const })
+		}));
+
+/** Line under a channel card's name: what it carries, its retries, else what it runs on. */
+export function channelNote(model: Model, id: string): string {
+	const def = model.elements.get(id)?.def;
+	if (!def) return '';
+	const carries = def.carries ? model.elements.get(def.carries)?.name : undefined;
+	return [
+		carries ? `carries ${carries}` : def.via,
+		def.retries !== undefined ? `retries ${def.retries}` : '',
+		def.external ? 'sent from outside' : ''
+	]
+		.filter(Boolean)
+		.join(' · ');
+}
 
 /**
  * A module's logic or triggers card: a name bar, then one row per unit (its name and
@@ -563,7 +610,8 @@ export const triggerRow = (model: Model, id: string): LogicRow => {
 function rowsLayout(
 	rows: LogicRow[],
 	title: string,
-	note: string
+	note: string,
+	word = ''
 ): { size: Size; cols: TableColumn[] } {
 	const col = (key: LogicColumn, ws: number[]) => ({
 		key,
@@ -581,7 +629,10 @@ function rowsLayout(
 		)
 	];
 	const width = Math.max(
-		textWidth(title, TABLE.title, true) + GLYPH * TABLE.title + 2 * TABLE.pad,
+		textWidth(title, TABLE.title, true) +
+			GLYPH * TABLE.title +
+			2 * TABLE.pad +
+			(word ? textWidth(word, TABLE.label, true) * 1.1 + TABLE.kindGap : 0),
 		textWidth(note, TABLE.note) + 2 * TABLE.pad,
 		cols.reduce((w, c) => w + c.width, 0)
 	);
@@ -760,8 +811,14 @@ export function layoutLandscape(
 		return [
 			...rowCard('triggers', info.childIds.some(isTrigger)),
 			...rowCard('logic', info.childIds.some(isUnit)),
+			// Each channel is a card of its own, its events its rows.
 			...info.childIds
-				.filter((id) => !parts.has(id) && !isApi(id) && !isUnit(id) && !isTrigger(id))
+				.filter(isChannel)
+				.map((id) => ({ id, el: id, ref: false, card: 'channel' as const })),
+			...info.childIds
+				.filter(
+					(id) => !parts.has(id) && !isApi(id) && !isUnit(id) && !isTrigger(id) && !isChannel(id)
+				)
 				.map(owned),
 			...info.refIds.map((id) => ({
 				id: `${item.id}>${id}`,
@@ -780,6 +837,7 @@ export function layoutLandscape(
 	const isApi = (id: string) => model.elements.get(id)!.def.kind === 'api';
 	const isUnit = (id: string) => model.elements.get(id)!.def.kind === 'logic-unit';
 	const isTrigger = (id: string) => model.elements.get(id)!.def.kind === 'trigger';
+	const isChannel = (id: string) => model.elements.get(id)!.def.kind === 'channel';
 	const apisOf = (item: Item) =>
 		item.ref || item.view || item.boundary || item.card
 			? []
@@ -806,15 +864,18 @@ export function layoutLandscape(
 			...(item.view
 				? [item.el, ...viewFields(model, holders, item.el, item.view).map((f) => f.id)]
 				: []),
-			...(item.card
-				? model.elements.get(item.el)!.childIds.filter(item.card === 'logic' ? isUnit : isTrigger)
-				: []),
+			...(item.card === 'channel'
+				? [item.el, ...channelRows(model, item.el).map((r) => r.id)]
+				: item.card
+					? model.elements.get(item.el)!.childIds.filter(item.card === 'logic' ? isUnit : isTrigger)
+					: []),
 			...apis,
 			...[...model.apiFields].filter(([, f]) => apis.includes(f.apiId)).map(([id]) => id)
 		];
 	};
-	// A module's triggers card first, then its logic card, then the rest.
-	const rank = (k: Item) => (k.card === 'triggers' ? 0 : k.card === 'logic' ? 1 : 2);
+	// A module's triggers card first, then its logic card, its channels, then the rest.
+	const rank = (k: Item) =>
+		k.card === 'triggers' ? 0 : k.card === 'logic' ? 1 : k.card === 'channel' ? 2 : 3;
 	const walk = (item: Item, parent?: string) => {
 		const kids = kidsOf(item).sort((a, b) => rank(a) - rank(b) || idOrder(a, b));
 		kidsBy.set(item.id, kids);
@@ -868,6 +929,16 @@ export function layoutLandscape(
 			const l = rowsLayout(rows, 'Triggers', triggersNote(rows.length));
 			logicCards.set(item.id, { cols: l.cols, rows });
 			size = l.size;
+		} else if (info && item.card === 'channel') {
+			const rows = channelRows(model, info.id);
+			const l = rowsLayout(
+				rows,
+				info.name,
+				channelNote(model, info.id),
+				channelWord(info.def.type)
+			);
+			logicCards.set(item.id, { cols: l.cols, rows });
+			size = l.size;
 		} else size = { width: leafWidth(info?.name ?? item.el), height: LEAF.height };
 		const own = railWidth(item.el, apisOf(item), size.height) / 2;
 		if (own) {
@@ -910,6 +981,8 @@ export function layoutLandscape(
 				apis: apisOf(item),
 				logic: item.card === 'logic' ? logicCards.get(item.id) : undefined,
 				triggers: item.card === 'triggers' ? logicCards.get(item.id) : undefined,
+				channel: item.card === 'channel' ? logicCards.get(item.id) : undefined,
+				...(item.view === 'table' && storedAsFile(model, item.el) ? { files: true as const } : {}),
 				clear: clear.get(item.id) ?? ROUTE.buffer
 			};
 			out.push(box);
@@ -1155,10 +1228,10 @@ export function layoutLandscape(
 }
 
 const modelOf = (model: Model, id: string) => model.fields.get(id)?.modelId ?? id;
-/** The rows of a logic or triggers card. */
-export const cardRows = (b: LandscapeBox) => b.logic?.rows ?? b.triggers?.rows;
+/** The rows of a logic, triggers or channel card. */
+export const cardRows = (b: LandscapeBox) => b.logic?.rows ?? b.triggers?.rows ?? b.channel?.rows;
 
-/** Whether a card has a row for a field, logic unit or trigger. */
+/** Whether a card has a row for a field, logic unit, trigger or port. */
 const shows = (b: LandscapeBox, id: string) =>
 	!!(b.fields?.some((f) => f.id === id) || cardRows(b)?.some((r) => r.id === id));
 
@@ -1174,7 +1247,9 @@ export function linkTarget(
 	to: string
 ): LandscapeBox | undefined {
 	const kind = model.elements.get(to)?.def.kind;
-	if (kind === 'logic-unit' || kind === 'trigger') return boxes.find((o) => shows(o, to));
+	if (kind === 'logic-unit' || kind === 'trigger' || model.ports.has(to))
+		return boxes.find((o) => shows(o, to));
+	if (kind === 'channel') return boxes.find((o) => o.channel && o.elementId === to);
 	const el = modelOf(model, to);
 	const cards = boxes.filter((o) => o.view && o.elementId === el);
 	const dist = (o: LandscapeBox) =>
