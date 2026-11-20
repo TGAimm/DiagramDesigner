@@ -35,9 +35,8 @@ drawn by one standard (`tool/src/lib/landscape/connections.ts`):
 
 - **Direction:** the arrow points at what the start depends on: a `ref` at its key, `from` at
   its source, a unit's reads and writes at the model, a call at the callee, an api at the unit
-  handling it and at the models its bodies use, a send at the channel. A trigger's event
-  line is the one drawn the way things flow: from the channel's port, model or field it
-  listens to, arrow at the trigger. A held model (`model`) has a UML diamond at
+  handling it and at the models its bodies use, a send at the channel, a trigger's event
+  line at the channel's port, model or field it listens to. A held model (`model`) has a UML diamond at
   the holder. So change impact follows arrows backwards.
 - **Style:** solid for structure (ref, holds, reads, writes, bodies), dashed for lineage,
   dotted for calls and handles, dashed for events. Grey at rest, the kind's colour when lit; widths stay the

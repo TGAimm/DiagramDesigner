@@ -53,7 +53,7 @@ topic's subscribers come and go without touching any sender.
   `received` row per subscription, and its `dead-lettered` while something listens to it. Each
   row names the triggers listening, or `none`, muted.
 - Lines: a send from each sending unit to the card (solid), and an event line (dashed,
-  fuchsia when lit) from each port to the trigger rows on it, arrow at the trigger.
+  fuchsia when lit) from each trigger row to the port it listens to, arrow at the port.
 - Hover the card: its sends in and every event line out. Hover a trigger on it: the whole way
   a message comes lights, sender, channel, event, trigger and the unit it starts.
 - Click a port: the channel's card (kind, carries, via, retries, gate, Sent by, and each event

@@ -606,9 +606,7 @@
 			const a = mineHome && endOf(mine, mineHome);
 			const b = theirHome && endOf(theirs, theirHome);
 			if (!a || !b) continue;
-			// A trigger depends on the event it listens to, but the event flows to the trigger, so
-			// its line is drawn from the event, its arrow at the trigger.
-			const [s, t] = fromIn !== (e.kind === 'on') ? [a, b] : [b, a];
+			const [s, t] = fromIn ? [a, b] : [b, a];
 			const sameCard = s.node === t.node;
 			// One box: only two of a card's rows are joined.
 			if (
