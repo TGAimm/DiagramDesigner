@@ -10,6 +10,7 @@
 	} from '@lucide/svelte';
 	import { changes } from '#lib/client/changes.svelte.ts';
 	import { CanvasCamera, setCamera } from '#lib/client/camera.svelte.ts';
+	import { methodColor } from '#lib/theme/tokens.ts';
 	import { search } from '#lib/client/search.svelte.ts';
 	import SearchPalette from '#lib/components/SearchPalette.svelte';
 	import type { Hit } from '#lib/landscape/search.ts';
@@ -3042,9 +3043,7 @@
 	{#snippet apiTitle(api: NonNullable<ReturnType<typeof apiCardOf>>)}
 		<div class="head">
 			<div class="title">
-				<span style:color="var(--sdv-method-{api.method.toLowerCase()}, var(--sdv-text-muted))"
-					>{api.method}</span
-				>
+				<span style:color={methodColor(api.method)}>{api.method}</span>
 				<span class="mono"><Ident text={api.path} /></span>
 			</div>
 			<div class="type">{api.sub}</div>
@@ -3292,8 +3291,7 @@
 				style:top="{playDraw.label.y}px"
 				style:--ax={SHIFT[playDraw.label.align]}
 			>
-				{#if step.method}<b style:color="var(--sdv-method-{step.method.toLowerCase()})"
-						>{step.method}</b
+				{#if step.method}<b style:color={methodColor(step.method)}>{step.method}</b
 					>{step.text.slice(step.method.length)}{:else}{step.text}{/if}
 			</div>
 			{#if playDraw.edge}

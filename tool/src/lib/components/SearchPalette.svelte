@@ -2,6 +2,7 @@
 	import { Crosshair, Search } from '@lucide/svelte';
 	import { changes } from '#lib/client/changes.svelte.ts';
 	import { searchLandscape, type Hit, type Mark } from '#lib/landscape/search.ts';
+	import { methodColor } from '#lib/theme/tokens.ts';
 	import type { FocusMode } from '#lib/landscape/focus.ts';
 	import EntityGlyph, { type GlyphKind } from './canvas/EntityGlyph.svelte';
 
@@ -36,11 +37,6 @@
 		trigger: 'trigger',
 		channel: 'channel'
 	};
-	const METHOD_TOKEN: Record<string, string> = { PATCH: 'put' };
-	const methodColor = (m: string) =>
-		['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(m)
-			? `var(--sdv-method-${METHOD_TOKEN[m] ?? m.toLowerCase()})`
-			: 'var(--ui-muted)';
 	const parts = (text: string, mark: Mark | undefined) =>
 		mark ? [text.slice(0, mark[0]), text.slice(...mark), text.slice(mark[1])] : [text, '', ''];
 
