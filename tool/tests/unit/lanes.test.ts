@@ -144,6 +144,25 @@ describe('lanes', () => {
 		}
 	});
 
+	it('leans lanes away from a box the route runs close beside', () => {
+		// A box 8 px above the stretch, nothing below: the lanes spread downwards.
+		const boxes: Rect[] = [{ x0: 0, y0: -100, x1: 200, y1: -8 }];
+		// Each turns down at its own x: lanes 0 to 4. Their ends have room to slide.
+		const lines = [0, 1, 2, 3, 4].map((k) => ({
+			...line(`l${k}`, -50, 0, 250 + 10 * k, 0, 250 + 10 * k, 80),
+			ends: [100, 100] as const
+		}));
+		const out = laneLines(lines, boxes);
+		for (const zoom of [1, 0.5]) {
+			const ys = lines.map((l) => lanePoints(out.get(l.id)!, zoom)[1].y);
+			expect(Math.min(...ys)).toBeGreaterThanOrEqual(-(8 - LANE.standoff) - 1e-9);
+			// Still a full step apart on screen.
+			const sorted = [...ys].sort((a, b) => a - b);
+			for (let i = 1; i < sorted.length; i++)
+				expect((sorted[i] - sorted[i - 1]) * zoom).toBeCloseTo(2 + LANE.gap);
+		}
+	});
+
 	it('slides an end no further than its line allows along what it ends on', () => {
 		const lines = [
 			{ ...line('a', 0, 0, 100, 0, 100, -50), ends: [1, 10] as const },

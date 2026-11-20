@@ -8,12 +8,12 @@ import type { Point, Rect } from './route.ts';
  * line at rest between the boxes they join, and lines from one row out of one point. Here
  * every straight piece of a route that lies on another's is given a lane: the pieces sharing a
  * stretch are ordered so their lines cross no more than they must (see `side`), and spread
- * about where the router put them, `step` screen px apart. The lanes keep that spacing on
- * screen at any zoom, as line widths do, so the shift is worked out by the lines' shader (see
- * gl/lines.ts, and `lanePoints` for the same sum here). Zoomed out, a lane never shifts further
- * than the room round its stretch allows (`room`, canvas px): off the boxes beside it, halfway
- * to the next line, within the row it ends on, and short of the pieces it bends into; past
- * that its lines close up again.
+ * about where the router put them, `step` screen px apart, leaning to the side with more room.
+ * The lanes keep that spacing on screen at any zoom, as line widths do, so the shift is worked
+ * out by the lines' shader (see gl/lines.ts, and `lanePoints` for the same sum here). Zoomed
+ * out, a lane never shifts further than the room round its stretch allows (`room`, canvas px):
+ * off the boxes beside it, halfway to the next line, within the row it ends on, and short of
+ * the far end of a piece it bends back along; past that its lines close up again.
  */
 
 /**
@@ -148,9 +148,9 @@ export function laneLines(lines: readonly LaneLine[], boxes: Iterable<Rect>): Ma
 		const mid = (Math.max(...lane.values()) || 0) / 2;
 		if (!mid) continue;
 		const step = Math.max(...s.map((p) => lines[p.line].width)) + LANE.gap;
-		const room = roomOf(s, lane, mid, routes, lines, walls, sorted[s[0].axis]);
+		const { room, shift } = roomOf(s, lane, mid, routes, lines, walls, sorted[s[0].axis]);
 		for (const [p, k] of lane) {
-			const n = k - mid;
+			const n = k - mid + shift;
 			lanes[p.line][p.i] = {
 				nx: p.axis === 'x' ? n : 0,
 				ny: p.axis === 'y' ? n : 0,
@@ -296,10 +296,12 @@ function search<T extends { at: number }>(list: T[], at: number) {
 }
 
 /**
- * Canvas px between a stretch's lanes at most: its outer lanes, `mid` steps out either side,
- * keep `LANE.standoff` off the nearest box beside the stretch, and to their half of the way to
- * the nearest other line; an end slides no further than its line allows along what it ends
- * on; and no lane shifts a corner more than half way along the piece it bends into.
+ * Where a stretch's lanes go: `shift` steps towards the far side (greater x or y) from centred
+ * on the route, and `room`, canvas px between them at most. The lanes keep `LANE.standoff` off
+ * the nearest box beside the stretch either side, and to their half of the way to the nearest
+ * other line; they lean to the side with more room, so lines routed close beside a box spread
+ * the other way. An end slides no further than its line allows along what it ends on, and no
+ * lane moves a corner more than half way along the piece it bends into.
  */
 function roomOf(
 	s: Piece[],
@@ -309,42 +311,55 @@ function roomOf(
 	lines: readonly LaneLine[],
 	walls: Record<Axis, Wall[]>,
 	others: Piece[]
-): number {
+): { room: number; shift: number } {
 	const { axis, at } = s[0];
 	const span = { lo: Math.min(...s.map((p) => p.lo)), hi: Math.max(...s.map((p) => p.hi)) };
 	const beside = (w: { lo: number; hi: number }) =>
 		Math.min(w.hi, span.hi) - Math.max(w.lo, span.lo) > EPS;
-	let room = FREE;
-	// Nearest wall and other line either side: the first beside the stretch, going outwards.
-	for (const dir of [-1, 1]) {
+	// Canvas px for the outer lane either side: to the nearest wall and other line beside the
+	// stretch, going outwards.
+	const free = (dir: number) => {
+		let out = FREE;
 		const list = walls[axis];
 		for (let k = search(list, at) + (dir < 0 ? -1 : 0); k >= 0 && k < list.length; k += dir) {
 			const d = Math.abs(list[k].at - at);
 			if (d < EPS || !beside(list[k])) continue;
-			room = Math.min(room, (d - LANE.standoff) / mid);
+			out = Math.min(out, d - LANE.standoff);
 			break;
 		}
 		for (let k = search(others, at) + (dir < 0 ? -1 : 0); k >= 0 && k < others.length; k += dir) {
 			const d = Math.abs(others[k].at - at);
 			if (d < EPS || !beside(others[k])) continue;
-			room = Math.min(room, (d / 2 - EPS) / mid);
+			out = Math.min(out, d / 2 - EPS);
 			break;
 		}
-	}
+		return Math.max(0, out);
+	};
+	const [near, far] = [free(-1), free(1)];
+	// The lanes from `mid - shift` steps on the near side to `mid + shift` on the far, as far
+	// apart as both sides' room allows.
+	const shift = near + far ? Math.max(-mid, Math.min(mid, (mid * (far - near)) / (near + far))) : 0;
+	const within = (px: number, steps: number) => (steps > 1e-9 ? px / steps : FREE);
+	let room = Math.min(within(near, mid - shift), within(far, mid + shift));
 	for (const [p, k] of lane) {
-		const n = Math.abs(k - mid);
-		if (!n) continue;
+		const across = k - mid + shift;
+		const n = Math.abs(across);
+		if (n < 1e-9) continue;
 		const pts = routes[p.line];
 		const ends = lines[p.line].ends ?? [LANE.end, LANE.end];
 		if (p.i === 0) room = Math.min(room, ends[0] / n);
 		if (p.i + 2 === pts.length) room = Math.min(room, ends[1] / n);
+		// A corner moving along the piece it bends into, towards that piece's other end,
+		// shortens it; moving away only lengthens it.
 		for (const j of [p.i - 1, p.i + 1]) {
 			if (j < 0 || j + 1 >= pts.length) continue;
-			const len = Math.hypot(pts[j + 1].x - pts[j].x, pts[j + 1].y - pts[j].y);
-			room = Math.min(room, (len / 2 - EPS) / n);
+			const [corner, other] = j < p.i ? [pts[p.i], pts[j]] : [pts[p.i + 1], pts[j + 1]];
+			const toward = other[axis] - corner[axis];
+			if (Math.sign(toward) !== Math.sign(across)) continue;
+			room = Math.min(room, (Math.abs(toward) / 2 - EPS) / n);
 		}
 	}
-	return Math.max(0, room);
+	return { room: Math.max(0, room), shift };
 }
 
 /**
