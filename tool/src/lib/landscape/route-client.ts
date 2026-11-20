@@ -1,4 +1,5 @@
 import {
+	ROUTE,
 	routeKey,
 	type Point,
 	type Rect,
@@ -83,10 +84,16 @@ export interface KeyedGroup extends RouteGroup {
 	key: string;
 	x: number;
 	y: number;
+	/**
+	 * What the group stands for across layouts (the box its lines run in): a group changed
+	 * since it was last routed keeps the routes of the lines the change left alone (see
+	 * `rerouted`). Without it every change routes the whole group again.
+	 */
+	id?: string;
 }
 
-/** `group` with its key; `shareEnds` as it is routed. */
-export function keyedGroup(group: RouteGroup, shareEnds: boolean): KeyedGroup {
+/** `group` with its key; `shareEnds` as it is routed; `id` what it stands for, if anything. */
+export function keyedGroup(group: RouteGroup, shareEnds: boolean, id?: string): KeyedGroup {
 	let [x, y] = [Infinity, Infinity];
 	for (const r of group.boxes.values()) [x, y] = [Math.min(x, r.x0), Math.min(y, r.y0)];
 	if (!group.boxes.size) [x, y] = [0, 0];
@@ -95,12 +102,92 @@ export function keyedGroup(group: RouteGroup, shareEnds: boolean): KeyedGroup {
 		boxes.set(id, { ...r, x0: r.x0 - x, y0: r.y0 - y, x1: r.x1 - x, y1: r.y1 - y });
 	const end = (e: RouteEnd): RouteEnd => ({ ...e, x0: e.x0 - x, x1: e.x1 - x, y: e.y - y });
 	const lines = group.lines.map((l) => ({ ...l, s: end(l.s), t: end(l.t) }));
-	return { ...group, x, y, key: `${boxesKey(boxes)}|${routeKey(lines, shareEnds)}` };
+	return { ...group, x, y, id, key: `${boxesKey(boxes)}|${routeKey(lines, shareEnds)}` };
 }
 
 /** `routes` moved by `dx`, `dy`. */
 const moved = (routes: Routes, dx: number, dy: number): Routes =>
 	new Map([...routes].map(([id, pts]) => [id, pts.map((p) => ({ x: p.x + dx, y: p.y + dy }))]));
+
+/** Whether a route comes nearer to `r` than lines keep off it. */
+function nears(pts: Point[], r: Rect) {
+	const g = Math.max(ROUTE.buffer, r.clear ?? 0) - 0.5;
+	for (let i = 0; i + 1 < pts.length; i++) {
+		const [p, q] = [pts[i], pts[i + 1]];
+		if (
+			Math.max(p.x, q.x) > r.x0 - g &&
+			Math.min(p.x, q.x) < r.x1 + g &&
+			Math.max(p.y, q.y) > r.y0 - g &&
+			Math.min(p.y, q.y) < r.y1 + g
+		)
+			return true;
+	}
+	return false;
+}
+
+/**
+ * What of a group changed since it was routed must be routed again: its new lines, those whose
+ * ends moved or changed, those ending on a box that moved or changed size, and those whose route
+ * now comes near a box that did, or one added. The others keep their routes (`keep`, from the
+ * group's top-left corner, as kept). `was` is the group as it was routed, `routes` its routes
+ * then, from its top-left corner. The group is matched as it lies on the canvas and as it lies
+ * within itself, whichever keeps more, so a group moved whole and changed inside keeps what the
+ * change left alone. Kept routes are not spread apart from the new ones as routing them all
+ * together would; a page opened anew routes the group whole (see `keptRoutes`).
+ */
+export function rerouted(
+	group: KeyedGroup,
+	was: KeyedGroup,
+	routes: Routes
+): { keep: Routes; lines: RouteLine[] } {
+	let best: { keep: Routes; lines: RouteLine[] } = { keep: new Map(), lines: group.lines };
+	const old = new Map(was.lines.map((l) => [l.id, l]));
+	for (const [dx, dy] of [
+		[0, 0],
+		[group.x - was.x, group.y - was.y]
+	]) {
+		const same = new Set<string>();
+		const changed: Rect[] = [];
+		for (const [id, r] of group.boxes) {
+			const o = was.boxes.get(id);
+			if (
+				o &&
+				o.x0 + dx === r.x0 &&
+				o.y0 + dy === r.y0 &&
+				o.x1 + dx === r.x1 &&
+				o.y1 + dy === r.y1 &&
+				(o.clear ?? 0) === (r.clear ?? 0) &&
+				!!o.frame === !!r.frame
+			)
+				same.add(id);
+			else changed.push(r);
+		}
+		const sameEnd = (e: RouteEnd, o: RouteEnd) =>
+			e.on === o.on &&
+			!!e.point === !!o.point &&
+			e.x0 === o.x0 + dx &&
+			e.x1 === o.x1 + dx &&
+			e.y === o.y + dy &&
+			e.sides.join() === o.sides.join() &&
+			(e.on === undefined || same.has(e.on));
+		const keep: Routes = new Map();
+		const lines: RouteLine[] = [];
+		for (const l of group.lines) {
+			const o = old.get(l.id);
+			const pts = o && sameEnd(l.s, o.s) && sameEnd(l.t, o.t) ? routes.get(l.id) : undefined;
+			// On the canvas now, to test against the boxes that changed.
+			const at = pts?.map((p) => ({ x: p.x + was.x + dx, y: p.y + was.y + dy }));
+			if (at && !changed.some((r) => nears(at, r)))
+				keep.set(
+					l.id,
+					at.map((p) => ({ x: p.x - group.x, y: p.y - group.y }))
+				);
+			else lines.push(l);
+		}
+		if (keep.size > best.keep.size) best = { keep, lines };
+	}
+	return best;
+}
 
 /** Groups of lines at rest of more lines than this are routed only ahead (see `nextGroup`). */
 const LARGE = 64;
@@ -115,6 +202,11 @@ interface Job {
 	shareEnds: boolean;
 	/** A group of lines at rest, routed among its own boxes, not `lines` among all the boxes. */
 	group?: KeyedGroup;
+	/**
+	 * The group `group` is part of, when only some of its lines are routed again (see
+	 * `rerouted`), and the routes the others keep.
+	 */
+	whole?: { group: KeyedGroup; keep: Routes };
 	slot?: Slot;
 	done?: () => void;
 }
@@ -241,14 +333,33 @@ export class RouteClient {
 	wantGroups(groups: KeyedGroup[], shareEnds: boolean, done: () => void) {
 		this.keepGroups = Math.max(256, 4 * groups.length);
 		const jobs: Job[] = [];
+		this.partly.clear();
 		for (const g of groups) {
-			if (!g.lines.length || this.keptGroup(g.key)) continue;
+			if (!g.lines.length) continue;
+			const kept = this.keptGroup(g.key);
+			if (kept) {
+				this.routedLast(g, kept);
+				continue;
+			}
 			const busy = [this.now, this.later].find((lane) => lane.busy?.key === g.key)?.busy;
 			if (busy) {
 				busy.done = done;
+				if (busy.whole) this.partly.set(g.key, busy.whole.keep);
 				continue;
 			}
-			jobs.push({ key: g.key, lines: g.lines, shareEnds, group: g, done });
+			// Changed since it was routed: only what the change touched is routed again.
+			const last = g.id === undefined ? undefined : this.last.get(g.id);
+			const again = last && rerouted(g, last.group, last.routes);
+			if (again?.keep.size && !again.lines.length) {
+				this.keptRoutes(g, again.keep, false);
+				continue;
+			}
+			if (again?.keep.size) {
+				this.partly.set(g.key, again.keep);
+				const part = { ...g, lines: again.lines };
+				const whole = { group: g, keep: again.keep };
+				jobs.push({ key: g.key, lines: again.lines, shareEnds, group: part, whole, done });
+			} else jobs.push({ key: g.key, lines: g.lines, shareEnds, group: g, done });
 		}
 		this.groupQueue = jobs.sort((a, b) => a.lines.length - b.lines.length);
 		if (!jobs.length) done();
@@ -263,16 +374,18 @@ export class RouteClient {
 	 */
 	groupRoutes(groups: KeyedGroup[]): { routes: Routes; done: boolean } {
 		const kept = groups.map((g) => (g.lines.length ? this.keptGroup(g.key) : undefined));
-		const have = kept.map((r, i) => (r || !groups[i].lines.length ? 1 : 0)).join('');
+		// A group routed again in part shows the routes its other lines keep meanwhile.
+		const part = groups.map((g, i) => (kept[i] ? undefined : this.partly.get(g.key)));
+		const have = kept.map((r, i) => (r || !groups[i].lines.length ? 1 : part[i] ? 2 : 0)).join('');
 		if (this.lastGroups?.groups === groups && this.lastGroups.have === have)
 			return this.lastGroups.out;
 		const routes: Routes = new Map();
 		let done = true;
 		groups.forEach((g, i) => {
 			if (!g.lines.length) return;
-			const r = kept[i];
-			if (!r) done = false;
-			else for (const [id, pts] of moved(r, g.x, g.y)) routes.set(id, pts);
+			const r = kept[i] ?? part[i];
+			if (!kept[i]) done = false;
+			if (r) for (const [id, pts] of moved(r, g.x, g.y)) routes.set(id, pts);
 		});
 		const out = { routes, done };
 		this.lastGroups = { groups, have, out };
@@ -296,6 +409,34 @@ export class RouteClient {
 		}
 		if (r) this.keepGroup(key, r);
 		return r;
+	}
+
+	/**
+	 * The routes of each group last routed, by its id, from its top-left corner, so a change to
+	 * it routes again only what the change touched (see `rerouted`).
+	 */
+	private readonly last = new Map<string, { group: KeyedGroup; routes: Routes }>();
+	/** The routes kept by the lines of a group routed again in part, by its key, meanwhile. */
+	private readonly partly = new Map<string, Routes>();
+
+	private routedLast(g: KeyedGroup, routes: Routes) {
+		if (g.id !== undefined) this.last.set(g.id, { group: g, routes });
+	}
+
+	/**
+	 * A group's routes come in, from its top-left corner: kept here, and in the store when the
+	 * group was routed whole, so a page opened anew routes whole a group routed again in part.
+	 */
+	private keptRoutes(g: KeyedGroup, routes: Routes, whole: boolean) {
+		this.partly.delete(g.key);
+		this.keepGroup(g.key, routes);
+		this.routedLast(g, routes);
+		if (whole)
+			try {
+				this.store?.save(`group|${g.key}`, routes);
+			} catch {
+				// Not kept for next time; routed again then.
+			}
 	}
 
 	private keepGroup(key: string, routes: Routes) {
@@ -457,12 +598,8 @@ export class RouteClient {
 		if (job?.group && m.routes) {
 			// A group's routes hold for whatever layout it is in, wherever it is.
 			const routes = moved(m.routes, -job.group.x, -job.group.y);
-			this.keepGroup(job.key, routes);
-			try {
-				this.store?.save(`group|${job.key}`, routes);
-			} catch {
-				// Not kept for next time; routed again then.
-			}
+			if (job.whole) for (const [id, pts] of job.whole.keep) routes.set(id, pts);
+			this.keptRoutes(job.whole?.group ?? job.group, routes, !job.whole);
 			job.done?.();
 		} else if (job && m.routes && at) {
 			if (job.slot === 'rest') {

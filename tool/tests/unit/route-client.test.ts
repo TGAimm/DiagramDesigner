@@ -12,10 +12,17 @@ import {
 	type RouteEnd,
 	type RouteLine
 } from '../../src/lib/landscape/route';
-import { keyedGroup, RouteClient, type RoutePort } from '../../src/lib/landscape/route-client';
+import {
+	keyedGroup,
+	rerouted,
+	RouteClient,
+	type KeyedGroup,
+	type RoutePort
+} from '../../src/lib/landscape/route-client';
 import { routeStore } from '../../src/lib/landscape/route-store';
 import { routeService, type ToRouter } from '../../src/lib/landscape/route-service';
 import { loadDesign } from '../../src/lib/model/loader';
+import { syntheticLandscape } from './synthetic';
 
 beforeAll(() => loadRouter());
 
@@ -338,6 +345,136 @@ describe('RouteClient', () => {
 			client.destroy();
 		});
 
+		describe('after a change', () => {
+			// Four cards in one group, known by its id across layouts: a b on top, c d below.
+			const at = (moves: Record<string, Rect> = {}) =>
+				new Map(
+					Object.entries({
+						a: rect(0, 0, 100, 60),
+						b: rect(400, 0, 100, 60),
+						c: rect(0, 400, 100, 60),
+						d: rect(400, 400, 100, 60),
+						...moves
+					})
+				);
+			const group = (bx: Map<string, Rect>) => {
+				const ln = (id: string, s: string, t: string): RouteLine => ({
+					id,
+					s: { ...on(s, bx.get(s)!), sides: ['r'] },
+					t: { ...on(t, bx.get(t)!), sides: ['l'] }
+				});
+				const lines = [ln('ab', 'a', 'b'), ln('cd', 'c', 'd'), ln('ad', 'a', 'd')];
+				return keyedGroup({ boxes: bx, lines }, true, 'root');
+			};
+			async function routed(client: RouteClient, g: KeyedGroup) {
+				client.wantGroups([g], true, vi.fn());
+				await vi.waitFor(() => expect(client.groupRoutes([g]).done).toBe(true));
+				return client.groupRoutes([g]).routes;
+			}
+			const sentLines = (...ports: InProcess[]) =>
+				ports.flatMap((p) =>
+					p.sent.flatMap((m) => (m.type === 'route' ? [m.lines.map((l) => l.id)] : []))
+				);
+
+			it('routes again only the lines whose ends moved, keeping the others', async () => {
+				const [now, later] = [new InProcess(), new InProcess()];
+				const client = new RouteClient(now, later);
+				const before = await routed(client, group(at()));
+				// d moves down: the lines ending on it are routed again, ab keeps its route.
+				const moved = group(at({ d: rect(400, 500, 100, 60) }));
+				client.wantGroups([moved], true, vi.fn());
+				// Meanwhile the lines kept are drawn as they were.
+				expect(client.groupRoutes([moved])).toMatchObject({ done: false });
+				expect(client.groupRoutes([moved]).routes.get('ab')).toEqual(before.get('ab'));
+				expect(client.groupRoutes([moved]).routes.has('cd')).toBe(false);
+				await vi.waitFor(() => expect(client.groupRoutes([moved]).done).toBe(true));
+				const after = client.groupRoutes([moved]).routes;
+				expect(sentLines(now, later)).toEqual([
+					['ab', 'cd', 'ad'],
+					['cd', 'ad']
+				]);
+				expect(after.get('ab')).toEqual(before.get('ab'));
+				expect(after.get('cd')).toEqual(routeLines(moved.boxes, moved.lines, true).get('cd'));
+				expect(after.get('cd')!.at(-1)!.y).toBe(530);
+				client.destroy();
+			});
+
+			it('routes again a line whose route a box now stands in', async () => {
+				const [now, later] = [new InProcess(), new InProcess()];
+				const client = new RouteClient(now, later);
+				const before = await routed(client, group(at()));
+				// A new card right on ab's way; no other line comes near it.
+				const g = group(at({ e: rect(300, 10, 40, 40) }));
+				await routed(client, g);
+				const after = client.groupRoutes([g]).routes;
+				expect(sentLines(now, later).at(-1)).toEqual(['ab']);
+				expect(after.get('cd')).toEqual(before.get('cd'));
+				expect(after.get('ad')).toEqual(before.get('ad'));
+				expect(after.get('ab')).not.toEqual(before.get('ab'));
+				client.destroy();
+			});
+
+			it('routes nothing when a change touches no line', async () => {
+				const [now, later] = [new InProcess(), new InProcess()];
+				const client = new RouteClient(now, later);
+				const before = await routed(client, group(at()));
+				const g = group(at({ e: rect(900, 900, 60, 40) }));
+				const done = vi.fn();
+				client.wantGroups([g], true, done);
+				expect(done).toHaveBeenCalledOnce();
+				expect(client.groupRoutes([g])).toEqual({ routes: before, done: true });
+				expect(sentLines(now, later)).toHaveLength(1);
+				client.destroy();
+			});
+
+			it('keeps what it can of a group moved whole and changed inside', () => {
+				const was = group(at());
+				const routes = routeLines(was.boxes, was.lines, true);
+				const fromCorner = new Map(
+					[...routes].map(([id, pts]) => [id, pts.map((p) => ({ x: p.x - was.x, y: p.y - was.y }))])
+				);
+				const shift = (r: Rect): Rect => ({
+					x0: r.x0 + 50,
+					y0: r.y0 + 70,
+					x1: r.x1 + 50,
+					y1: r.y1 + 70
+				});
+				const bx = new Map(
+					[...at({ d: rect(400, 500, 100, 60) })].map(([id, r]) => [id, shift(r)])
+				);
+				const { keep, lines } = rerouted(group(bx), was, fromCorner);
+				expect(lines.map((l) => l.id)).toEqual(['cd', 'ad']);
+				expect(keep.get('ab')).toEqual(fromCorner.get('ab'));
+			});
+
+			it('keeps only groups routed whole in the store, so a new page routes them whole', async () => {
+				const kept = new Map<string, Map<string, { x: number; y: number }[]>>();
+				const store = { load: (k: string) => kept.get(k), save: vi.fn((k, r) => kept.set(k, r)) };
+				const client = new RouteClient(new InProcess(), new InProcess(), undefined, store);
+				await routed(client, group(at()));
+				expect(store.save).toHaveBeenCalledOnce();
+				const moved = group(at({ d: rect(400, 500, 100, 60) }));
+				await routed(client, moved);
+				expect(store.save).toHaveBeenCalledOnce();
+				client.destroy();
+				const [now, later] = [new InProcess(), new InProcess()];
+				const again = new RouteClient(now, later, undefined, store);
+				await routed(again, moved);
+				expect(sentLines(now, later)).toEqual([['ab', 'cd', 'ad']]);
+				again.destroy();
+			});
+
+			it('routes the whole group again without its id', async () => {
+				const [now, later] = [new InProcess(), new InProcess()];
+				const client = new RouteClient(now, later);
+				const anon = (bx: Map<string, Rect>) => ({ ...group(bx), id: undefined });
+				await routed(client, anon(at()));
+				await routed(client, anon(at({ d: rect(400, 500, 100, 60) })));
+				expect(sentLines(now, later).at(-1)).toEqual(['ab', 'cd', 'ad']);
+				client.destroy();
+			});
+		});
+
 		it('takes groups from the store, and keeps them there once routed', async () => {
 			const kept = new Map<string, Map<string, { x: number; y: number }[]>>();
 			const store = { load: (k: string) => kept.get(k), save: vi.fn((k, r) => kept.set(k, r)) };
@@ -378,6 +515,60 @@ describe('RouteClient', () => {
 		expect(now.routed()).toHaveLength(1);
 		again.destroy();
 	});
+});
+
+describe('a landscape the size of a large one', () => {
+	// 116 groups, 1,251 lines at rest, the largest 222 lines among 56 boxes (see synthetic.ts).
+	const groups = syntheticLandscape().map((g, i) => keyedGroup(g, true, `g${i}`));
+	const lines = groups.reduce((n, g) => n + g.lines.length, 0);
+
+	it('routes all its lines at rest within a minute', async () => {
+		expect(lines).toBe(1251);
+		const client = new RouteClient(new InProcess(), new InProcess());
+		const t0 = performance.now();
+		client.wantGroups(groups, true, vi.fn());
+		await vi.waitFor(() => expect(client.groupRoutes(groups).done).toBe(true), {
+			timeout: 60_000,
+			interval: 50
+		});
+		expect(performance.now() - t0).toBeLessThan(60_000);
+		expect(client.groupRoutes(groups).routes.size).toBe(lines);
+		client.destroy();
+	}, 70_000);
+
+	it('after one box moves, routes again only the lines it touched', async () => {
+		const [now, later] = [new InProcess(), new InProcess()];
+		const client = new RouteClient(now, later);
+		client.wantGroups(groups, true, vi.fn());
+		await vi.waitFor(() => expect(client.groupRoutes(groups).done).toBe(true), {
+			timeout: 60_000,
+			interval: 50
+		});
+		const before = [now, later].map((p) => p.sent.length);
+		// A box of the largest group with a few lines grows taller.
+		const big = groups[0];
+		const ending = (id: string) => big.lines.filter((l) => l.s.on === id || l.t.on === id).length;
+		const id = [...big.boxes.keys()].find((id) => ending(id) === 3)!;
+		const r = big.boxes.get(id)!;
+		const boxes = new Map(big.boxes).set(id, { ...r, y1: r.y1 + 40 });
+		const changed = keyedGroup({ boxes, lines: big.lines }, true, big.id);
+		const next = [changed, ...groups.slice(1)];
+		client.wantGroups(next, true, vi.fn());
+		await vi.waitFor(() => expect(client.groupRoutes(next).done).toBe(true), {
+			timeout: 60_000,
+			interval: 50
+		});
+		const again = [now, later].flatMap((p, i) =>
+			p.sent.slice(before[i]).filter((m) => m.type === 'route')
+		);
+		expect(again).toHaveLength(1);
+		const routedAgain = again[0].type === 'route' ? again[0].lines.length : 0;
+		expect(routedAgain).toBeGreaterThan(0);
+		expect(routedAgain).toBeGreaterThanOrEqual(ending(id));
+		expect(routedAgain).toBeLessThan(big.lines.length / 4);
+		expect(client.groupRoutes(next).routes.size).toBe(lines);
+		client.destroy();
+	}, 130_000);
 });
 
 describe('routeStore', () => {

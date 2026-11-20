@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { runOf } from '../../src/lib/landscape/play';
 import { sequenceOf } from '../../src/lib/landscape/sequence';
-import { flagFindings, gatedOff, pruneFlags, stateOf } from '../../src/lib/model/flags';
+import {
+	flagFindings,
+	flagSplits,
+	flagSplitsOf,
+	gatedOff,
+	pruneFlags,
+	stateOf
+} from '../../src/lib/model/flags';
 import { buildModel, flagStateOf } from '../../src/lib/model/model';
 import { compare } from '../../src/lib/scenario/evaluate';
 import { loadStrings } from './helpers';
@@ -49,6 +56,13 @@ describe('flag validation', () => {
 			'breaks with new-flow on in ERP › Order, off in shop › Checkout: placeOrder calls POST /orders, which ERP has only when its newFlow is off',
 			'breaks with new-flow off in ERP › Order, on in shop › Checkout: placeOrder calls POST /orders/v2, which ERP has only when its newFlow is on'
 		]);
+	});
+
+	it('finds the same splits from the data alone, as the worker checking them does', () => {
+		const d = design();
+		const fromData = flagSplitsOf(structuredClone(d.data));
+		expect(fromData).toHaveLength(2);
+		expect(fromData).toEqual(flagSplits(d.model, d.data));
 	});
 
 	it('catches a flip a caller in another system does not follow', () => {

@@ -224,3 +224,10 @@ export function flagSplits(all: Model, data: Data): Diagnostic[] {
 	}
 	return [...out.values()];
 }
+
+/**
+ * `flagSplits` of the design in `data`, its model built anew: what can be checked from the data
+ * alone, as a worker does (see flag-worker.ts). Places come from the model's own record of where
+ * each element is; their lines and columns are filled in by whoever holds the files (`placed`).
+ */
+export const flagSplitsOf = (data: Data) => flagSplits(buildModel(data), data);
