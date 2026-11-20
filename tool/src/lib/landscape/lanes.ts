@@ -4,8 +4,8 @@ import type { Point, Rect } from './route.ts';
  * Lines that share a stretch of their routes drawn side by side, each in its own lane, like
  * lines on a metro map, instead of on top of each other.
  *
- * The router runs lines leaving one end together as one (lines at rest), lit lines along the
- * line at rest between the boxes they join, and lines from one row out of one point. Here
+ * The router runs lines leaving one end together as one (lines at rest), and lines from one
+ * row out of one point. Here
  * every straight piece of a route that lies on another's is given a lane: the pieces sharing a
  * stretch are ordered so their lines cross no more than they must (see `side`), and spread
  * about where the router put them, `step` screen px apart, leaning to the side with more room.

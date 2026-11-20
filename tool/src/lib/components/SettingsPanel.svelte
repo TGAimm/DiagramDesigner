@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { X } from '@lucide/svelte';
-	import { settings } from '#lib/client/settings.svelte.ts';
+	import { DEFAULT_REST_SHARE, settings } from '#lib/client/settings.svelte.ts';
 	import { DEFAULT_LAYOUT, type LayoutOptions } from '#lib/landscape/layout.ts';
 
 	let { onclose }: { onclose: () => void } = $props();
@@ -156,6 +156,37 @@
 			<span class="hint">Shape the packed groups fill.</span>
 		</label>
 	</section>
+	<section class="layout" aria-label="Lines" data-testid="line-settings">
+		<div class="head">
+			<span class="legend">LINES</span>
+			<button
+				class="link"
+				disabled={settings.restShare === DEFAULT_REST_SHARE}
+				onclick={() => settings.setRestShare(DEFAULT_REST_SHARE)}>Reset to default</button
+			>
+		</div>
+		<div class="fld">
+			<label class="lbl" for="rest-share">Module dependency lines</label>
+			<div class="range">
+				<input
+					id="rest-share"
+					type="range"
+					min="0"
+					max="1"
+					step="0.05"
+					value={settings.restShare}
+					oninput={(e) => settings.setRestShare(Number(e.currentTarget.value))}
+				/>
+				<output for="rest-share"
+					>{settings.restShare ? `${Math.round(settings.restShare * 100)}%` : 'All'}</output
+				>
+			</div>
+			<span class="hint"
+				>Lines inside a module show once it fills this share of the view. Lines between top-level
+				modules always show.</span
+			>
+		</div>
+	</section>
 	<footer>Saved in this browser.</footer>
 </section>
 
@@ -185,6 +216,9 @@
 		color: var(--ui-muted);
 		display: flex;
 		padding: 2px;
+	}
+	.layout + .layout {
+		border-top: 1px solid var(--ui-border);
 	}
 	.layout {
 		padding: 14px;

@@ -15,7 +15,7 @@ import {
 	TABLE
 } from '../../src/lib/landscape/layout';
 import { railGroups, railOf } from '../../src/lib/landscape/apis';
-import { edgesOf, restLines } from '../../src/lib/landscape/connections';
+import { edgesOf, moduleLines } from '../../src/lib/landscape/connections';
 import { sequenceOf } from '../../src/lib/landscape/sequence';
 import { GLYPH, textWidth, truncateStart } from '../../src/lib/render/text';
 import { ROUTE } from '../../src/lib/landscape/route';
@@ -356,9 +356,10 @@ describe('landscape layout', () => {
 			['orderId', 'qty']
 		]);
 		expect([box('t').view, boxes.filter((b) => b.elementId === 't').length]).toEqual(['table', 1]);
-		expect(restLines(layoutLandscape(m).lines, edgesOf(m)).map((l) => [l.id, l.kinds])).toEqual([
-			['db>l>db>o', ['ref']],
-			['o>l', ['model']]
+		// The cards' own connections are inside module m; storing m's models makes db depend on m.
+		const drawn = (id: string) => boxes.some((b) => b.id === id);
+		expect(moduleLines(m, edgesOf(m), drawn).map((l) => [l.id, l.kinds, l.count])).toEqual([
+			['db>m', ['stores'], 2]
 		]);
 	});
 
@@ -411,15 +412,9 @@ describe('landscape layout', () => {
 		for (const x of cards) for (const y of cards) if (x !== y) expect(overlap(x, y)).toBe(false);
 	});
 
-	it('joins sibling cards at rest, one line per pair and direction', () => {
-		const lines = restLines(layoutLandscape(tables).lines, edgesOf(tables));
-		// b's ref to its own model is inside one card, so it has no line.
-		expect(lines.map((l) => [l.id, l.kinds, l.count, l.parentId])).toEqual([
-			['b>a', ['ref'], 1, 's'],
-			['b>c', ['model'], 1, 's'],
-			['d>a', ['ref'], 1, 's'],
-			['d>c', ['model'], 1, 's']
-		]);
+	it('joins no cards at rest: connections inside one module are flows', () => {
+		const drawn = (id: string) => layoutLandscape(tables).boxes.some((b) => b.id === id);
+		expect(moduleLines(tables, edgesOf(tables), drawn)).toEqual([]);
 	});
 
 	const lineage = loadStrings({
@@ -461,14 +456,13 @@ describe('landscape layout', () => {
 		expect(rels.in.get('src-n')!.map((l) => l.field)).toEqual(['copy-n', 'dto-n']);
 	});
 
-	it('merges connections at rest, lifted to siblings, so no line crosses a border', () => {
-		const lines = restLines(layoutLandscape(lineage).lines, edgesOf(lineage));
-		// copy's ref and lineage merge; lineage inside copy has no line; dto in module api
-		// derives from src in module db, so the two modules are joined.
-		expect(lines.map((l) => [l.id, l.kinds, l.count, l.parentId])).toEqual([
-			['api>db', ['from'], 1, 's'],
-			['copy>src', ['ref', 'from'], 2, 'db']
-		]);
+	it('joins modules at rest, lifted to siblings, so no line crosses a border', () => {
+		const drawn = (id: string) => layoutLandscape(lineage).boxes.some((b) => b.id === id);
+		// copy's ref and lineage to src are inside module db, so they make no line; dto in module
+		// api derives from src in module db, so the two modules are joined.
+		expect(
+			moduleLines(lineage, edgesOf(lineage), drawn).map((l) => [l.id, l.kinds, l.count, l.parentId])
+		).toEqual([['api>db', ['from'], 1, 's']]);
 	});
 });
 

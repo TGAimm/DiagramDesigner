@@ -44,8 +44,9 @@ export const headEnd = (b: LandscapeBox) => ({
 });
 
 /**
- * The lines at rest as the router takes them, one group per box holding them. A line at rest
- * joins two children of one box and never leaves it, so each box routes its children's lines
+ * The lines at rest (Module Dependency Lines) as the router takes them, one group per module
+ * holding them. A line at rest joins two child modules of one module (or two top-level modules)
+ * and never leaves it, so each box routes its children's lines
  * with only its children, rails and all, in the way. Each end leaves by the side facing the
  * other box, so lines leaving a box one way share an exit and never set off the wrong way round
  * it. Each group is kept by its own boxes and lines, so a change routes only the groups it

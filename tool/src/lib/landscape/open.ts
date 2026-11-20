@@ -71,6 +71,34 @@ export function drawnInFull(
 	return out;
 }
 
+/** The share of the screen a canvas-px rectangle covers, counting only its part on screen. */
+export function screenShare(x: number, y: number, w: number, h: number, cam: Camera): number {
+	const left = Math.max(0, x * cam.zoom + cam.x);
+	const top = Math.max(0, y * cam.zoom + cam.y);
+	const right = Math.min(cam.width, (x + w) * cam.zoom + cam.x);
+	const bottom = Math.min(cam.height, (y + h) * cam.zoom + cam.y);
+	if (right <= left || bottom <= top) return 0;
+	return ((right - left) * (bottom - top)) / (cam.width * cam.height);
+}
+
+/**
+ * The boxes among `ids` whose lines at rest are drawn at this camera: those covering at least
+ * `share` of the screen. Lines between top-level modules sit in none and are always drawn.
+ */
+export function restShownIn(
+	boxById: Map<string, LandscapeBox>,
+	ids: Iterable<string>,
+	cam: Camera,
+	share: number
+): Set<string> {
+	const out = new Set<string>();
+	for (const id of ids) {
+		const b = boxById.get(id);
+		if (b && screenShare(b.absX, b.absY, b.width, b.height, cam) >= share) out.add(id);
+	}
+	return out;
+}
+
 /**
  * Which box each api is drawn on, by box id: its parent's box when that is shown, else the
  * nearest shown box round it, so the api of a module inside a closed system sits on the
