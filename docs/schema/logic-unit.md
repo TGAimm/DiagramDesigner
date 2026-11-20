@@ -30,11 +30,12 @@ steps:                           # the sequence, top to bottom
 - `inputs` and `outputs` are fields with the keys of an api's own-shape field: `id`, `name`,
   `type` or `model`, `many`, `required`, `nullable`, `description`. Ids share the design's
   id namespace (`sdv id`).
-- Step kinds, one per step: `call` (a unit or api, in any system, or a message
-  [trigger](trigger.md), which sends that message: no `gets`), `read` and `write` (a
-  model, or one field), `if` with `then`/`else`, `each` with `do`, `flag` with `on`/`off`
+- Step kinds, one per step: `call` (a unit or api, in any system), `send` (a message on a
+  [channel](channel.md), without waiting: no `gets`), `read` and `write` (a model, or one
+  field; `does: create | update | delete` or a list of them says what a write does, so which
+  [trigger](trigger.md) events it raises), `if` with `then`/`else`, `each` with `do`, `flag` with `on`/`off`
   (see [flag](flag.md)), `return` (an output's name), `fail` (a fail's name). A step with only `note` is work the unit does itself; on
-  other steps `note` adds a remark. `with` and `gets` go on `call` and `read`; they, and
+  other steps `note` adds a remark. `with` goes on `call`, `send` and `read`, `gets` on `call` and `read`; they, and
   conditions, are free text.
 - Errors: a missing `inputs` or `outputs`; a step naming the wrong kind or nothing; a step
   with two kinds; a `return` or `fail` naming nothing declared. Warnings, when there are

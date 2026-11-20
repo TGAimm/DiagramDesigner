@@ -8,7 +8,8 @@ export const HIT_KINDS = [
 	'field',
 	'api',
 	'logic-unit',
-	'trigger'
+	'trigger',
+	'channel'
 ] as const;
 export type HitKind = (typeof HIT_KINDS)[number];
 
@@ -19,7 +20,8 @@ export const HIT_GROUPS: Record<HitKind, string> = {
 	field: 'FIELDS',
 	api: 'APIS',
 	'logic-unit': 'LOGIC UNITS',
-	trigger: 'TRIGGERS'
+	trigger: 'TRIGGERS',
+	channel: 'CHANNELS'
 };
 
 /** Where the query sits in a text: [start, end). */
@@ -52,7 +54,7 @@ const find = (text: string, q: string): Mark | undefined => {
 };
 
 /**
- * Finds systems, modules, models, fields, apis, logic units and triggers whose name holds the query
+ * Finds systems, modules, models, fields, apis, logic units, triggers and channels whose name holds the query
  * (any case); apis also by path. Within a group, the earlier the query sits in the text, the
  * higher the hit. With no query, lists the systems to start from. `hidden` apis and units
  * (gated off in the shown flag state) are not found.
@@ -84,7 +86,8 @@ export function searchLandscape(model: Model, query: string, hidden?: Set<string
 		field: [],
 		api: [],
 		'logic-unit': [],
-		trigger: []
+		trigger: [],
+		channel: []
 	};
 	for (const e of model.elements.values()) {
 		// A root module is a system.

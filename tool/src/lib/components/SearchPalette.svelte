@@ -33,7 +33,8 @@
 		field: undefined,
 		api: 'api',
 		'logic-unit': 'logic',
-		trigger: 'trigger'
+		trigger: 'trigger',
+		channel: 'channel'
 	};
 	const METHOD_TOKEN: Record<string, string> = { PATCH: 'put' };
 	const methodColor = (m: string) =>

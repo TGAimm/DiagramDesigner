@@ -48,16 +48,16 @@ Things real landscapes have that the schema cannot express yet, found by modelli
 
 Interfaces and triggers:
 
-- Async messaging: queue and topic subscriptions and their publishers are message triggers
-  now (see [trigger](schema/trigger.md)); still missing are subscription filters, batch
-  receive, and retry/dead-letter beyond a `retries` count.
-- Move `examples/retail`'s faked `POST /topics/...` apis to message triggers.
+- Async messaging: channels, their senders and the triggers on their events are drawn now
+  (see [channel](schema/channel.md)); still missing are batch receive, sessions and ordering,
+  and subscription filters beyond free text.
+- Move `examples/retail`'s faked `POST /topics/...` apis to channels and `send` steps.
 - Interfaces beyond HTTP: GraphQL operations, SQL endpoints, file exchange (CSV over SFTP:
   one row per line grouped into orders, error and archive files, folders owned by another
   system), hardware (card terminals, fiscal signing units).
-- Triggers beyond apis, schedules and messages: row changes (Dataverse plugins,
-  Zendesk triggers), user actions in a product's own UI or on a device (Post › Receive,
-  handheld scans, till), a vendor-hosted page; several triggers on one unit.
+- Triggers beyond schedules, channels and stored models: user actions in a product's own UI
+  or on a device (Post › Receive, handheld scans, till), a vendor-hosted page; events a
+  vendor system raises without a channel in the design.
 - Move `examples/retail`'s scheduled units from `meta: { schedule }` to trigger entities.
 - Endpoints outside the landscape (carrier APIs) with no system to point at.
 - Browser redirects that carry results in the Location query (OAuth `code`, `state`).

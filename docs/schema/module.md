@@ -8,6 +8,7 @@ id: iatbgcla3c
 parent: fghfo41tiv     # optional: the module round it; none = a root
 name: Database
 external: true         # optional: used by consumers the design doesn't show
+store: files           # optional: models stored here are files, not rows (default rows)
 models: [li65oa3wga]   # optional: models owned elsewhere, drawn inside as dashed references
 ```
 
@@ -21,5 +22,7 @@ models: [li65oa3wga]   # optional: models owned elsewhere, drawn inside as dashe
 
 Children: modules, triggers (rows of one Triggers card), logic-units (rows of one Logic card),
 apis (listed on a rail across the right border), models (via `ownedBy`, drawn as classes), and models stored here (via their
-`storedIn`, drawn as stored tables). Listing a model this module already owns or stores is a
+`storedIn`, drawn as stored tables, or as files when the module says `store: files`: a
+folded corner and FILE for TABLE, and file events (created, updated, deleted) for triggers),
+channels (a card each, see [channel](channel.md)). Listing a model this module already owns or stores is a
 warning.

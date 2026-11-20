@@ -5,9 +5,12 @@ import { cardRows, linkTarget, type LaidLine, type LandscapeBox } from './layout
 /**
  * Every kind of connection. A field refers to a key (`ref`), holds a model (`model`) or
  * derives from a source (`from`); a unit reads, writes or calls; an api is handled by a unit
- * and its bodies use models (`body`); a trigger is handled by the units it starts.
+ * and its bodies use models (`body`); a trigger is handled by the units it starts. A unit
+ * sends on a channel (`sends`); a trigger listens to a channel's port, a stored model or
+ * fields of one (`on`).
  */
-export type LinkKind = 'ref' | 'model' | 'from' | 'reads' | 'writes' | 'calls' | 'handles' | 'body';
+export type LinkKind =
+	'ref' | 'model' | 'from' | 'reads' | 'writes' | 'calls' | 'sends' | 'handles' | 'on' | 'body';
 
 /**
  * One connection between two leaves: a field, model, logic unit, api or api field. `from`
@@ -25,7 +28,10 @@ export const edgeKey = (e: Edge) => `${e.kind}:${e.from}>${e.to}`;
 export function edgesOf(model: Model): Edge[] {
 	const out = new Map<string, Edge>();
 	const known = (id: string) =>
-		model.fields.has(id) || model.elements.has(id) || model.apiFields.has(id);
+		model.fields.has(id) ||
+		model.elements.has(id) ||
+		model.apiFields.has(id) ||
+		model.ports.has(id);
 	const add = (kind: LinkKind, from: string, to: string) => {
 		const e = { kind, from, to };
 		if (known(from) && known(to) && from !== to) out.set(edgeKey(e), e);
@@ -42,6 +48,8 @@ export function edgesOf(model: Model): Edge[] {
 				if (kind === 'handles') add(kind, to, id);
 				else add(kind, id, to);
 		if (info.def.kind === 'api') for (const u of bodyModels(model, id)) add('body', id, u.model);
+		// A trigger depends on what it listens to.
+		for (const to of info.listens ?? []) add('on', id, to);
 	}
 	// A response field derives from model fields; a request field is the source of the
 	// model fields it goes into.
@@ -78,7 +86,7 @@ export function homeOf(
 export function leavesOf(model: Model, b: LandscapeBox): string[] {
 	const apis = b.apis ?? [];
 	return [
-		...(b.view ? [b.elementId] : []),
+		...(b.view || b.channel ? [b.elementId] : []),
 		...(b.fields ?? []).map((f) => f.id),
 		...(cardRows(b) ?? []).map((r) => r.id),
 		...apis,

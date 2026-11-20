@@ -629,7 +629,7 @@
         "is"
       ],
       "additionalProperties": false,
-      "description": "Apis, logic units and triggers only: exists only while the flag has this value"
+      "description": "Apis, logic units, triggers and channels only: exists only while the flag has this value"
     },
     "schedule": {
       "type": "object",
@@ -657,7 +657,69 @@
       "additionalProperties": false,
       "description": "Triggers only: when it runs; exactly one of cron, every and at"
     },
+    "on": {
+      "type": "object",
+      "properties": {
+        "channel": {
+          "description": "Id of the channel it listens to",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "model": {
+          "description": "Id of the stored model it listens to (a table or a file)",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "event": {
+          "type": "string",
+          "enum": [
+            "received",
+            "dead-lettered",
+            "created",
+            "updated",
+            "deleted"
+          ],
+          "description": "A channel: received or dead-lettered; a stored model: created, updated or deleted"
+        },
+        "subscription": {
+          "description": "Topics only: the subscription it receives through; default the trigger name",
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "fields": {
+          "description": "Tables only, with updated: ids of the fields whose change raises it",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "description": "Kebab-case identifier"
+          }
+        },
+        "path": {
+          "description": "Files only: a glob of the paths it watches",
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "filter": {
+          "description": "Free text: which events it takes, e.g. entity type Item",
+          "type": [
+            "string",
+            "number"
+          ]
+        }
+      },
+      "required": [
+        "event"
+      ],
+      "additionalProperties": false,
+      "description": "Triggers only: the event it listens to; exactly one of channel and model"
+    },
     "message": {
+      "description": "Triggers only, replaced by on: a queue or topic in words; see sdv migrate triggers",
       "type": "object",
       "properties": {
         "queue": {
@@ -689,8 +751,7 @@
           ]
         }
       },
-      "additionalProperties": false,
-      "description": "Triggers only: the messages it receives; exactly one of queue and topic"
+      "additionalProperties": false
     },
     "overlap": {
       "description": "Schedule triggers only: a run due while the last is going is skipped (default), queued or allowed",
@@ -706,10 +767,38 @@
       "type": "string"
     },
     "retries": {
-      "description": "Triggers only: retries of a failed run",
+      "description": "Triggers and channels: retries of a failed run or delivery; a channel sets the default for its triggers",
       "type": "integer",
       "minimum": 0,
       "maximum": 9007199254740991
+    },
+    "type": {
+      "description": "Channels only, required: queue or topic",
+      "type": "string",
+      "enum": [
+        "queue",
+        "topic"
+      ]
+    },
+    "carries": {
+      "description": "Channels only: id of the model its messages are",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "via": {
+      "description": "Channels only: free text, the broker or component it runs on (e.g. a Dapr pub/sub)",
+      "type": [
+        "string",
+        "number"
+      ]
+    },
+    "store": {
+      "description": "Modules only: what models stored here are kept as, rows (default) or files",
+      "type": "string",
+      "enum": [
+        "rows",
+        "files"
+      ]
     },
     "with": {
       "description": "Triggers only: what a run passes the unit, free text",
@@ -719,7 +808,7 @@
       ]
     },
     "external": {
-      "description": "Modules and apis: used by consumers the design does not show, so every rename or drop behind it breaks",
+      "description": "Modules, apis and channels: used by consumers or senders the design does not show, so every rename or drop behind it breaks",
       "type": "boolean"
     },
     "name": {
@@ -776,7 +865,12 @@
       "type": "object",
       "properties": {
         "call": {
-          "description": "Id of the logic unit or api it calls, or message trigger it sends",
+          "description": "Id of the logic unit or api it calls",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "send": {
+          "description": "Id of the channel it sends a message on, without waiting",
           "type": "string",
           "pattern": "^[a-z][a-z0-9-]*$"
         },
@@ -790,8 +884,33 @@
           "type": "string",
           "pattern": "^[a-z][a-z0-9-]*$"
         },
+        "does": {
+          "description": "With write: what it does (create, update, delete), so which events it raises",
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "create",
+                "update",
+                "delete"
+              ]
+            },
+            {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "create",
+                  "update",
+                  "delete"
+                ]
+              }
+            }
+          ]
+        },
         "with": {
-          "description": "With call or read: what it passes, free text",
+          "description": "With call, send or read: what it passes, free text",
           "type": [
             "string",
             "number"

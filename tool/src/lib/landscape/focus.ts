@@ -37,9 +37,12 @@ export function focusOn(model: Model, focus: Focus): Focused {
 	const keeps = (id: string) =>
 		focus.mode === 'data'
 			? kind(id) === 'model'
-			: ['model', 'api', 'logic-unit', 'trigger'].includes(kind(id)!);
+			: ['model', 'api', 'logic-unit', 'trigger', 'channel'].includes(kind(id)!);
 	const unitOf = (leaf: string) =>
-		model.fields.get(leaf)?.modelId ?? model.apiFields.get(leaf)?.apiId ?? leaf;
+		model.fields.get(leaf)?.modelId ??
+		model.apiFields.get(leaf)?.apiId ??
+		model.ports.get(leaf)?.channel ??
+		leaf;
 
 	const edges = edgesOf(model);
 	const followed = edges.filter(
@@ -113,6 +116,20 @@ export function focusOnRun(model: Model, unitId: string): Focused {
 		const links = el(id)?.logic;
 		if (!links) return;
 		for (const t of [...links.reads, ...links.writes]) keep.add(model.fields.get(t)?.modelId ?? t);
+		// A message sent: its channel, the triggers receiving it, and the units those start.
+		for (const c of links.sends) {
+			keep.add(c);
+			for (const p of model.ports.values())
+				if (p.channel === c && p.event === 'received')
+					for (const t of p.triggers) {
+						keep.add(t);
+						for (const h of model.elements.values())
+							if (h.logic?.handles.includes(t)) {
+								keep.add(h.id);
+								if (h.def.steps?.length) play(h.id);
+							}
+					}
+		}
 		for (const t of links.calls) {
 			keep.add(t);
 			if (el(t)?.def.kind !== 'api') {
@@ -137,7 +154,10 @@ export function focusOnRun(model: Model, unitId: string): Focused {
 function cut(model: Model, keep: Set<string>, followed: Edge[], subject?: string): Focused {
 	const kind = (id: string) => model.elements.get(id)?.def.kind;
 	const unitOf = (leaf: string) =>
-		model.fields.get(leaf)?.modelId ?? model.apiFields.get(leaf)?.apiId ?? leaf;
+		model.fields.get(leaf)?.modelId ??
+		model.apiFields.get(leaf)?.apiId ??
+		model.ports.get(leaf)?.channel ??
+		leaf;
 	const holders = new Map(
 		[...holdersOf(model)].map(([id, hs]) => [id, new Set([...hs].filter((h) => keep.has(h)))])
 	);

@@ -21,6 +21,8 @@ Usage:
                                --parent is written as ownedBy for models
   sdv id [count]               print fresh ids, e.g. for model fields
   sdv schema [--out dir]       write the JSON Schema for entity files
+  sdv migrate triggers [--dry-run]
+                               turn triggers' message sources into channels and on
 
 Options:
   --config <file>              config file (default: search for sdv.config.ts)
@@ -76,6 +78,7 @@ export async function main(
 			root: { type: 'string' },
 			out: { type: 'string' },
 			parent: { type: 'string' },
+			'dry-run': { type: 'boolean' },
 			quiet: { type: 'boolean', short: 'q' }
 		}
 	});
@@ -138,6 +141,10 @@ export async function main(
 		case 'schema': {
 			const { runSchema } = await import('./schema');
 			return runSchema(values.out, io, cwd);
+		}
+		case 'migrate': {
+			const { runMigrate } = await import('./migrate');
+			return runMigrate(positionals, config.root, io, values['dry-run']);
 		}
 		default:
 			io.error(`Unknown command "${command}"\n\n${HELP}`);

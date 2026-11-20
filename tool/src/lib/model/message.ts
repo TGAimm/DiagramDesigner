@@ -1,9 +1,10 @@
-import type { Element, Message } from './schema';
+import type { Element, Message, TriggerOn } from './schema';
+import type { Model } from './model';
 import { scheduleWords } from './schedule';
 
 /**
- * A trigger's message source: a queue, or a topic read through a subscription. A logic unit
- * step calling the trigger sends one.
+ * A trigger's source in words: the old message source (a queue, or a topic read through a
+ * subscription), or the event of a channel or stored model it listens to.
  */
 
 /** What is wrong with a message source, each with the key it is on. */
@@ -28,6 +29,30 @@ export function messageWords(m: Message | undefined): string {
 	return '';
 }
 
-/** A trigger's source in words, whichever it is: its schedule or its message. */
-export const triggerWords = (def: Element): string =>
-	def.message ? messageWords(def.message) : scheduleWords(def.schedule);
+/**
+ * The event a trigger listens to in words: `sbq-ax-price · received`, `EntityAdded › Product
+ * grouping · received`, `Price · updated (Amount)`.
+ */
+export function onWords(model: Model, on: TriggerOn | undefined, self?: string): string {
+	if (!on) return '';
+	const src = model.elements.get(on.channel ?? on.model ?? '');
+	const name = src?.name ?? on.channel ?? on.model ?? '';
+	const sub =
+		src?.def.type === 'topic' && (on.subscription ?? self) ? ` › ${on.subscription ?? self}` : '';
+	const fields = on.fields?.length
+		? ` (${on.fields.map((f) => model.fields.get(f)?.def.name ?? f).join(', ')})`
+		: '';
+	return `${name}${sub} · ${on.event}${fields}`;
+}
+
+/** A trigger's source in words, whichever it is: its schedule, its event or its old message. */
+export const triggerWords = (def: Element, model?: Model, name?: string): string =>
+	def.on && model
+		? onWords(model, def.on, name)
+		: def.message
+			? messageWords(def.message)
+			: scheduleWords(def.schedule);
+
+/** The glyph a trigger row wears: its event's, a clock for a schedule, an envelope for a message. */
+export const triggerGlyph = (def: Element): string =>
+	def.on ? def.on.event : def.message ? 'message' : 'trigger';

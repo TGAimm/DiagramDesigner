@@ -78,6 +78,18 @@ function context(model: Model) {
 		for (const io of [...(el.def.inputs ?? []), ...(el.def.outputs ?? [])])
 			if (io.model) push(ioOf, io.model, id);
 	}
+	// The units sending or receiving the messages of a channel carrying a model.
+	const messagesOf = new Map<string, string[]>();
+	for (const [id, el] of model.elements) {
+		if (el.def.kind !== 'channel' || !el.def.carries) continue;
+		const units = new Set<string>();
+		for (const [u, x] of model.elements) if (x.logic?.sends.includes(id)) units.add(u);
+		for (const p of model.ports.values())
+			if (p.channel === id)
+				for (const t of p.triggers)
+					for (const [u, x] of model.elements) if (x.logic?.handles.includes(t)) units.add(u);
+		for (const u of units) push(messagesOf, el.def.carries, u);
+	}
 	for (const [id, f] of model.fields) {
 		if (f.def.ref) push(refsTo, f.def.ref, id);
 		for (const src of f.def.from ?? []) push(derivedFrom, src, id);
@@ -139,6 +151,7 @@ function context(model: Model) {
 		refsTo,
 		derivedFrom,
 		ioOf,
+		messagesOf,
 		apiFieldsOn,
 		exposures,
 		external
@@ -455,6 +468,14 @@ export function impactOf(before: Model, after: Model, diff: Diff): ImpactReport 
 				reason: `takes or returns ${name}, which ${what}`,
 				cause
 			});
+		for (const unit of b.messagesOf.get(modelId) ?? [])
+			add(b, {
+				id: unit,
+				element: unit,
+				level,
+				reason: `sends or receives ${name} messages, which ${what}`,
+				cause
+			});
 	}
 
 	// ------------------------------------------------------------------ entities
@@ -529,6 +550,26 @@ export function impactOf(before: Model, after: Model, diff: Diff): ImpactReport 
 			if (kind === 'api') callers('breaking', 'calls an api that is gone');
 			if (kind === 'logic-unit') callers('breaking', 'calls a unit that is gone');
 			if (kind === 'trigger') callers('breaking', 'sends a message that is gone');
+			// A channel or stored model gone: what sends on it and what listens to it break.
+			for (const [, x] of before.elements) {
+				if (kind === 'channel' && x.logic?.sends.includes(e.id))
+					add(b, {
+						id: x.id,
+						element: x.id,
+						level: 'breaking',
+						reason: 'sends on a channel that is gone',
+						cause: e.id
+					});
+				const on = x.def.kind === 'trigger' ? x.def.on : undefined;
+				if (on && (on.channel ?? on.model) === e.id)
+					add(b, {
+						id: x.id,
+						element: x.id,
+						level: 'breaking',
+						reason: `listens to a ${kind} that is gone`,
+						cause: e.id
+					});
+			}
 			return;
 		}
 		if (e.change !== 'changed') return;

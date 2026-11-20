@@ -7,7 +7,8 @@ import type {
 	LogicStep,
 	ModelField
 } from './schema';
-import { ENTITY_KINDS, PARENT_KINDS } from './schema';
+import { DATA_EVENTS, ENTITY_KINDS, MESSAGE_EVENTS, PARENT_KINDS } from './schema';
+import type { SourceEvent } from './schema';
 import type { DataPath, Diagnostic, Severity } from './diagnostics';
 import { entityKind, fileKind } from './parse';
 import { toDiagnostic, validateEntityFile } from './validate-file';
@@ -33,8 +34,13 @@ export interface ElementInfo {
 	/** Models stored here (their `storedIn`), drawn inside as tables. */
 	storedIds: string[];
 	tags?: string[];
-	/** Logic units only: what starts it, and what its steps read, write and call. */
+	/** Logic units only: what starts it, and what its steps read, write, call and send. */
 	logic?: LogicLinks;
+	/**
+	 * Triggers only: what it listens to, when that is known: a channel's port (see `Port`), or a
+	 * stored model, or the fields of one whose change raises it.
+	 */
+	listens?: string[];
 	/** 0 for top-level elements. */
 	depth: number;
 	loc: Loc;
@@ -74,8 +80,23 @@ export const apiBodies = (def: Element) => [
 	}))
 ];
 
+/**
+ * One event of a channel that triggers can listen to, drawn as a row of the channel's card:
+ * `<channel>:<event>` on a queue, `<channel>:<subscription>:<event>` on a topic.
+ */
+export interface Port {
+	id: string;
+	channel: string;
+	event: SourceEvent;
+	subscription?: string;
+	/** The triggers listening to it. */
+	triggers: string[];
+}
+
 export interface Model {
 	elements: Map<string, ElementInfo>;
+	/** Every channel's ports, by id, each channel's in order. */
+	ports: Map<string, Port>;
 	fields: Map<string, FieldInfo>;
 	/** Fields of body shapes written on apis. */
 	apiFields: Map<string, ApiFieldInfo>;
@@ -121,6 +142,7 @@ export function buildModel(
 ): Model {
 	const model: Model = {
 		elements: new Map(),
+		ports: new Map(),
 		fields: new Map(),
 		apiFields: new Map(),
 		rootElementIds: [],
@@ -195,7 +217,7 @@ export function buildModel(
 	/** Checks a logic unit's references and steps, and collects what they name. */
 	const logicLinks = (info: ElementInfo): LogicLinks => {
 		const def = info.def;
-		const links: LogicLinks = { handles: [], reads: [], writes: [], calls: [] };
+		const links: LogicLinks = { handles: [], reads: [], writes: [], calls: [], sends: [] };
 		const add = (key: keyof LogicLinks, id: string) => {
 			if (!links[key].includes(id)) links[key].push(id);
 		};
@@ -234,7 +256,7 @@ export function buildModel(
 					diag(
 						'error',
 						'logic-step',
-						`empty step; give call, read, write, if, each, flag, return, fail or note`,
+						`empty step; give call, send, read, write, if, each, flag, return, fail or note`,
 						stepLoc
 					);
 				for (const [sub, owner] of [
@@ -246,16 +268,38 @@ export function buildModel(
 				] as const)
 					if (s[sub] && k !== owner)
 						diag('error', 'logic-step', `${sub} goes with ${owner}`, stepLoc, sub);
-				for (const sub of ['with', 'gets'] as const)
-					if (s[sub] !== undefined && k !== 'call' && k !== 'read')
-						diag('error', 'logic-step', `${sub} goes with call or read`, stepLoc, sub);
-				if (k === 'call' || k === 'read' || k === 'write')
+				if (s.with !== undefined && k !== 'call' && k !== 'read' && k !== 'send')
+					diag('error', 'logic-step', `with goes with call, send or read`, stepLoc, 'with');
+				if (s.gets !== undefined && k !== 'call' && k !== 'read')
+					diag(
+						'error',
+						'logic-step',
+						k === 'send'
+							? `a send gets nothing back: a message has no reply`
+							: `gets goes with call or read`,
+						stepLoc,
+						'gets'
+					);
+				if (s.does !== undefined && k !== 'write')
+					diag('error', 'logic-step', `does goes with write`, stepLoc, 'does');
+				if (k === 'call' || k === 'read' || k === 'write' || k === 'send')
 					if (logicTarget(k, s[k]!, stepLoc, k)) {
 						add(`${k}s` as keyof LogicLinks, s[k]!);
-						// Calling a trigger sends its message; a schedule has no sender.
+						// Calling an old message trigger sends its message; a schedule has no sender,
+						// and a trigger on a channel is reached by sending on the channel.
 						const t = model.elements.get(s[k]!);
 						if (k === 'call' && t?.def.kind === 'trigger') {
-							if (!t.def.message)
+							if (t.def.on)
+								diag(
+									'error',
+									'step-send',
+									t.def.on.channel
+										? `call names trigger "${t.name}": send on its channel instead`
+										: `call names trigger "${t.name}": write its model instead`,
+									stepLoc,
+									k
+								);
+							else if (!t.def.message)
 								diag(
 									'error',
 									'trigger-call',
@@ -401,8 +445,10 @@ export function buildModel(
 			diag('error', 'model-parent', `model "${info.name}" uses ownedBy, not parent`, loc, 'parent');
 		if (kind !== 'model' && ownedBy)
 			diag('error', 'owned-by', `only models have ownedBy`, loc, 'ownedBy');
-		if (value.external && kind !== 'module' && kind !== 'api')
-			diag('error', 'external', `only modules and apis are external`, loc, 'external');
+		if (value.external && kind !== 'module' && kind !== 'api' && kind !== 'channel')
+			diag('error', 'external', `only modules, apis and channels are external`, loc, 'external');
+		if (value.store && kind !== 'module')
+			diag('error', 'module-store', `only modules have store`, loc, 'store');
 		if (kind !== 'model' && storedIn)
 			diag('error', 'model-only', `only models have storedIn`, loc, 'storedIn');
 		if (kind === 'model' && !ownedBy)
@@ -572,28 +618,56 @@ export function buildModel(
 		} else
 			for (const key of ['key', 'default'] as const)
 				if (value[key]) diag('error', 'flag-only', `only flags have ${key}`, loc, key);
-		if (value.when && kind !== 'api' && kind !== 'logic-unit' && kind !== 'trigger')
-			diag('error', 'flag-gate', `only apis, logic units and triggers have when`, loc, 'when');
+		if (
+			value.when &&
+			kind !== 'api' &&
+			kind !== 'logic-unit' &&
+			kind !== 'trigger' &&
+			kind !== 'channel'
+		)
+			diag(
+				'error',
+				'flag-gate',
+				`only apis, logic units, triggers and channels have when`,
+				loc,
+				'when'
+			);
 		if (kind === 'trigger') {
-			// The source says what starts it: a schedule or a message, never both.
-			if (!value.schedule === !value.message)
+			// The source says what starts it: a schedule, or an event it listens to (or, before
+			// channels, a message in words); exactly one.
+			const sources = (['schedule', 'on', 'message'] as const).filter((k) => value[k]);
+			if (sources.length !== 1)
 				diag(
 					'error',
 					'trigger-source',
-					value.schedule
-						? `trigger "${info.name}" has schedule and message; give one`
-						: `trigger "${info.name}" needs a schedule or a message`,
+					sources.length
+						? `trigger "${info.name}" has ${sources.join(' and ')}; give one`
+						: `trigger "${info.name}" needs a schedule or on`,
 					loc,
-					value.schedule ? 'message' : 'id'
+					sources[1] ?? 'id'
 				);
 			if (value.schedule)
 				for (const p of scheduleProblems(value.schedule))
 					diag('error', 'trigger-schedule', p.message, at(loc, 'schedule'), p.key);
-			if (value.message)
+			if (value.message) {
+				diag(
+					'warning',
+					'trigger-message-legacy',
+					`message names its queue or topic in words; run sdv migrate triggers to make it a channel and on`,
+					loc,
+					'message'
+				);
 				for (const p of messageProblems(value.message))
 					diag('error', 'trigger-message', p.message, at(loc, 'message'), p.key);
-			if (value.message && value.overlap !== undefined)
-				diag('error', 'trigger-overlap', `overlap goes with schedule, not message`, loc, 'overlap');
+			}
+			if (!value.schedule && value.overlap !== undefined)
+				diag(
+					'error',
+					'trigger-overlap',
+					`overlap goes with schedule, not ${value.on ? 'on' : 'message'}`,
+					loc,
+					'overlap'
+				);
 			if (value.timeout !== undefined && !isDuration(value.timeout))
 				diag(
 					'error',
@@ -603,9 +677,24 @@ export function buildModel(
 					'timeout'
 				);
 		} else
-			for (const key of ['schedule', 'message', 'overlap', 'timeout', 'retries', 'with'] as const)
+			for (const key of ['schedule', 'on', 'message', 'overlap', 'timeout', 'with'] as const)
 				if (value[key] !== undefined)
 					diag('error', 'trigger-only', `only triggers have ${key}`, loc, key);
+		if (value.retries !== undefined && kind !== 'trigger' && kind !== 'channel')
+			diag('error', 'trigger-only', `only triggers and channels have retries`, loc, 'retries');
+		if (kind === 'channel') {
+			if (!value.type)
+				diag(
+					'error',
+					'channel-kind',
+					`channel "${info.name}" needs type: queue or topic`,
+					loc,
+					'id'
+				);
+		} else
+			for (const key of ['type', 'carries', 'via'] as const)
+				if (value[key] !== undefined)
+					diag('error', 'channel-only', `only channels have ${key}`, loc, key);
 		if (kind === 'logic-unit')
 			for (const key of ['inputs', 'outputs'] as const) {
 				if (!value[key])
@@ -893,6 +982,157 @@ export function buildModel(
 				);
 		}
 	}
+	// What each trigger listens to, then every channel's ports (see `Port`).
+	const heard = new Map<string, { trigger: string; event: SourceEvent; subscription?: string }[]>();
+	for (const info of entities) {
+		const on = info.def.kind === 'trigger' ? info.def.on : undefined;
+		if (!on) continue;
+		const onLoc = at(info.loc, 'on');
+		const bad = (code: string, message: string, key?: string) =>
+			diag('error', code, message, onLoc, key);
+		if (!on.channel === !on.model) {
+			bad(
+				'trigger-on',
+				`on needs exactly one of channel and model`,
+				on.channel ? 'model' : 'event'
+			);
+			continue;
+		}
+		const id = (on.channel ?? on.model)!;
+		const key = on.channel ? 'channel' : 'model';
+		const src = model.elements.get(id);
+		if (!src) {
+			bad('dangling-ref', `on.${key} names "${id}", which is not an entity`, key);
+			continue;
+		}
+		if (src.def.kind !== key) {
+			bad('trigger-on', `on.${key} names ${src.def.kind} "${src.name}", not a ${key}`, key);
+			continue;
+		}
+		if (on.channel) {
+			if (!(MESSAGE_EVENTS as readonly string[]).includes(on.event)) {
+				bad(
+					'trigger-event',
+					`a channel raises ${MESSAGE_EVENTS.join(' or ')}, not ${on.event}`,
+					'event'
+				);
+				continue;
+			}
+			if (on.subscription !== undefined && src.def.type !== 'topic')
+				bad(
+					'trigger-on',
+					`subscription goes with a topic; "${src.name}" is a queue`,
+					'subscription'
+				);
+			if (on.fields) bad('trigger-on', `fields go with a table, not a channel`, 'fields');
+			if (on.path !== undefined) bad('trigger-on', `path goes with a file, not a channel`, 'path');
+			const subscription = src.def.type === 'topic' ? (on.subscription ?? info.name) : undefined;
+			heard.set(id, [
+				...(heard.get(id) ?? []),
+				{ trigger: info.id, event: on.event as SourceEvent, subscription }
+			]);
+			continue;
+		}
+		if (!(DATA_EVENTS as readonly string[]).includes(on.event)) {
+			bad(
+				'trigger-event',
+				`a stored model raises ${DATA_EVENTS.join(', ')}, not ${on.event}`,
+				'event'
+			);
+			continue;
+		}
+		const store = model.elements.get(src.storedIn ?? '');
+		if (!store) {
+			bad(
+				'trigger-on',
+				`"${src.name}" is not stored (no storedIn): only a table or a file raises events`,
+				'model'
+			);
+			continue;
+		}
+		const files = store.def.store === 'files';
+		if (on.subscription !== undefined)
+			bad('trigger-on', `subscription goes with a topic, not a model`, 'subscription');
+		if (on.path !== undefined && !files)
+			bad('trigger-on', `path goes with a file; "${src.name}" is a table`, 'path');
+		let fields: string[] = [];
+		if (on.fields) {
+			if (files) bad('trigger-on', `fields go with a table; "${src.name}" is a file`, 'fields');
+			else if (on.event !== 'updated')
+				bad('trigger-on', `fields go with updated, not ${on.event}`, 'fields');
+			else
+				fields = on.fields.filter((f, j) => {
+					if (model.fields.get(f)?.modelId === src.id) return true;
+					diag(
+						'error',
+						'unknown-field',
+						`on.fields names "${f}", which is not a field of "${src.name}"`,
+						at(onLoc, 'fields', j)
+					);
+					return false;
+				});
+		}
+		info.listens = fields.length ? fields : [src.id];
+	}
+	for (const info of entities) {
+		if (info.def.kind !== 'channel') continue;
+		const def = info.def;
+		const carried = def.carries ? model.elements.get(def.carries) : undefined;
+		if (def.carries && carried?.def.kind !== 'model')
+			diag(
+				'error',
+				carried ? 'not-a-model' : 'dangling-ref',
+				`carries names "${def.carries}", which is not a model`,
+				info.loc,
+				'carries'
+			);
+		const listeners = heard.get(info.id) ?? [];
+		const port = (event: SourceEvent, subscription?: string) => {
+			const id = [info.id, subscription, event].filter((x) => x !== undefined).join(':');
+			const p: Port = {
+				id,
+				channel: info.id,
+				event,
+				...(subscription !== undefined ? { subscription } : {}),
+				triggers: listeners
+					.filter((l) => l.event === event && l.subscription === subscription)
+					.map((l) => l.trigger)
+			};
+			model.ports.set(id, p);
+			for (const t of p.triggers) model.elements.get(t)!.listens = [id];
+		};
+		// A queue shows both its events; a topic each subscription's received, and its
+		// dead-lettered only while something listens to it.
+		const subs = [
+			...new Set(listeners.map((l) => l.subscription).filter((s) => s !== undefined))
+		].sort();
+		if (def.type !== 'topic' || !subs.length) {
+			port('received');
+			if (def.type !== 'topic') port('dead-lettered');
+		}
+		for (const s of subs) {
+			port('received', s);
+			if (listeners.some((l) => l.subscription === s && l.event === 'dead-lettered'))
+				port('dead-lettered', s);
+		}
+		const sent = entities.some((u) => u.logic?.sends.includes(info.id));
+		if (!sent && !def.external)
+			diag(
+				'warning',
+				'channel-unsent',
+				`nothing in the design sends on channel "${info.name}"; give a unit a send step, or mark it external`,
+				info.loc,
+				'id'
+			);
+		if (!listeners.length)
+			diag(
+				'warning',
+				'channel-unheard',
+				`nothing listens to channel "${info.name}": no trigger is on it`,
+				info.loc,
+				'id'
+			);
+	}
 	const defaultsByKey = new Map<string, ElementInfo[]>();
 	for (const info of entities) {
 		if (info.def.kind !== 'flag') continue;
@@ -957,13 +1197,17 @@ export function buildModel(
 	return model;
 }
 
-/** A logic unit's links: what invokes it, and the data its steps touch and what they call. */
-export const LOGIC_KEYS = ['handles', 'reads', 'writes', 'calls'] as const;
+/**
+ * A logic unit's links: what invokes it, the data its steps touch, what they call and the
+ * channels they send on.
+ */
+export const LOGIC_KEYS = ['handles', 'reads', 'writes', 'calls', 'sends'] as const;
 export type LogicLinks = Record<(typeof LOGIC_KEYS)[number], string[]>;
 
 /** The keys that say what kind a step is; a step with none of them is a note. */
 export const STEP_KINDS = [
 	'call',
+	'send',
 	'read',
 	'write',
 	'if',
@@ -977,6 +1221,7 @@ export const STEP_KINDS = [
 const LOGIC_TARGETS = {
 	handles: ['api', 'trigger'],
 	call: ['logic-unit', 'api', 'trigger'],
+	send: ['channel'],
 	read: ['model', 'field'],
 	write: ['model', 'field'],
 	flag: ['flag']

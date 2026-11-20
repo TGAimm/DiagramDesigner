@@ -182,7 +182,7 @@
 							><Ident
 								text={s.text.slice(s.method.length + 1)}
 							/>{:else if 'trigger' in s && s.trigger}<EntityGlyph
-								kind={s.message ? 'message' : 'trigger'}
+								kind={(s.glyph ?? 'trigger') as GlyphKind}
 							/><Ident text={s.text} />{:else}<Ident text={s.text} />{/if}</button
 					>
 				{/each}

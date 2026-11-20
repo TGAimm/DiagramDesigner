@@ -3,7 +3,7 @@
 	import type { LogicRow, ModelView, TableColumn } from '#lib/landscape/layout.ts';
 	import type { ViewState } from '#lib/client/view-state.svelte.ts';
 
-	/** A model, logic or triggers card, as the peek draws it. */
+	/** A model, logic, triggers or channel card, as the peek draws it. */
 	export interface CardData {
 		name: string;
 		/** The entity drawn: for change marks. */
@@ -21,6 +21,15 @@
 		logic?: { cols: TableColumn[]; rows: LogicRow[] };
 		/** Set when the card is a module's triggers card: one row per trigger, its schedule in words. */
 		triggers?: { cols: TableColumn[]; rows: LogicRow[] };
+		/** Set when the card is a channel's: one row per event, with the triggers on it. */
+		channel?: { cols: TableColumn[]; rows: LogicRow[] };
+		/** A channel's type word (QUEUE, TOPIC) and note. */
+		channelWord?: string;
+		channelNote?: string;
+		/** A channel that is a topic, for its glyph. */
+		topic?: boolean;
+		/** A stored table kept as a file. */
+		files?: boolean;
 		view?: ModelView;
 		/** Names of the models and fields the fields point at (ref, model, from), by id. */
 		labels?: Record<string, string>;
@@ -57,7 +66,7 @@
 		typeText
 	} from '#lib/landscape/layout.ts';
 	import { changes } from '#lib/client/changes.svelte.ts';
-	import EntityGlyph from './EntityGlyph.svelte';
+	import EntityGlyph, { type GlyphKind } from './EntityGlyph.svelte';
 
 	/**
 	 * A card of the canvas drawn as page elements, at full size, for the peek beside the
@@ -87,6 +96,8 @@
 	const plural = (n: number, one: string, many: string) =>
 		`${n} field${n > 1 ? 's' : ''} ${n > 1 ? many : one}`;
 	const cardName = $derived(d.logic ? 'Logic' : d.triggers ? 'Triggers' : d.name);
+	// Whatever glyph a row asks for, as the canvas draws it.
+	const rowGlyph = (g: string | undefined) => (g ?? 'trigger') as GlyphKind;
 	const label = (id: string) => d.labels?.[id];
 	const names = (ids: string[]) => ids.map((id) => label(id) ?? id).join(', ');
 	// Change marks while a scenario or commit is compared: a glyph on what changed, a bar in
@@ -113,6 +124,7 @@
 			class="face table"
 			class:class={d.view === 'class'}
 			class:stored={d.view === 'table'}
+			class:files={d.files}
 			class:ref={d.owner && d.view === 'class'}
 			style:--pad="{TABLE.pad}px"
 			style:--row="{TABLE.rowHeight}px"
@@ -121,12 +133,12 @@
 				<div class="title-row">
 					<div class="name" style:font-size="{TABLE.title}px">
 						<EntityGlyph
-							kind={d.view === 'table' ? 'table' : 'class'}
+							kind={d.view === 'table' ? (d.files ? 'file' : 'table') : 'class'}
 						/>{#if marks.glyph.has(d.element)}<span class="op">{marks.glyph.get(d.element)}</span
 							>{/if}{d.name}
 					</div>
 					<span class="kind-word" style:font-size="{TABLE.label}px"
-						>{kindWord(d.view ?? 'class')}</span
+						>{kindWord(d.view ?? 'class', d.files)}</span
 					>
 				</div>
 				<div class="note" style:font-size="{TABLE.note}px">
@@ -286,23 +298,33 @@
 				</div>
 			{/if}
 		</div>
-	{:else if d.logic || d.triggers}
-		{@const card = (d.logic ?? d.triggers)!}
+	{:else if d.logic || d.triggers || d.channel}
+		{@const card = (d.logic ?? d.triggers ?? d.channel)!}
 		{@const cols = card.cols}
 		{@const rows = card.rows}
 		<div
 			class="face table"
 			class:logic={!!d.logic}
 			class:triggers={!!d.triggers}
+			class:channel={!!d.channel}
 			style:--pad="{TABLE.pad}px"
 			style:--row="{TABLE.rowHeight}px"
 		>
 			<div class="thead" style:height="{TABLE.head}px">
-				<div class="name" style:font-size="{TABLE.title}px">
-					<EntityGlyph kind={d.logic ? 'logic' : 'triggers'} />{cardName}
+				<div class="title-row">
+					<div class="name" style:font-size="{TABLE.title}px">
+						<EntityGlyph
+							kind={d.logic ? 'logic' : d.triggers ? 'triggers' : d.topic ? 'topic' : 'channel'}
+						/>{#if d.channel && marks.glyph.has(d.element)}<span class="op"
+								>{marks.glyph.get(d.element)}</span
+							>{/if}{cardName}
+					</div>
+					{#if d.channel}<span class="kind-word" style:font-size="{TABLE.label}px"
+							>{d.channelWord}</span
+						>{/if}
 				</div>
 				<div class="note" style:font-size="{TABLE.note}px">
-					{d.logic ? logicNote(rows.length) : triggersNote(rows.length)}
+					{d.logic ? logicNote(rows.length) : d.channel ? d.channelNote : triggersNote(rows.length)}
 				</div>
 			</div>
 			<div
@@ -322,6 +344,7 @@
 						class:faded={comparing && !marked(u.id)}
 						class:gone={marks.dropped.has(u.id)}
 						class:hid={changes.hidden.has(u.id)}
+						class:idle={u.idle}
 						class:sev-break={lv(u.id) === 'breaking'}
 						class:sev-check={lv(u.id) === 'check'}
 						role="button"
@@ -335,7 +358,8 @@
 					>
 						<div class="cell first">
 							{#if d.logic}<i class="fn">ƒ</i>{:else}<EntityGlyph
-									kind={u.message ? 'message' : 'trigger'}
+									kind={rowGlyph(u.glyph)}
+									tone={d.channel ? 'channel' : 'trigger'}
 								/>{/if}{#if marks.glyph.has(u.id)}<span class="op">{marks.glyph.get(u.id)}</span
 								>{/if}<span class="fname">{u.name}</span>
 						</div>
@@ -421,6 +445,41 @@
 	.face.table.triggers .thead {
 		background: var(--sdv-kind-trigger-head);
 		border-bottom: 1.5px solid var(--kl);
+	}
+	/* A channel: a pipe, square where messages come in, round where they leave. */
+	.face.table.channel {
+		--kl: var(--sdv-kind-channel);
+		--ki: var(--sdv-kind-channel-icon);
+		--kt: var(--sdv-kind-channel-text);
+		--ks: var(--sdv-kind-channel-soft);
+		border-radius: 3px 18px 18px 3px;
+	}
+	.face.table.channel .kind-word {
+		margin-right: 6px;
+	}
+	/* A file: a stored table with its top right corner folded. */
+	.face.table.files {
+		clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+	}
+	.face.table.files::after {
+		content: '';
+		position: absolute;
+		right: 0;
+		top: 0;
+		width: 14px;
+		height: 14px;
+		background: linear-gradient(
+			225deg,
+			transparent 50%,
+			var(--kl) 50% calc(50% + 1.5px),
+			var(--ks) calc(50% + 1.5px)
+		);
+	}
+	.face.table.files .kind-word {
+		margin-right: 10px;
+	}
+	.row.idle .cell {
+		color: var(--sdv-text-muted);
 	}
 	.face.table .name {
 		color: var(--kt);

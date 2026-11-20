@@ -27,6 +27,7 @@ export async function runNew(
 	lines.push(`name: ${path.basename(file).split('.')[0]}`);
 	if (kind === 'api') lines.push('method: GET', 'path: /');
 	if (kind === 'trigger') lines.push('schedule: { every: 1h }');
+	if (kind === 'channel') lines.push('type: queue');
 	await fs.mkdir(path.dirname(abs), { recursive: true });
 	await fs.writeFile(abs, lines.join('\n') + '\n');
 	io.log(`created ${path.relative(cwd, abs).split(path.sep).join('/')}`);
