@@ -86,7 +86,7 @@
 	} from '#lib/landscape/layout.ts';
 	import { NAME_MIN } from '#lib/landscape/open.ts';
 	import type { Model } from '#lib/model/model.ts';
-	import { tokenValues } from '#lib/theme/tokens.ts';
+	import { methodToken, tokenValues } from '#lib/theme/tokens.ts';
 	import { LineLayer, lineShader, tokenRgba } from './gl/lines.ts';
 	import { lanePoints } from '#lib/landscape/lanes.ts';
 	import { GlTextLayer, leadEm, LINE, type GlLabel } from './gl/text.ts';
@@ -1223,13 +1223,6 @@
 			bold: true,
 			glyph: 'api'
 		});
-		const METHOD: Record<string, Token> = {
-			GET: 'method-get',
-			POST: 'method-post',
-			PUT: 'method-put',
-			PATCH: 'method-put',
-			DELETE: 'method-delete'
-		};
 		let y = RAIL.head;
 		for (const grp of r.groups) {
 			if (grp.title) {
@@ -1267,7 +1260,7 @@
 					x0 + RAIL.pad * s,
 					ry,
 					RAIL.font,
-					METHOD[def?.method ?? ''] ?? 'text-muted',
+					methodToken(def?.method),
 					{ bold: true, op: marks.glyph.get(a), gap: RAIL.gap / RAIL.font }
 				);
 				const p = at(

@@ -2,6 +2,7 @@
 	import EntityGlyph, { type GlyphKind } from './EntityGlyph.svelte';
 	import Ident from '../Ident.svelte';
 	import { SEQ, sequenceWidth, type Lifeline, type Sequence } from '#lib/landscape/sequence.ts';
+	import { methodColor } from '#lib/theme/tokens.ts';
 	import { textWidth } from '#lib/render/text.ts';
 
 	// A logic unit's steps as a sequence diagram: a lifeline per participant, a row per
@@ -177,8 +178,7 @@
 						class="sub"
 						disabled={!('target' in s) || !s.target}
 						onclick={() => 'target' in s && s.target && onpick(s.target)}
-						>{#if 'method' in s && s.method}<b
-								style:color="var(--sdv-method-{s.method.toLowerCase()})">{s.method}</b
+						>{#if 'method' in s && s.method}<b style:color={methodColor(s.method)}>{s.method}</b
 							><Ident
 								text={s.text.slice(s.method.length + 1)}
 							/>{:else if 'trigger' in s && s.trigger}<EntityGlyph
@@ -228,8 +228,9 @@
 			style:top="{arrowY(m.row) - 2 - (fit[m.row] || 14)}px"
 			bind:clientHeight={fit[m.row]}
 			onclick={() => m.target && onpick(m.target)}
-			>{#if m.method}<b style:color="var(--sdv-method-{m.method.toLowerCase()})">{m.method}</b
-				><Ident text={text.slice(m.method.length + 1)} />{:else}<Ident {text} />{/if}</button
+			>{#if m.method}<b style:color={methodColor(m.method)}>{m.method}</b><Ident
+					text={text.slice(m.method.length + 1)}
+				/>{:else}<Ident {text} />{/if}</button
 		>
 	{/each}
 	{#each seq.notes as n (n.row)}

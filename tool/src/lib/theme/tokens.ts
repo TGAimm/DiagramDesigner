@@ -157,3 +157,19 @@ export function themeCss(): string {
 		TOKENS.map((t) => `  --sdv-${t}: ${values[t]};`).join('\n');
 	return `:root, [data-theme='light'] {\n${block(light)}\n  color-scheme: light;\n}\n[data-theme='dark'] {\n${block(dark)}\n  color-scheme: dark;\n}\n`;
 }
+
+const METHOD: Partial<Record<string, Token>> = {
+	GET: 'method-get',
+	POST: 'method-post',
+	PUT: 'method-put',
+	// PATCH changes what exists, as PUT does, so it shares PUT's colour.
+	PATCH: 'method-put',
+	DELETE: 'method-delete'
+};
+
+/** An HTTP method's colour token; methods without one (HEAD, OPTIONS) are drawn muted. */
+export const methodToken = (method: string | undefined): Token =>
+	METHOD[method ?? ''] ?? 'text-muted';
+
+/** The same as a CSS colour, for markup. */
+export const methodColor = (method: string | undefined) => `var(--sdv-${methodToken(method)})`;

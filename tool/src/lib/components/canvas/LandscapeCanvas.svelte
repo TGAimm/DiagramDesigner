@@ -10,6 +10,7 @@
 	} from '@lucide/svelte';
 	import { changes } from '#lib/client/changes.svelte.ts';
 	import { CanvasCamera, setCamera } from '#lib/client/camera.svelte.ts';
+	import { methodColor } from '#lib/theme/tokens.ts';
 	import { search } from '#lib/client/search.svelte.ts';
 	import SearchPalette from '#lib/components/SearchPalette.svelte';
 	import type { Hit } from '#lib/landscape/search.ts';
@@ -605,9 +606,7 @@
 			const a = mineHome && endOf(mine, mineHome);
 			const b = theirHome && endOf(theirs, theirHome);
 			if (!a || !b) continue;
-			// A trigger depends on the event it listens to, but the event flows to the trigger, so
-			// its line is drawn from the event, its arrow at the trigger.
-			const [s, t] = fromIn !== (e.kind === 'on') ? [a, b] : [b, a];
+			const [s, t] = fromIn ? [a, b] : [b, a];
 			const sameCard = s.node === t.node;
 			// One box: only two of a card's rows are joined.
 			if (
@@ -3042,9 +3041,7 @@
 	{#snippet apiTitle(api: NonNullable<ReturnType<typeof apiCardOf>>)}
 		<div class="head">
 			<div class="title">
-				<span style:color="var(--sdv-method-{api.method.toLowerCase()}, var(--sdv-text-muted))"
-					>{api.method}</span
-				>
+				<span style:color={methodColor(api.method)}>{api.method}</span>
 				<span class="mono"><Ident text={api.path} /></span>
 			</div>
 			<div class="type">{api.sub}</div>
@@ -3292,8 +3289,7 @@
 				style:top="{playDraw.label.y}px"
 				style:--ax={SHIFT[playDraw.label.align]}
 			>
-				{#if step.method}<b style:color="var(--sdv-method-{step.method.toLowerCase()})"
-						>{step.method}</b
+				{#if step.method}<b style:color={methodColor(step.method)}>{step.method}</b
 					>{step.text.slice(step.method.length)}{:else}{step.text}{/if}
 			</div>
 			{#if playDraw.edge}

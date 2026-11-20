@@ -102,7 +102,7 @@ the rest of every file as it is.
   work from inside the system.
 - Identity: 6 px corners, a 1.5 px violet line and a tinted name bar ruled off in it.
 - Lines: the dotted **handles** line to each unit it starts; for `on`, the dashed **event**
-  line from the channel's port, or the stored model or field, arrow at the trigger. Hovering a
+  line to the channel's port, or the stored model or field, arrow at that source. Hovering a
   trigger on a channel lights the senders' sends into the channel too.
 - Click a row: the trigger card. A schedule shows its schedule in words and as written, the
   time zone, the next three runs, and overlap; `on` shows the event, the source's kind, what it
