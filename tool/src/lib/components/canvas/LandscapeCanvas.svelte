@@ -1171,7 +1171,10 @@
 		if (camera.dragged) return;
 		const hit = glAt(e);
 		if (!hit || hit.part === 'body') {
-			view.selectedNodes = hit ? [hit.box] : [];
+			// With something picked, a click beside it only lets go of it: picking the group
+			// round it instead would light every line of what may be a large module.
+			if (picked && hit?.box !== view.selectedNodes[0]) view.selectedNodes = [];
+			else view.selectedNodes = hit ? [hit.box] : [];
 			unpin();
 			return;
 		}
