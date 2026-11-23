@@ -828,11 +828,13 @@ export function buildModel(
 						fieldLoc,
 						'name'
 					);
-				if (part !== 'request' && !f.from?.length)
+				// A response field with `derived` and no `from` is computed where the api answers (a literal,
+				// a flag, a count): nothing to trace, as for a model field.
+				if (part !== 'request' && !f.from?.length && !f.derived)
 					diag(
 						'warning',
 						'untraced-field',
-						`response field "${f.name}" comes from no field; add from`,
+						`response field "${f.name}" comes from no field; add from, or derived when it is computed here`,
 						fieldLoc,
 						'name'
 					);
