@@ -1,12 +1,13 @@
 <script lang="ts">
-	import { Crosshair, Flag, X } from '@lucide/svelte';
+	import { Crosshair, GitBranch, Flag, X } from '@lucide/svelte';
 	import type { Focus, FocusMode, FocusReach, FocusSides } from '#lib/landscape/focus.ts';
 	import EntityGlyph, { type GlyphKind } from './EntityGlyph.svelte';
 
 	// The controls of a focus, over the canvas's top left: what is focused, which of its
 	// dependencies to show and how far, and the way out. The canvas shows the rest. A system or
-	// module shows what it holds and its boundary, so it only picks the kinds shown; a flag key
-	// is only depended on, so its state takes the place of the sides.
+	// module shows what it holds and its boundary, so it only picks the kinds shown. A change (a
+	// flag key, a scenario or one of its changes) is shown up to where it breaks or settles, so
+	// it has no sides and no kinds: a flag key's state takes their place.
 	let {
 		focus,
 		name,
@@ -17,7 +18,7 @@
 	}: {
 		focus: Focus;
 		name: string;
-		/** The subject's entity kind, `field` or `flag`. */
+		/** The subject's entity kind, `field`, `flag` or `scenario`. */
 		kind: string;
 		/** A flag key the subject: whether its definitions are on (`mixed`: a split), their
 		 *  default, and how to set them all. */
@@ -48,15 +49,22 @@
 		['direct', 'Direct', 'One step each way'],
 		['chain', 'Chain', 'On along each side until it ends']
 	];
+	/** In a change focus: what it touches, or everything it reaches. */
+	const CHANGE_REACH: [FocusReach, string, string][] = [
+		['direct', 'Direct', 'What it changes and what that touches'],
+		['chain', 'All', 'Everything it reaches, up to where it breaks or settles']
+	];
 	const holder = $derived(kind === 'system' || kind === 'module');
+	const change = $derived(kind === 'flag' || kind === 'scenario');
 </script>
 
 <div class="bar" role="toolbar" aria-label="Focus" data-testid="focus-bar">
 	<span class="label"><Crosshair size={14} />Focus</span>
 	<span class="subject">
-		{#if kind === 'flag'}<Flag size={13} class="flag" />{:else if GLYPH[kind]}<EntityGlyph
-				kind={GLYPH[kind]!}
-			/>{/if}{name}
+		{#if kind === 'flag'}<Flag size={13} class="flag" />{:else if kind === 'scenario'}<GitBranch
+				size={13}
+				class="flag"
+			/>{:else if GLYPH[kind]}<EntityGlyph kind={GLYPH[kind]!} />{/if}{name}
 	</span>
 	<span class="sep"></span>
 	{#if flag}
@@ -72,7 +80,7 @@
 			{/each}
 		</div>
 		{#if flag.on === 'mixed'}<span class="split">split</span>{/if}
-	{:else if !holder}
+	{:else if !holder && !change}
 		<div class="seg" role="group" aria-label="Sides">
 			{#each SIDES as [sides, text, title] (sides)}
 				<button
@@ -86,7 +94,7 @@
 	{/if}
 	{#if !holder}
 		<div class="seg" role="group" aria-label="How far">
-			{#each REACH as [reach, text, title] (reach)}
+			{#each change ? CHANGE_REACH : REACH as [reach, text, title] (reach)}
 				<button
 					class:on={focus.reach === reach}
 					aria-pressed={focus.reach === reach}
@@ -96,7 +104,7 @@
 			{/each}
 		</div>
 	{/if}
-	{#if !flag}
+	{#if !change}
 		{#if !holder}<span class="sep"></span>{/if}
 		<div class="seg" role="group" aria-label="What to show">
 			{#each MODES as [mode, text] (mode)}

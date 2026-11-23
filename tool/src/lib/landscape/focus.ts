@@ -3,6 +3,7 @@ import { flagKeys } from '../model/flags';
 import type { LogicStep, ModelField } from '../model/schema';
 import { edgesOf, type Edge } from './connections';
 import { FOLD, holdersOf, viewFields } from './layout';
+import type { Front } from '../scenario/front';
 
 /** Every kind of element, or only the data models. */
 export type FocusMode = 'all' | 'data';
@@ -22,6 +23,9 @@ export interface Focus {
 	reach: FocusReach;
 	/** The subject is a flag key: what depends on its definitions (see `focusOnFlag`). */
 	flag?: true;
+	/** The subject is the shown scenario (`id` its path), or with `change` one of its changes. */
+	scenario?: true;
+	change?: number;
 }
 
 /** A focus on `id` as it opens: everything, both sides, one step each. */
@@ -232,39 +236,39 @@ export function flagReach(model: Model, key: string): Set<string> {
 }
 
 /**
- * The design cut down to what depends on a flag key (see `flagRoles`). `chain` goes on both
- * ways: up from the units checking it and what is gated on it, through what uses them (who gets
- * the new behaviour), and down from what its branches switch to, through what they use (where
- * each branch leads). A data focus starts from the models these touch and chains both ways.
+ * The design cut down to what depends on a flag key: `direct`, what `flagRoles` finds; `chain`
+ * (All), the front of flipping it (see `frontOf`): what the flip changes, up to where it breaks
+ * or settles, with the way in of each changed unit. A data focus keeps the models these touch.
  * `model` holds every branch and gated item, so both states of the key are laid out alike;
  * `cutLike` draws one state in that layout.
  */
-export function focusOnFlag(model: Model, focus: Focus): Focused {
-	const { keeps, followed, touching, walk } = graphOf(model, focus.mode);
+export function focusOnFlag(model: Model, focus: Focus, front?: Front): Focused {
 	const roles = flagRoles(model, focus.id);
-	const chain = focus.reach === 'chain';
-	const reach = [...roles.checks, ...roles.off, ...roles.on, ...roles.gated, ...roles.around];
-	if (focus.mode === 'data') {
-		const start = new Set(
-			reach.flatMap((id) =>
-				keeps(id) ? [id] : [...touching(id, 'uses'), ...touching(id, 'usedBy')].filter(keeps)
-			)
-		);
-		const keep = new Set(start);
-		if (chain) for (const side of SIDES.both) walk(keep, start, side, Infinity);
-		return cut(model, keep, followed);
-	}
-	const keep = new Set(reach.filter(keeps));
-	if (chain) {
-		walk(keep, [...roles.checks, ...roles.gated], 'usedBy', Infinity);
-		walk(keep, [...roles.off, ...roles.on], 'uses', Infinity);
-	}
+	const direct = [...roles.checks, ...roles.off, ...roles.on, ...roles.gated, ...roles.around];
+	return focusOnChange(model, focus, focus.reach === 'chain' && front ? front.keep : direct);
+}
+
+/**
+ * The design cut down to a change: `ids` (what it reaches) that `model` holds. A data focus
+ * keeps the models among them, and those the others touch.
+ */
+export function focusOnChange(model: Model, focus: Focus, ids: Iterable<string>): Focused {
+	const { keeps, followed, touching } = graphOf(model, focus.mode);
+	const reach = [...ids].filter((id) => model.elements.has(id));
+	const keep = new Set(
+		focus.mode === 'data'
+			? reach.flatMap((id) =>
+					keeps(id) ? [id] : [...touching(id, 'uses'), ...touching(id, 'usedBy')].filter(keeps)
+				)
+			: reach.filter(keeps)
+	);
 	return cut(model, keep, followed);
 }
 
 /** `model`, another state of the design `focused` was cut from, cut the same way. */
 export function cutLike(focused: Focused, model: Model): Focused {
-	return cut(model, focused.keep, focused.followed);
+	const keep = new Set([...focused.keep].filter((id) => model.elements.has(id)));
+	return cut(model, keep, focused.followed);
 }
 
 /**

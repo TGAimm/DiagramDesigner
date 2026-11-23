@@ -11,12 +11,15 @@
 	import { changes } from '#lib/client/changes.svelte.ts';
 	import { CanvasCamera, setCamera } from '#lib/client/camera.svelte.ts';
 	import { methodColor } from '#lib/theme/tokens.ts';
-	import { flagAsk, search } from '#lib/client/search.svelte.ts';
+	import { flagAsk, goAsk, scenarioAsk, search } from '#lib/client/search.svelte.ts';
+	import { changeLabel } from '#lib/scenario/labels.ts';
+	import { changedOf } from '#lib/scenario/front.ts';
 	import SearchPalette from '#lib/components/SearchPalette.svelte';
 	import type { Hit } from '#lib/landscape/search.ts';
 	import {
 		cutLike,
 		focusOn,
+		focusOnChange,
 		focusOnFlag,
 		focusOnRun,
 		focusOf,
@@ -151,17 +154,41 @@
 	// in a focus, cut down to the subject and what connects to it, drawn the same. Playing, to
 	// what the run can touch, whatever focus it started in.
 	const playing = $derived(view.play?.unit);
+	// The change the canvas is focused on, for the front (see changes.svelte.ts): only what
+	// names it, so switching Direct and All doesn't work it out again.
+	$effect(() => {
+		const f = playing ? null : view.focused;
+		const next =
+			f?.flag || f?.scenario
+				? { id: f.id, flag: f.flag, scenario: f.scenario, change: f.change }
+				: null;
+		if (JSON.stringify(next) !== JSON.stringify(untrack(() => changes.subject)))
+			changes.subject = next;
+	});
+	/**
+	 * A focus on a change, cut from a design holding both its states, so moving between them
+	 * moves no box: a flag key's from the design laid out (every branch and gated item in), a
+	 * scenario's from its Diff state (what is dropped put back).
+	 */
+	const changeFocus = $derived.by(() => {
+		const f = playing ? undefined : view.focused;
+		if (f?.flag) return focusOnFlag(changes.layoutModel, f, changes.front);
+		const c = changes.comparison;
+		if (!f?.scenario || !c || !changes.focusComparison) return undefined;
+		const ids =
+			f.reach === 'chain' && changes.front
+				? changes.front.keep
+				: changedOf(changes.focusComparison);
+		return focusOnChange(c.union, f, ids);
+	});
+	const flagFocus = $derived(view.focused?.flag ? changeFocus : undefined);
 	/** The focus wanted now; what is drawn catches up with it once it is laid out. */
-	/** A flag focus, cut from the design laid out (every branch and gated item in). */
-	const flagFocus = $derived(
-		!playing && view.focused?.flag ? focusOnFlag(changes.layoutModel, view.focused) : undefined
-	);
 	const wantFocused = $derived(
 		playing
 			? focusOnRun(changes.shown, playing)
-			: flagFocus
-				? cutLike(flagFocus, changes.shown)
-				: view.focused
+			: changeFocus
+				? cutLike(changeFocus, changes.shown)
+				: view.focused && !view.focused.scenario
 					? focusOn(changes.shown, view.focused)
 					: undefined
 	);
@@ -171,9 +198,9 @@
 	const wantLayout = $derived<LayoutInput>(
 		wantFocused
 			? {
-					model: (flagFocus ?? wantFocused).model,
+					model: (changeFocus ?? wantFocused).model,
 					opts: settings.layout,
-					foldAt: (flagFocus ?? wantFocused).foldAt
+					foldAt: (changeFocus ?? wantFocused).foldAt
 				}
 			: { model: changes.layoutModel, opts: settings.layout }
 	);
@@ -295,6 +322,15 @@
 			dflt: dflt.size > 1 ? ('split' as const) : dflt.has(true),
 			set: (value: boolean) => changes.setFlags(defs, value)
 		};
+	});
+	/** A scenario focus's subject: the scenario, or one change of it with its number. */
+	const scenarioFocusName = $derived.by(() => {
+		const f = view.focused;
+		const s = changes.scenario;
+		const c = changes.comparison;
+		if (!f?.scenario || !s) return '';
+		const ch = f.change === undefined ? undefined : s.changes[f.change];
+		return ch && c ? `${f.change! + 1}. ${changeLabel(c.before, c.after, ch)}` : s.name;
 	});
 	/** What depends on the focused flag key, by the part each plays (see `flagRoles`). */
 	const focusRoles = $derived(
@@ -886,7 +922,7 @@
 			}
 		}
 	});
-	/** Fits the whole of what is drawn: every box and rail. */
+	/** Fits the whole of what is drawn, every box and rail, right of the Changes panel. */
 	function fitAll(duration?: number) {
 		const x = Math.min(...boxes.map((b) => b.absX));
 		const y = Math.min(...boxes.map((b) => b.absY));
@@ -894,10 +930,15 @@
 			...boxes.map((b) => b.absX + b.width + (rails.get(b.id)?.width ?? 0) / 2)
 		);
 		const bottom = Math.max(...boxes.map((b) => b.absY + b.height));
-		return camera.fitBounds(
-			{ x, y, width: right - x, height: bottom - y },
-			{ padding: 0.08, duration }
+		const [width, height] = [right - x, bottom - y];
+		const zoom = Math.min(
+			camera.maxZoom,
+			Math.max(camera.minZoom, Math.min((cw - panelW) / (width * 1.08), ch / (height * 1.08)))
 		);
+		return camera.setCenter(x + width / 2 - panelW / 2 / zoom, y + height / 2, {
+			duration,
+			zoom
+		});
 	}
 	/** A model, logic, triggers or channel card as the peek draws it; none for any other box. */
 	function cardOf(b: LandscapeBox, onfield: CardData['onfield']): CardData | undefined {
@@ -2275,7 +2316,7 @@
 		view.selectedNodes = [];
 		view.expanded = {};
 		view.focused = next;
-		if (next.flag) return;
+		if (next.flag || next.scenario) return;
 		const id = next.id;
 		const field = model.fields.get(id);
 		const kind = model.elements.get(id)?.def.kind;
@@ -2300,6 +2341,31 @@
 			flagAsk.key = null;
 			setFocus(focusOf(key, { flag: true }));
 		});
+	});
+
+	// The Changes panel asks for a focus on the shown scenario, or one change of it.
+	$effect(() => {
+		const ask = scenarioAsk.change;
+		const path = changes.scenario?.path;
+		if (ask === null) return;
+		untrack(() => {
+			scenarioAsk.change = null;
+			if (path) setFocus(focusOf(path, { scenario: true, ...(ask !== 'all' && { change: ask }) }));
+		});
+	});
+	// A pane beside the canvas asks to go to something.
+	$effect(() => {
+		const id = goAsk.id;
+		if (!id) return;
+		untrack(() => {
+			goAsk.id = null;
+			goTo(id);
+		});
+	});
+	// A scenario focus ends with its scenario shown.
+	$effect(() => {
+		const f = view.focused;
+		if (f?.scenario && changes.scenario?.path !== f.id) untrack(leaveFocus);
 	});
 
 	function leaveFocus() {
@@ -3446,14 +3512,18 @@
 			focus={view.focused}
 			name={focusFlag
 				? (design.model.elements.get(focusFlag.defs[0])?.name ?? view.focused.id)
-				: (refLabel(changes.shown, view.focused.id) ?? '')}
+				: view.focused.scenario
+					? scenarioFocusName
+					: (refLabel(changes.shown, view.focused.id) ?? '')}
 			kind={focusFlag
 				? 'flag'
-				: changes.shown.fields.has(view.focused.id)
-					? 'field'
-					: focusedEl?.def.kind === 'module' && !focusedEl.parentId
-						? 'system'
-						: (focusedEl?.def.kind ?? 'model')}
+				: view.focused.scenario
+					? 'scenario'
+					: changes.shown.fields.has(view.focused.id)
+						? 'field'
+						: focusedEl?.def.kind === 'module' && !focusedEl.parentId
+							? 'system'
+							: (focusedEl?.def.kind ?? 'model')}
 			flag={focusFlag}
 			onchange={setFocus}
 			onleave={leaveFocus}

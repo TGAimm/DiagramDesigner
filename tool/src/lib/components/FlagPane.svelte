@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { Flag } from '@lucide/svelte';
 	import { changes } from '#lib/client/changes.svelte.ts';
-	import { flagAsk } from '#lib/client/search.svelte.ts';
+	import { flagAsk, goAsk } from '#lib/client/search.svelte.ts';
+	import FrontEnds from './FrontEnds.svelte';
 	import { design } from '#lib/client/store.svelte.ts';
 	import { familyParts, flagSites } from '#lib/landscape/flag-sites.ts';
 	import { flagRoles } from '#lib/landscape/focus.ts';
@@ -10,7 +11,8 @@
 	/**
 	 * Beside the canvas while a flag key is focused: what the key is, where it is defined (each
 	 * definition set alone here, which is how a split is made), what flipping it changes at every
-	 * flag step on it, what is gated on it, and the other keys of its family. The canvas shows
+	 * flag step on it, what is gated on it, where the flip ends (see `frontOf`), and the other keys
+	 * of its family. The canvas shows
 	 * where those are; this says what each does, including branches no line shows.
 	 */
 	let { flagKey }: { flagKey: string } = $props();
@@ -135,6 +137,10 @@
 				<p class="none">Nothing.</p>
 			{/each}
 		</section>
+
+		{#if changes.front}
+			<FrontEnds front={changes.front} go={(id) => (goAsk.id = id)} />
+		{/if}
 
 		{#if family}
 			<section>

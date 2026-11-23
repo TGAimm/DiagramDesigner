@@ -10,6 +10,7 @@ import {
 import { familyParts, flagSites } from '../../src/lib/landscape/flag-sites';
 import { searchLandscape } from '../../src/lib/landscape/search';
 import { buildModel, flagStateOf } from '../../src/lib/model/model';
+import { flagFront } from '../../src/lib/scenario/front';
 import { loadStrings } from './helpers';
 
 /**
@@ -83,9 +84,10 @@ describe('flag focus', () => {
 		);
 	});
 
-	it('chains up to who gets the new behaviour and down to where each branch leads', () => {
-		const ids = kept(focusOnFlag(model, flag({ reach: 'chain' })));
-		// Up: the api placeOrder handles. Down: v2's handler writes Order.
+	it('keeps all the flip reaches, with the way in, when all', () => {
+		const front = flagFront(data, model, 'new-flow', flagStateOf(model, {}));
+		const ids = kept(focusOnFlag(model, flag({ reach: 'chain' }), front));
+		// The way in: the api placeOrder handles. Down: v2's handler writes Order, only when on.
 		expect(ids).toContain('checkout');
 		expect(ids).toContain('order');
 		expect(ids).not.toContain('cust');

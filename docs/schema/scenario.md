@@ -52,3 +52,31 @@ breaks depends on how each user finds the item and which way data flows through 
 - Mentions of an old name in nearby free text are listed with a rewrite to the new name.
 - `external: true` on a module or api: it has consumers the design doesn't show;
   impacts behind it say "plus unmodelled consumers".
+
+## Focus on a change
+
+A flag key, a scenario or one change of a scenario can be focused: the canvas keeps what the
+change reaches, up to where it breaks or settles. Each item reached gets one outcome:
+
+| outcome | when | the chain |
+| --- | --- | --- |
+| changed | it is added, dropped or changed; it runs in one state only; its steps differ; a field is written in one state only | goes on |
+| breaking, check | it calls something the state leaves out, reads a field nothing writes there (check when nullable), returns one, or the impact rules judge it so | stops: fixing the break usually fixes what lies past it |
+| stopped | it runs either way, its fields are written either way, or it takes a model whole and names no field of it | stops |
+
+- Runs: an api nothing calls, a unit nothing handles or calls, a trigger on a schedule or on a
+  channel or table nothing in the design feeds is started from outside and runs whenever it is
+  there. Anything else runs when something running starts it.
+- Written: a field is written by what runs in its model's own system (units writing it or its
+  model, that system's apis taking it in with `to` or a request that is the model), or copied
+  with `from` from a written field. An api of another system mapping into it is judged as a
+  reader: it only claims the value gets there.
+- A unit taking a model whole: stopped, unless its step text names the field (check).
+- Contracts (a rename, a retype, an api gone) are judged by the rules above; each stops.
+- A changed unit is drawn with its way in: the apis and triggers starting it, and the units
+  calling it, up to the first api or trigger, when nothing else starts it.
+- **Direct** keeps what is changed and what that touches; **All** keeps the whole front. A flag
+  key's front is that of flipping every definition, other flags as set. A scenario's cut is laid
+  out with both states in, so Before · Diff · After move no box.
+- Focus from the Changes panel: **Focus** at its top for the whole scenario, the crosshair on a
+  change row for that change alone. The panel, or the flag's pane, lists where it ends.

@@ -1,12 +1,15 @@
 <script lang="ts">
-	import { X } from '@lucide/svelte';
+	import { Crosshair, X } from '@lucide/svelte';
 	import { changes } from '#lib/client/changes.svelte.ts';
+	import { scenarioAsk } from '#lib/client/search.svelte.ts';
+	import FrontEnds from './FrontEnds.svelte';
 	import { changeGlyph, changeLabel, changeTarget } from '#lib/scenario/labels.ts';
 
 	/**
 	 * Left of the canvas: the shown scenario's changes in order, with Apply, Report and
 	 * Discard; or the design's history, one commit compared at a time. What the changes
-	 * affect is on the canvas, not here.
+	 * affect is on the canvas, not here. Focus cuts the canvas to how far the scenario, or one
+	 * change of it, reaches; in that focus, where it ends is listed here.
 	 */
 	let { go }: { go: (id: string) => void } = $props();
 
@@ -55,6 +58,14 @@
 				{#if s.description}<p class="desc">{s.description}</p>{/if}
 				<div class="file">{s.path}</div>
 			</div>
+			{#if s.changes.length}
+				<button
+					class="btn focus"
+					onclick={() => (scenarioAsk.change = 'all')}
+					title="Show only what the scenario reaches, up to where it breaks or settles"
+					><Crosshair size={13} />Focus</button
+				>
+			{/if}
 			<button class="icon-btn" onclick={() => (changes.panel = null)} aria-label="Close"
 				><X size={16} /></button
 			>
@@ -77,6 +88,12 @@
 							>{:else if level === 'info'}<span class="tag ok">info</span>{/if}
 					</button>
 					<button
+						class="icon-btn"
+						onclick={() => (scenarioAsk.change = i)}
+						aria-label="Focus on change {i + 1}"
+						title="Show only what this change reaches"><Crosshair size={13} /></button
+					>
+					<button
 						class="icon-btn rm"
 						onclick={() => changes.remove(i)}
 						aria-label="Remove change {i + 1}"
@@ -89,6 +106,9 @@
 				</p>
 			{/each}
 		</div>
+		{#if changes.subject?.scenario && changes.front}
+			<div class="ends"><FrontEnds front={changes.front} {go} /></div>
+		{/if}
 		{#if changes.errors.length}
 			<h3 class="sec">Errors after applying</h3>
 			{#each changes.errors as e, i (i)}<p class="err">{e.message}</p>{/each}
@@ -291,6 +311,17 @@
 	}
 	.rm {
 		margin-right: 8px;
+	}
+	.focus {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		flex: none;
+	}
+	.ends {
+		padding: 12px 16px 4px;
+		overflow-y: auto;
+		min-height: 0;
 	}
 	.cm {
 		flex-direction: column;

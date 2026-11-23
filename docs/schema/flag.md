@@ -77,17 +77,16 @@ What a state breaks, besides the usual [impact](scenario.md#impact):
   branches are drawn; the one the state doesn't take is dimmed. Play takes the branch the
   state picks without asking.
 - A scenario or commit is compared in the flag state set now.
-- A key can be focused (its row in the Flags menu, or its hit in search). The canvas keeps
-  what depends on it: the units with a flag step on it (picked), what either branch calls,
-  reads, writes or sends (the branch taken now lit as their ends), what is gated on it, and
-  what calls or handles a gated item. Chain goes on both ways: up from the units checking it
-  and what is gated, through what uses them (who gets the new behaviour), and down from what
-  the branches switch to, through what they use (where each branch leads). The cut is laid out
-  with both states in, so flipping the key with the focus bar's Off · On (production marked),
-  or switching Before · Diff · After, moves no box. Lines at rest only the other state draws
-  are drawn too, dashed and toned down. Entering or leaving the focus leaves the flag state
-  alone.
+- A key can be focused (its row in the Flags menu, or its hit in search). **Direct** keeps what
+  depends on it: the units with a flag step on it (picked), what either branch calls, reads,
+  writes or sends (the branch taken now lit as their ends), what is gated on it, and what calls
+  or handles a gated item. **All** keeps what flipping it changes, up to where that breaks or
+  settles (see [Focus on a change](scenario.md#focus-on-a-change)). The cut is laid out with both
+  states in, so flipping the key with the focus bar's Off · On (production marked), or switching
+  Before · Diff · After, moves no box. Lines at rest only the other state draws are drawn too,
+  dashed and toned down. Entering or leaving the focus leaves the flag state alone.
 - Beside the canvas, the flag's pane: its description and facts, where each definition lives
   with its own Off · On (how a split is made) and the splits validation found, every flag step
   on it with what each branch does (also those that only note work, which no line shows), what
-  is gated on it, and the other keys of its family.
+  is gated on it, where the flip ends (Breaks, To check, Stops at, each with its reason; a click
+  goes to it), and the other keys of its family.

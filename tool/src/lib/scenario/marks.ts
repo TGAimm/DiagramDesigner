@@ -1,5 +1,6 @@
 import type { Model } from '../model/model';
 import type { FlagFinding } from '../model/flags';
+import type { Front } from './front';
 import type { Comparison } from './evaluate';
 import { worse, type Level } from './impact';
 
@@ -93,4 +94,28 @@ export function withFindings(marks: Marks, findings: FlagFinding[], model: Model
 		}
 	}
 	return { ...marks, level, rollup };
+}
+
+/**
+ * Marks with a focused change's front added: a level on what breaks, needs checking or stops it,
+ * rolled up, and `~` on the units whose steps differ between its states.
+ */
+export function withFront(marks: Marks, front: Front, model: Model): Marks {
+	const glyph = new Map(marks.glyph);
+	const level = new Map(marks.level);
+	const rollup = new Map(marks.rollup);
+	for (const id of front.stepped) if (!glyph.has(id)) glyph.set(id, '~');
+	for (const o of front.outcomes) {
+		if (o.level !== 'breaking' && o.level !== 'check' && o.level !== 'stopped') continue;
+		level.set(o.id, worse(level.get(o.id), o.level));
+		if (o.level === 'stopped') continue;
+		const seen = new Set<string>();
+		for (let cur: string | undefined = o.element; cur && !seen.has(cur);) {
+			seen.add(cur);
+			const r = rollup.get(cur);
+			rollup.set(cur, { count: (r?.count ?? 0) + 1, level: worse(r?.level, o.level) });
+			cur = model.elements.get(cur)?.parentId;
+		}
+	}
+	return { ...marks, glyph, level, rollup };
 }

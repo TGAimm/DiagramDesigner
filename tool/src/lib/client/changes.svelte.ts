@@ -5,7 +5,9 @@ import { flagFindings, gatedOff, stateOf, type FlagFinding } from '../model/flag
 import { buildModel, flagStateOf, type Model } from '../model/model';
 import { fileKind, locate } from '../model/parse';
 import { compare, evaluate, newErrors, type Comparison, type State } from '../scenario/evaluate';
-import { EMPTY, marksOf, withFindings, type Marks } from '../scenario/marks';
+import { flagFront, scenarioFront, type Front } from '../scenario/front';
+import { EMPTY, marksOf, withFindings, withFront, type Marks } from '../scenario/marks';
+import type { Focus } from '../landscape/focus';
 import { scenarioReport } from '../scenario/report';
 import {
 	appendChange,
@@ -111,19 +113,7 @@ class Changes {
 	 * flag state set now; else, with flags set away from default, that state with production.
 	 */
 	comparison: Comparison | undefined = $derived.by(() => {
-		const flags = this.flagState;
-		if (this.scenario) {
-			const docs: Record<string, Document> = {};
-			for (const [p, m] of Object.entries(design.meta))
-				if (fileKind(p) === 'entity' && m.parsed.data !== undefined) docs[p] = m.parsed.doc;
-			return evaluate(
-				docs,
-				this.#atState,
-				this.scenario.changes,
-				this.#locate,
-				this.#hasFlags ? (data) => stateOf(data, flags) : undefined
-			);
-		}
+		if (this.scenario) return this.#evaluate(this.scenario.changes);
 		const h = this.historyStates;
 		const s = this.source;
 		if (h && s?.kind === 'history' && h.rev === s.rev) {
@@ -132,6 +122,43 @@ class Changes {
 		}
 		if (this.flagged) return compare(this.#atDefaults, this.#atState);
 		return undefined;
+	});
+
+	/** The shown scenario's `changes` applied over the design in the flag state set now. */
+	#evaluate(list: Change[]) {
+		const flags = this.flagState;
+		const docs: Record<string, Document> = {};
+		for (const [p, m] of Object.entries(design.meta))
+			if (fileKind(p) === 'entity' && m.parsed.data !== undefined) docs[p] = m.parsed.doc;
+		return evaluate(
+			docs,
+			this.#atState,
+			list,
+			this.#locate,
+			this.#hasFlags ? (data) => stateOf(data, flags) : undefined
+		);
+	}
+
+	/** The change the canvas is focused on: a flag key, or the shown scenario or one change of it
+	 *  (set by the canvas from its focus). */
+	subject = $state.raw<Pick<Focus, 'id' | 'flag' | 'scenario' | 'change'> | null>(null);
+
+	/** The comparison a scenario focus is on: the whole scenario, or one change of it alone. */
+	focusComparison: Comparison | undefined = $derived.by(() => {
+		const f = this.subject;
+		const s = this.scenario;
+		if (!f?.scenario || !s || s.path !== f.id) return undefined;
+		if (f.change === undefined) return this.comparison;
+		const one = s.changes[f.change];
+		return one ? this.#evaluate([one]) : undefined;
+	});
+
+	/** How far the focused change reaches, up to where it breaks or settles (see `frontOf`). */
+	front: Front | undefined = $derived.by(() => {
+		const f = this.subject;
+		if (f?.flag) return flagFront(design.data, design.model, f.id, this.flagState);
+		const c = this.focusComparison;
+		return c && scenarioFront(c);
 	});
 
 	/** Flags alone are compared: the canvas keeps its layout and hides what is gated off. */
@@ -173,9 +200,9 @@ class Changes {
 
 	marks: Marks = $derived.by(() => {
 		const c = this.comparison;
-		if (!c) return EMPTY;
-		const m = marksOf(c);
-		return this.flagsOnly ? withFindings(m, this.findings, this.shown) : m;
+		let m = c ? marksOf(c) : EMPTY;
+		if (c && this.flagsOnly) m = withFindings(m, this.findings, this.shown);
+		return this.front ? withFront(m, this.front, c?.union ?? design.model) : m;
 	});
 
 	/** Results per change of the shown scenario: ok, stale, missing... */
