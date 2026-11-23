@@ -120,7 +120,7 @@
 							<button
 								class="act"
 								tabindex="-1"
-								title="Focus: everything relevant (⇧↵)"
+								title="Focus: what it uses and what uses it (⇧↵)"
 								onclick={() => onfocus(h, 'all')}><Crosshair size={12} />Focus</button
 							>
 							<button

@@ -84,7 +84,7 @@ describe('flag validation', () => {
 				's/f.flag.yaml': 'id: f\nparent: a\nname: f\n',
 				's/g.flag.yaml': 'id: g\nparent: a\nname: g\nkey: g\ndefault: on\n',
 				's/g2.flag.yaml': 'id: g2\nparent: b\nname: g\nkey: g\n',
-				's/m.model.yaml': 'id: m\nownedBy: a\nkey: x\nwhen: { flag: g, is: on }\n',
+				's/m.model.yaml': 'id: m\nownedBy: a\nkey: x\nfamily: y\nwhen: { flag: g, is: on }\n',
 				's/u.logic-unit.yaml': [
 					'id: u',
 					'parent: b',
@@ -99,6 +99,7 @@ describe('flag validation', () => {
 		).toEqual([
 			['error', 'flag-key', 'flag "f" needs key'],
 			['error', 'flag-only', 'only flags have key'],
+			['error', 'flag-only', 'only flags have family'],
 			['error', 'flag-gate', 'only apis, logic units, triggers and channels have when'],
 			['error', 'flag-scope', `flag "g" is defined outside this unit's module`],
 			['error', 'logic-step', 'a flag step needs on, off or both'],

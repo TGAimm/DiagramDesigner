@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { Crosshair, Flag, X } from '@lucide/svelte';
-	import type { Focus, FocusDepth, FocusMode } from '#lib/landscape/focus.ts';
+	import type { Focus, FocusMode, FocusReach, FocusSides } from '#lib/landscape/focus.ts';
 	import EntityGlyph, { type GlyphKind } from './EntityGlyph.svelte';
 
-	// The controls of a focus, over the canvas's top left: what is focused, what to show, how
-	// far to follow connections, and the way out. The canvas shows the rest.
+	// The controls of a focus, over the canvas's top left: what is focused, which of its
+	// dependencies to show and how far, and the way out. The canvas shows the rest. A system or
+	// module shows what it holds and its boundary, so it only picks the kinds shown; a flag key
+	// is only depended on, so its state takes the place of the sides.
 	let {
 		focus,
 		name,
@@ -37,11 +39,16 @@
 		['all', 'Everything'],
 		['data', 'Data models']
 	];
-	const DEPTHS: [FocusDepth, string][] = [
-		[1, '1'],
-		[2, '2'],
-		['all', 'All']
+	const SIDES: [FocusSides, string, string][] = [
+		['usedBy', 'Used by', 'What depends on it'],
+		['both', 'Both', 'What it depends on, and what depends on it'],
+		['uses', 'Uses', 'What it depends on']
 	];
+	const REACH: [FocusReach, string, string][] = [
+		['direct', 'Direct', 'One step each way'],
+		['chain', 'Chain', 'On along each side until it ends']
+	];
+	const holder = $derived(kind === 'system' || kind === 'module');
 </script>
 
 <div class="bar" role="toolbar" aria-label="Focus" data-testid="focus-bar">
@@ -58,34 +65,49 @@
 				<button
 					class:on={flag.on === value}
 					aria-pressed={flag.on === value}
-					onclick={() => flag.set(value)}>{value ? 'On' : 'Off'}</button
+					onclick={() => flag.set(value)}
+					>{value ? 'On' : 'Off'}{#if flag.dflt === value}<span class="prod">production</span
+						>{/if}</button
 				>
 			{/each}
 		</div>
 		{#if flag.on === 'mixed'}<span class="split">split</span>{/if}
-		<span class="dflt">default {flag.dflt === 'split' ? 'split' : flag.dflt ? 'on' : 'off'}</span>
-		<span class="sep"></span>
+	{:else if !holder}
+		<div class="seg" role="group" aria-label="Sides">
+			{#each SIDES as [sides, text, title] (sides)}
+				<button
+					class:on={focus.sides === sides}
+					aria-pressed={focus.sides === sides}
+					{title}
+					onclick={() => onchange({ ...focus, sides })}>{text}</button
+				>
+			{/each}
+		</div>
 	{/if}
-	<div class="seg" role="group" aria-label="What to show">
-		{#each MODES as [mode, text] (mode)}
-			<button
-				class:on={focus.mode === mode}
-				aria-pressed={focus.mode === mode}
-				onclick={() => onchange({ ...focus, mode })}>{text}</button
-			>
-		{/each}
-	</div>
-	<div class="seg" role="group" aria-label="Depth">
-		<span class="seg-label">Depth</span>
-		{#each DEPTHS as [depth, text] (depth)}
-			<button
-				class:on={focus.depth === depth}
-				aria-pressed={focus.depth === depth}
-				title={depth === 'all' ? 'Follow every connection' : `${depth} hop${depth > 1 ? 's' : ''}`}
-				onclick={() => onchange({ ...focus, depth })}>{text}</button
-			>
-		{/each}
-	</div>
+	{#if !holder}
+		<div class="seg" role="group" aria-label="How far">
+			{#each REACH as [reach, text, title] (reach)}
+				<button
+					class:on={focus.reach === reach}
+					aria-pressed={focus.reach === reach}
+					{title}
+					onclick={() => onchange({ ...focus, reach })}>{text}</button
+				>
+			{/each}
+		</div>
+	{/if}
+	{#if !flag}
+		{#if !holder}<span class="sep"></span>{/if}
+		<div class="seg" role="group" aria-label="What to show">
+			{#each MODES as [mode, text] (mode)}
+				<button
+					class:on={focus.mode === mode}
+					aria-pressed={focus.mode === mode}
+					onclick={() => onchange({ ...focus, mode })}>{text}</button
+				>
+			{/each}
+		</div>
+	{/if}
 	<span class="sep"></span>
 	<button class="leave" aria-label="Leave focus" title="Leave focus (Esc)" onclick={onleave}
 		><X size={14} />Leave<kbd>Esc</kbd></button
@@ -102,6 +124,8 @@
 		align-items: center;
 		gap: 12px;
 		height: 40px;
+		max-width: calc(100% - 24px);
+		box-sizing: border-box;
 		padding: 0 6px 0 12px;
 		background: var(--ui-panel);
 		border: 1px solid var(--ui-border);
@@ -122,17 +146,22 @@
 		align-items: center;
 		gap: 0.4em;
 		font-weight: 600;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 	.sep {
 		width: 1px;
 		align-self: stretch;
 		margin: 8px 0;
 		background: var(--ui-border);
+		flex: none;
 	}
 	.seg {
 		display: inline-flex;
 		align-items: center;
 		border: 1px solid var(--ui-border);
+		flex: none;
 	}
 	.seg button {
 		font-size: 12px;
@@ -150,11 +179,9 @@
 		background: var(--ui-accent-bg);
 		box-shadow: inset 0 0 0 1px var(--ui-accent);
 	}
-	.seg-label {
-		padding: 0 8px;
-		border-right: 1px solid var(--ui-border);
-		font-size: 12px;
-		line-height: 24px;
+	.prod {
+		margin-left: 5px;
+		font-size: 10.5px;
 		color: var(--ui-muted);
 	}
 	.leave {
@@ -167,12 +194,9 @@
 		font-size: 12px;
 		color: var(--ui-muted);
 		cursor: pointer;
+		flex: none;
 	}
 	.subject :global(.flag) {
-		color: var(--ui-muted);
-	}
-	.dflt {
-		font-size: 11px;
 		color: var(--ui-muted);
 	}
 	.split {

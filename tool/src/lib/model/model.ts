@@ -616,7 +616,7 @@ export function buildModel(
 		if (kind === 'flag') {
 			if (!value.key) diag('error', 'flag-key', `flag "${info.name}" needs key`, loc, 'id');
 		} else
-			for (const key of ['key', 'default'] as const)
+			for (const key of ['key', 'default', 'family'] as const)
 				if (value[key]) diag('error', 'flag-only', `only flags have ${key}`, loc, key);
 		if (
 			value.when &&
