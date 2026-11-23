@@ -1,3 +1,4 @@
+import { flagKeys } from '#lib/model/flags.ts';
 import type { Model } from '#lib/model/model.ts';
 
 /** What a hit is; groups are listed in this order, following the landscape. */
@@ -9,7 +10,8 @@ export const HIT_KINDS = [
 	'api',
 	'logic-unit',
 	'trigger',
-	'channel'
+	'channel',
+	'flag'
 ] as const;
 export type HitKind = (typeof HIT_KINDS)[number];
 
@@ -21,7 +23,8 @@ export const HIT_GROUPS: Record<HitKind, string> = {
 	api: 'APIS',
 	'logic-unit': 'LOGIC UNITS',
 	trigger: 'TRIGGERS',
-	channel: 'CHANNELS'
+	channel: 'CHANNELS',
+	flag: 'FLAGS'
 };
 
 /** Where the query sits in a text: [start, end). */
@@ -29,7 +32,7 @@ export type Mark = [number, number];
 
 export interface Hit {
 	kind: HitKind;
-	/** Element or field id. */
+	/** Element or field id; a flag's key. */
 	id: string;
 	/** The name; an api's path. */
 	text: string;
@@ -54,7 +57,7 @@ const find = (text: string, q: string): Mark | undefined => {
 };
 
 /**
- * Finds systems, modules, models, fields, apis, logic units, triggers and channels whose name holds the query
+ * Finds systems, modules, models, fields, apis, logic units, triggers, channels and flags whose name holds the query
  * (any case); apis also by path. Within a group, the earlier the query sits in the text, the
  * higher the hit. With no query, lists the systems to start from. `hidden` apis and units
  * (gated off in the shown flag state) are not found.
@@ -87,12 +90,13 @@ export function searchLandscape(model: Model, query: string, hidden?: Set<string
 		api: [],
 		'logic-unit': [],
 		trigger: [],
-		channel: []
+		channel: [],
+		flag: []
 	};
 	for (const e of model.elements.values()) {
 		// A root module is a system.
 		const kind = e.def.kind === 'module' && !e.parentId ? 'system' : e.def.kind;
-		// Flags are listed in the Flags menu, not drawn; a hidden api or unit isn't there.
+		// Flags are found by key, below; a hidden api or unit isn't there.
 		if (kind === 'flag' || hidden?.has(e.id)) continue;
 		const at = where(e.parentId);
 		if (kind === 'api') {
@@ -113,6 +117,13 @@ export function searchLandscape(model: Model, query: string, hidden?: Set<string
 		}
 		const mark = find(e.name, q);
 		if (mark) found[kind].push({ kind, id: e.id, text: e.name, mark, at });
+	}
+	// A flag is one hit per key, where its first definition lives: it has no box to go to, so
+	// going to it focuses on what it reaches.
+	for (const [key, defs] of flagKeys(model)) {
+		const e = model.elements.get(defs[0])!;
+		const mark = find(e.name, q);
+		if (mark) found.flag.push({ kind: 'flag', id: key, text: e.name, mark, at: where(e.parentId) });
 	}
 	for (const [id, f] of model.fields) {
 		const mark = find(f.def.name, q);
