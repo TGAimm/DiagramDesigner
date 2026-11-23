@@ -19,6 +19,8 @@
 		focusOn,
 		focusOnFlag,
 		focusOnRun,
+		focusOf,
+		flagRoles,
 		type Focus,
 		type FocusMode
 	} from '#lib/landscape/focus.ts';
@@ -58,6 +60,7 @@
 	import { OffThread, type OffThreadPort } from '#lib/client/off-thread.ts';
 	import {
 		apiOf,
+		edgeKey,
 		edgesOf,
 		homeOf,
 		leavesOf,
@@ -293,6 +296,10 @@
 			set: (value: boolean) => changes.setFlags(defs, value)
 		};
 	});
+	/** What depends on the focused flag key, by the part each plays (see `flagRoles`). */
+	const focusRoles = $derived(
+		view.focused?.flag && !playing ? flagRoles(design.model, view.focused.id) : undefined
+	);
 	const isUnit = (id: string) => el(id)?.def.kind === 'logic-unit';
 	const isApiEl = (id: string) => el(id)?.def.kind === 'api';
 	const isTrigger = (id: string) => el(id)?.def.kind === 'trigger';
@@ -805,6 +812,16 @@
 		view.selectedNodes.forEach(draw);
 		for (const l of [...boxLines, ...pickedLines]) for (const end of [l.s, l.t]) draw(end.node.id);
 		if (focus?.leaf) mark(focus.box, focus.leaf, 'self');
+		if (focusRoles && fresh && focused) {
+			const on = focusFlag?.on;
+			for (const b of boxes)
+				for (const r of cardRows(b) ?? []) {
+					const taken =
+						(on !== false && focusRoles.on.has(r.id)) || (on !== true && focusRoles.off.has(r.id));
+					if (focusRoles.checks.has(r.id)) mark(b.id, r.id, 'self');
+					else if (taken) mark(b.id, r.id, 'peer');
+				}
+		}
 		for (const l of lit)
 			for (const end of [l.s, l.t]) {
 				draw(end.node.id);
@@ -931,7 +948,32 @@
 
 	// Module Dependency Lines, the lines at rest: which module depends on which, from every kind
 	// of connection shown, by where its ends are owned (see `moduleLines`).
-	const rest = $derived(moduleLines(model, shownEdges, (id) => boxById.has(id)));
+	const restOwn = $derived(moduleLines(model, shownEdges, (id) => boxById.has(id)));
+	/**
+	 * In a flag focus, the connections only the key's other state makes, so both branches show:
+	 * the cut was laid out with both in (see `focusOnFlag`).
+	 */
+	const branchEdges = $derived.by(() => {
+		if (!fresh || !flagFocus) return [];
+		const have = new Set(allEdges.map(edgeKey));
+		return edgesOf(flagFocus.model).filter(
+			(e) =>
+				!have.has(edgeKey(e)) &&
+				!hiddenLeaf(e.from) &&
+				!hiddenLeaf(e.to) &&
+				!view.hidden[KEY_OF[e.kind]]
+		);
+	});
+	const rest = $derived(
+		branchEdges.length
+			? moduleLines(model, [...shownEdges, ...branchEdges], (id) => boxById.has(id))
+			: restOwn
+	);
+	/** Lines at rest only the focused key's other state draws: dashed and toned down. */
+	const otherBranch = $derived.by(() => {
+		const own = new Set(restOwn.map((l) => l.id));
+		return new Set(rest.filter((l) => !own.has(l.id)).map((l) => l.id));
+	});
 	/** Looking at a module lights its Module Dependency Lines, not the flows inside it. */
 	const lookedModule = $derived.by(() => {
 		const b = focus && !focus.leaf ? boxById.get(focus.box) : undefined;
@@ -1141,6 +1183,7 @@
 	const glRest = $derived.by((): GlLine[] =>
 		[...restLaid, ...restRevealed].map(({ l, w, points, lanes }) => {
 			const on = !!modLook?.lit.has(l.id);
+			const other = otherBranch.has(l.id);
 			return {
 				id: `rest:${l.id}`,
 				points,
@@ -1149,8 +1192,9 @@
 				halo: 4.5 + w,
 				color: on ? 'selection' : 'edge-rest',
 				head: 'arrow',
-				dim: !!focus && !on && !modLook?.inside.has(l.id),
-				title: `${l.count} connection${l.count > 1 ? 's' : ''}: ${l.kinds.map((k) => KIND_NAME[k]).join(', ')}`,
+				...(other && { dash: [5, 4] as const }),
+				dim: other || (!!focus && !on && !modLook?.inside.has(l.id)),
+				title: `${other ? "In the flag's other state only. " : ''}${l.count} connection${l.count > 1 ? 's' : ''}: ${l.kinds.map((k) => KIND_NAME[k]).join(', ')}`,
 				depth: depthOf(l.parentId)
 			};
 		})
@@ -2176,7 +2220,7 @@
 	function pick(hit: Pick<Hit, 'kind' | 'id'>) {
 		search.open = false;
 		// A flag is never a box: going to one focuses on what it reaches.
-		if (hit.kind === 'flag') return setFocus({ id: hit.id, mode: 'all', depth: 1, flag: true });
+		if (hit.kind === 'flag') return setFocus(focusOf(hit.id, { flag: true }));
 		if (!ready) return void (pickLater = hit);
 		const outside = () => !model.elements.has(hit.id) && !model.fields.has(hit.id);
 		if (view.play && outside()) stopPlay();
@@ -2220,7 +2264,7 @@
 	 */
 	function focusHit(hit: Hit, mode: FocusMode) {
 		search.open = false;
-		setFocus({ id: hit.id, mode, depth: 1, ...(hit.kind === 'flag' && { flag: true as const }) });
+		setFocus(focusOf(hit.id, { mode, ...(hit.kind === 'flag' && { flag: true as const }) }));
 	}
 
 	function setFocus(next: Focus) {
@@ -2254,7 +2298,7 @@
 		if (!key) return;
 		untrack(() => {
 			flagAsk.key = null;
-			setFocus({ id: key, mode: 'all', depth: 1, flag: true });
+			setFocus(focusOf(key, { flag: true }));
 		});
 	});
 

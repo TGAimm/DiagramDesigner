@@ -45,6 +45,7 @@ export interface Element {
 	steps?: LogicStep[];
 	key?: string;
 	default?: FlagValue;
+	family?: string;
 	when?: FlagGate;
 	schedule?: Schedule;
 	message?: Message;
@@ -419,6 +420,9 @@ export const EntityFile = z
 			.optional()
 			.describe('Flags only, required: the name the code asks the flag service for'),
 		default: FlagValue.optional().describe('Flags only: the value production runs; default off'),
+		family: Text.optional().describe(
+			'Flags only: the name of a family of keys that are one flag per something, e.g. UseNewBilling.<country>; the Flags menu groups them under it'
+		),
 		when: FlagGate.optional(),
 		schedule: Schedule.optional(),
 		on: TriggerOn.optional(),

@@ -607,6 +607,13 @@
         "off"
       ]
     },
+    "family": {
+      "description": "Flags only: the name of a family of keys that are one flag per something, e.g. UseNewBilling.<country>; the Flags menu groups them under it",
+      "type": [
+        "string",
+        "number"
+      ]
+    },
     "when": {
       "type": "object",
       "properties": {

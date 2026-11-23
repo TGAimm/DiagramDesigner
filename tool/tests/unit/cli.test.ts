@@ -92,6 +92,7 @@ describe('sdv schema', () => {
 			'steps',
 			'key',
 			'default',
+			'family',
 			'when',
 			'schedule',
 			'on',

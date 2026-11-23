@@ -16,6 +16,11 @@ default: off              # what production runs: on | off; default off
 
 - On and off only. `key` pairs definitions: one flag in the flag service, checked by two
   systems, is two flag files with the same `key`, one under each.
+- `family` (optional) names keys that are one flag per something, such as one per
+  country: `family: UseNewBilling.<country>` on each of `UseNewBilling.DK`,
+  `UseNewBilling.SE` and so on. The Flags menu groups them under it.
+- `meta.description`, when given, is shown under the key in the Flags menu (its first
+  sentence) and in full in the flag's pane; other `meta` entries are listed there as facts.
 - A flag step or gate may only name a flag defined in its own module, or one round it, as
   the code can only check flags its system defines.
 
@@ -47,7 +52,7 @@ What a state breaks, besides the usual [impact](scenario.md#impact):
 
 ## Validation
 
-- Errors: a flag without `key`; `key` or `default` on another kind; `when` on anything but an
+- Errors: a flag without `key`; `key`, `default` or `family` on another kind; `when` on anything but an
   api, logic unit, trigger or channel; a flag step or `when` naming something that isn't a flag, or a flag
   defined outside its module; a flag step with neither `on` nor `off`.
 - Warnings: a flag nothing checks; one key on by default in one place and off in another
@@ -57,9 +62,11 @@ What a state breaks, besides the usual [impact](scenario.md#impact):
 
 ## Rendering
 
-- Flags are never boxes. The topbar's **Flags** menu lists one row per key: its switch sets
-  every definition; opened, each definition is set alone (a split). A split is tagged, what
-  the state breaks is listed under the keys, and Reset to production sets every flag back.
+- Flags are never boxes. The topbar's **Flags** menu lists one row per key: its name, the
+  key when it differs, the systems checking it and its description's first sentence. Its
+  switch sets every definition; a split shows it half-set and tagged. Keys of one `family`
+  are grouped under it. What the state breaks is listed at the bottom, and Reset to
+  production sets every flag back. Clicking a row focuses on the key.
 - At rest the canvas shows every flag at its default. With any flag set away from it, the
   topbar shows Before (production) · Diff · After and the summary line, as for scenarios:
   gated items gained `+`, lost struck, and what breaks with a severity bar.
@@ -70,10 +77,17 @@ What a state breaks, besides the usual [impact](scenario.md#impact):
   branches are drawn; the one the state doesn't take is dimmed. Play takes the branch the
   state picks without asking.
 - A scenario or commit is compared in the flag state set now.
-- A key can be focused (the crosshair on its row in the Flags menu, or its hit in search):
-  the canvas keeps only what the key reaches, which is the units with a flag step on it,
-  what either branch calls, reads, writes or sends, what is gated on it, and what calls or
-  handles a gated item. Depth 2 and All walk on from there, and Data models keeps the models
-  these touch. The cut is laid out with both states in, so flipping the key with the focus
-  bar's Off · On, or switching Before · Diff · After, moves no box. Entering or leaving the
-  focus leaves the flag state alone.
+- A key can be focused (its row in the Flags menu, or its hit in search). The canvas keeps
+  what depends on it: the units with a flag step on it (picked), what either branch calls,
+  reads, writes or sends (the branch taken now lit as their ends), what is gated on it, and
+  what calls or handles a gated item. Chain goes on both ways: up from the units checking it
+  and what is gated, through what uses them (who gets the new behaviour), and down from what
+  the branches switch to, through what they use (where each branch leads). The cut is laid out
+  with both states in, so flipping the key with the focus bar's Off · On (production marked),
+  or switching Before · Diff · After, moves no box. Lines at rest only the other state draws
+  are drawn too, dashed and toned down. Entering or leaving the focus leaves the flag state
+  alone.
+- Beside the canvas, the flag's pane: its description and facts, where each definition lives
+  with its own Off · On (how a split is made) and the splits validation found, every flag step
+  on it with what each branch does (also those that only note work, which no line shows), what
+  is gated on it, and the other keys of its family.

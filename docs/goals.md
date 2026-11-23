@@ -12,8 +12,7 @@ Open goals only. **Remove a goal once it is achieved**; keep this list lean.
 
 ## Flags
 
-- Hover a key in the Flags menu to light where it is checked and what it gates; click its name
-  for a flag inspector (definitions, checked by, gates, the splits validation found).
+- Hover a key in the Flags menu to light where it is checked and what it gates.
 - Retire a flag as a scenario: drop its definitions, keep one branch of each flag step, drop
   what is gated to the other value (needs scenario edits of steps, apis and units).
 
