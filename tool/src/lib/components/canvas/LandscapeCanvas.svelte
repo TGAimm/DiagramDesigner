@@ -1605,7 +1605,8 @@
 			title: u.name,
 			sub: `Logic unit · ${pathOf(u.parentId)}`,
 			groups,
-			seq: u.def.steps?.length ? sequenceOf(model, u.id) : undefined
+			// The whole design shown: a focus may leave out what the unit's steps touch.
+			seq: u.def.steps?.length ? sequenceOf(changes.shown, u.id) : undefined
 		};
 	}
 	const unitCard = $derived(unitCardOf(view.field?.field));
@@ -2431,7 +2432,9 @@
 	/** Kept clear for the player at the bottom of the canvas, in screen px. */
 	const PLAYER = 104;
 	const run = $derived(
-		view.play ? runOf(model, view.play.unit, view.play.choices, new Set(view.play.into)) : undefined
+		view.play
+			? runOf(changes.shown, view.play.unit, view.play.choices, new Set(view.play.into))
+			: undefined
 	);
 	const playAt = $derived(run && view.play ? Math.min(view.play.at, run.steps.length - 1) : 0);
 	const step = $derived(run?.steps[playAt]);
