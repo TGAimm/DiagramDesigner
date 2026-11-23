@@ -11,10 +11,18 @@
 	import { changes } from '#lib/client/changes.svelte.ts';
 	import { CanvasCamera, setCamera } from '#lib/client/camera.svelte.ts';
 	import { methodColor } from '#lib/theme/tokens.ts';
-	import { search } from '#lib/client/search.svelte.ts';
+	import { flagAsk, search } from '#lib/client/search.svelte.ts';
 	import SearchPalette from '#lib/components/SearchPalette.svelte';
 	import type { Hit } from '#lib/landscape/search.ts';
-	import { focusOn, focusOnRun, type Focus, type FocusMode } from '#lib/landscape/focus.ts';
+	import {
+		cutLike,
+		focusOn,
+		focusOnFlag,
+		focusOnRun,
+		type Focus,
+		type FocusMode
+	} from '#lib/landscape/focus.ts';
+	import { flagKeys } from '#lib/model/flags.ts';
 	import FocusBar from './FocusBar.svelte';
 	import Minimap from './Minimap.svelte';
 	import { settings } from '#lib/client/settings.svelte.ts';
@@ -141,18 +149,29 @@
 	// what the run can touch, whatever focus it started in.
 	const playing = $derived(view.play?.unit);
 	/** The focus wanted now; what is drawn catches up with it once it is laid out. */
+	/** A flag focus, cut from the design laid out (every branch and gated item in). */
+	const flagFocus = $derived(
+		!playing && view.focused?.flag ? focusOnFlag(changes.layoutModel, view.focused) : undefined
+	);
 	const wantFocused = $derived(
 		playing
 			? focusOnRun(changes.shown, playing)
-			: view.focused
-				? focusOn(changes.shown, view.focused)
-				: undefined
+			: flagFocus
+				? cutLike(flagFocus, changes.shown)
+				: view.focused
+					? focusOn(changes.shown, view.focused)
+					: undefined
 	);
 	const wantFocusKey = $derived(playing ? `run:${playing}` : view.focused);
-	// Laid out with every flag branch and gated item in, so setting a flag moves nothing.
+	// Laid out with every flag branch and gated item in, so setting a flag moves nothing; a flag
+	// focus too, drawing the state shown in the layout of both.
 	const wantLayout = $derived<LayoutInput>(
 		wantFocused
-			? { model: wantFocused.model, opts: settings.layout, foldAt: wantFocused.foldAt }
+			? {
+					model: (flagFocus ?? wantFocused).model,
+					opts: settings.layout,
+					foldAt: (flagFocus ?? wantFocused).foldAt
+				}
 			: { model: changes.layoutModel, opts: settings.layout }
 	);
 	const sameLayout = (a: LayoutInput, b: LayoutInput) =>
@@ -261,6 +280,19 @@
 		cardRows(b)?.findIndex((r) => r.id === id) ?? b.fields?.findIndex((f) => f.id === id) ?? -1;
 	const el = (id: string) => model.elements.get(id);
 	const focusedEl = $derived(view.focused && changes.shown.elements.get(view.focused.id));
+	/** The focused flag key: its definitions, how many are on now, and their defaults. */
+	const focusFlag = $derived.by(() => {
+		if (!view.focused?.flag) return undefined;
+		const defs = flagKeys(design.model).get(view.focused.id) ?? [];
+		const on = defs.filter((d) => changes.flagState.get(d)).length;
+		const dflt = new Set(defs.map((d) => !!changes.flagDefaults.get(d)));
+		return {
+			defs,
+			on: on === defs.length ? true : on ? ('mixed' as const) : false,
+			dflt: dflt.size > 1 ? ('split' as const) : dflt.has(true),
+			set: (value: boolean) => changes.setFlags(defs, value)
+		};
+	});
 	const isUnit = (id: string) => el(id)?.def.kind === 'logic-unit';
 	const isApiEl = (id: string) => el(id)?.def.kind === 'api';
 	const isTrigger = (id: string) => el(id)?.def.kind === 'trigger';
@@ -2143,6 +2175,8 @@
 	let pickLater: Pick<Hit, 'kind' | 'id'> | undefined;
 	function pick(hit: Pick<Hit, 'kind' | 'id'>) {
 		search.open = false;
+		// A flag is never a box: going to one focuses on what it reaches.
+		if (hit.kind === 'flag') return setFocus({ id: hit.id, mode: 'all', depth: 1, flag: true });
 		if (!ready) return void (pickLater = hit);
 		const outside = () => !model.elements.has(hit.id) && !model.fields.has(hit.id);
 		if (view.play && outside()) stopPlay();
@@ -2186,7 +2220,7 @@
 	 */
 	function focusHit(hit: Hit, mode: FocusMode) {
 		search.open = false;
-		setFocus({ id: hit.id, mode, depth: 1 });
+		setFocus({ id: hit.id, mode, depth: 1, ...(hit.kind === 'flag' && { flag: true as const }) });
 	}
 
 	function setFocus(next: Focus) {
@@ -2197,6 +2231,7 @@
 		view.selectedNodes = [];
 		view.expanded = {};
 		view.focused = next;
+		if (next.flag) return;
 		const id = next.id;
 		const field = model.fields.get(id);
 		const kind = model.elements.get(id)?.def.kind;
@@ -2212,6 +2247,16 @@
 			if (box) view.selectedNodes = [box.id];
 		}
 	}
+
+	// The Flags menu asks for a flag focus; it is taken once.
+	$effect(() => {
+		const key = flagAsk.key;
+		if (!key) return;
+		untrack(() => {
+			flagAsk.key = null;
+			setFocus({ id: key, mode: 'all', depth: 1, flag: true });
+		});
+	});
 
 	function leaveFocus() {
 		unpin();
@@ -3355,12 +3400,17 @@
 	{#if view.focused && !view.play}
 		<FocusBar
 			focus={view.focused}
-			name={refLabel(changes.shown, view.focused.id) ?? ''}
-			kind={changes.shown.fields.has(view.focused.id)
-				? 'field'
-				: focusedEl?.def.kind === 'module' && !focusedEl.parentId
-					? 'system'
-					: (focusedEl?.def.kind ?? 'model')}
+			name={focusFlag
+				? (design.model.elements.get(focusFlag.defs[0])?.name ?? view.focused.id)
+				: (refLabel(changes.shown, view.focused.id) ?? '')}
+			kind={focusFlag
+				? 'flag'
+				: changes.shown.fields.has(view.focused.id)
+					? 'field'
+					: focusedEl?.def.kind === 'module' && !focusedEl.parentId
+						? 'system'
+						: (focusedEl?.def.kind ?? 'model')}
+			flag={focusFlag}
 			onchange={setFocus}
 			onleave={leaveFocus}
 		/>

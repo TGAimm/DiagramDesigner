@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Crosshair, Search } from '@lucide/svelte';
+	import { Crosshair, Flag, Search } from '@lucide/svelte';
 	import { changes } from '#lib/client/changes.svelte.ts';
 	import { searchLandscape, type Hit, type Mark } from '#lib/landscape/search.ts';
 	import { methodColor } from '#lib/theme/tokens.ts';
@@ -35,7 +35,8 @@
 		api: 'api',
 		'logic-unit': 'logic',
 		trigger: 'trigger',
-		channel: 'channel'
+		channel: 'channel',
+		flag: undefined
 	};
 	const parts = (text: string, mark: Mark | undefined) =>
 		mark ? [text.slice(0, mark[0]), text.slice(...mark), text.slice(mark[1])] : [text, '', ''];
@@ -76,7 +77,7 @@
 			bind:value={query}
 			oninput={() => (active = 0)}
 			{onkeydown}
-			placeholder="Search systems, modules, models, fields, APIs, logic units…"
+			placeholder="Search systems, modules, models, fields, APIs, logic units, flags…"
 			aria-label="Search"
 			aria-controls="search-hits"
 			aria-activedescendant={hits[active] ? `hit-${active}` : undefined}
@@ -104,7 +105,9 @@
 						onclick={() => onpick(h)}
 					>
 						<span class="name">
-							{#if glyph}<EntityGlyph kind={glyph} />{:else}<span class="slot"></span>{/if}
+							{#if glyph}<EntityGlyph kind={glyph} />{:else if h.kind === 'flag'}<span
+									class="slot flag"><Flag size={12} /></span
+								>{:else}<span class="slot"></span>{/if}
 							{#if h.method}<b class="method" style:color={methodColor(h.method)}>{h.method}</b
 								>{/if}
 							<span>{@render marked(h.text, h.mark)}</span>
@@ -266,6 +269,10 @@
 	.slot {
 		width: 0.85em;
 		flex: none;
+	}
+	.slot.flag {
+		display: inline-flex;
+		color: var(--ui-muted);
 	}
 	.method {
 		font-size: 12px;

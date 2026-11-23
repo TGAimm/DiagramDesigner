@@ -70,3 +70,10 @@ What a state breaks, besides the usual [impact](scenario.md#impact):
   branches are drawn; the one the state doesn't take is dimmed. Play takes the branch the
   state picks without asking.
 - A scenario or commit is compared in the flag state set now.
+- A key can be focused (the crosshair on its row in the Flags menu, or its hit in search):
+  the canvas keeps only what the key reaches, which is the units with a flag step on it,
+  what either branch calls, reads, writes or sends, what is gated on it, and what calls or
+  handles a gated item. Depth 2 and All walk on from there, and Data models keeps the models
+  these touch. The cut is laid out with both states in, so flipping the key with the focus
+  bar's Off · On, or switching Before · Diff · After, moves no box. Entering or leaving the
+  focus leaves the flag state alone.

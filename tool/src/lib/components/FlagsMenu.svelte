@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { ChevronDown, ChevronRight, Flag } from '@lucide/svelte';
+	import { ChevronDown, ChevronRight, Crosshair, Flag } from '@lucide/svelte';
+	import { flagAsk } from '#lib/client/search.svelte.ts';
 	import { changes } from '#lib/client/changes.svelte.ts';
 	import { design } from '#lib/client/store.svelte.ts';
 	import { flagHome, flagKeys } from '#lib/model/flags.ts';
@@ -7,7 +8,7 @@
 	/**
 	 * Topbar: the design's feature flags, one row per key. A key's switch sets every
 	 * definition; opened, each definition (one per system or module checking it) is set
-	 * alone, which is how a split is made. What the state breaks is listed at the bottom.
+	 * alone, which is how a split is made. A key's crosshair focuses the canvas on what it reaches. What the state breaks is listed at the bottom.
 	 */
 	const keys = $derived(
 		[...flagKeys(design.model)]
@@ -68,6 +69,15 @@
 							<span class="kname">{k.name}</span><code>{k.key}</code>
 							<span class="spacer"></span>
 							{#if mixed}<span class="split">split</span>{/if}
+							<button
+								class="focus"
+								aria-label="Focus on {k.name}"
+								title="Focus on this flag: only what it reaches"
+								onclick={() => {
+									changes.flagsOpen = false;
+									flagAsk.key = k.key;
+								}}><Crosshair size={14} /></button
+							>
 							<button
 								class="sw"
 								class:is-on={k.on === k.defs.length}
@@ -186,6 +196,16 @@
 		padding: 0;
 		display: flex;
 		color: var(--ui-muted);
+	}
+	.focus {
+		border: none;
+		background: none;
+		padding: 2px;
+		display: flex;
+		color: var(--ui-muted);
+	}
+	.focus:hover {
+		color: var(--sdv-selection);
 	}
 	.split {
 		font-size: 11px;

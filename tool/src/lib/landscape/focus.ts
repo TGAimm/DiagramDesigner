@@ -1,5 +1,6 @@
 import type { ElementInfo, Model } from '../model/model';
-import type { ModelField } from '../model/schema';
+import { flagKeys } from '../model/flags';
+import type { LogicStep, ModelField } from '../model/schema';
 import { edgesOf, type Edge } from './connections';
 import { FOLD, holdersOf, viewFields } from './layout';
 
@@ -9,10 +10,12 @@ export type FocusMode = 'all' | 'data';
 export type FocusDepth = 1 | 2 | 'all';
 
 export interface Focus {
-	/** Element or model field id. */
+	/** Element or model field id; with `flag`, a flag key. */
 	id: string;
 	mode: FocusMode;
 	depth: FocusDepth;
+	/** The subject is a flag key: what its definitions reach (see `focusOnFlag`). */
+	flag?: true;
 }
 
 export interface Focused {
@@ -20,22 +23,23 @@ export interface Focused {
 	model: Model;
 	/** Rows each neighbour card shows folded: those connecting to the focus, up to `FOLD`, by model id. */
 	foldAt: Map<string, number>;
+	/** What is kept, and the connections that put a neighbour's rows first, so `cutLike` can
+	 *  cut another state of the design the same way. */
+	keep: Set<string>;
+	followed: Edge[];
 }
 
 /** The connections a mode follows: data models are joined by ref, holds and lineage only. */
 const DATA = new Set<Edge['kind']>(['ref', 'model', 'from']);
 
 /**
- * The design cut down to a subject and what connects to it, either way, within `depth` hops. A
- * hop joins two models, apis or logic units (a field's hop counts for its model); `data` keeps
- * models only, and apis and units never bridge two of them. The boxes round what is kept stay;
- * a model shows once, where it is owned. A neighbour's connecting fields come first, the rest
- * behind its fold row, which comes no later than `FOLD` rows in, as on any card.
+ * A design's connections as a focus walks them: between models, apis, units, triggers and
+ * channels (`data`: models only), a field's or body field's counting for what holds it.
  */
-export function focusOn(model: Model, focus: Focus): Focused {
+function graphOf(model: Model, mode: FocusMode) {
 	const kind = (id: string) => model.elements.get(id)?.def.kind;
 	const keeps = (id: string) =>
-		focus.mode === 'data'
+		mode === 'data'
 			? kind(id) === 'model'
 			: ['model', 'api', 'logic-unit', 'trigger', 'channel'].includes(kind(id)!);
 	const unitOf = (leaf: string) =>
@@ -46,8 +50,7 @@ export function focusOn(model: Model, focus: Focus): Focused {
 
 	const edges = edgesOf(model);
 	const followed = edges.filter(
-		(e) =>
-			(focus.mode === 'all' || DATA.has(e.kind)) && keeps(unitOf(e.from)) && keeps(unitOf(e.to))
+		(e) => (mode === 'all' || DATA.has(e.kind)) && keeps(unitOf(e.from)) && keeps(unitOf(e.to))
 	);
 	const near = new Map<string, Set<string>>();
 	const join = (a: string, b: string) => {
@@ -61,6 +64,31 @@ export function focusOn(model: Model, focus: Focus): Focused {
 		const at = (x: string) => (model.fields.has(leaf) ? x === leaf : unitOf(x) === leaf);
 		return edges.flatMap((e) => (at(e.from) ? [e.to] : at(e.to) ? [e.from] : [])).map(unitOf);
 	};
+	/** Adds to `keep` what lies within `hops` of `frontier`. */
+	const walk = (keep: Set<string>, frontier: string[], hops: number) => {
+		for (; hops > 0 && frontier.length; hops--) {
+			const next: string[] = [];
+			for (const u of frontier)
+				for (const v of near.get(u) ?? [])
+					if (!keep.has(v)) {
+						keep.add(v);
+						next.push(v);
+					}
+			frontier = next;
+		}
+	};
+	return { kind, keeps, followed, touching, walk };
+}
+
+/**
+ * The design cut down to a subject and what connects to it, either way, within `depth` hops. A
+ * hop joins two models, apis or logic units (a field's hop counts for its model); `data` keeps
+ * models only, and apis and units never bridge two of them. The boxes round what is kept stay;
+ * a model shows once, where it is owned. A neighbour's connecting fields come first, the rest
+ * behind its fold row, which comes no later than `FOLD` rows in, as on any card.
+ */
+export function focusOn(model: Model, focus: Focus): Focused {
+	const { kind, keeps, followed, touching, walk } = graphOf(model, focus.mode);
 
 	// Where the walk starts, and the first ring when the subject is a field (its own links).
 	const field = model.fields.get(focus.id);
@@ -78,24 +106,79 @@ export function focusOn(model: Model, focus: Focus): Focused {
 	else start = touching(focus.id).filter(keeps);
 
 	const keep = new Set(start);
-	let frontier = ring ?? start;
 	let hops = focus.depth === 'all' ? Infinity : focus.depth;
 	if (ring) {
 		for (const u of ring) keep.add(u);
 		hops--;
 	}
-	for (; hops > 0 && frontier.length; hops--) {
-		const next: string[] = [];
-		for (const u of frontier)
-			for (const v of near.get(u) ?? [])
-				if (!keep.has(v)) {
-					keep.add(v);
-					next.push(v);
-				}
-		frontier = next;
-	}
-
+	walk(keep, ring ?? start, hops);
 	return cut(model, keep, followed, subject);
+}
+
+/** Every step in `steps`, however deep, the branches of flag steps too. */
+function* stepsIn(steps: LogicStep[] | undefined): Generator<LogicStep> {
+	for (const s of steps ?? []) {
+		yield s;
+		for (const k of ['then', 'else', 'do', 'on', 'off'] as const) yield* stepsIn(s[k]);
+	}
+}
+
+/**
+ * What a flag key reaches, in a design holding every branch and gated item: the units with a
+ * flag step on one of its definitions, what either branch of such a step calls, reads, writes
+ * or sends, the apis, units, triggers and channels gated on it, and what calls or handles one
+ * of those or listens on a gated channel. That is what flipping the key changes, or can break.
+ */
+export function flagReach(model: Model, key: string): Set<string> {
+	const defs = new Set(flagKeys(model).get(key) ?? []);
+	const out = new Set<string>();
+	const holder = (id: string) => model.fields.get(id)?.modelId ?? id;
+	const gated: string[] = [];
+	for (const [id, e] of model.elements) {
+		if (e.def.when && defs.has(e.def.when.flag)) {
+			out.add(id);
+			gated.push(id);
+		}
+		if (e.def.kind !== 'logic-unit') continue;
+		for (const s of stepsIn(e.def.steps)) {
+			if (s.flag === undefined || !defs.has(s.flag)) continue;
+			out.add(id);
+			for (const b of stepsIn([...(s.on ?? []), ...(s.off ?? [])]))
+				for (const t of [b.call, b.send, b.read, b.write])
+					if (t !== undefined && model.elements.has(holder(t))) out.add(holder(t));
+		}
+	}
+	for (const g of gated) {
+		for (const [id, e] of model.elements)
+			if (e.logic?.calls.includes(g) || e.logic?.handles.includes(g)) out.add(id);
+		for (const p of model.ports.values())
+			if (p.channel === g) for (const t of p.triggers) out.add(t);
+	}
+	return out;
+}
+
+/**
+ * The design cut down to what a flag key reaches (see `flagReach`) and, past depth 1, what lies
+ * within `depth - 1` more hops of it; a data focus starts from the models those touch. `model`
+ * holds every branch and gated item, so both states of the key are laid out alike; `cutLike`
+ * draws one state in that layout.
+ */
+export function focusOnFlag(model: Model, focus: Focus): Focused {
+	const { keeps, followed, touching, walk } = graphOf(model, focus.mode);
+	const reach = [...flagReach(model, focus.id)];
+	const start = new Set(
+		focus.mode === 'data'
+			? reach.flatMap((id) => (keeps(id) ? [id] : touching(id).filter(keeps)))
+			: reach.filter(keeps)
+	);
+	const keep = new Set(start);
+	walk(keep, [...start], focus.depth === 'all' ? Infinity : focus.depth - 1);
+	return cut(model, keep, followed);
+}
+
+/** `model`, another state of the design `focused` was cut from, cut the same way. */
+export function cutLike(focused: Focused, model: Model): Focused {
+	return cut(model, focused.keep, focused.followed);
 }
 
 /**
@@ -207,6 +290,8 @@ function cut(model: Model, keep: Set<string>, followed: Edge[], subject?: string
 			apiFields: new Map([...model.apiFields].filter(([, f]) => shown.has(f.apiId))),
 			rootElementIds: model.rootElementIds.filter((id) => shown.has(id))
 		},
-		foldAt
+		foldAt,
+		keep,
+		followed
 	};
 }

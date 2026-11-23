@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Crosshair, X } from '@lucide/svelte';
+	import { Crosshair, Flag, X } from '@lucide/svelte';
 	import type { Focus, FocusDepth, FocusMode } from '#lib/landscape/focus.ts';
 	import EntityGlyph, { type GlyphKind } from './EntityGlyph.svelte';
 
@@ -9,13 +9,17 @@
 		focus,
 		name,
 		kind,
+		flag,
 		onchange,
 		onleave
 	}: {
 		focus: Focus;
 		name: string;
-		/** The subject's entity kind, or `field`. */
+		/** The subject's entity kind, `field` or `flag`. */
 		kind: string;
+		/** A flag key the subject: whether its definitions are on (`mixed`: a split), their
+		 *  default, and how to set them all. */
+		flag?: { on: boolean | 'mixed'; dflt: boolean | 'split'; set: (on: boolean) => void };
 		onchange: (f: Focus) => void;
 		onleave: () => void;
 	} = $props();
@@ -43,9 +47,25 @@
 <div class="bar" role="toolbar" aria-label="Focus" data-testid="focus-bar">
 	<span class="label"><Crosshair size={14} />Focus</span>
 	<span class="subject">
-		{#if GLYPH[kind]}<EntityGlyph kind={GLYPH[kind]!} />{/if}{name}
+		{#if kind === 'flag'}<Flag size={13} class="flag" />{:else if GLYPH[kind]}<EntityGlyph
+				kind={GLYPH[kind]!}
+			/>{/if}{name}
 	</span>
 	<span class="sep"></span>
+	{#if flag}
+		<div class="seg" role="group" aria-label="{name} everywhere">
+			{#each [false, true] as value (value)}
+				<button
+					class:on={flag.on === value}
+					aria-pressed={flag.on === value}
+					onclick={() => flag.set(value)}>{value ? 'On' : 'Off'}</button
+				>
+			{/each}
+		</div>
+		{#if flag.on === 'mixed'}<span class="split">split</span>{/if}
+		<span class="dflt">default {flag.dflt === 'split' ? 'split' : flag.dflt ? 'on' : 'off'}</span>
+		<span class="sep"></span>
+	{/if}
 	<div class="seg" role="group" aria-label="What to show">
 		{#each MODES as [mode, text] (mode)}
 			<button
@@ -147,6 +167,21 @@
 		font-size: 12px;
 		color: var(--ui-muted);
 		cursor: pointer;
+	}
+	.subject :global(.flag) {
+		color: var(--ui-muted);
+	}
+	.dflt {
+		font-size: 11px;
+		color: var(--ui-muted);
+	}
+	.split {
+		font-size: 11px;
+		font-weight: 600;
+		padding: 0 6px;
+		line-height: 18px;
+		color: var(--sdv-sev-check);
+		background: color-mix(in srgb, var(--sdv-sev-check) 16%, transparent);
 	}
 	kbd {
 		font: inherit;
