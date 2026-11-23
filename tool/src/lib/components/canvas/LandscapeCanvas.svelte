@@ -1817,18 +1817,23 @@
 				many: !!body.many && !!body.fields,
 				fields: (body.fields ?? []).map((f) => {
 					const links = (part === 'request' ? f.to : f.from) ?? [];
+					// A response field computed where the api answers: `derived` with no source field.
+					const computed = part !== 'request' && !links.length && !f.model && !!f.derived;
 					return {
 						id: f.id,
 						name: f.name + (f.required ? '' : '?'),
 						type: typeText(f, (id) => refLabel(model, id)),
-						traced: links.length > 0 || !!f.model,
+						computed,
+						traced: links.length > 0 || !!f.model || computed,
 						title: links.length
 							? `${part === 'request' ? 'Goes into' : 'Comes from'} ${links.map(label).join(', ')}${f.derived ? ` · ${f.derived}` : ''}`
 							: f.model
 								? undefined
 								: part === 'request'
 									? 'Goes into no model field: add to'
-									: 'Comes from no field: add from'
+									: computed
+										? `Computed here · ${f.derived}`
+										: 'Comes from no field: add from, or derived when computed here'
 					};
 				})
 			};
@@ -2966,6 +2971,7 @@
 								<span class="name"><Ident text={f.name} /></span>
 								<span class="where"><Ident text={f.type} /></span>
 								{#if !f.traced}<span class="untraced"><TriangleAlert size={12} /></span
+									>{:else if f.computed}<span class="traced computed">ƒ</span
 									>{:else if f.title}<span class="traced">{b.part === 'request' ? '⇠' : '⇢'}</span
 									>{:else}<span></span>{/if}
 							</div>
@@ -3983,6 +3989,9 @@
 	.api-field .traced {
 		justify-self: end;
 		color: var(--sdv-link-from);
+	}
+	.api-field .computed {
+		font-style: italic;
 	}
 	/* One line tall and centred in it: an icon has no baseline to align by. */
 	.api-field .untraced {

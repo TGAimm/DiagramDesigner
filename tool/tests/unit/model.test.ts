@@ -335,14 +335,14 @@ describe('entity checks', () => {
 				'method: POST',
 				'path: /m',
 				'request: { fields: [{ id: q, name: q, type: int, to: [f] }, { id: q2, name: m, model: m }] }',
-				'responses: [{ status: 200, model: m, pick: [f] }, { status: 201, fields: [{ id: r, name: r, type: int, from: [f] }] }]'
+				"responses: [{ status: 200, model: m, pick: [f] }, { status: 201, fields: [{ id: r, name: r, type: int, from: [f] }, { id: c, name: c, type: bool, derived: 'always true' }] }]"
 			].join('\n'),
 			's/bad.api.yaml': [
 				'id: bad',
 				'parent: s',
 				'method: POST',
 				'path: /m',
-				'request: { model: m, omit: [ghost], pick: [f], fields: [{ id: x, name: x, type: int, from: [f] }] }',
+				"request: { model: m, omit: [ghost], pick: [f], fields: [{ id: x, name: x, type: int, from: [f] }, { id: v, name: v, type: int, derived: 'ignored' }] }",
 				'responses:',
 				'  - { status: 200, omit: [f] }',
 				'  - { status: 201, fields: [{ id: y, name: y, type: int, to: [f] }, { id: z, name: z, type: int, from: [nope] }] }',
@@ -361,9 +361,11 @@ describe('entity checks', () => {
 			'unknown-field',
 			'untraced-field',
 			'untraced-field',
+			'untraced-field',
 			'untraced-field'
 		]);
-		// A field pointing the wrong way is also untraced: x, y and w.
+		// A field pointing the wrong way is also untraced: x, y and w. A request field with only derived (v)
+		// still warns; a response field with only derived (c) is computed where the api answers and does not.
 		expect(
 			diagnostics.filter((d) => d.code === 'untraced-field').every((d) => d.severity === 'warning')
 		).toBe(true);

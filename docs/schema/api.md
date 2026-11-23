@@ -59,6 +59,11 @@ responses:
   model fields, by id, so renaming either side breaks nothing silently. A field with neither
   (and holding no model) is warned about. `to` on a response or `from` on a request is an
   error.
+- A response field computed where the api answers, with no field to come from (a literal
+  message, a flag, a count, a timestamp), gives `derived` alone, as a model field may:
+  `{ id: k3n0q8vy2c, name: canShow, type: bool, derived: "days since the last dismissal >= the delay" }`.
+  It is not warned about. A request field with only `derived` still is: its value has to go
+  somewhere.
 - An own shape several endpoints share can become a model of its own; point at it with
   `model` (case 1).
 
@@ -76,7 +81,8 @@ responses:
   leaves out are dimmed, and a line runs from the row to each, and to the units handling or
   calling it (see [Connections](README.md#connections)). Hovering a rail row draws the same.
   Hover an own-shape field to add its dashed lineage to the fields it comes from or goes into
-  (arrow at the source); untraced fields are marked.
+  (arrow at the source); a response field computed in place shows `ƒ` and its `derived`
+  note on hover; untraced fields are marked.
 - Model rows sent into or returned by own-shape fields show an `API n` count. The field
   inspector lists **Fed by apis** and **Returned by apis**, saying whether a rename of the
   field changes the api (the model itself) or not (an own shape keeps its own names).
