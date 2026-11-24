@@ -1,8 +1,8 @@
-# GAP: scheduled trigger
 id: o1d2rdx7hh
 parent: vuo50id8ln
 name: createDailyPayouts
-meta: { schedule: "0 0 * * *", note: "daily automatic payout, 2 business days delay (DK)" }
+handles: [d6uieh1q3c]
+meta: { note: "daily automatic payout, 2 business days delay (DK)" }
 inputs: []
 outputs: []
 fails:

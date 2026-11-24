@@ -1,6 +1,7 @@
 id: p7lb2y6ibq
 parent: ogmj497j15
 name: showCheckout
+handles: [ey8deo9eqf]
 inputs: []
 outputs:
   - { id: xv3sjzy7mp, name: summary, model: c5wtilu6sm }

@@ -1,0 +1,4 @@
+id: gau5sbavsf
+parent: f1xy7xguug
+name: applyWmsStockSnapshotSchedule
+schedule: { cron: "30 4 * * *" }

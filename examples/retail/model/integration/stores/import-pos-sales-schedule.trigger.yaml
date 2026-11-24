@@ -1,0 +1,4 @@
+id: bfvg5uziz1
+parent: nlc4zljjz8
+name: importPosSalesSchedule
+schedule: { cron: "30 1 * * *" }

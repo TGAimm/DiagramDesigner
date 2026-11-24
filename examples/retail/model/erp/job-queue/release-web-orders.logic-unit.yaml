@@ -1,10 +1,10 @@
 # Codeunit 50110 FJ Release Web Orders (Fjeld Integration): retries release of web orders the
 # API left Open (missing price, blocked customer fixed by the sales team).
-# GAP: scheduled trigger
 id: ocw4ivhe1n
 parent: zn7j7787p7
 name: releaseWebOrders
-meta: { schedule: "*/15 * * * *", jobQueueCategory: INTEGR, object: "Codeunit 50110" }
+handles: [j7get41wga]
+meta: { jobQueueCategory: INTEGR, object: "Codeunit 50110" }
 inputs: []
 outputs:
   - { id: r7kvo6yywz, name: releasedCount, type: int }

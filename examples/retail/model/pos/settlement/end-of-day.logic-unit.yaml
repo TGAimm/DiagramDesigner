@@ -1,7 +1,7 @@
-# Started by the store manager closing a register in the store app after counting the drawer.
 id: f80y7angzs
 parent: sd8724jaqj
 name: endOfDay
+handles: [jocg1cusoc]
 inputs:
   - { id: uxutdrj457, name: registerId, type: int, required: true }
   - { id: a7exide3km, name: cashCounted, type: decimal, required: true }

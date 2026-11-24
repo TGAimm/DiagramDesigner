@@ -1,0 +1,5 @@
+id: z1vpxe4ytc
+parent: sicmj00m5m
+name: returnCreatedReturns
+on: { channel: ljarmi0cvb, subscription: returns, event: received }
+with: the ReturnCreatedEvent

@@ -1,0 +1,4 @@
+id: zqhklx5sj1
+parent: nlc4zljjz8
+name: pushPosCatalogSchedule
+schedule: { cron: "0 5 * * *" }

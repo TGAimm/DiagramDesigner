@@ -21,7 +21,7 @@ steps:
       - { write: cc1v719mlz, note: "payloads/…/<evt id>.json" }
       - if: "type is payment_intent.succeeded, payment_intent.payment_failed, payment_intent.canceled, charge.refunded or charge.dispute.created"
         then:
-          - { call: p7828cgxzt, with: "the event; MessageId = event.id, Label = type" }
+          - { send: lsoszlwm6y, with: "the event; MessageId = event.id, Label = type" }
       - if: type is payout.failed
         then:
           - { write: wlmvgl2qp8, note: "targetSystem payments, retryable false: finance must act (failure_code)" }

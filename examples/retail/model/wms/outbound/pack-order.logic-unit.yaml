@@ -1,7 +1,7 @@
-# Started at the pack station when the packer scans the order's tote and closes the last box.
 id: swgz4h4ye6
 parent: yvrhh8zk8f
 name: packOrder
+handles: [k3j247zfw2]
 inputs:
   - { id: ji4eueref5, name: orderId, type: int, required: true }
   - { id: nbg5kuruob, name: packages, model: vvm0sb8vdb, many: true, required: true, description: "box type, weight and size per parcel, as packed" }

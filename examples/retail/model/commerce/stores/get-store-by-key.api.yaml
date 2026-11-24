@@ -1,6 +1,7 @@
 id: fy1ab7dar4
 parent: g249oo5ag4
 name: Get store by key
+external: true
 method: GET
 path: /{projectKey}/stores/key={key}
 auth: "bearer (view_stores)"

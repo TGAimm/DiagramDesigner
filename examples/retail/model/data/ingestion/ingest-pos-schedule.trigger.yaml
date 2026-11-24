@@ -1,0 +1,4 @@
+id: qf585lxhjb
+parent: oyqmyb5nc3
+name: ingestPosSchedule
+schedule: { cron: "0 2 * * *" }

@@ -1,0 +1,5 @@
+id: k50ghe3nhi
+parent: w8lrzinusw
+name: orderShippedCommerce
+on: { channel: xm1c45pg8f, subscription: commerce, event: received }
+with: the OrderShippedEvent

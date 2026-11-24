@@ -1,0 +1,5 @@
+id: ti1q9gclar
+parent: mwsgna90tw
+name: paymentEventsCommerce
+on: { channel: lsoszlwm6y, subscription: commerce, event: received }
+with: the Stripe Event

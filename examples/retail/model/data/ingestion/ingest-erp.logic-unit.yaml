@@ -1,8 +1,8 @@
-# GAP: scheduled trigger
 id: mlbcnzxhs3
 parent: oyqmyb5nc3
 name: ingestErp
-meta: { schedule: "5 * * * *", pipeline: pl_ingest_erp, note: "hourly; inventory and exchange rates once a day on the 02:05 run" }
+handles: [ewhidtyc47]
+meta: { pipeline: pl_ingest_erp, note: "hourly; inventory and exchange rates once a day on the 02:05 run" }
 inputs: []
 outputs: []
 fails:

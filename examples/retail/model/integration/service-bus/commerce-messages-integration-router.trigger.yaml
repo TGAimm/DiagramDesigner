@@ -1,0 +1,5 @@
+id: a09m8jsv6g
+parent: g55sb0eqd6
+name: commerceMessagesIntegrationRouter
+on: { channel: ru7tkusrat, subscription: integration-router, event: received }
+with: the Commerce Message

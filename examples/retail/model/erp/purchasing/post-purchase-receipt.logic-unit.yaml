@@ -1,9 +1,9 @@
 # Codeunit 90 Purch.-Post, receive only. A buyer runs Post > Receive on the Purchase Order
 # page after the 3PL's inbound receipt e-mail.
-# GAP: user action in the product's own client as the trigger (no api, no schedule)
 id: oovav3xq45
 parent: si82yvapze
 name: postPurchaseReceipt
+handles: [xdti3a9hm4]
 inputs:
   - { id: qa3w21zn6y, name: purchaseOrderNo, type: string, required: true }
 outputs:

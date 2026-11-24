@@ -1,6 +1,7 @@
 id: srqayj3ctw
 parent: yzg8gfwzwo
 name: Create a customer
+external: true
 method: POST
 path: /v1/customers
 auth: bearer (secret key)

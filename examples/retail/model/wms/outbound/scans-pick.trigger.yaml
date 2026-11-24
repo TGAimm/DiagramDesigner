@@ -1,0 +1,5 @@
+id: qt420xsmj7
+parent: yvrhh8zk8f
+name: scansPick
+by: { user: "a picker's scan on the RF handheld (the WMS's own app, no api in between)" }
+with: "the pick task, the bin and EAN scanned, the quantity and the picker"

@@ -1,6 +1,7 @@
 id: tdh6mnjmty
 parent: ktxxdlpyeb
 name: Get a record
+external: true
 method: GET
 path: /1/indexes/{indexName}/{objectID}
 auth: "X-Algolia-Application-Id + X-Algolia-API-Key (search-only key)"

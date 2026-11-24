@@ -1,0 +1,5 @@
+id: r3ubungbim
+parent: pcwnkmmuwj
+name: opensStoreFinder
+by: { user: "opens the store finder, or types a postal code in it" }
+with: "the postal code typed or the browser's position, and the sku when opened from a product's click & collect link"

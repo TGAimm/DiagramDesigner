@@ -1,6 +1,7 @@
 id: gv3n39wb9d
 parent: egb813hfbr
 name: Create a webhook endpoint
+external: true
 method: POST
 path: /v1/webhook_endpoints
 auth: bearer (secret key)

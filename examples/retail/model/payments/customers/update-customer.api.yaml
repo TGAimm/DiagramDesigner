@@ -1,6 +1,7 @@
 id: na8s6l6yvb
 parent: yzg8gfwzwo
 name: Update a customer
+external: true
 method: POST
 path: /v1/customers/{customer}
 auth: bearer (secret key)

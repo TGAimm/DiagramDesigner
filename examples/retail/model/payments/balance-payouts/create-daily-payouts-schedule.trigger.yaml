@@ -1,0 +1,4 @@
+id: d6uieh1q3c
+parent: vuo50id8ln
+name: createDailyPayoutsSchedule
+schedule: { cron: "0 0 * * *" }

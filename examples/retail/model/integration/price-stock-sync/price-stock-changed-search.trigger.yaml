@@ -1,0 +1,5 @@
+id: kyxklqzqp6
+parent: f1xy7xguug
+name: priceStockChangedSearch
+on: { channel: po6jg0vom1, subscription: search, event: received, filter: "locationCode = 'CENTRAL' OR priceListCode LIKE 'WEB-%' OR priceListCode LIKE 'CAMPAIGN-%'" }
+with: the PriceStockChangedEvent

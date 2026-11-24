@@ -1,6 +1,7 @@
 id: je6879dtkt
 parent: dodjtgoau2
 name: Show ticket
+external: true
 method: GET
 path: /api/v2/tickets/{ticket_id}
 auth: "basic (agent e-mail/token + API token) or OAuth bearer"

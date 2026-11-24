@@ -1,8 +1,8 @@
-# GAP: scheduled trigger
 id: fqs0vvbm44
 parent: lawdrrqrtr
 name: exportProducts
-meta: { schedule: "0 2 * * *", job: fjeld_webshop_products }
+handles: [vu2may5a26]
+meta: { job: fjeld_webshop_products }
 inputs: []
 outputs: []
 steps:

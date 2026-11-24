@@ -1,7 +1,7 @@
-# GAP: triggered by subscription customer-changed/marketing
 id: wo1ab8nfb2
 parent: mwg6alxci7
 name: syncCustomerToMarketing
+handles: [cdmyfh2i4g]
 inputs:
   - { id: lp7gvhqwod, name: event, model: bbh3e6of1d, required: true }
 outputs: []

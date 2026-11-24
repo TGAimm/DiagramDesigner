@@ -1,0 +1,5 @@
+id: brz17i5e8j
+parent: p6h0yiqcjm
+name: closesDelivery
+by: { user: the receiver closes a delivery at goods-in on the RF handheld }
+with: "the ASN, the lines counted and the receiver"

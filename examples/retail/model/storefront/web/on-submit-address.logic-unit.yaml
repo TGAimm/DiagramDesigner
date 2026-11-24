@@ -1,6 +1,7 @@
 id: ywocf6crvx
 parent: ogmj497j15
 name: onSubmitAddress
+handles: [pu4u1aqmhb]
 inputs:
   - { id: n9dua8gs8j, name: email, type: string, required: true }
   - { id: uww360p9eg, name: shippingAddress, model: b8rzoiyo20, required: true }

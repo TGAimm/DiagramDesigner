@@ -1,6 +1,7 @@
 id: ffxbfylqhk
 parent: izc0a89lge
 name: Create contact
+external: true
 method: POST
 path: /api/data/v9.2/contacts
 auth: OAuth 2.0 bearer (Entra ID app registration)

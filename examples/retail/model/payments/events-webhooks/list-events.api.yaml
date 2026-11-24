@@ -1,6 +1,7 @@
 id: ogjslmk6yz
 parent: egb813hfbr
 name: List all events
+external: true
 method: GET
 path: /v1/events
 auth: bearer (secret key)

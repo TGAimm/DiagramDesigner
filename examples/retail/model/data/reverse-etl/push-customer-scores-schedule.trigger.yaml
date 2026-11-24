@@ -1,0 +1,4 @@
+id: fnmpdtydq5
+parent: n56pfhb1um
+name: pushCustomerScoresSchedule
+schedule: { cron: "0 7 * * *" }

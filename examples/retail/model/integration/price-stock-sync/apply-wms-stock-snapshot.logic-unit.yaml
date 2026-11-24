@@ -1,10 +1,9 @@
-# GAP: scheduled trigger
 # The 3PL's count is the truth for CENTRAL: the nightly difference goes to ERP as positive and
 # negative adjustments in item journal batch WMS-ADJ.
 id: kffw7hegx4
 parent: f1xy7xguug
 name: applyWmsStockSnapshot
-meta: { schedule: "30 4 * * *" }
+handles: [gau5sbavsf]
 inputs: []
 outputs: []
 fails:

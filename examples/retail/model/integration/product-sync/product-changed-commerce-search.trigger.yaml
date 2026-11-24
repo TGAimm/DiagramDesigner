@@ -1,0 +1,5 @@
+id: lx3kxmowga
+parent: w032iyqws6
+name: productChangedCommerceSearch
+on: { channel: p7ntmi4dis, subscription: commerce-search, event: received }
+with: the ProductChangedEvent

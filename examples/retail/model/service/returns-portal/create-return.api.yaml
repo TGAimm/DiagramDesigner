@@ -1,6 +1,7 @@
 id: ov82wvitdc
 parent: t6al4kcu16
 name: Create return
+external: true
 method: POST
 path: /returns
 auth: portal session (from the order lookup)

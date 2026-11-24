@@ -1,6 +1,7 @@
 id: qxzz2apdc8
 parent: rd06mopkno
 name: Create or update user
+external: true
 method: POST
 path: /api/v2/users/create_or_update
 auth: "basic (agent e-mail/token + API token) or OAuth bearer"

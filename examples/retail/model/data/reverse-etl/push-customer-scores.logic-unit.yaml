@@ -1,5 +1,4 @@
 # Pushes lifetime value and segment back to CRM contacts and Klaviyo profile properties.
-# GAP: scheduled trigger
 # GAP: outbound lineage - the values land in CRM contact.fjeld_lifetimevalue and Klaviyo
 # properties.lifetime_value; only the target can say `from`, so from here the mapping is only
 # in `with`, and changing agg_customer_lifetime_value does not show CRM or Klaviyo as impacted.
@@ -10,7 +9,8 @@
 id: nq6xkkymcu
 parent: n56pfhb1um
 name: pushCustomerScores
-meta: { schedule: "0 7 * * *", pipeline: pl_reverse_etl, note: "after the nightly load" }
+handles: [fnmpdtydq5]
+meta: { pipeline: pl_reverse_etl, note: "after the nightly load" }
 inputs: []
 outputs: []
 fails:

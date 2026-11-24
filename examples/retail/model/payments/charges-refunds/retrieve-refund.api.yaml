@@ -1,6 +1,7 @@
 id: g0m42i4j79
 parent: eaiyhlljnw
 name: Retrieve a refund
+external: true
 method: GET
 path: /v1/refunds/{refund}
 auth: bearer (secret key)

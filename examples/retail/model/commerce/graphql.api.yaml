@@ -2,6 +2,7 @@
 id: t33mqct0z1
 parent: ygmbkn58fj
 name: GraphQL
+external: true
 method: POST
 path: /{projectKey}/graphql
 auth: "bearer (any scope; fields checked per resource)"

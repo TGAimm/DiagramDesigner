@@ -1,8 +1,8 @@
-# GAP: triggered by subscription order-created/click-collect
 # Flow 7: a click & collect order is picked from the store's own stock.
 id: b7o4ukkch4
 parent: nlc4zljjz8
 name: routeClickAndCollect
+handles: [qo43ewbekh]
 inputs:
   - { id: vr4vcvzrf2, name: event, model: lf76fuj5g0, required: true }
 outputs: []

@@ -1,7 +1,7 @@
-# Started by the cashier scanning a receipt barcode (or a webshop order number) and picking lines to return.
 id: jogquz8fdi
 parent: cael6ntd06
 name: returnAtTill
+handles: [xhew2t6j11]
 inputs:
   - { id: xcgknoyrvu, name: registerId, type: int, required: true }
   - { id: zujd0aprqp, name: staffId, type: int, required: true }

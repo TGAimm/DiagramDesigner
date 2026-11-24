@@ -1,0 +1,4 @@
+id: bukbosq8ui
+parent: c636znasve
+name: importInboundFilesSchedule
+schedule: { cron: "*/10 * * * *" }

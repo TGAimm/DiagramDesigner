@@ -1,0 +1,6 @@
+id: any5wrqb8o
+parent: g55sb0eqd6
+name: order-created
+type: topic
+carries: lf76fuj5g0
+via: Azure Service Bus

@@ -1,6 +1,7 @@
 id: k3nt8yueni
 parent: wh40r2i41o
 name: Merge (action)
+external: true
 method: POST
 path: /api/data/v9.2/Merge
 auth: OAuth 2.0 bearer (Entra ID app registration)

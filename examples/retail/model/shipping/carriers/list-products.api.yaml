@@ -1,6 +1,7 @@
 id: apfvit8co0
 parent: ztyvug6ivb
 name: List carrier products
+external: true
 method: GET
 path: /api/public/v3/products
 auth: basic (API user + key)

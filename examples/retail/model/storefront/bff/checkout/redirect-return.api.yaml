@@ -1,6 +1,7 @@
 id: tm324y5vi6
 parent: a2x6k1ux7z
 name: Return from Stripe Checkout
+external: true
 method: GET
 path: /api/checkout/return
 auth: session cookie fj_sid (browser redirect from Stripe)

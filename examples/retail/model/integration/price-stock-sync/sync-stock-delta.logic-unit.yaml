@@ -1,8 +1,7 @@
-# GAP: scheduled trigger
 id: sdo31es3m1
 parent: f1xy7xguug
 name: syncStockDelta
-meta: { schedule: "2-57/5 * * * *" }
+handles: [kn4m4rdn54]
 inputs: []
 outputs: []
 steps:
@@ -14,5 +13,5 @@ steps:
     else:
       - each: row in rows
         do:
-          - { call: khrlg0wtb1, with: "kind stock, sku, locationCode, inventory, availableQty; user property locationCode" }
+          - { send: po6jg0vom1, with: "kind stock, sku, locationCode, inventory, availableQty; user property locationCode" }
       - { write: nanvethhnv, note: "highest lastModifiedDateTime, ok, items" }

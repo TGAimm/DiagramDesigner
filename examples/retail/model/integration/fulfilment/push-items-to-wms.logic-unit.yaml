@@ -1,9 +1,8 @@
-# GAP: scheduled trigger
 # New and changed ERP items reach the 3PL before their first order or ASN.
 id: ddwd70cgah
 parent: myr8ju3xsr
 name: pushItemsToWms
-meta: { schedule: "50 * * * *" }
+handles: [l03c8o1jy2]
 inputs: []
 outputs: []
 steps:

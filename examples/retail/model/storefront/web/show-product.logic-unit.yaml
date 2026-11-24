@@ -1,6 +1,7 @@
 id: n1lyrjthok
 parent: fdjbxyzftg
 name: showProduct
+handles: [rixjxhk9yg]
 inputs:
   - { id: w8cy92loie, name: slug, type: string, required: true }
   - { id: j45ggjhvoq, name: sku, type: string, nullable: true, description: "?sku= from a card: preselect its colour" }

@@ -1,6 +1,7 @@
 id: pd94d5v3yu
 parent: m149ml603p
 name: Get stock
+external: true
 method: GET
 path: /v1/stock
 auth: bearer (OAuth 2.0 client credentials)

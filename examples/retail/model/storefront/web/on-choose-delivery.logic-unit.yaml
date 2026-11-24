@@ -1,6 +1,7 @@
 id: vpjxv2i5po
 parent: ogmj497j15
 name: onChooseDelivery
+handles: [zhmh6vvhha]
 inputs:
   - { id: z1m1p3idtd, name: option, model: vff2640otj, required: true }
   - { id: ff3a28zymd, name: pickupPointId, type: string, nullable: true }

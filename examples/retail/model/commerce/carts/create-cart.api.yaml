@@ -1,6 +1,7 @@
 id: q4cr80vwtm
 parent: b1ptklldw3
 name: Create cart
+external: true
 method: POST
 path: /{projectKey}/carts
 auth: "bearer (manage_orders)"

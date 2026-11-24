@@ -1,0 +1,8 @@
+# Orders waiting for the next ORDERS file (flag wms-api off).
+# GAP: writeOrdersFile drains it on a timer, up to 500 at a time (batch receive), so no trigger listens.
+id: ymp3pctvxc
+parent: g55sb0eqd6
+name: wms-outbound-orders
+type: queue
+carries: vs6f80curs
+via: Azure Service Bus

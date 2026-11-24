@@ -1,8 +1,7 @@
-# GAP: scheduled trigger
 id: gviw2csk2v
 parent: c636znasve
 name: exportShipmentConfirmations
-meta: { schedule: "5,35 * * * *" }
+handles: [nyvkwj86v6]
 inputs: []
 outputs: []
 steps:

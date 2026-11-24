@@ -1,0 +1,5 @@
+id: vyvvso8frr
+parent: cael6ntd06
+name: pressesPay
+by: { user: "the cashier presses Pay in the store app (works offline: queued and synced on reconnect)" }
+with: "the register, the cashier, the lines scanned, a member number, and a manager PIN for a manual discount over 20 %"

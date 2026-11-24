@@ -1,0 +1,5 @@
+id: k3j247zfw2
+parent: yvrhh8zk8f
+name: closesLastBox
+by: { user: "the packer scans the order's tote at the pack station and closes the last box" }
+with: "the order, the packages as packed and the packer"

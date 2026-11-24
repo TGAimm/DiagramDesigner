@@ -1,0 +1,5 @@
+id: r27ckjefix
+parent: w8lrzinusw
+name: returnCreatedCrm
+on: { channel: ljarmi0cvb, subscription: crm, event: received }
+with: the ReturnCreatedEvent

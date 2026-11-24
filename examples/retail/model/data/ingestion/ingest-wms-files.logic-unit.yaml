@@ -1,9 +1,9 @@
 # Reads the 3PL's files from the SFTP archive folder after Integration has processed them.
-# GAP: scheduled trigger
 id: id1dol4lut
 parent: oyqmyb5nc3
 name: ingestWmsFiles
-meta: { schedule: "30 2 * * *", pipeline: pl_ingest_wms_files, folder: "sftp.nordlager.dk /fjeld/archive" }
+handles: [zkxr3f76u9]
+meta: { pipeline: pl_ingest_wms_files, folder: "sftp.nordlager.dk /fjeld/archive" }
 inputs: []
 outputs: []
 fails:

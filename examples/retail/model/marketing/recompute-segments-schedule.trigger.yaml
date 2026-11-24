@@ -1,0 +1,4 @@
+id: c7pjeqmw8v
+parent: znpte2ol9p
+name: recomputeSegmentsSchedule
+schedule: { cron: "0 * * * *" }

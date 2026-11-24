@@ -11,7 +11,7 @@ fails:
 steps:
   - if: job is product
     then:
-      - { call: iqqdoy991b, with: "pimUuid = key, action updated, trigger manual" }
+      - { send: p7ntmi4dis, with: "pimUuid = key, action updated, trigger manual" }
     else:
       - { read: nanvethhnv, with: the job's source and entity, gets: cursor }
       - if: cursor.lockedUntil in the future

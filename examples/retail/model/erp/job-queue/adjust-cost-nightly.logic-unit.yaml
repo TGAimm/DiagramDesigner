@@ -1,9 +1,9 @@
 # Report 795 Adjust Cost - Item Entries, nightly for all items.
-# GAP: scheduled trigger
 id: hmwmm2tl5l
 parent: zn7j7787p7
 name: adjustCostNightly
-meta: { schedule: "0 2 * * *", jobQueueCategory: COST, object: "Report 795" }
+handles: [v0paswyxni]
+meta: { jobQueueCategory: COST, object: "Report 795" }
 inputs: []
 outputs: []
 steps:

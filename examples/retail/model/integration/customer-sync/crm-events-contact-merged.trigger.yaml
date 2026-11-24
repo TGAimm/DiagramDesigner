@@ -1,0 +1,5 @@
+id: lotqizohw1
+parent: mwg6alxci7
+name: crmEventsContactMerged
+on: { channel: lpr44cqgdy, subscription: contact-merged, event: received, filter: "MessageName = 'Merge'" }
+with: the RemoteExecutionContext of the Merge

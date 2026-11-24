@@ -1,8 +1,8 @@
-# GAP: triggered by subscription customer-changed/crm
 # Flow 5: Commerce customer > CRM contact (with consent).
 id: ff9ie65uv0
 parent: mwg6alxci7
 name: syncCustomerToCrm
+handles: [yw1woaqjuc]
 inputs:
   - { id: jxcmvsd40o, name: event, model: bbh3e6of1d, required: true }
 outputs: []
@@ -13,7 +13,7 @@ steps:
   - { call: puwxwdjg6b, with: "contacts(fjeld_commercecustomerid='<id>') upsert: the draft", gets: contact }
   - if: 412 or 429
     then:
-      - { call: wrbtf9xjcp, with: "attempt 1, notBefore + 5 min" }
+      - { send: j8gfo2hjha, with: "attempt 1, notBefore + 5 min" }
   - if: event.change is created
     then:
       - { call: nbplo7huaq, with: "contact point value = email, type Email, purpose Commercial, value Opted in / Opted out by marketingConsent, source Webshop sign-up, fjeld_contactid@odata.bind", gets: consent }

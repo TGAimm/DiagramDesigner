@@ -30,4 +30,4 @@ steps:
     then:
       - { write: a5mmzwangy, note: "and fjeld_tiervalidto = today + 12 months" }
       - { write: g6wd5evlsf }
-      - { call: ou5ubt8x3f, with: "RemoteExecutionContext of the contact Update (service endpoint step filtered on fjeld_loyaltytier): pre and post tier, commerce customer id" }
+      - { send: lpr44cqgdy, with: "RemoteExecutionContext of the contact Update (service endpoint step filtered on fjeld_loyaltytier): pre and post tier, commerce customer id" }

@@ -1,6 +1,7 @@
 id: f703dhaapi
 parent: x27wyx0r8h
 name: Create or update profile
+external: true
 method: POST
 path: /api/profile-import
 auth: "Klaviyo-API-Key private key (scope profiles:write)"

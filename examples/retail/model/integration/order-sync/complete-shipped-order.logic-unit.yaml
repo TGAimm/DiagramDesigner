@@ -1,8 +1,8 @@
-# GAP: triggered by subscription order-shipped/commerce
 # Flow 3, last part: Commerce gets the delivery and tracking, Stripe captures what shipped.
 id: gy1zghcfqb
 parent: w8lrzinusw
 name: completeShippedOrder
+handles: [k50ghe3nhi]
 inputs:
   - { id: eh4lkwrior, name: event, model: hzf00evl4i, required: true }
 outputs: []

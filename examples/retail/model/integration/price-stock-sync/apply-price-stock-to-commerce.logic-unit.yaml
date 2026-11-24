@@ -1,7 +1,7 @@
-# GAP: triggered by subscription price-stock-changed/commerce
 id: u5bhtuch10
 parent: f1xy7xguug
 name: applyPriceStockToCommerce
+handles: [oz0i8r9poe]
 inputs:
   - { id: l3taf90679, name: event, model: j3qk5xyr4i, required: true }
 outputs: []
@@ -19,7 +19,7 @@ steps:
       - { read: yd9iwthx32, with: event.sku, gets: "styleCode, commerceProductId" }
       - if: no product in Commerce yet
         then:
-          - { call: wrbtf9xjcp, with: "attempt 1, notBefore + 15 min: the product content is on its way" }
+          - { send: j8gfo2hjha, with: "attempt 1, notBefore + 15 min: the product content is on its way" }
         else:
           - { call: sj7n00la01, with: commerceProductId, gets: product }
           - if: event.removed
@@ -29,6 +29,6 @@ steps:
               - { call: id3wj2m0zi, with: "version, setPrices on the variant: country DK/SE/NO/DE by currency, centAmount = unitPrice x 100, validFrom/validUntil; a CAMPAIGN line becomes the discounted value", gets: product }
           - if: 409 ConcurrentModification
             then:
-              - { call: wrbtf9xjcp, with: "attempt + 1, notBefore + 1 min" }
+              - { send: j8gfo2hjha, with: "attempt + 1, notBefore + 1 min" }
           - { write: dcsafzlsgm, note: commercePriceId }
   - { write: yguluhbf6w, note: "processed, targetSystem commerce, businessKey sku" }

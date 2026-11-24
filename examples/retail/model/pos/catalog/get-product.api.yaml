@@ -1,6 +1,7 @@
 id: y94bpdc35o
 parent: a9udosegf6
 name: Get product
+external: true
 method: GET
 path: /v2/products/{sku}
 auth: bearer (API key per integration user)

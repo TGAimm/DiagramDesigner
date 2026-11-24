@@ -1,0 +1,4 @@
+id: h8i96uugah
+parent: oyqmyb5nc3
+name: ingestCommerceSchedule
+schedule: { cron: "*/15 * * * *" }

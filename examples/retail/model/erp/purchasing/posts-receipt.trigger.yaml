@@ -1,0 +1,5 @@
+id: xdti3a9hm4
+parent: si82yvapze
+name: postsReceipt
+by: { user: "a buyer runs Post > Receive on the Purchase Order page after the 3PL's inbound receipt e-mail" }
+with: the purchase order no.

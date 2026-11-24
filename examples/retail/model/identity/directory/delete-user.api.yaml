@@ -1,6 +1,7 @@
 id: svcw9dcoel
 parent: xi92dufx8c
 name: Delete user
+external: true
 method: DELETE
 path: /v1.0/users/{id}
 auth: bearer (app-only Graph token, User.ReadWrite.All)

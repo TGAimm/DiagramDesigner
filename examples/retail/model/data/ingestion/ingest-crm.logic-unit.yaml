@@ -1,8 +1,8 @@
-# GAP: scheduled trigger
 id: vbgshw3cxn
 parent: oyqmyb5nc3
 name: ingestCrm
-meta: { schedule: "20 * * * *", pipeline: pl_ingest_crm }
+handles: [z08osp52ic]
+meta: { pipeline: pl_ingest_crm }
 inputs: []
 outputs: []
 steps:

@@ -1,6 +1,7 @@
 id: r30cerwybo
 parent: y5739ri6l0
 name: Trigger sync
+external: true
 method: POST
 path: /ops/sync/{job}
 auth: "bearer (Entra ID, app role Integration.Operator)"

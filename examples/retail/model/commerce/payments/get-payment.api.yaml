@@ -1,6 +1,7 @@
 id: uxmnh3i48b
 parent: ybylhi4dg2
 name: Get payment
+external: true
 method: GET
 path: /{projectKey}/payments/{id}
 auth: "bearer (view_payments)"

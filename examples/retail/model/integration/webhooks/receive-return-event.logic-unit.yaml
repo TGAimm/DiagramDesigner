@@ -21,7 +21,7 @@ steps:
       - { write: nmk8vxeclz, note: done }
       - if: event is return.created
         then:
-          - { call: qgcqi7t2ku, with: "ReturnCreatedEvent from the return and its items, channel portal" }
+          - { send: ljarmi0cvb, with: "ReturnCreatedEvent from the return and its items, channel portal" }
         else:
           - { read: r1iwd1t2bt, with: return.rma_number, gets: "ids, last updatedAt" }
           - if: return.updated_at older than the row

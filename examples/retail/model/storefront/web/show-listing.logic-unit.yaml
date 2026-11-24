@@ -2,6 +2,7 @@
 id: d5qbcwjw2t
 parent: mbno02j577
 name: showListing
+handles: [wrcn3llghp]
 inputs:
   - { id: zb5deejyf9, name: categoryPath, type: string, nullable: true, description: "/c/men/jackets" }
   - { id: fdutwlctiv, name: q, type: string, nullable: true, description: "/search?q=" }

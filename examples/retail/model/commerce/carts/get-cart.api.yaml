@@ -1,6 +1,7 @@
 id: f5plx7ovh9
 parent: b1ptklldw3
 name: Get cart
+external: true
 method: GET
 path: /{projectKey}/carts/{id}
 auth: "bearer (view_orders)"

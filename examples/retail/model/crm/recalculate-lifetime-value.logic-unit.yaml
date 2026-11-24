@@ -1,8 +1,8 @@
-# GAP: scheduled trigger
 id: bwzhlqz670
 parent: izc0a89lge
 name: recalculateLifetimeValue
-meta: { schedule: "0 2 * * *", runs: Power Automate scheduled cloud flow + bulk update }
+handles: [nrsg56woem]
+meta: { runs: Power Automate scheduled cloud flow + bulk update }
 inputs: []
 outputs: []
 steps:

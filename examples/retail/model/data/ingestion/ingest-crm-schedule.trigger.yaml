@@ -1,0 +1,4 @@
+id: z08osp52ic
+parent: oyqmyb5nc3
+name: ingestCrmSchedule
+schedule: { cron: "20 * * * *" }

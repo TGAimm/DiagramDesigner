@@ -1,6 +1,7 @@
 id: qvdp86i2vg
 parent: b1ptklldw3
 name: Update cart
+external: true
 method: POST
 path: /{projectKey}/carts/{id}
 auth: "bearer (manage_orders)"

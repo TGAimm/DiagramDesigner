@@ -1,6 +1,7 @@
 id: owbrjdfiit
 parent: z4a8fcfwai
 name: Logout
+external: true
 method: GET
 path: /{tenant}/oauth2/v2.0/logout
 auth: none (browser redirect)

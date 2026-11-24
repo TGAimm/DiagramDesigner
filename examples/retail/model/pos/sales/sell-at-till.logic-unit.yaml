@@ -1,7 +1,7 @@
-# Started by the cashier pressing Pay in the store app (works offline: queued and synced on reconnect).
 id: scvnqygug3
 parent: cael6ntd06
 name: sellAtTill
+handles: [vyvvso8frr]
 inputs:
   - { id: wuzeuufuua, name: registerId, type: int, required: true }
   - { id: jrf6lxswei, name: staffId, type: int, required: true }

@@ -1,0 +1,5 @@
+id: rixjxhk9yg
+parent: fdjbxyzftg
+name: opensProduct
+by: { user: opens a product page }
+with: "the slug, and the ?sku= of the card clicked"

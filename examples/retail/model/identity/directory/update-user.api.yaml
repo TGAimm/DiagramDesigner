@@ -1,6 +1,7 @@
 id: xafontaoh4
 parent: xi92dufx8c
 name: Update user
+external: true
 method: PATCH
 path: /v1.0/users/{id}
 auth: bearer (app-only Graph token, User.ReadWrite.All)

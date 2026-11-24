@@ -1,6 +1,7 @@
 id: gb2ct31p7h
 parent: gkng6vfutd
 name: showCart
+handles: [yh2yesl96j]
 inputs: []
 outputs:
   - { id: rgmf2b4akt, name: cart, model: lq4foj9308, nullable: true }

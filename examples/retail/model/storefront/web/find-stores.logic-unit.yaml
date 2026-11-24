@@ -1,6 +1,7 @@
 id: qsa3cggx2y
 parent: pcwnkmmuwj
 name: findStores
+handles: [r3ubungbim]
 inputs:
   - { id: zhaae10x8i, name: near, type: string, nullable: true, description: "postal code typed, or the browser's position" }
   - { id: sjq4lo73rh, name: sku, type: string, nullable: true, description: "set when opened from a product's click & collect link" }

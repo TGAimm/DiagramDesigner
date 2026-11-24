@@ -1,6 +1,7 @@
 id: q60jyms8qr
 parent: vuo50id8ln
 name: Retrieve a payout
+external: true
 method: GET
 path: /v1/payouts/{payout}
 auth: bearer (secret key)

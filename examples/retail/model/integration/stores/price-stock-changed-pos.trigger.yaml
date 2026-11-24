@@ -1,0 +1,5 @@
+id: ft300w8fid
+parent: nlc4zljjz8
+name: priceStockChangedPos
+on: { channel: po6jg0vom1, subscription: pos, event: received, filter: "locationCode LIKE 'S%' OR priceListCode LIKE 'STORE-%'" }
+with: the PriceStockChangedEvent

@@ -1,6 +1,7 @@
 id: iha3prs5iy
 parent: d8hyu4qiq7
 name: Cancel shipment
+external: true
 method: DELETE
 path: /api/public/v3/shipments/{id}
 auth: basic (API user + key)

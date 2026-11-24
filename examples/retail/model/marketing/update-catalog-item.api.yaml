@@ -1,6 +1,7 @@
 id: yvbyorx9g5
 parent: yrxcxi1txk
 name: Update catalog item
+external: true
 method: PATCH
 path: /api/catalog-items/{id}
 auth: "Klaviyo-API-Key private key (scope catalogs:write)"

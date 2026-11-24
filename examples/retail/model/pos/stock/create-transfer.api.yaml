@@ -1,6 +1,7 @@
 id: v9y51rr3ou
 parent: vgv4575wz1
 name: Create incoming transfer
+external: true
 method: POST
 path: /v2/stock-transfers
 auth: bearer (API key per integration user)

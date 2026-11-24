@@ -1,6 +1,7 @@
 id: h6imfcougo
 parent: y0w8820v7y
 name: Search
+external: true
 method: GET
 path: /api/v2/search
 auth: "basic (agent e-mail/token + API token) or OAuth bearer"

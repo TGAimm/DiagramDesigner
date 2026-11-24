@@ -1,6 +1,7 @@
 id: du1t02r2dk
 parent: scelhoohob
 name: Create subscription
+external: true
 method: POST
 path: /{projectKey}/subscriptions
 auth: "bearer (manage_subscriptions)"

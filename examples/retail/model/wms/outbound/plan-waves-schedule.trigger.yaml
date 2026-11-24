@@ -1,0 +1,4 @@
+id: savmpzufgj
+parent: yvrhh8zk8f
+name: planWavesSchedule
+schedule: { cron: "*/30 6-20 * * 1-6" }

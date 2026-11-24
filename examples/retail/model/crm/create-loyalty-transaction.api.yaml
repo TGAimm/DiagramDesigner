@@ -1,6 +1,7 @@
 id: rj4zp0cjn6
 parent: pnvbx85509
 name: Create loyalty transaction
+external: true
 method: POST
 path: /api/data/v9.2/fjeld_loyaltytransactions
 auth: OAuth 2.0 bearer (Entra ID app registration)

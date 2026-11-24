@@ -1,0 +1,4 @@
+id: y74l1bye3r
+parent: zn7j7787p7
+name: batchPostSalesInvoicesSchedule
+schedule: { cron: "0 * * * *" }

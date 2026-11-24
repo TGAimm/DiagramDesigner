@@ -1,6 +1,7 @@
 id: fhmv2mv6oc
 parent: fdjbxyzftg
 name: onAddToCart
+handles: [gex2h8fzbn]
 inputs:
   - { id: w6cr7iyhvh, name: sku, type: string, required: true }
   - { id: ckveiimh2j, name: quantity, type: int, required: true }

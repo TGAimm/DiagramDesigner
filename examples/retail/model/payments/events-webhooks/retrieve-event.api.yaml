@@ -1,6 +1,7 @@
 id: bgted01bpg
 parent: egb813hfbr
 name: Retrieve an event
+external: true
 method: GET
 path: /v1/events/{id}
 auth: bearer (secret key)

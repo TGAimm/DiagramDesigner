@@ -1,6 +1,7 @@
 id: x7lyqi7j2l
 parent: vssqq48tt7
 name: Create webhook
+external: true
 method: POST
 path: /api/public/v3/webhooks
 auth: basic (API user + key)

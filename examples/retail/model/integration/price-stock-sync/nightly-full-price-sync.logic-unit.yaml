@@ -1,10 +1,9 @@
-# GAP: scheduled trigger
 # ERP's price-list delta cannot report a deleted line (a deleted row has no lastModifiedDateTime
 # to filter on), so once a night the whole active price list is read and compared.
 id: lr2c7t02q3
 parent: f1xy7xguug
 name: nightlyFullPriceSync
-meta: { schedule: "15 2 * * *" }
+handles: [vo4m5kj7uc]
 inputs: []
 outputs: []
 fails:
@@ -20,11 +19,11 @@ steps:
     do:
       - if: not in the mirror or different
         then:
-          - { call: khrlg0wtb1, with: "kind price, the line" }
+          - { send: po6jg0vom1, with: "kind price, the line" }
       - { write: dcsafzlsgm, note: "lastSeenRun = tonight, sentAt" }
   - { read: dcsafzlsgm, with: "lastSeenRun < tonight", gets: deleted lines }
   - each: deleted line
     do:
-      - { call: khrlg0wtb1, with: "kind price, removed true, sku, priceListCode, currency" }
+      - { send: po6jg0vom1, with: "kind price, removed true, sku, priceListCode, currency" }
       - { write: dcsafzlsgm, note: delete the row }
   - { write: nanvethhnv, note: "erp / priceListLines-full: lastRunAt, items" }

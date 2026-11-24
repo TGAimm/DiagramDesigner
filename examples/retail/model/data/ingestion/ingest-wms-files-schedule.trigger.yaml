@@ -1,0 +1,4 @@
+id: zkxr3f76u9
+parent: oyqmyb5nc3
+name: ingestWmsFilesSchedule
+schedule: { cron: "30 2 * * *" }

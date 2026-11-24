@@ -1,8 +1,8 @@
-# GAP: scheduled trigger
 id: ezay3v2j3k
 parent: oyqmyb5nc3
 name: ingestStripe
-meta: { schedule: "30 4 * * *", pipeline: pl_ingest_stripe, note: "after Stripe's midnight payout run" }
+handles: [qd3ukpisap]
+meta: { pipeline: pl_ingest_stripe, note: "after Stripe's midnight payout run" }
 inputs: []
 outputs: []
 steps:

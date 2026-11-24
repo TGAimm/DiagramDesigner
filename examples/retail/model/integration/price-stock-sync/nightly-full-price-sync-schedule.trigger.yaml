@@ -1,0 +1,4 @@
+id: vo4m5kj7uc
+parent: f1xy7xguug
+name: nightlyFullPriceSyncSchedule
+schedule: { cron: "15 2 * * *" }

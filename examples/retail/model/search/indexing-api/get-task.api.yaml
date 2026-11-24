@@ -1,6 +1,7 @@
 id: qtljdrl4k8
 parent: ktxxdlpyeb
 name: Check task status
+external: true
 method: GET
 path: /1/indexes/{indexName}/task/{taskID}
 auth: "X-Algolia-Application-Id + X-Algolia-API-Key"

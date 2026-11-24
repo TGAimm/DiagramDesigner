@@ -1,6 +1,7 @@
 id: w3qkiyzpy8
 parent: ktxxdlpyeb
 name: Save rules
+external: true
 method: POST
 path: /1/indexes/{indexName}/rules/batch
 auth: "X-Algolia-Application-Id + X-Algolia-API-Key (admin key: editSettings ACL; merchandisers use the dashboard)"

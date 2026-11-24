@@ -1,7 +1,7 @@
-# GAP: triggered by subscription payment-events/commerce
 id: y2ppvtwh9n
 parent: mwsgna90tw
 name: applyPaymentEvent
+handles: [ti1q9gclar]
 inputs:
   - { id: u25n2rec7v, name: event, model: mumhsnhnkb, required: true }
 outputs: []

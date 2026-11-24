@@ -1,0 +1,5 @@
+id: no7yr84rpf
+parent: w8lrzinusw
+name: orderShippedMarketing
+on: { channel: xm1c45pg8f, subscription: marketing, event: received, filter: "source = 'wms': a collected order gets no shipped mail" }
+with: the OrderShippedEvent

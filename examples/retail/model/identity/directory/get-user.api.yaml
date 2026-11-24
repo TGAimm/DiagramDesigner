@@ -1,6 +1,7 @@
 id: d8e4650ps0
 parent: xi92dufx8c
 name: Get user
+external: true
 method: GET
 path: /v1.0/users/{id}
 auth: bearer (app-only Graph token, User.Read.All)
