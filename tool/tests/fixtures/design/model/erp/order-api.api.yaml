@@ -5,3 +5,4 @@ method: GET
 path: /orders/{id}
 params:
   - { name: id, in: path, type: uuid }
+external: true

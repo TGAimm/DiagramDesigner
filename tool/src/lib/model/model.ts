@@ -7,6 +7,7 @@ import type {
 	LogicStep,
 	ModelField
 } from './schema';
+type FieldShape = Pick<ModelField, 'type' | 'model' | 'oneOf' | 'values' | 'discriminator' | 'of'>;
 import { DATA_EVENTS, ENTITY_KINDS, MESSAGE_EVENTS, PARENT_KINDS } from './schema';
 import type { SourceEvent } from './schema';
 import type { DataPath, Diagnostic, Severity } from './diagnostics';
@@ -14,6 +15,7 @@ import { entityKind, fileKind } from './parse';
 import { toDiagnostic, validateEntityFile } from './validate-file';
 import { isDuration, scheduleProblems } from './schedule';
 import { messageProblems } from './message';
+import { liveCallersOf, reachOf, type Reach } from './reach';
 
 /** Where an entity lives: design-root-relative file and data path inside it. */
 export interface Loc {
@@ -111,6 +113,8 @@ export interface Model {
 	 * branch each flag step takes; without it they follow every branch (all the code).
 	 */
 	flagState?: Map<string, boolean>;
+	/** Whether each logic unit and api runs, in this flag state (see `reachOf`). */
+	reach?: Map<string, Reach>;
 }
 
 /** Whether a flag is on in the model's state, else at its default. */
@@ -189,6 +193,44 @@ export function buildModel(
 		return true;
 	};
 
+	/**
+	 * What a field's value is: exactly one of type, model and oneOf, with the keys that go with
+	 * each. Shared by model, api and logic fields; references are checked once all are loaded.
+	 */
+	const shapeChecks = (f: FieldShape, fieldLoc: Loc, label: string) => {
+		const kinds = (['type', 'model', 'oneOf'] as const).filter((k) => f[k] !== undefined);
+		if (kinds.length !== 1)
+			diag(
+				'error',
+				'field-type',
+				kinds.length
+					? `${label} has ${kinds.join(' and ')}; give exactly one of type, model and oneOf`
+					: `${label} needs exactly one of type, model and oneOf`,
+				fieldLoc,
+				kinds[1] ?? 'name'
+			);
+		if (f.values && !f.type)
+			diag('error', 'field-shape', `${label}: values go with type`, fieldLoc, 'values');
+		if (f.discriminator !== undefined && !f.oneOf)
+			diag('error', 'field-shape', `${label}: discriminator goes with oneOf`, fieldLoc, 'discriminator');
+		if (f.of !== undefined && !f.model)
+			diag('error', 'field-shape', `${label}: of goes with model`, fieldLoc, 'of');
+	};
+
+	/** Checks the models a field's shape names, once every entity is loaded. */
+	const shapeRefs = (f: FieldShape, fieldLoc: Loc, label: string) => {
+		f.oneOf?.forEach((id, j) => {
+			if (model.elements.get(id)?.def.kind !== 'model')
+				diag('error', 'not-a-model', `${label}: oneOf names "${id}", which is not a model`, at(fieldLoc, 'oneOf', j));
+		});
+		const held = f.model ? model.elements.get(f.model) : undefined;
+		if (held?.def.kind !== 'model') return;
+		if (held.def.generic && f.of === undefined)
+			diag('error', 'field-generic', `${label}: "${held.name}" is generic, so give of (its ${held.def.generic})`, fieldLoc, 'model');
+		else if (!held.def.generic && f.of !== undefined)
+			diag('error', 'field-generic', `${label}: "${held.name}" is not generic, so it takes no of`, fieldLoc, 'of');
+	};
+
 	/** Whether `id` is something a logic unit's `key` may name; reports it if not. */
 	const logicTarget = (key: keyof typeof LOGIC_TARGETS, id: string, loc: Loc, atKey?: string) => {
 		const field = model.fields.get(id);
@@ -217,15 +259,23 @@ export function buildModel(
 	/** Checks a logic unit's references and steps, and collects what they name. */
 	const logicLinks = (info: ElementInfo): LogicLinks => {
 		const def = info.def;
-		const links: LogicLinks = { handles: [], reads: [], writes: [], calls: [], sends: [] };
+		const links: LogicLinks = {
+			handles: [],
+			reads: [],
+			writes: [],
+			calls: [],
+			sends: [],
+			renders: []
+		};
 		const add = (key: keyof LogicLinks, id: string) => {
 			if (!links[key].includes(id)) links[key].push(id);
 		};
 		def.handles?.forEach((id, j) => {
 			if (logicTarget('handles', id, at(info.loc, 'handles', j))) add('handles', id);
 		});
-		for (const key of ['inputs', 'outputs'] as const)
+		for (const key of ['inputs', 'outputs', 'emits'] as const)
 			def[key]?.forEach((f, i) => {
+				shapeRefs(f, at(info.loc, key, i), `${key.slice(0, -1)} "${f.name}"`);
 				if (f.model && model.elements.get(f.model)?.def.kind !== 'model')
 					diag(
 						'error',
@@ -237,6 +287,8 @@ export function buildModel(
 			});
 		const outputs = new Set(def.outputs?.map((o) => o.name));
 		const fails = new Set(def.fails?.map((f) => f.name));
+		const emits = new Set(def.emits?.map((e) => e.name));
+		const emitted = new Set<string>();
 		const returned = new Set<string>();
 		const raised = new Set<string>();
 		const walk = (steps: LogicStep[] | undefined, loc: Loc, key: string) =>
@@ -256,7 +308,7 @@ export function buildModel(
 					diag(
 						'error',
 						'logic-step',
-						`empty step; give call, send, read, write, if, each, flag, return, fail or note`,
+						`empty step; give call, send, read, write, render, emit, if, each, flag, return, fail or note`,
 						stepLoc
 					);
 				for (const [sub, owner] of [
@@ -268,8 +320,17 @@ export function buildModel(
 				] as const)
 					if (s[sub] && k !== owner)
 						diag('error', 'logic-step', `${sub} goes with ${owner}`, stepLoc, sub);
-				if (s.with !== undefined && k !== 'call' && k !== 'read' && k !== 'send')
-					diag('error', 'logic-step', `with goes with call, send or read`, stepLoc, 'with');
+				if (s.events && k !== 'render')
+					diag('error', 'logic-step', `events goes with render`, stepLoc, 'events');
+				if (
+					s.with !== undefined &&
+					k !== 'call' &&
+					k !== 'read' &&
+					k !== 'send' &&
+					k !== 'render' &&
+					k !== 'emit'
+				)
+					diag('error', 'logic-step', `with goes with call, send, read, render or emit`, stepLoc, 'with');
 				if (s.gets !== undefined && k !== 'call' && k !== 'read')
 					diag(
 						'error',
@@ -317,6 +378,28 @@ export function buildModel(
 								);
 						}
 					}
+				if (k === 'render' && logicTarget('render', s.render!, stepLoc, k)) {
+					// Rendering a component is a dependency like a call: impact, focus and the
+					// caller lifeline follow it. `renders` keeps which calls were renders.
+					add('calls', s.render!);
+					add('renders', s.render!);
+					const child = model.elements.get(s.render!)!;
+					const theirs = new Set(child.def.emits?.map((e) => e.name));
+					for (const name of Object.keys(s.events ?? {}))
+						if (!theirs.has(name))
+							diag(
+								'error',
+								'render-event',
+								`"${child.name}" emits no "${name}"${theirs.size ? `; it emits ${[...theirs].join(', ')}` : ''}`,
+								at(stepLoc, 'events'),
+								name
+							);
+				}
+				if (k === 'emit') {
+					emitted.add(s.emit!);
+					if (!emits.has(s.emit!))
+						diag('error', 'logic-emit', `emits "${s.emit}", which is not in emits`, stepLoc, k);
+				}
 				if (k === 'return') {
 					returned.add(s.return!);
 					if (!outputs.has(s.return!))
@@ -349,6 +432,8 @@ export function buildModel(
 				walk(s.then, stepLoc, 'then');
 				walk(s.else, stepLoc, 'else');
 				walk(s.do, stepLoc, 'do');
+				for (const name of Object.keys(s.events ?? {}))
+					walk(s.events![name], at(stepLoc, 'events'), name);
 				if (k === 'flag') {
 					const state = model.flagState?.get(s.flag!);
 					if (state !== false) walk(s.on, stepLoc, 'on');
@@ -364,6 +449,16 @@ export function buildModel(
 						'logic-unused',
 						`output "${o.name}" is never returned`,
 						at(info.loc, 'outputs', i),
+						'name'
+					);
+			});
+			def.emits?.forEach((e, i) => {
+				if (!emitted.has(e.name))
+					diag(
+						'warning',
+						'logic-unused',
+						`event "${e.name}" is never emitted`,
+						at(info.loc, 'emits', i),
 						'name'
 					);
 			});
@@ -465,14 +560,7 @@ export function buildModel(
 				if (names.has(f.name))
 					diag('error', 'duplicate-field', `field "${f.name}" is defined twice`, fieldLoc, 'name');
 				names.add(f.name);
-				if (!f.type === !f.model)
-					diag(
-						'error',
-						'field-type',
-						`field "${f.name}" needs exactly one of type and model`,
-						fieldLoc,
-						f.type ? 'model' : 'name'
-					);
+				shapeChecks(f, fieldLoc, `field "${f.name}"`);
 				if (f.model && f.ref)
 					diag(
 						'error',
@@ -583,14 +671,7 @@ export function buildModel(
 							'name'
 						);
 					names.add(f.name);
-					if (!f.type === !f.model)
-						diag(
-							'error',
-							'field-type',
-							`field "${f.name}" needs exactly one of type and model`,
-							fieldLoc,
-							f.type ? 'model' : 'name'
-						);
+					shapeChecks(f, fieldLoc, `field "${f.name}"`);
 					if (part === 'request' && f.from)
 						diag(
 							'error',
@@ -632,20 +713,35 @@ export function buildModel(
 				loc,
 				'when'
 			);
+		if (value.dead !== undefined && kind !== 'logic-unit' && kind !== 'api')
+			diag('error', 'dead-only', `only logic units and apis are dead`, loc, 'dead');
+		if (value.generic !== undefined && kind !== 'model')
+			diag('error', 'model-only', `only models are generic`, loc, 'generic');
 		if (kind === 'trigger') {
-			// The source says what starts it: a schedule, or an event it listens to (or, before
-			// channels, a message in words); exactly one.
-			const sources = (['schedule', 'on', 'message'] as const).filter((k) => value[k]);
+			// The source says what starts it: a schedule, an event it listens to, or someone or
+			// something outside the code (or, before channels, a message in words); exactly one.
+			const sources = (['schedule', 'on', 'by', 'message'] as const).filter((k) => value[k]);
 			if (sources.length !== 1)
 				diag(
 					'error',
 					'trigger-source',
 					sources.length
 						? `trigger "${info.name}" has ${sources.join(' and ')}; give one`
-						: `trigger "${info.name}" needs a schedule or on`,
+						: `trigger "${info.name}" needs a schedule, on or by`,
 					loc,
 					sources[1] ?? 'id'
 				);
+			if (value.by) {
+				const who = Object.keys(value.by);
+				if (who.length !== 1)
+					diag(
+						'error',
+						'trigger-by',
+						`by needs exactly one of user, framework and outside`,
+						at(loc, 'by'),
+						who[1]
+					);
+			}
 			if (value.schedule)
 				for (const p of scheduleProblems(value.schedule))
 					diag('error', 'trigger-schedule', p.message, at(loc, 'schedule'), p.key);
@@ -664,7 +760,7 @@ export function buildModel(
 				diag(
 					'error',
 					'trigger-overlap',
-					`overlap goes with schedule, not ${value.on ? 'on' : 'message'}`,
+					`overlap goes with schedule, not ${value.on ? 'on' : value.by ? 'by' : 'message'}`,
 					loc,
 					'overlap'
 				);
@@ -677,7 +773,7 @@ export function buildModel(
 					'timeout'
 				);
 		} else
-			for (const key of ['schedule', 'on', 'message', 'overlap', 'timeout', 'with'] as const)
+			for (const key of ['schedule', 'on', 'by', 'message', 'overlap', 'timeout', 'with'] as const)
 				if (value[key] !== undefined)
 					diag('error', 'trigger-only', `only triggers have ${key}`, loc, key);
 		if (value.retries !== undefined && kind !== 'trigger' && kind !== 'channel')
@@ -696,8 +792,8 @@ export function buildModel(
 				if (value[key] !== undefined)
 					diag('error', 'channel-only', `only channels have ${key}`, loc, key);
 		if (kind === 'logic-unit')
-			for (const key of ['inputs', 'outputs'] as const) {
-				if (!value[key])
+			for (const key of ['inputs', 'outputs', 'emits'] as const) {
+				if (!value[key] && key !== 'emits')
 					diag(
 						'error',
 						'logic-signature',
@@ -712,18 +808,11 @@ export function buildModel(
 					if (names.has(f.name))
 						diag('error', 'duplicate-field', `${key} has "${f.name}" twice`, fieldLoc, 'name');
 					names.add(f.name);
-					if (!f.type === !f.model)
-						diag(
-							'error',
-							'field-type',
-							`${key.slice(0, -1)} "${f.name}" needs exactly one of type and model`,
-							fieldLoc,
-							f.type ? 'model' : 'name'
-						);
+					shapeChecks(f, fieldLoc, `${key.slice(0, -1)} "${f.name}"`);
 				});
 			}
 		else
-			for (const key of ['handles', 'inputs', 'outputs', 'fails', 'steps'] as const)
+			for (const key of ['handles', 'inputs', 'outputs', 'fails', 'emits', 'steps'] as const)
 				if (value[key]) diag('error', 'logic-only', `only logic units have ${key}`, loc, key);
 	}
 	if (flags) model.flagState = flagStateOf(model, flags);
@@ -753,7 +842,7 @@ export function buildModel(
 				const srcLoc = at(fieldLoc, 'from', j);
 				if (src === f.id)
 					diag('error', 'lineage-cycle', `field "${f.name}" comes from itself`, srcLoc);
-				else if (!model.fields.has(src))
+				else if (!model.fields.has(src) && !model.apiFields.has(src))
 					diag(
 						'error',
 						'dangling-ref',
@@ -761,18 +850,24 @@ export function buildModel(
 						srcLoc
 					);
 			});
+			shapeRefs(f, fieldLoc, `field "${f.name}"`);
 		});
 	}
+	// Lineage runs through model fields and the fields of api shapes alike.
+	const anyField = (id: string) => model.fields.get(id) ?? model.apiFields.get(id);
 	const lineage = new Map(
-		[...model.fields].map(([id, f]) => [id, (f.def.from ?? []).filter((s) => s !== id)])
+		[...model.fields, ...model.apiFields].map(([id, f]) => [
+			id,
+			(f.def.from ?? []).filter((s) => s !== id)
+		])
 	);
 	const cycle = findCycle(lineage);
 	if (cycle)
 		diag(
 			'error',
 			'lineage-cycle',
-			`fields come from each other: ${cycle.map((id) => model.fields.get(id)!.def.name).join(' <- ')}`,
-			at(model.fields.get(cycle[0])!.loc, 'from')
+			`fields come from each other: ${cycle.map((id) => anyField(id)!.def.name).join(' <- ')}`,
+			at(anyField(cycle[0])!.loc, 'from')
 		);
 	for (const info of entities) {
 		for (const { part, body, path } of info.def.kind === 'api' ? apiBodies(info.def) : []) {
@@ -809,13 +904,20 @@ export function buildModel(
 						fieldLoc,
 						'model'
 					);
+				shapeRefs(f, fieldLoc, `field "${f.name}"`);
+				// A response field may come from another api's field (a proxy or a front end
+				// passing it on); a request field goes into model fields only.
 				for (const key of ['to', 'from'] as const)
 					f[key]?.forEach((id, j) => {
-						if (!model.fields.has(id))
+						if (id === f.id)
+							diag('error', 'lineage-cycle', `field "${f.name}" comes from itself`, at(fieldLoc, key, j));
+						else if (!model.fields.has(id) && !(key === 'from' && model.apiFields.has(id)))
 							diag(
 								'error',
 								'dangling-ref',
-								`field "${f.name}" ${key === 'to' ? 'goes into' : 'comes from'} "${id}", which is not a model field`,
+								key === 'to'
+									? `field "${f.name}" goes into "${id}", which is not a model field`
+									: `field "${f.name}" comes from "${id}", which is not a model or api field`,
 								at(fieldLoc, key, j)
 							);
 					});
@@ -1196,6 +1298,34 @@ export function buildModel(
 		}
 	}
 
+	// Dead code: what nothing starts says so, and what is marked dead nothing live uses.
+	model.reach = reachOf(model);
+	for (const [id, r] of model.reach) {
+		const info = model.elements.get(id)!;
+		const what = info.def.kind === 'api' ? 'api' : 'logic unit';
+		if (r.state === 'unreached')
+			diag(
+				'warning',
+				'unreached',
+				info.def.kind === 'api'
+					? `nothing in the design calls api "${info.name}"; mark it external, or dead: <why>`
+					: `nothing starts or calls logic unit "${info.name}"; add a trigger, or dead: <why>`,
+				info.loc,
+				'id'
+			);
+		if (info.def.dead !== undefined) {
+			const users = liveCallersOf(model, model.reach, id);
+			if (users.length)
+				diag(
+					'warning',
+					'dead-reached',
+					`${what} "${info.name}" is marked dead, but ${users.map((u) => model.elements.get(u)!.name).join(', ')} still use${users.length === 1 ? 's' : ''} it`,
+					info.loc,
+					'dead'
+				);
+		}
+	}
+
 	return model;
 }
 
@@ -1204,7 +1334,10 @@ export function buildModel(
  * channels they send on.
  */
 export const LOGIC_KEYS = ['handles', 'reads', 'writes', 'calls', 'sends'] as const;
-export type LogicLinks = Record<(typeof LOGIC_KEYS)[number], string[]>;
+export type LogicLinks = Record<(typeof LOGIC_KEYS)[number], string[]> & {
+	/** The units its render steps render; each is in `calls` too. */
+	renders: string[];
+};
 
 /** The keys that say what kind a step is; a step with none of them is a note. */
 export const STEP_KINDS = [
@@ -1216,7 +1349,9 @@ export const STEP_KINDS = [
 	'each',
 	'return',
 	'fail',
-	'flag'
+	'flag',
+	'render',
+	'emit'
 ] as const;
 
 /** What `handles` and each step kind may name: entity kinds, or `field` for a model field. */
@@ -1226,7 +1361,8 @@ const LOGIC_TARGETS = {
 	send: ['channel'],
 	read: ['model', 'field'],
 	write: ['model', 'field'],
-	flag: ['flag']
+	flag: ['flag'],
+	render: ['logic-unit']
 };
 
 /** Returns one cycle in a dependency graph (id -> needs), or undefined. */
