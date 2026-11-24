@@ -1,6 +1,7 @@
 id: h7xii3m5m4
 parent: pcwnkmmuwj
 name: onCollectInStore
+handles: [legle6w4zn]
 inputs:
   - { id: txdkkujl3i, name: sku, type: string, required: true }
   - { id: pvb3cgrsjv, name: storeKey, type: string, required: true }

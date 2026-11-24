@@ -1,8 +1,8 @@
-# GAP: scheduled trigger
 id: cdw4a9jf6q
 parent: oyqmyb5nc3
 name: ingestPos
-meta: { schedule: "0 2 * * *", pipeline: pl_ingest_pos, note: "after the stores' Z-reports have closed the business day" }
+handles: [qf585lxhjb]
+meta: { pipeline: pl_ingest_pos, note: "after the stores' Z-reports have closed the business day" }
 inputs: []
 outputs: []
 steps:

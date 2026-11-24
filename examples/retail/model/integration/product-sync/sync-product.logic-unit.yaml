@@ -1,7 +1,7 @@
-# GAP: triggered by subscription product-changed/commerce-search
 id: j657kw4aw1
 parent: w032iyqws6
 name: syncProduct
+handles: [lx3kxmowga]
 inputs:
   - { id: qxz10hw8cv, name: event, model: no6pifpr62, required: true }
 outputs: []

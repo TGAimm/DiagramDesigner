@@ -1,6 +1,7 @@
 id: tex0vxbka2
 parent: yzg8gfwzwo
 name: Retrieve a customer
+external: true
 method: GET
 path: /v1/customers/{customer}
 auth: bearer (secret key)

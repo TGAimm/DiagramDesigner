@@ -1,0 +1,4 @@
+id: ewhidtyc47
+parent: oyqmyb5nc3
+name: ingestErpSchedule
+schedule: { cron: "5 * * * *" }

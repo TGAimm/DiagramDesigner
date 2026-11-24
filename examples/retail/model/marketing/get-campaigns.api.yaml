@@ -1,6 +1,7 @@
 id: i3prn3tbmp
 parent: tap5kc5bph
 name: Get campaigns
+external: true
 method: GET
 path: /api/campaigns
 auth: "Klaviyo-API-Key private key (scope campaigns:read)"

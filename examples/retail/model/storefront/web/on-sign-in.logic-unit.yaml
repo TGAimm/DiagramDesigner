@@ -1,6 +1,7 @@
 id: hy5f92tvpk
 parent: ffmcq3ieun
 name: onSignIn
+handles: [d3fyxqbq60]
 inputs:
   - { id: t72ygenv7j, name: signUp, type: bool, required: true, description: "Create account rather than Sign in" }
 outputs: []

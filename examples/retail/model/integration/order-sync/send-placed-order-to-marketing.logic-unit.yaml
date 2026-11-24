@@ -1,7 +1,7 @@
-# GAP: triggered by subscription order-created/marketing
 id: iosi0elpz7
 parent: w8lrzinusw
 name: sendPlacedOrderToMarketing
+handles: [gxsielh35y]
 inputs:
   - { id: tgad69xn4x, name: event, model: lf76fuj5g0, required: true }
 outputs: []

@@ -1,6 +1,7 @@
 id: miyjlklgpw
 parent: znpte2ol9p
 name: Get segments
+external: true
 method: GET
 path: /api/segments
 auth: "Klaviyo-API-Key private key (scope segments:read)"

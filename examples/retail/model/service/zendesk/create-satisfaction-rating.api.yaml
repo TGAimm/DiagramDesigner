@@ -1,6 +1,7 @@
 id: l21irab00e
 parent: dodjtgoau2
 name: Create satisfaction rating
+external: true
 method: POST
 path: /api/v2/tickets/{ticket_id}/satisfaction_rating
 auth: "OAuth bearer (end-user's token, from the CSAT e-mail link)"

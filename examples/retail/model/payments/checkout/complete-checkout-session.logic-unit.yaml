@@ -1,7 +1,7 @@
-# GAP: triggered by the shopper paying on the Stripe-hosted page (a UI, not an api)
 id: q2n9lcnfqf
 parent: pbv5f8a0tz
 name: completeCheckoutSession
+handles: [a0mh1szd0e]
 inputs:
   - { id: ukiyjp2ck6, name: session, type: string, required: true }
   - { id: ew84r9btpg, name: payment_method, type: string, required: true, description: what the shopper entered on the hosted page }

@@ -1,8 +1,7 @@
-# GAP: scheduled trigger
 id: a3uenpvg33
 parent: f1xy7xguug
 name: syncPricesDelta
-meta: { schedule: "*/5 * * * *" }
+handles: [dblfs4n4g9]
 inputs: []
 outputs: []
 steps:
@@ -23,6 +22,6 @@ steps:
                 then:
                   - { note: skip }
                 else:
-                  - { call: khrlg0wtb1, with: "kind price, the line; MessageId = <systemId>-<lastModifiedDateTime>" }
+                  - { send: po6jg0vom1, with: "kind price, the line; MessageId = <systemId>-<lastModifiedDateTime>" }
                   - { write: dcsafzlsgm, note: "upsert; lastSeenRun unchanged (only the full sync sets it)" }
           - { write: nanvethhnv, note: "highest lastModifiedDateTime of the read, ok, items" }

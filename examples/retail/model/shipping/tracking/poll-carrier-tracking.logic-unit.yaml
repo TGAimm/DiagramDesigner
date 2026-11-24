@@ -1,8 +1,7 @@
-# GAP: scheduled trigger
 id: vpruczzecm
 parent: vssqq48tt7
 name: pollCarrierTracking
-meta: { schedule: "*/15 * * * *" }
+handles: [uzshr58d1r]
 inputs: []
 outputs: []
 steps:

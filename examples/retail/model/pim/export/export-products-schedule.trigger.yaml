@@ -1,0 +1,4 @@
+id: vu2may5a26
+parent: lawdrrqrtr
+name: exportProductsSchedule
+schedule: { cron: "0 2 * * *" }

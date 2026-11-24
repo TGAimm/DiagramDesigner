@@ -1,9 +1,8 @@
-# GAP: scheduled trigger
 # ERP items and store prices > the POS product catalogue (nightly, before the stores open).
 id: gd71igzb7k
 parent: nlc4zljjz8
 name: pushPosCatalog
-meta: { schedule: "0 5 * * *" }
+handles: [zqhklx5sj1]
 inputs: []
 outputs: []
 steps:

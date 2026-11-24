@@ -1,0 +1,5 @@
+id: ee3474plqg
+parent: g55sb0eqd6
+name: syncRetry
+on: { channel: j8gfo2hjha, event: received }
+with: the RetryEnvelope

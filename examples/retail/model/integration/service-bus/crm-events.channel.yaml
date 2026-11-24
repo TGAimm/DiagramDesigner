@@ -1,0 +1,8 @@
+# Sent by the CRM's Dataverse service endpoint (steps on Merge of contact and Update of
+# contact.fjeld_loyaltytier).
+id: lpr44cqgdy
+parent: g55sb0eqd6
+name: crm-events
+type: topic
+carries: yaicuu7opu
+via: Azure Service Bus

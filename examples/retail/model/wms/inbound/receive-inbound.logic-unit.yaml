@@ -1,7 +1,7 @@
-# Started at goods-in when the receiver closes a delivery on the RF handheld.
 id: fqizmw355g
 parent: p6h0yiqcjm
 name: receiveInbound
+handles: [brz17i5e8j]
 inputs:
   - { id: b09iqyv7kc, name: asnNo, type: string, required: true }
   - { id: l0j6xbiy3f, name: lines, type: "{ean, qty, qtyDamaged, lotNo}", many: true, required: true, description: one per item counted }

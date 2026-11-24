@@ -1,6 +1,7 @@
 id: l610cp7gg1
 parent: i3cjkl2kdw
 name: List return reasons
+external: true
 method: GET
 path: /return-reasons
 auth: none

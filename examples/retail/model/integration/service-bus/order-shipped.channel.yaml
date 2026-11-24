@@ -1,0 +1,6 @@
+id: xm1c45pg8f
+parent: g55sb0eqd6
+name: order-shipped
+type: topic
+carries: hzf00evl4i
+via: Azure Service Bus

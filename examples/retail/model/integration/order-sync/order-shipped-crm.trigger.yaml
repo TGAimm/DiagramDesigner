@@ -1,0 +1,5 @@
+id: q4ioyua2y3
+parent: w8lrzinusw
+name: orderShippedCrm
+on: { channel: xm1c45pg8f, subscription: crm, event: received }
+with: the OrderShippedEvent

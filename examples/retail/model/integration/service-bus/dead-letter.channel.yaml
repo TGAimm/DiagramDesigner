@@ -1,0 +1,9 @@
+# Messages that will never succeed: retries exhausted, or a 400 from the target.
+# GAP: Service Bus has a dead-letter subqueue per entity; Fjeld forwards them all to one queue the ops API reads.
+# GAP: resubmitDeadLetter receives from it on request (peek by sequence number), so no trigger listens.
+id: vtjm4tg6k0
+parent: g55sb0eqd6
+name: dead-letter
+type: queue
+carries: vxed7chciz
+via: Azure Service Bus

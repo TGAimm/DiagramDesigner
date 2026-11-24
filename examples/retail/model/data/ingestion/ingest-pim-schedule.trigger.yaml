@@ -1,0 +1,4 @@
+id: z5q155dgnk
+parent: oyqmyb5nc3
+name: ingestPimSchedule
+schedule: { cron: "0 3 * * *" }

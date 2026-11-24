@@ -1,8 +1,8 @@
-# GAP: triggered by subscription return-created/returns
 # Flow 6: Commerce return info, ERP sales return order, WMS expected return.
 id: b4f1yt0wrg
 parent: sicmj00m5m
 name: onReturnCreated
+handles: [z1vpxe4ytc]
 inputs:
   - { id: mukupgwiei, name: event, model: ybi20fgqqc, required: true }
 outputs: []
@@ -23,7 +23,7 @@ steps:
       - { call: h3vvganqxl, with: "$filter externalDocumentNumber eq '<order number>'", gets: invoices }
       - if: no invoices
         then:
-          - { call: wrbtf9xjcp, with: "attempt + 1, notBefore + 4 h" }
+          - { send: j8gfo2hjha, with: "attempt + 1, notBefore + 4 h" }
           - { fail: noInvoice }
       - { note: "map to ErpReturnOrderDraft" }
       - { call: fj50ns4hdq, with: the draft, gets: return order }

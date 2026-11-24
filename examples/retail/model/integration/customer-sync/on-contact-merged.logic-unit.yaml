@@ -1,7 +1,7 @@
-# GAP: triggered by subscription crm-events/contact-merged
 id: dxeaxx8hkw
 parent: mwg6alxci7
 name: onContactMerged
+handles: [lotqizohw1]
 inputs:
   - { id: ad3qb0smo6, name: context, model: yaicuu7opu, required: true }
 outputs: []

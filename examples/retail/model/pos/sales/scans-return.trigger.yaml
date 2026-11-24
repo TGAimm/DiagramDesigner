@@ -1,0 +1,5 @@
+id: xhew2t6j11
+parent: cael6ntd06
+name: scansReturn
+by: { user: the cashier scans a receipt barcode (or a webshop order number) and picks lines to return }
+with: "the register, the cashier, the receipt or order number and the lines returned"

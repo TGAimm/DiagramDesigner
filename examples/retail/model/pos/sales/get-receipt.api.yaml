@@ -1,6 +1,7 @@
 id: plo0vltj6b
 parent: cael6ntd06
 name: Get receipt
+external: true
 method: GET
 path: /v2/receipts/{receiptNo}
 auth: bearer (API key per integration user)

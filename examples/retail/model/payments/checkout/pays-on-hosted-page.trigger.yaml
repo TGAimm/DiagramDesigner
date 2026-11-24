@@ -1,0 +1,5 @@
+id: a0mh1szd0e
+parent: pbv5f8a0tz
+name: paysOnHostedPage
+by: { user: the shopper pays on the Stripe-hosted Checkout page }
+with: the session and the payment method entered

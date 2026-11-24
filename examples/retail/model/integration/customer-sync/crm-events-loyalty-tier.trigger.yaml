@@ -1,0 +1,5 @@
+id: fxfd2izx1j
+parent: mwg6alxci7
+name: crmEventsLoyaltyTier
+on: { channel: lpr44cqgdy, subscription: loyalty-tier, event: received, filter: "MessageName = 'Update' AND PrimaryEntityName = 'contact'" }
+with: the RemoteExecutionContext of the contact Update

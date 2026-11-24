@@ -41,7 +41,7 @@ Open goals only. **Remove a goal once it is achieved**; keep this list lean.
 ## Modelling gaps
 
 Things real landscapes have that the schema cannot express yet, found by modelling
-`examples/retail` (15 systems). Each is marked there with a `# GAP:` comment (about 500);
+`examples/retail` (15 systems). Each is marked there with a `# GAP:` comment (about 450);
 `grep -rn "# GAP" examples/retail` finds the concrete cases. The workarounds in use are in
 `examples/retail/README.md`.
 
@@ -50,13 +50,9 @@ Interfaces and triggers:
 - Async messaging: channels, their senders and the triggers on their events are drawn now
   (see [channel](schema/channel.md)); still missing are batch receive, sessions and ordering,
   and subscription filters beyond free text.
-- Move `examples/retail`'s faked `POST /topics/...` apis to channels and `send` steps.
 - Interfaces beyond HTTP: GraphQL operations, SQL endpoints, file exchange (CSV over SFTP:
   one row per line grouped into orders, error and archive files, folders owned by another
   system), hardware (card terminals, fiscal signing units).
-- Move `examples/retail`'s scheduled units from `meta: { schedule }` to trigger entities,
-  give its page, till and handheld handlers `by` triggers, and mark the vendor apis other
-  systems call `external`; its `unreached` warnings name each unit and api left.
 - Endpoints outside the landscape (carrier APIs) with no system to point at.
 - Browser redirects that carry results in the Location query (OAuth `code`, `state`).
 - Batch requests (`$batch`, multipart) holding other api calls; async work after the

@@ -1,7 +1,7 @@
-# GAP: triggered by subscription commerce-messages/integration-router
 id: ql9pk508g8
 parent: g55sb0eqd6
 name: routeCommerceMessage
+handles: [a09m8jsv6g]
 inputs:
   - { id: iyy2dn4a5j, name: message, model: r36jmkzojw, required: true }
 outputs: []
@@ -16,10 +16,10 @@ steps:
       - { write: nmk8vxeclz, note: in_progress }
       - if: message.type is OrderCreated
         then:
-          - { call: ba2q7bu3qj, with: "OrderCreatedEvent from message.order; user properties country, collectStoreKey" }
+          - { send: any5wrqb8o, with: "OrderCreatedEvent from message.order; user properties country, collectStoreKey" }
       - if: message.type is CustomerCreated
         then:
-          - { call: wo8taaexfr, with: "CustomerChangedEvent from message.customer, change created" }
+          - { send: y3pzll2wqs, with: "CustomerChangedEvent from message.customer, change created" }
       - if: "message.type is OrderStateChanged, OrderShipmentStateChanged, ReturnInfoAdded or PaymentTransactionStateChanged"
         then:
           - { note: "an echo of Integration's own update actions (author is the integration API client): log and drop" }

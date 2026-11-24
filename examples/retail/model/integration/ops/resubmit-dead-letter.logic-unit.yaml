@@ -12,6 +12,6 @@ steps:
   - if: not there
     then:
       - { fail: notFound }
-  - { call: wrbtf9xjcp, with: "the envelope, attempt 1, notBefore now" }
+  - { send: j8gfo2hjha, with: "the envelope, attempt 1, notBefore now" }
   - { write: wlmvgl2qp8, note: "resolvedAt, resolvedBy resubmit by <user>" }
   - { write: yguluhbf6w, note: resubmitted }

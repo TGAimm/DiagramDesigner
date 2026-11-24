@@ -1,0 +1,4 @@
+id: xezpwywrfn
+parent: myr8ju3xsr
+name: processShipmentConfirmationsSchedule
+schedule: { cron: "10,40 * * * *" }

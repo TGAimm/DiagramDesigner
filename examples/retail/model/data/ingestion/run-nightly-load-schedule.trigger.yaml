@@ -1,0 +1,4 @@
+id: zyhl8itxc8
+parent: oyqmyb5nc3
+name: runNightlyLoadSchedule
+schedule: { cron: "0 5 * * *" }

@@ -1,0 +1,5 @@
+id: wrcn3llghp
+parent: mbno02j577
+name: opensListing
+by: { user: "opens a category or a search, or changes its filters, sort or page" }
+with: "the category path, query, filters, sort and page from the URL"

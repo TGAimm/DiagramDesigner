@@ -1,6 +1,7 @@
 id: lzgefs75au
 parent: z4a8fcfwai
 name: OpenID configuration
+external: true
 method: GET
 path: /{tenant}/v2.0/.well-known/openid-configuration
 auth: none

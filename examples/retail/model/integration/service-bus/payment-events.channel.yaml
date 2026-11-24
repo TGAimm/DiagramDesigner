@@ -1,0 +1,6 @@
+id: lsoszlwm6y
+parent: g55sb0eqd6
+name: payment-events
+type: topic
+carries: mumhsnhnkb
+via: Azure Service Bus

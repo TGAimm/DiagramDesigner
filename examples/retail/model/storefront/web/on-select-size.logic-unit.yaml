@@ -1,6 +1,7 @@
 id: mvqvpm1eun
 parent: fdjbxyzftg
 name: onSelectSize
+handles: [z9o6o49ln7]
 inputs:
   - { id: t05ihhxwe0, name: sku, type: string, required: true }
 outputs: []

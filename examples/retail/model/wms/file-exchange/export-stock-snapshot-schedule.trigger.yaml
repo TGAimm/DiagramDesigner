@@ -1,0 +1,4 @@
+id: a0jreuqymn
+parent: c636znasve
+name: exportStockSnapshotSchedule
+schedule: { cron: "0 2 * * *" }

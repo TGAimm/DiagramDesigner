@@ -1,0 +1,4 @@
+id: l03c8o1jy2
+parent: myr8ju3xsr
+name: pushItemsToWmsSchedule
+schedule: { cron: "50 * * * *" }

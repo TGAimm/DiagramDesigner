@@ -1,0 +1,4 @@
+id: uzshr58d1r
+parent: vssqq48tt7
+name: pollCarrierTrackingSchedule
+schedule: { cron: "*/15 * * * *" }

@@ -1,0 +1,4 @@
+id: hcy7xc6ylp
+parent: sicmj00m5m
+name: processReturnReceiptsSchedule
+schedule: { cron: "20 * * * *" }

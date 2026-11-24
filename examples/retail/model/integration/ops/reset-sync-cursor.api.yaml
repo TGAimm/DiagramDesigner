@@ -1,6 +1,7 @@
 id: sx6zs6jcwh
 parent: y5739ri6l0
 name: Reset sync cursor
+external: true
 method: PUT
 path: /ops/sync-cursors/{source}/{entity}
 auth: "bearer (Entra ID, app role Integration.Operator)"

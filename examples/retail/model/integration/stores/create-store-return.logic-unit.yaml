@@ -23,5 +23,5 @@ steps:
   - if: a line's quantity > bought - returned, or today > shipped + window
     then:
       - { fail: notReturnable }
-  - { call: qgcqi7t2ku, with: "ReturnCreatedEvent: returnId new uuid, rmaNumber S<storeNo>-<receiptNo>, channel store, storeNo, items with line item id, sku, quantity, reason, condition 'checked in store'" }
+  - { send: ljarmi0cvb, with: "ReturnCreatedEvent: returnId new uuid, rmaNumber S<storeNo>-<receiptNo>, channel store, storeNo, items with line item id, sku, quantity, reason, condition 'checked in store'" }
   - { return: rmaNumber }

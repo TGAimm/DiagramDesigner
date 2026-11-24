@@ -1,6 +1,7 @@
 id: k5fwoyuzi6
 parent: ktxxdlpyeb
 name: Save synonyms
+external: true
 method: POST
 path: /1/indexes/{indexName}/synonyms/batch
 auth: "X-Algolia-Application-Id + X-Algolia-API-Key (admin key: editSettings ACL)"

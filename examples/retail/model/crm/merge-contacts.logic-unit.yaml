@@ -28,4 +28,4 @@ steps:
     else:
       - { write: lts0cl73lp, note: point the only member at the target }
   - { write: vw2khd7qyi, note: "target: UpdateContent columns; subordinate: statecode Inactive, merged true, masterid = target" }
-  - { call: ou5ubt8x3f, with: "RemoteExecutionContext of the Merge (service endpoint step on Merge of contact): target and subordinate commerce customer ids" }
+  - { send: lpr44cqgdy, with: "RemoteExecutionContext of the Merge (service endpoint step on Merge of contact): target and subordinate commerce customer ids" }

@@ -1,6 +1,7 @@
 id: ng7u4eyv23
 parent: y5739ri6l0
 name: Get message trail
+external: true
 method: GET
 path: /ops/messages
 auth: "bearer (Entra ID, app role Integration.Operator)"

@@ -1,8 +1,8 @@
-# GAP: scheduled trigger
 id: eo1mslhazk
 parent: oyqmyb5nc3
 name: ingestPim
-meta: { schedule: "0 3 * * *", pipeline: pl_ingest_pim, note: "the PIM Tailored Export lands at 01:00" }
+handles: [z5q155dgnk]
+meta: { pipeline: pl_ingest_pim, note: "the PIM Tailored Export lands at 01:00" }
 inputs: []
 outputs: []
 steps:

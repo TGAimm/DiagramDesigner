@@ -1,6 +1,7 @@
 id: rh9j0zqc59
 parent: yzg8gfwzwo
 name: List a customer's payment methods
+external: true
 method: GET
 path: /v1/customers/{customer}/payment_methods
 auth: bearer (secret key)

@@ -1,10 +1,9 @@
-# GAP: scheduled trigger
 # The 3PL's graded returns go to the returns portal as inspected; its status webhook then
 # starts the credit memo and refund (onReturnStatusChanged).
 id: pjrw9c5dai
 parent: sicmj00m5m
 name: processReturnReceipts
-meta: { schedule: "20 * * * *" }
+handles: [hcy7xc6ylp]
 inputs: []
 outputs: []
 steps:

@@ -1,8 +1,8 @@
-# GAP: triggered by subscription order-created/erp
 # Flow 3, step 1: the Commerce order becomes an ERP sales order, then goes to the 3PL or the store.
 id: l8plpyjwuy
 parent: w8lrzinusw
 name: onOrderCreated
+handles: [iycmijopht]
 inputs:
   - { id: zc6saj7z2d, name: event, model: lf76fuj5g0, required: true }
 outputs: []
@@ -25,12 +25,12 @@ steps:
       - if: 400
         then:
           - { write: wlmvgl2qp8, note: "retryable false, the ERP message" }
-          - { call: gxh7trguok, with: "the event, lastError" }
+          - { send: vtjm4tg6k0, with: "the event, lastError" }
           - { call: xdgvgxhc6p, with: "version, transitionState fjeld-order-state on-hold", gets: order }
           - { fail: rejectedByErp }
       - if: 429 or 5xx
         then:
-          - { call: wrbtf9xjcp, with: "the event, attempt 1, notBefore + 5 min" }
+          - { send: j8gfo2hjha, with: "the event, attempt 1, notBefore + 5 min" }
         else:
           - { write: n8ujyi0o8a, note: "erpCustomerNo, erpSalesOrderId, erpSalesOrderNo, status erp_created" }
           - { call: xdgvgxhc6p, with: "version, setCustomField erpOrderNo and erpCustomerNo, transitionState fjeld-order-state exported", gets: order }

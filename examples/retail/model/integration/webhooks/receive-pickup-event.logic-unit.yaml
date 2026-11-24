@@ -23,8 +23,8 @@ steps:
       - if: 400 from ERP
         then:
           - { write: wlmvgl2qp8, note: "e.g. no stock at the store location; retryable false: store-ops fixes the transfer" }
-          - { call: wrbtf9xjcp, with: "this event, attempt 1" }
+          - { send: j8gfo2hjha, with: "this event, attempt 1" }
         else:
-          - { call: kiohe6iu60, with: "OrderShippedEvent: source store, shippedAt = collectedAt, lines from the pickup order, erpShipmentNo" }
+          - { send: xm1c45pg8f, with: "OrderShippedEvent: source store, shippedAt = collectedAt, lines from the pickup order, erpShipmentNo" }
           - { write: n8ujyi0o8a, note: "status shipped" }
   - { write: yguluhbf6w, note: "processed, sourceSystem pos, businessKey order number" }

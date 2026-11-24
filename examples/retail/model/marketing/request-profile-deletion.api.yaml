@@ -1,6 +1,7 @@
 id: b8j7eah6ro
 parent: uewuqgvbe5
 name: Request profile deletion
+external: true
 method: POST
 path: /api/data-privacy-deletion-jobs
 auth: "Klaviyo-API-Key private key (scope data-privacy:write)"

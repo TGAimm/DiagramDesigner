@@ -1,0 +1,7 @@
+# Sent by the Commerce Subscription (destination AzureServiceBus, SAS key with Send).
+id: ru7tkusrat
+parent: g55sb0eqd6
+name: commerce-messages
+type: topic
+carries: r36jmkzojw
+via: Azure Service Bus

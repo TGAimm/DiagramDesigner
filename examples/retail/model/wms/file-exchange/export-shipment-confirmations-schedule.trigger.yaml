@@ -1,0 +1,4 @@
+id: nyvkwj86v6
+parent: c636znasve
+name: exportShipmentConfirmationsSchedule
+schedule: { cron: "5,35 * * * *" }

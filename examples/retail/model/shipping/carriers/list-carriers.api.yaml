@@ -1,6 +1,7 @@
 id: sece451wdf
 parent: ztyvug6ivb
 name: List carriers
+external: true
 method: GET
 path: /api/public/v3/carriers
 auth: basic (API user + key)

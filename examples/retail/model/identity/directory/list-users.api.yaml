@@ -1,6 +1,7 @@
 id: kc7narqpiq
 parent: xi92dufx8c
 name: List users
+external: true
 method: GET
 path: /v1.0/users
 auth: bearer (app-only Graph token, User.Read.All)

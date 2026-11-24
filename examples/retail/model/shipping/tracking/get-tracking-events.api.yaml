@@ -1,6 +1,7 @@
 id: qt6s9pvacp
 parent: vssqq48tt7
 name: Get tracking events
+external: true
 method: GET
 path: /api/public/v3/shipments/{id}/tracking_events
 auth: basic (API user + key)

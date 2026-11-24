@@ -1,9 +1,8 @@
-# GAP: scheduled trigger
 # Marketing has no webhook Fjeld can use for unsubscribes, so Integration polls its events.
 id: rizpxqbxwk
 parent: mwg6alxci7
 name: syncUnsubscribesToCrm
-meta: { schedule: "*/15 * * * *" }
+handles: [y3gmsjhwru]
 inputs: []
 outputs: []
 steps:

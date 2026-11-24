@@ -1,9 +1,8 @@
-# GAP: scheduled trigger
 # Flow 3: WMS shipment confirmation file > ERP posts the shipment (invoice by ERP job queue) > order-shipped.
 id: ehadqyob9i
 parent: myr8ju3xsr
 name: processShipmentConfirmations
-meta: { schedule: "10,40 * * * *" }
+handles: [xezpwywrfn]
 inputs: []
 outputs: []
 steps:
@@ -27,11 +26,11 @@ steps:
               - if: 400 or 404
                 then:
                   - { write: wlmvgl2qp8, note: "retryable false: erp-team (quantity over outstanding, no inventory)" }
-                  - { call: gxh7trguok, with: "the confirmation" }
+                  - { send: vtjm4tg6k0, with: "the confirmation" }
               - if: 201
                 then:
                   - { call: u1dn6w0tne, with: ids.erpSalesOrderId, gets: "salesOrder (fullyShipped)" }
-                  - { call: kiohe6iu60, with: "OrderShippedEvent: source wms, parcel, tracking, lines with Commerce line item ids from the order, orderComplete = fullyShipped; MessageId = <order no>-<parcel no>" }
+                  - { send: xm1c45pg8f, with: "OrderShippedEvent: source wms, parcel, tracking, lines with Commerce line item ids from the order, orderComplete = fullyShipped; MessageId = <order no>-<parcel no>" }
                   - { write: n8ujyi0o8a, note: "status shipped or partly_shipped" }
           - { write: cc1v719mlz, note: "processed or partly_failed" }
           - { note: "move the file to /fjeld/archive on the 3PL SFTP" }

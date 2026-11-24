@@ -1,9 +1,8 @@
-# GAP: scheduled trigger
-# GAP: triggered by subscription wms-outbound-orders (queue), drained on a timer instead of per message
+# GAP: drains queue wms-outbound-orders on a timer, up to 500 at a time (batch receive), not per message
 id: tym2hdmo28
 parent: myr8ju3xsr
 name: writeOrdersFile
-meta: { schedule: "*/15 6-22 * * *" }
+handles: [jhj7qu6oig]
 when: { flag: exafkh0xzs, is: off }
 inputs: []
 outputs: []

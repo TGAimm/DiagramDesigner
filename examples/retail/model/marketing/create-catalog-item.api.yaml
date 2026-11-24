@@ -1,6 +1,7 @@
 id: bai6zu9s9z
 parent: yrxcxi1txk
 name: Create catalog item
+external: true
 method: POST
 path: /api/catalog-items
 auth: "Klaviyo-API-Key private key (scope catalogs:write)"

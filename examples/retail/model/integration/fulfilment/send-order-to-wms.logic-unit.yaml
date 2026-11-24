@@ -20,5 +20,5 @@ steps:
           - { fail: rejectedByWms }
       - { write: n8ujyi0o8a, note: "wmsOrderId, status sent_to_wms" }
     off:
-      - { call: fcigjldhh4, with: "WmsOrderDraft; MessageId = ERP order no." }
+      - { send: ymp3pctvxc, with: "WmsOrderDraft; MessageId = ERP order no." }
       - { write: n8ujyi0o8a, note: "status sent_to_wms (in the next ORDERS file)" }

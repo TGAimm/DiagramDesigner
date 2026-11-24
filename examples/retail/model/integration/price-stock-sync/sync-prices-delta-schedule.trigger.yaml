@@ -1,0 +1,4 @@
+id: dblfs4n4g9
+parent: f1xy7xguug
+name: syncPricesDeltaSchedule
+schedule: { cron: "*/5 * * * *" }

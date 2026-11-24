@@ -1,0 +1,4 @@
+id: qd3ukpisap
+parent: oyqmyb5nc3
+name: ingestStripeSchedule
+schedule: { cron: "30 4 * * *" }

@@ -1,7 +1,7 @@
-# Started at the dock when the carrier's driver signs for the cage (gate scan of every SSCC).
 id: sv5wzexsb4
 parent: yvrhh8zk8f
 name: dispatchCarrierLoad
+handles: [as51b9vz4q]
 inputs:
   - { id: pogqkz1cew, name: carrierCode, type: string, required: true }
   - { id: ave880wyiu, name: scannedSscc, type: string, many: true, required: true }

@@ -1,0 +1,8 @@
+# Every function that hits a retryable error sends here with ScheduledEnqueueTimeUtc = the backoff;
+# a message only arrives at that time.
+id: j8gfo2hjha
+parent: g55sb0eqd6
+name: sync-retry
+type: queue
+carries: vxed7chciz
+via: Azure Service Bus

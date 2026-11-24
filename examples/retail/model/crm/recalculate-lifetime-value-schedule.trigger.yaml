@@ -1,0 +1,4 @@
+id: nrsg56woem
+parent: izc0a89lge
+name: recalculateLifetimeValueSchedule
+schedule: { cron: "0 2 * * *" }

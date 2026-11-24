@@ -1,9 +1,8 @@
-# GAP: scheduled trigger
 # Flow 4: Stripe payouts and their balance transactions > ERP general journal, posted when it nets to the payout.
 id: mso3kyetep
 parent: mwsgna90tw
 name: reconcilePayouts
-meta: { schedule: "0 6 * * *" }
+handles: [lbe77sqftr]
 inputs: []
 outputs: []
 steps:

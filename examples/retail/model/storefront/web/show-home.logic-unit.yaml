@@ -1,6 +1,7 @@
 id: bp1nfqvgx5
 parent: u86dgrutjt
 name: showHome
+handles: [ubkjw4vl20]
 inputs: []
 outputs:
   - { id: i7tjxwzfwd, name: rails, model: a4ypghsn5d, many: true }

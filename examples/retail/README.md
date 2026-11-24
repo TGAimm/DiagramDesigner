@@ -57,6 +57,16 @@ Integration).
 8. **Analytics:** Data Platform copies ERP, Commerce, Payments, CRM, WMS, POS and Marketing
    tables into bronze, cleans them in silver, and builds dims and facts in gold.
 
+## How work starts
+
+- Messages travel on channels in Integration › Service Bus (9 topics, 4 queues): publishers'
+  units `send` on them, and each subscriber has an `on` trigger in its own module.
+- Scheduled jobs have a schedule trigger beside the unit, with the cron the product runs.
+- Pages, tills, handhelds and the ERP and Stripe clients start their units with
+  `by: { user }` triggers.
+- Vendor apis that clients outside the design call (admin tools, the ops team) are
+  `external: true`.
+
 ## Conventions for things the schema can't say yet
 
 Model the nearest thing, keep it valid, and mark the line or file with a `# GAP: <what>`
@@ -64,10 +74,7 @@ comment so the gap can be found with `grep -rn "# GAP" examples/retail`.
 
 | real thing | write it as |
 | --- | --- |
-| Message topic or queue | an api on Integration › Service Bus: `POST /topics/<topic>` (or `/queues/<q>`), request body = the event model, owned by the publisher. Publishing is a `call` to it. |
-| Subscriber to a topic | a logic unit with no `handles`; first step a `note` naming the topic; `# GAP: triggered by subscription <topic>/<sub>` |
 | Webhook (Stripe, Commerce Subscription over HTTP) | a real api on the receiver; the sender's unit `call`s it. No gap. |
-| Scheduled job | a logic unit with no `handles`, `meta: { schedule: "<cron>" }`, `# GAP: scheduled trigger` |
 | File exchange (CSV, EDI) | a model for the file layout, `storedIn` an SFTP/Blob module; producer `write`s it, consumer `read`s it. `# GAP: file interface` |
 | Enum / status | `type: string`, `constraints: ["one of: a, b, c"]`, `# GAP: enum` |
 | SaaS product | `meta: { vendor: <Vendor>, product: <Product>, kind: saas }` on the root module |
@@ -78,7 +85,8 @@ Anything else that doesn't fit: model it as best you can, add `# GAP:` and say w
 
 ## Size
 
-15 systems, 155 modules, 371 models, 253 apis, 231 logic units, 3 flags: 1013 entity files.
+15 systems, 155 modules, 371 models, 240 apis, 231 logic units, 86 triggers, 13 channels,
+3 flags: 1099 entity files.
 
 ## Scenarios and flags
 

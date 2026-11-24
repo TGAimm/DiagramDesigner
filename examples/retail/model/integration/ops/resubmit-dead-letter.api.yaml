@@ -1,6 +1,7 @@
 id: upwd9cv0k6
 parent: y5739ri6l0
 name: Resubmit dead letter
+external: true
 method: POST
 path: /ops/dead-letters/{messageId}/resubmit
 auth: "bearer (Entra ID, app role Integration.Operator)"

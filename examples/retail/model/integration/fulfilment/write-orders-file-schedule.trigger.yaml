@@ -1,0 +1,4 @@
+id: jhj7qu6oig
+parent: myr8ju3xsr
+name: writeOrdersFileSchedule
+schedule: { cron: "*/15 6-22 * * *" }

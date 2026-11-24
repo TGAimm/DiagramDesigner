@@ -1,8 +1,8 @@
-# GAP: triggered by subscription price-stock-changed/pos
 # Flow 7: ERP stock per store location > POS store stock; store price changes during the day.
 id: jnmhn809ys
 parent: nlc4zljjz8
 name: applyPriceStockToPos
+handles: [ft300w8fid]
 inputs:
   - { id: c5w6vpji0u, name: event, model: j3qk5xyr4i, required: true }
 outputs: []

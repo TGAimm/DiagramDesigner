@@ -22,5 +22,5 @@ steps:
           - { note: skip }
         else:
           - { write: nmk8vxeclz, note: done }
-          - { call: iqqdoy991b, with: "pimUuid = subject, action, trigger pim-event; MessageId = event_id" }
+          - { send: p7ntmi4dis, with: "pimUuid = subject, action, trigger pim-event; MessageId = event_id" }
           - { write: yguluhbf6w, note: "processed, sourceSystem pim, businessKey identifier" }

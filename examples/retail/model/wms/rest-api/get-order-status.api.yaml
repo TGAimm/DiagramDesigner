@@ -1,6 +1,7 @@
 id: gqrhpmn4ti
 parent: m149ml603p
 name: Get order status
+external: true
 method: GET
 path: /v1/orders/{id}/status
 auth: bearer (OAuth 2.0 client credentials)

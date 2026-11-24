@@ -1,6 +1,7 @@
 id: bsdfg1ghgr
 parent: y5739ri6l0
 name: Get order ids
+external: true
 method: GET
 path: /ops/orders/{orderNumber}/ids
 auth: "bearer (Entra ID, app role Integration.Reader; also used by CX in Zendesk)"

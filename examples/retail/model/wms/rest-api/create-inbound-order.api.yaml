@@ -1,6 +1,7 @@
 id: akfhnx820f
 parent: m149ml603p
 name: Create inbound order (ASN)
+external: true
 method: POST
 path: /v1/inbound-orders
 auth: bearer (OAuth 2.0 client credentials)

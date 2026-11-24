@@ -1,8 +1,7 @@
-# GAP: scheduled trigger
 id: gso7uli5m9
 parent: yvrhh8zk8f
 name: planWaves
-meta: { schedule: "*/30 6-20 * * 1-6" }
+handles: [savmpzufgj]
 inputs: []
 outputs: []
 steps:

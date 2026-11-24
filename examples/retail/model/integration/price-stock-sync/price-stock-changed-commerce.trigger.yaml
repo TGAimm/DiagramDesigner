@@ -1,0 +1,5 @@
+id: oz0i8r9poe
+parent: f1xy7xguug
+name: priceStockChangedCommerce
+on: { channel: po6jg0vom1, subscription: commerce, event: received, filter: "kind = 'stock' OR priceListCode LIKE 'WEB-%' OR priceListCode LIKE 'CAMPAIGN-%'" }
+with: the PriceStockChangedEvent

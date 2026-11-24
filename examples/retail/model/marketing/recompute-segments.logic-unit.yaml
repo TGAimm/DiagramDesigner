@@ -1,8 +1,8 @@
-# GAP: scheduled trigger
 id: ni7w1v36p2
 parent: znpte2ol9p
 name: recomputeSegments
-meta: { schedule: "0 * * * *", note: "time-based conditions; event and property changes also update membership as they happen" }
+handles: [c7pjeqmw8v]
+meta: { note: "time-based conditions; event and property changes also update membership as they happen" }
 inputs: []
 outputs: []
 steps:

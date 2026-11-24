@@ -1,0 +1,4 @@
+id: f59is6oo13
+parent: oyqmyb5nc3
+name: ingestMarketingSchedule
+schedule: { cron: "40 * * * *" }

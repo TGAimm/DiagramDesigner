@@ -1,8 +1,8 @@
-# GAP: scheduled trigger
 id: i4mhbsjsv9
 parent: oyqmyb5nc3
 name: ingestCommerce
-meta: { schedule: "*/15 * * * *", pipeline: pl_ingest_commerce }
+handles: [h8i96uugah]
+meta: { pipeline: pl_ingest_commerce }
 inputs: []
 outputs: []
 steps:

@@ -1,0 +1,7 @@
+# One message per PIM product from the nightly file, so the sync runs at Commerce's pace (max 20 concurrent).
+id: gy61quhnaf
+parent: g55sb0eqd6
+name: pim-full-sync
+type: queue
+carries: no6pifpr62
+via: Azure Service Bus

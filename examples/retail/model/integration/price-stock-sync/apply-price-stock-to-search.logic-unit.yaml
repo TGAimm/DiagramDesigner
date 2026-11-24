@@ -1,7 +1,7 @@
-# GAP: triggered by subscription price-stock-changed/search
 id: kai0eqmgit
 parent: f1xy7xguug
 name: applyPriceStockToSearch
+handles: [kyxklqzqp6]
 inputs:
   - { id: zn5a5aknv1, name: events, model: j3qk5xyr4i, many: true, required: true, description: "a batch of up to 500 (Service Bus batch receive)" }
 outputs: []

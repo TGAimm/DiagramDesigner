@@ -1,10 +1,10 @@
 # The nightly pipeline: silver, then gold, then the semantic model. Each notebook runs as an
 # activity; a failure stops the chain and gold keeps yesterday's Delta version.
-# GAP: scheduled trigger
 id: g2lewxlcpe
 parent: oyqmyb5nc3
 name: runNightlyLoad
-meta: { schedule: "0 5 * * *", pipeline: pl_nightly_load, note: "after the ERP, POS, WMS, PIM and Stripe night loads" }
+handles: [zyhl8itxc8]
+meta: { pipeline: pl_nightly_load, note: "after the ERP, POS, WMS, PIM and Stripe night loads" }
 inputs: []
 outputs: []
 fails:

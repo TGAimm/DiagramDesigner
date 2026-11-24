@@ -1,0 +1,5 @@
+id: cdmyfh2i4g
+parent: mwg6alxci7
+name: customerChangedMarketing
+on: { channel: y3pzll2wqs, subscription: marketing, event: received }
+with: the CustomerChangedEvent

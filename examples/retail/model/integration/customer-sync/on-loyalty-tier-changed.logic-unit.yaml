@@ -1,7 +1,7 @@
-# GAP: triggered by subscription crm-events/loyalty-tier
 id: zmqalsjvkm
 parent: mwg6alxci7
 name: onLoyaltyTierChanged
+handles: [fxfd2izx1j]
 inputs:
   - { id: m2cj3hoo77, name: context, model: yaicuu7opu, required: true }
 outputs: []

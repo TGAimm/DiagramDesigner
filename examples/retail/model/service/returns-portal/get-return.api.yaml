@@ -1,6 +1,7 @@
 id: ti1x2twrbg
 parent: t6al4kcu16
 name: Get return
+external: true
 method: GET
 path: /returns/{returnId}
 auth: "portal session, or API key (Integration, agents' Zendesk app)"

@@ -1,6 +1,7 @@
 id: m3z4af533c
 parent: znpte2ol9p
 name: Add profiles to list
+external: true
 method: POST
 path: /api/lists/{id}/relationships/profiles
 auth: "Klaviyo-API-Key private key (scope lists:write)"

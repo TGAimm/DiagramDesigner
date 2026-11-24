@@ -1,0 +1,4 @@
+id: y3gmsjhwru
+parent: mwg6alxci7
+name: syncUnsubscribesToCrmSchedule
+schedule: { cron: "*/15 * * * *" }

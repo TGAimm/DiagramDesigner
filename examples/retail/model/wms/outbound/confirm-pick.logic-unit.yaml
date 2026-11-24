@@ -1,7 +1,7 @@
-# Started by a picker's scan on the RF handheld (the WMS's own app, no api in between).
 id: f376k81phm
 parent: yvrhh8zk8f
 name: confirmPick
+handles: [qt420xsmj7]
 inputs:
   - { id: mql9hl1rw7, name: pickTaskId, type: int, required: true }
   - { id: hsriuvy3xa, name: scannedLocation, type: string, required: true, description: bin barcode }

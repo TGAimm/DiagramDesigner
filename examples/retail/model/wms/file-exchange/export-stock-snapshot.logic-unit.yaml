@@ -1,8 +1,7 @@
-# GAP: scheduled trigger
 id: hzju80acci
 parent: c636znasve
 name: exportStockSnapshot
-meta: { schedule: "0 2 * * *" }
+handles: [a0jreuqymn]
 inputs: []
 outputs: []
 steps:

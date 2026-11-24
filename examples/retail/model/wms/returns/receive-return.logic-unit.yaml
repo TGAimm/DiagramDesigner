@@ -1,7 +1,7 @@
-# Started at the returns bench: the inspector scans the RMA on the label, then each item, and grades it.
 id: f14a5mppwr
 parent: oidhle7bm8
 name: receiveReturn
+handles: [nlwp29p6iz]
 inputs:
   - { id: oex3fna6uu, name: rmaNumber, type: string, nullable: true, description: "empty when the parcel has no RMA label" }
   - { id: rrjbvf08l9, name: ean, type: string, required: true }

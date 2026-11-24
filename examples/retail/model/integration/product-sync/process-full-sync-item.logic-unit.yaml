@@ -1,7 +1,7 @@
-# GAP: triggered by subscription pim-full-sync (queue)
 id: jtu915t6u8
 parent: w032iyqws6
 name: processFullSyncItem
+handles: [cjn37w7940]
 inputs:
   - { id: wyblt765wu, name: event, model: no6pifpr62, required: true }
 outputs: []
@@ -12,4 +12,4 @@ steps:
   - { write: yd9iwthx32, note: "lastSeenInExport = today" }
   - if: hash differs, or no row yet
     then:
-      - { call: iqqdoy991b, with: "the event as is (trigger nightly-full): syncProduct re-reads PIM so the newest content wins" }
+      - { send: p7ntmi4dis, with: "the event as is (trigger nightly-full): syncProduct re-reads PIM so the newest content wins" }

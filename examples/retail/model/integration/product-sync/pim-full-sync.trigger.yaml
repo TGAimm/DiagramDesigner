@@ -1,0 +1,5 @@
+id: cjn37w7940
+parent: w032iyqws6
+name: pimFullSync
+on: { channel: gy61quhnaf, event: received }
+with: the ProductChangedEvent

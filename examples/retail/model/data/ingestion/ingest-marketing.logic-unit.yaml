@@ -1,8 +1,8 @@
-# GAP: scheduled trigger
 id: k4p3vrefi8
 parent: oyqmyb5nc3
 name: ingestMarketing
-meta: { schedule: "40 * * * *", pipeline: pl_ingest_marketing, note: "Klaviyo rate limits: 75/s burst, 700/min steady on profiles" }
+handles: [f59is6oo13]
+meta: { pipeline: pl_ingest_marketing, note: "Klaviyo rate limits: 75/s burst, 700/min steady on profiles" }
 inputs: []
 outputs: []
 steps:

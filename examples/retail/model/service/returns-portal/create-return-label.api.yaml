@@ -1,6 +1,7 @@
 id: q97o3dq69n
 parent: jzdz677osb
 name: Create return label
+external: true
 method: POST
 path: /returns/{returnId}/label
 auth: portal session

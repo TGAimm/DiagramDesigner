@@ -1,0 +1,5 @@
+id: nlwp29p6iz
+parent: oidhle7bm8
+name: gradesReturn
+by: { user: "the inspector scans the RMA on the label and each item at the returns bench, and grades it" }
+with: "the RMA, the EAN, quantity, grade and note, and the inspector"

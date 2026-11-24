@@ -1,0 +1,5 @@
+id: gxsielh35y
+parent: w8lrzinusw
+name: orderCreatedMarketing
+on: { channel: any5wrqb8o, subscription: marketing, event: received }
+with: the OrderCreatedEvent

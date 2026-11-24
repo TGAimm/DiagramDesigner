@@ -1,6 +1,7 @@
 id: vyc82p7b21
 parent: vgv4575wz1
 name: Get store stock
+external: true
 method: GET
 path: /v2/stock
 auth: bearer (API key per integration user)

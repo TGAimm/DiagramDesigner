@@ -1,6 +1,7 @@
 id: gn60whiwfk
 parent: ktxxdlpyeb
 name: Set index settings
+external: true
 method: PUT
 path: /1/indexes/{indexName}/settings
 auth: "X-Algolia-Application-Id + X-Algolia-API-Key (admin key: editSettings ACL; deployed from the search-config repo)"

@@ -1,6 +1,7 @@
 id: elkigma0eu
 parent: scelhoohob
 name: Query messages
+external: true
 method: GET
 path: /{projectKey}/messages
 auth: "bearer (view_messages)"

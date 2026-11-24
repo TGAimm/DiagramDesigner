@@ -1,8 +1,7 @@
-# GAP: scheduled trigger
 id: iataau2vkk
 parent: c636znasve
 name: importInboundFiles
-meta: { schedule: "*/10 * * * *" }
+handles: [bukbosq8ui]
 inputs: []
 outputs: []
 steps:

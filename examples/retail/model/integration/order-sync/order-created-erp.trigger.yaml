@@ -1,0 +1,5 @@
+id: iycmijopht
+parent: w8lrzinusw
+name: orderCreatedErp
+on: { channel: any5wrqb8o, subscription: erp, event: received }
+with: the OrderCreatedEvent

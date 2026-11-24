@@ -1,6 +1,7 @@
 id: w7nc3iccbl
 parent: izc0a89lge
 name: Create account
+external: true
 method: POST
 path: /api/data/v9.2/accounts
 auth: OAuth 2.0 bearer (Entra ID app registration)

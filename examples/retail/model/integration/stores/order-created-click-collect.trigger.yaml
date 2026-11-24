@@ -1,0 +1,5 @@
+id: qo43ewbekh
+parent: nlc4zljjz8
+name: orderCreatedClickCollect
+on: { channel: any5wrqb8o, subscription: click-collect, event: received, filter: collectStoreKey IS NOT NULL }
+with: the OrderCreatedEvent

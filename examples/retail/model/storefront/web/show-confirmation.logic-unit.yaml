@@ -1,6 +1,7 @@
 id: l4qb6llpmv
 parent: ij7k9nyzqa
 name: showConfirmation
+handles: [dwaq4hkpp9]
 inputs:
   - { id: vjrkw2plcl, name: orderNumber, type: string, required: true }
 outputs:

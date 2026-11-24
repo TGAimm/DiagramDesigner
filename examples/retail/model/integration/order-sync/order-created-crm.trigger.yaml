@@ -1,0 +1,5 @@
+id: chvx1ihixv
+parent: w8lrzinusw
+name: orderCreatedCrm
+on: { channel: any5wrqb8o, subscription: crm, event: received }
+with: the OrderCreatedEvent

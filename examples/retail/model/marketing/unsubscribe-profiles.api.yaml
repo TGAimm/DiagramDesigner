@@ -1,6 +1,7 @@
 id: lszlprou4t
 parent: x27wyx0r8h
 name: Bulk unsubscribe profiles
+external: true
 method: POST
 path: /api/profile-subscription-bulk-delete-jobs
 auth: "Klaviyo-API-Key private key (scopes profiles:write, subscriptions:write)"

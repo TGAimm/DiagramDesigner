@@ -1,6 +1,7 @@
 id: xu66zbt2gd
 parent: dodjtgoau2
 name: List comments
+external: true
 method: GET
 path: /api/v2/tickets/{ticket_id}/comments
 auth: "basic (agent e-mail/token + API token) or OAuth bearer"
