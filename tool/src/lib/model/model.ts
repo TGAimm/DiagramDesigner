@@ -212,7 +212,13 @@ export function buildModel(
 		if (f.values && !f.type)
 			diag('error', 'field-shape', `${label}: values go with type`, fieldLoc, 'values');
 		if (f.discriminator !== undefined && !f.oneOf)
-			diag('error', 'field-shape', `${label}: discriminator goes with oneOf`, fieldLoc, 'discriminator');
+			diag(
+				'error',
+				'field-shape',
+				`${label}: discriminator goes with oneOf`,
+				fieldLoc,
+				'discriminator'
+			);
 		if (f.of !== undefined && !f.model)
 			diag('error', 'field-shape', `${label}: of goes with model`, fieldLoc, 'of');
 	};
@@ -221,14 +227,31 @@ export function buildModel(
 	const shapeRefs = (f: FieldShape, fieldLoc: Loc, label: string) => {
 		f.oneOf?.forEach((id, j) => {
 			if (model.elements.get(id)?.def.kind !== 'model')
-				diag('error', 'not-a-model', `${label}: oneOf names "${id}", which is not a model`, at(fieldLoc, 'oneOf', j));
+				diag(
+					'error',
+					'not-a-model',
+					`${label}: oneOf names "${id}", which is not a model`,
+					at(fieldLoc, 'oneOf', j)
+				);
 		});
 		const held = f.model ? model.elements.get(f.model) : undefined;
 		if (held?.def.kind !== 'model') return;
 		if (held.def.generic && f.of === undefined)
-			diag('error', 'field-generic', `${label}: "${held.name}" is generic, so give of (its ${held.def.generic})`, fieldLoc, 'model');
+			diag(
+				'error',
+				'field-generic',
+				`${label}: "${held.name}" is generic, so give of (its ${held.def.generic})`,
+				fieldLoc,
+				'model'
+			);
 		else if (!held.def.generic && f.of !== undefined)
-			diag('error', 'field-generic', `${label}: "${held.name}" is not generic, so it takes no of`, fieldLoc, 'of');
+			diag(
+				'error',
+				'field-generic',
+				`${label}: "${held.name}" is not generic, so it takes no of`,
+				fieldLoc,
+				'of'
+			);
 	};
 
 	/** Whether `id` is something a logic unit's `key` may name; reports it if not. */
@@ -330,7 +353,13 @@ export function buildModel(
 					k !== 'render' &&
 					k !== 'emit'
 				)
-					diag('error', 'logic-step', `with goes with call, send, read, render or emit`, stepLoc, 'with');
+					diag(
+						'error',
+						'logic-step',
+						`with goes with call, send, read, render or emit`,
+						stepLoc,
+						'with'
+					);
 				if (s.gets !== undefined && k !== 'call' && k !== 'read')
 					diag(
 						'error',
@@ -910,7 +939,12 @@ export function buildModel(
 				for (const key of ['to', 'from'] as const)
 					f[key]?.forEach((id, j) => {
 						if (id === f.id)
-							diag('error', 'lineage-cycle', `field "${f.name}" comes from itself`, at(fieldLoc, key, j));
+							diag(
+								'error',
+								'lineage-cycle',
+								`field "${f.name}" comes from itself`,
+								at(fieldLoc, key, j)
+							);
 						else if (!model.fields.has(id) && !(key === 'from' && model.apiFields.has(id)))
 							diag(
 								'error',

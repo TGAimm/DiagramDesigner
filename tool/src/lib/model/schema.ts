@@ -231,9 +231,7 @@ const shapeKeys = {
 	of: z
 		.string()
 		.optional()
-		.describe(
-			'With model, when that model is generic: the model id or type filling its parameter'
-		),
+		.describe('With model, when that model is generic: the model id or type filling its parameter'),
 	constraints: z
 		.array(Text)
 		.optional()
@@ -430,9 +428,11 @@ export const LogicStep: z.ZodType<LogicStep> = z
 			return z
 				.record(z.string(), z.array(LogicStep))
 				.optional()
-				.describe("With render: the steps run on each event the rendered unit emits, by its name");
+				.describe('With render: the steps run on each event the rendered unit emits, by its name');
 		},
-		emit: Text.optional().describe("Name of one of the unit's emits it raises; with: what it passes"),
+		emit: Text.optional().describe(
+			"Name of one of the unit's emits it raises; with: what it passes"
+		),
 		note: Text.optional().describe('Free text; alone, work the unit does itself')
 	})
 	.describe('One step of a logic unit, in order');
@@ -481,14 +481,18 @@ export const EntityFile = z
 		emits: z
 			.array(LogicField)
 			.optional()
-			.describe('Logic units only: the events it raises to whatever renders it, each with what it passes'),
+			.describe(
+				'Logic units only: the events it raises to whatever renders it, each with what it passes'
+			),
 		dead: Text.optional().describe(
 			'Logic units and apis: nothing starts or calls it, and why; drawn as dead code'
 		),
 		generic: z
 			.string()
 			.optional()
-			.describe('Models only: name of its type parameter, used as a field type; holders fill it with of'),
+			.describe(
+				'Models only: name of its type parameter, used as a field type; holders fill it with of'
+			),
 		by: By.optional(),
 		steps: z
 			.array(LogicStep)

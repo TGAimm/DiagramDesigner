@@ -1516,15 +1516,15 @@
 	}
 
 	/** A field's card: what it refers to, holds, comes from, and what uses it. */
-	function fieldCardOf(
-		f: FieldRef | null
-	): {
-		title: string;
-		type: string;
-		description?: string;
-		constraints: string[];
-		sections: Section[];
-	} | undefined {
+	function fieldCardOf(f: FieldRef | null):
+		| {
+				title: string;
+				type: string;
+				description?: string;
+				constraints: string[];
+				sections: Section[];
+		  }
+		| undefined {
 		const b = f && boxById.get(f.box);
 		const info = f && model.fields.get(f.field);
 		if (!f || !b || !info) return undefined;

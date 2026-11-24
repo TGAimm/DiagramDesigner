@@ -220,7 +220,8 @@
 											>{/each}{#if fit.more}<span
 												class="badge more"
 												style:font-size="{TABLE.badge}px"
-												title={constraintsOf(f).slice(fit.shown.length).join('\n')}>+{fit.more}</span
+												title={constraintsOf(f).slice(fit.shown.length).join('\n')}
+												>+{fit.more}</span
 											>{/if}
 									{:else}
 										{#each c.slots ?? [] as s (s)}

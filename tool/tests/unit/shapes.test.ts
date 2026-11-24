@@ -93,9 +93,17 @@ describe('lineage through api fields', () => {
 	it('lets a model field or a response field come from another api’s field', () => {
 		expect(
 			diags({
-				's/src.api.yaml': api('src', '{ id: src-price, name: price, type: decimal, derived: computed }'),
-				's/proxy.api.yaml': api('proxy', '{ id: proxy-price, name: price, type: decimal, from: [src-price] }'),
-				's/x.model.yaml': model(['{ id: x-price, name: price, type: decimal, from: [proxy-price] }'])
+				's/src.api.yaml': api(
+					'src',
+					'{ id: src-price, name: price, type: decimal, derived: computed }'
+				),
+				's/proxy.api.yaml': api(
+					'proxy',
+					'{ id: proxy-price, name: price, type: decimal, from: [src-price] }'
+				),
+				's/x.model.yaml': model([
+					'{ id: x-price, name: price, type: decimal, from: [proxy-price] }'
+				])
 			})
 		).toEqual([]);
 	});
@@ -113,7 +121,10 @@ describe('lineage through api fields', () => {
 describe('render and emit', () => {
 	const unit = (id: string, extra: string[]) =>
 		[`id: ${id}`, 'parent: m', 'inputs: []', 'outputs: []', ...extra].join('\n');
-	const files = (parentSteps: string, childEmits = 'emits: [{ id: c-sel, name: select, type: string }]') => ({
+	const files = (
+		parentSteps: string,
+		childEmits = 'emits: [{ id: c-sel, name: select, type: string }]'
+	) => ({
 		's/p.logic-unit.yaml': unit('p', ['steps:', parentSteps]),
 		's/c.logic-unit.yaml': unit('c', [childEmits, 'steps: [{ emit: select, with: the id }]'])
 	});

@@ -38,10 +38,7 @@ describe('reach', () => {
 
 	it('warns only where nothing starts or calls a unit, and where live code uses dead code', () => {
 		expect(warnings(load())).toEqual([
-			[
-				'unreached',
-				'nothing starts or calls logic unit "stray"; add a trigger, or dead: <why>'
-			]
+			['unreached', 'nothing starts or calls logic unit "stray"; add a trigger, or dead: <why>']
 		]);
 		const m = load({
 			's/save.logic-unit.yaml': unit('save', ['dead: unused', 'steps: [{ call: old }]'])
