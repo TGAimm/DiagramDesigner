@@ -71,7 +71,7 @@ export const triggerWords = (def: Element, model?: Model, name?: string): string
 				: scheduleWords(def.schedule);
 
 /**
- * The glyph a trigger row wears: its event's, a person, cogs or an arrow out for `by`, a clock
+ * The glyph a trigger row wears: its event's, a person, sliders or an arrow out for `by`, a clock
  * for a schedule, an envelope for a message.
  */
 export const triggerGlyph = (def: Element): string =>
