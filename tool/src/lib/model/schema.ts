@@ -42,6 +42,10 @@ export interface Element {
 	inputs?: LogicField[];
 	outputs?: LogicField[];
 	fails?: LogicFail[];
+	emits?: LogicField[];
+	dead?: string;
+	generic?: string;
+	by?: By;
 	steps?: LogicStep[];
 	key?: string;
 	default?: FlagValue;
@@ -145,6 +149,21 @@ export const TriggerOn = z
 export type TriggerOn = z.infer<typeof TriggerOn>;
 
 /** A queue gives each message to one receiver; a topic gives a copy to each subscription. */
+/**
+ * A trigger started from outside the design's own code: by a person, by the framework the code
+ * runs in, or by code or a system the design does not show. Exactly one key; its text says how.
+ */
+export const By = z
+	.strictObject({
+		user: Text.optional().describe('A person, e.g. clicks Add to cart, opens the product page'),
+		framework: Text.optional().describe(
+			'The runtime, e.g. ASP.NET builds the view component, Vue mounts the app'
+		),
+		outside: Text.optional().describe('Code or a system the design does not show')
+	})
+	.describe('Triggers only: who or what starts a run, when it is not a schedule or an event');
+export type By = z.infer<typeof By>;
+
 export const ChannelType = z.enum(['queue', 'topic']);
 export type ChannelType = z.infer<typeof ChannelType>;
 
@@ -186,21 +205,52 @@ export type FlagGate = z.infer<typeof FlagGate>;
  * (`storedIn`). Held models and `stored: false` fields exist only in the class; a ref to the
  * model that holds this one exists only in the table.
  */
+/**
+ * Shape keys every field kind shares (model, api and logic fields): what a value can be beyond
+ * one type or one model. A field is exactly one of `type`, `model` or `oneOf`.
+ */
+const shapeKeys = {
+	values: z
+		.array(Text)
+		.min(1)
+		.optional()
+		.describe('With type: the only values it may hold (an enum), in order'),
+	map: z
+		.string()
+		.optional()
+		.describe('A keyed map: the type of its keys; type, model or oneOf is the type of its values'),
+	oneOf: z
+		.array(Id)
+		.min(2)
+		.optional()
+		.describe('A union: ids of the models it may be, instead of type or model'),
+	discriminator: z
+		.string()
+		.optional()
+		.describe('With oneOf: name of the field telling the models apart'),
+	of: z
+		.string()
+		.optional()
+		.describe('With model, when that model is generic: the model id or type filling its parameter'),
+	constraints: z
+		.array(Text)
+		.optional()
+		.describe('Free-text rules such as unique, positive, max 200'),
+	description: Text.optional()
+};
+
 export const ModelField = z
 	.strictObject({
 		id: Id.describe('Unique across the whole model, like entity ids; generate with `sdv id`'),
 		name: z.string(),
-		type: z.string().optional().describe('Primitive type; give either type or model'),
+		type: z.string().optional().describe('Primitive type; give exactly one of type, model, oneOf'),
 		model: Id.optional().describe('Id of a model this field holds (composition)'),
 		many: z.boolean().optional().describe('Holds a list of type or model'),
+		...shapeKeys,
 		pk: z.boolean().optional().describe('Part of the primary key'),
 		pi: z.boolean().optional().describe('Part of the primary index'),
 		required: z.boolean().optional().describe('Must be given a value on create; default false'),
 		nullable: z.boolean().optional().describe('May hold null; default false'),
-		constraints: z
-			.array(Text)
-			.optional()
-			.describe('Free-text rules such as unique, positive, max 200'),
 		ref: Id.optional().describe('Id of the model or field this field points at (foreign key)'),
 		from: z
 			.array(Id)
@@ -252,9 +302,9 @@ export const ApiField = z
 		type: z.string().optional().describe('Primitive type; give either type or model'),
 		model: Id.optional().describe('Id of a model this field holds'),
 		many: z.boolean().optional().describe('Holds a list of type or model'),
+		...shapeKeys,
 		required: z.boolean().optional(),
 		nullable: z.boolean().optional(),
-		description: Text.optional(),
 		to: z
 			.array(Id)
 			.optional()
@@ -262,7 +312,9 @@ export const ApiField = z
 		from: z
 			.array(Id)
 			.optional()
-			.describe('Response fields: ids of the fields its value comes from'),
+			.describe(
+				'Response fields: ids of the fields its value comes from: model fields, or fields of another api'
+			),
 		derived: Text.optional().describe('How the value is changed on the way')
 	})
 	.describe('Field of a body shape written on the api');
@@ -298,11 +350,11 @@ export const LogicField = z
 		type: z.string().optional().describe('Primitive type; give either type or model'),
 		model: Id.optional().describe('Id of a model it is'),
 		many: z.boolean().optional().describe('A list of type or model'),
+		...shapeKeys,
 		required: z.boolean().optional(),
-		nullable: z.boolean().optional(),
-		description: Text.optional()
+		nullable: z.boolean().optional()
 	})
-	.describe('Input or output of a logic unit');
+	.describe('Input or output of a logic unit, or an event it emits');
 export type LogicField = z.infer<typeof LogicField>;
 
 export const LogicFail = z
@@ -332,6 +384,9 @@ export interface LogicStep {
 	flag?: string;
 	on?: LogicStep[];
 	off?: LogicStep[];
+	render?: string;
+	events?: Record<string, LogicStep[]>;
+	emit?: string;
 	note?: string;
 }
 export const LogicStep: z.ZodType<LogicStep> = z
@@ -366,6 +421,18 @@ export const LogicStep: z.ZodType<LogicStep> = z
 		get off() {
 			return z.array(LogicStep).optional();
 		},
+		render: Id.optional().describe(
+			'Id of the logic unit (a UI component) it renders; with holds what it passes (props)'
+		),
+		get events() {
+			return z
+				.record(z.string(), z.array(LogicStep))
+				.optional()
+				.describe('With render: the steps run on each event the rendered unit emits, by its name');
+		},
+		emit: Text.optional().describe(
+			"Name of one of the unit's emits it raises; with: what it passes"
+		),
 		note: Text.optional().describe('Free text; alone, work the unit does itself')
 	})
 	.describe('One step of a logic unit, in order');
@@ -411,6 +478,22 @@ export const EntityFile = z
 			.optional()
 			.describe('Logic units only, required: what it returns; [] for nothing'),
 		fails: z.array(LogicFail).optional().describe('Logic units only: the ways it can fail'),
+		emits: z
+			.array(LogicField)
+			.optional()
+			.describe(
+				'Logic units only: the events it raises to whatever renders it, each with what it passes'
+			),
+		dead: Text.optional().describe(
+			'Logic units and apis: nothing starts or calls it, and why; drawn as dead code'
+		),
+		generic: z
+			.string()
+			.optional()
+			.describe(
+				'Models only: name of its type parameter, used as a field type; holders fill it with of'
+			),
+		by: By.optional(),
 		steps: z
 			.array(LogicStep)
 			.optional()

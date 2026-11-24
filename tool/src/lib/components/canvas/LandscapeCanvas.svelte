@@ -54,6 +54,8 @@
 		shownRows,
 		TABLE,
 		typeText,
+		constraintsOf,
+		constraintLabel,
 		type FieldLink,
 		type Landscape,
 		type LandscapeBox
@@ -94,6 +96,7 @@
 	} from '#lib/landscape/apis.ts';
 	import { apiBodies, type Model } from '#lib/model/model.ts';
 	import { durationWords, nextRuns, scheduleWords } from '#lib/model/schedule.ts';
+	import { BY_WORDS, byOf, onWords } from '#lib/model/message.ts';
 	import {
 		routeKey,
 		type Point,
@@ -115,7 +118,6 @@
 	import CardPeek, { type CardData } from './CardPeek.svelte';
 	import GlLayer, { type GlHit, type GlLine } from './GlLayer.svelte';
 	import EntityGlyph, { type GlyphKind } from './EntityGlyph.svelte';
-	import { onWords } from '#lib/model/message.ts';
 	import ChangeSection from '#lib/components/ChangeSection.svelte';
 	import ChangesPanel from '#lib/components/ChangesPanel.svelte';
 	import EditMenu from '#lib/components/EditMenu.svelte';
@@ -1380,7 +1382,7 @@
 		{ id: 'from', label: 'Derives from', token: 'from', dash: '4 3' },
 		{ id: 'reads', label: 'Reads', token: 'ref' },
 		{ id: 'writes', label: 'Writes', token: 'write' },
-		{ id: 'calls', label: 'Calls, handled by', token: 'call', dash: '1.5 2.5' },
+		{ id: 'calls', label: 'Calls, renders, handled by', token: 'call', dash: '1.5 2.5' },
 		{ id: 'sends', label: 'Sends on', token: 'call' },
 		{ id: 'on', label: 'Listens to', token: 'event', dash: '4 2.5' }
 	];
@@ -1514,9 +1516,15 @@
 	}
 
 	/** A field's card: what it refers to, holds, comes from, and what uses it. */
-	function fieldCardOf(
-		f: FieldRef | null
-	): { title: string; type: string; constraints: string[]; sections: Section[] } | undefined {
+	function fieldCardOf(f: FieldRef | null):
+		| {
+				title: string;
+				type: string;
+				description?: string;
+				constraints: string[];
+				sections: Section[];
+		  }
+		| undefined {
 		const b = f && boxById.get(f.box);
 		const info = f && model.fields.get(f.field);
 		if (!f || !b || !info) return undefined;
@@ -1545,7 +1553,8 @@
 			title: `${el(info.modelId)?.name}.${def.name}`,
 			type: typeText(def, (id) => refLabel(model, id)),
 			// In full: the card cuts them to its column.
-			constraints: def.constraints ?? [],
+			constraints: constraintsOf(def),
+			description: def.description,
 			// Glyphs point at what depends on what: → this field on the entry, ← the entry on
 			// this field; dashed for lineage.
 			sections: [
@@ -1590,7 +1599,7 @@
 		const row = (x: LogicField, input: boolean) => ({
 			name: x.name + (input && !x.required ? '?' : ''),
 			type: typeText(x, (id) => refLabel(model, id)) + (x.nullable ? ' · nullable' : ''),
-			note: x.description
+			note: [x.description, ...constraintsOf(x).map(constraintLabel)].filter(Boolean).join(' · ')
 		});
 		const groups = [
 			{ label: 'Inputs', fails: false, rows: (u.def.inputs ?? []).map((x) => row(x, true)) },
@@ -1599,7 +1608,9 @@
 				label: 'Fails',
 				fails: true,
 				rows: (u.def.fails ?? []).map((x) => ({ name: x.name, type: '', note: x.description }))
-			}
+			},
+			{ label: 'Emits', fails: false, rows: (u.def.emits ?? []).map((x) => row(x, false)) },
+			{ label: 'Dead code', fails: false, rows: deadRows(u.id) }
 		].filter((g) => g.rows.length);
 		return {
 			title: u.name,
@@ -1610,6 +1621,22 @@
 		};
 	}
 	const unitCard = $derived(unitCardOf(view.field?.field));
+
+	/** Why a unit or api is dead code, as card rows; none when it runs. */
+	function deadRows(id: string) {
+		const r = model.reach?.get(id);
+		if (!r || r.state === 'live') return [];
+		const names = r.callers.map((c) => el(c)?.name ?? c).join(', ');
+		return [
+			{
+				name:
+					r.why ??
+					(r.state === 'unreached' ? 'Nothing starts or calls it' : `Only dead code uses it`),
+				type: '',
+				note: names ? `Used by ${names}` : undefined
+			}
+		];
+	}
 
 	/** A pane entry: a unit or trigger, where it lives, and where clicking it goes. */
 	interface PaneEntry {
@@ -1781,6 +1808,19 @@
 				groups: [...groups, handled]
 			};
 		}
+		const by = byOf(d.by);
+		if (by)
+			return {
+				title: t.name,
+				sub: `Trigger · ${pathOf(t.parentId)}`,
+				glyph: by.who,
+				source: {
+					label: 'Started by',
+					rows: [...fact('Who', BY_WORDS[by.who]), ...fact('How', by.how)]
+				},
+				run: shared,
+				groups: [handled]
+			};
 		if (d.message) {
 			const m = d.message;
 			return {
@@ -1976,6 +2016,7 @@
 				{ label: 'Called by', entries: units('calls') }
 			].filter((s) => s.entries.length),
 			sub: [a.name, pathOf(a.parentId), d.auth && `auth: ${d.auth}`].filter(Boolean).join(' · '),
+			dead: deadRows(a.id)[0],
 			params: d.params ?? [],
 			request: bodies.find((b) => b.part === 'request'),
 			responses: bodies.filter((b) => b.part !== 'request')
@@ -2973,6 +3014,9 @@
 		pick: (at: PeekAt) => void,
 		open?: string
 	)}
+		{#if card.description}
+			<p class="description">{card.description}</p>
+		{/if}
 		{#if card.constraints.length}
 			<section class="constraints">
 				<h4>Constraints</h4>
@@ -3218,6 +3262,11 @@
 				<span class="mono"><Ident text={api.path} /></span>
 			</div>
 			<div class="type">{api.sub}</div>
+			{#if api.dead}
+				<div class="dead-note">
+					Dead code · {api.dead.name}{api.dead.note ? ` · ${api.dead.note}` : ''}
+				</div>
+			{/if}
 		</div>
 	{/snippet}
 	{#snippet fieldTitle(f: NonNullable<ReturnType<typeof fieldCardOf>>)}
@@ -3927,6 +3976,15 @@
 	}
 	.inspector .pane-body > :global(:first-child) {
 		border-top: none;
+	}
+	.inspector .dead-note {
+		font-size: 11px;
+		color: var(--sdv-text-muted);
+	}
+	.inspector .description {
+		margin: 8px 12px;
+		font-size: 12px;
+		max-width: 360px;
 	}
 	.inspector h4 {
 		margin: 2px 12px 4px;

@@ -2,9 +2,10 @@
 
 What starts a [logic unit](logic-unit.md) when no request or call does. An [api](api.md) is a
 unit's entry point for a request; a trigger is its entry point for everything else. It has
-exactly one source: a **schedule** (it runs at set times) or **on**, one event of one source it
+exactly one source: a **schedule** (it runs at set times), **on**, one event of one source it
 listens to: a [channel](channel.md) (a queue or topic) or a stored [model](model.md) (a table
-or a file). A unit lists it in `handles`, as it lists an api.
+or a file), or **by**, someone or something outside the design's code. A unit lists it in
+`handles`, as it lists an api.
 
 ```yaml
 # webshop/purge-old-carts.trigger.yaml
@@ -36,6 +37,17 @@ on: { channel: t0p1cad0ed, subscription: ProductGroupEntityListener,
 on: { model: ziygb1l2gb, event: updated, fields: [rtdhe3ps8e] }  # a row's Amount changed
 on: { model: u2jjx8u76s, event: created, path: "ax-data/*.json" } # a file landed
 ```
+
+```yaml
+# by: who starts it, when no schedule or event in the design does; exactly one key
+by: { user: clicks Add to cart }                    # a person, in a page or an app
+by: { framework: Vue mounts the app }               # the runtime the code runs in
+by: { outside: Azure Function timer in another repo } # code or a system the design does not show
+with: the product shown and the quantity picked
+```
+
+A `by` trigger makes a page handler, a component the framework builds, or a callback from
+outside a live entry point, so it is not dead code (see [logic-unit](logic-unit.md#dead-code)).
 
 ## Sources and their events
 
@@ -79,7 +91,8 @@ the rest of every file as it is.
 
 ## Validation
 
-- Errors: not exactly one of `schedule`, `on` and `message` (`trigger-source`); not exactly
+- Errors: not exactly one of `schedule`, `on`, `by` and `message` (`trigger-source`);
+  `by` without exactly one of `user`, `framework` and `outside` (`trigger-by`); not exactly
   one of `cron`, `every` and `at`, a cron that is not 5 valid fields, a malformed `every` or
   `at`, an unknown `tz`, or `tz` with `every` (`trigger-schedule`); `on` without exactly one of
   `channel` and `model`, naming the wrong kind or an unstored model, `subscription` off a topic,

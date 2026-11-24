@@ -1,6 +1,7 @@
 id: g78if9lp04
 parent: al7b2jxi6l
 name: onChangeQuantity
+handles: [tptnqxisfg]
 inputs:
   - { id: jyyx8vk4rm, name: lineId, type: uuid, required: true }
   - { id: v9k9a5if45, name: quantity, type: int, required: true }

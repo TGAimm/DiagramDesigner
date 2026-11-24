@@ -238,9 +238,24 @@ export function refLabel(model: Model, id: string): string | undefined {
 	return `${model.elements.get(field.modelId)?.name}.${field.def.name}`;
 }
 
-/** A field's type: its primitive or the held model's name, with `[]` for a list. */
-export const typeText = (f: ModelField, label: (id: string) => string | undefined) =>
-	(f.model ? (label(f.model) ?? f.model) : (f.type ?? '')) + (f.many ? '[]' : '');
+/**
+ * A field's type, written as in TypeScript: its primitive or the held model's name, a generic
+ * filled (`Page<Product>`), a union of models (`Card | Invoice`), a keyed map (`Map<string, decimal>`), and `[]` for a list.
+ */
+export const typeText = (
+	f: Pick<ModelField, 'type' | 'model' | 'many' | 'oneOf' | 'map' | 'of'>,
+	label: (id: string) => string | undefined
+) => {
+	const name = (id: string) => label(id) ?? id;
+	let t = f.oneOf
+		? f.oneOf.map(name).join(' | ')
+		: f.model
+			? name(f.model) + (f.of !== undefined ? `<${name(f.of)}>` : '')
+			: (f.type ?? '');
+	if (f.map !== undefined) t = `Map<${f.map}, ${t}>`;
+	else if (f.many && f.oneOf) t = `(${t})`;
+	return t + (f.many ? '[]' : '');
+};
 
 /** An index's fields by name, in index order. */
 export const indexFields = (ix: ModelIndex, fields: ModelField[]) =>
@@ -359,6 +374,15 @@ export const COL_MAX: Partial<Record<FieldColumn, number>> = {
 /** Room for a cell's content in column `c`. */
 export const cellRoom = (c: TableColumn) => c.width - 2 * TABLE.pad;
 
+/**
+ * A field's constraints as cards show them: its `values` first, as an enum named after the
+ * field, then the free-text ones.
+ */
+export const constraintsOf = (f: Pick<ModelField, 'name' | 'values' | 'constraints'>) => [
+	...(f.values ? [`enum ${f.name}: ${f.values.join(', ')}`] : []),
+	...(f.constraints ?? [])
+];
+
 /** A constraint written `enum Name: a, b, c`: the enum's name and its values. */
 export function enumOf(constraint: string): { name: string; values: string[] } | undefined {
 	const m = /^enum\s+([^:]+?)\s*:(.*)$/s.exec(constraint.trim());
@@ -396,7 +420,7 @@ export function fitBadges(labels: string[], max: number): { shown: string[]; mor
 
 /** A field's constraint badges in `max` px. */
 export const constraintBadges = (f: ModelField, max: number) =>
-	fitBadges((f.constraints ?? []).map(constraintLabel), max);
+	fitBadges(constraintsOf(f).map(constraintLabel), max);
 
 /** A field's name in `max` px, leaving room for its key badges in a table. */
 export function nameText(f: ModelField, view: ModelView | undefined, max: number): string {
@@ -438,7 +462,7 @@ function fieldColumns(
 			'constraints',
 			'Constraints',
 			undefined,
-			fields.map((f) => badgesWidth((f.constraints ?? []).map(constraintLabel))),
+			fields.map((f) => badgesWidth(constraintsOf(f).map(constraintLabel))),
 			false
 		]
 	];
@@ -545,17 +569,20 @@ export interface LogicRow {
 	glyph?: string;
 	/** A port nothing listens to: drawn muted. */
 	idle?: true;
+	/** A unit that is dead code (see `reachOf`): drawn faded. */
+	dead?: true;
 }
 
 export function logicRow(model: Model, id: string): LogicRow {
 	const def = model.elements.get(id)!.def;
 	const outs = (def.outputs ?? []).map((o) =>
-		o.model ? (model.elements.get(o.model)?.name ?? o.name) + (o.many ? '[]' : '') : o.name
+		o.model || o.oneOf ? typeText(o, (id) => model.elements.get(id)?.name) : o.name
 	);
 	return {
 		id,
 		name: model.elements.get(id)!.name,
-		signature: `(${(def.inputs ?? []).map((f) => f.name).join(', ')})${outs.length ? ` → ${outs.join(', ')}` : ''}`
+		signature: `(${(def.inputs ?? []).map((f) => f.name).join(', ')})${outs.length ? ` → ${outs.join(', ')}` : ''}`,
+		...((model.reach?.get(id)?.state ?? 'live') === 'live' ? {} : { dead: true as const })
 	};
 }
 

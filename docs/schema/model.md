@@ -45,16 +45,33 @@ Each view shows only the fields that exist there:
 | `id` | required; unique across everything (`sdv id`) |
 | `name` | required; unique within the model |
 | `type` | primitive type, free text (`uuid`, `string`, `decimal`...) |
-| `model` | id of a model this field holds (composition). Exactly one of `type`/`model`. |
+| `model` | id of a model this field holds (composition). Exactly one of `type`/`model`/`oneOf`. |
+| `oneOf` | a union: ids of the models it may be (webhook events, polymorphic payloads) |
+| `discriminator` | with `oneOf`: the name of the field telling them apart |
+| `of` | with `model`, when that model is `generic`: the model id or type filling its parameter |
+| `map` | a keyed map: the type of its keys; `type`/`model`/`oneOf` is the type of its values |
+| `values` | with `type`: the only values it may hold (an enum), drawn as `enum <name>` |
+| `description` | free text: what it holds |
 | `many` | holds a list of `type`/`model` |
 | `required` | must be given on create |
 | `nullable` | may hold null (independent of `required`) |
 | `pk` / `pi` | part of primary key / primary index. A `pk` field cannot be nullable. |
-| `constraints` | free text: `[positive, max 200]`; an enum as `"enum Name: A, B, C"` |
+| `constraints` | free text: `[positive, max 200]`; an enum shared under its own name as `"enum Name: A, B, C"` |
 | `ref` | foreign key: id of a model or field it holds the key of. Not with `model`. |
-| `from` | lineage: ids of fields (any model) this value comes from |
+| `from` | lineage: ids of fields this value comes from: model fields, or fields of an api's own shape |
 | `derived` | free text: how the value is computed/changed from `from` |
 | `stored` | `false`: exists in the class only, never stored. Not with `pk` |
+
+A model with `generic: T` takes a type parameter: its fields use `type: T`, and each field
+holding it says what fills it with `of`; it is drawn `Page<Product>`. Types are written as in
+TypeScript: `Card | Invoice` for a union, `Map<string, decimal>` for a map, `[]` for a list.
+
+```yaml
+- { id: c4o0an7r8t, name: status, type: string, values: [draft, sent, paid] }
+- { id: rm3lq9s1fz, name: prices, map: string, type: decimal, description: by currency }
+- { id: e8v2k3hzpw, name: event, oneOf: [d7y1wlr0mm, k0vb6t6xzq], discriminator: type }
+- { id: p2n5bs8qau, name: results, model: q1fh2c9yey, of: ck9foqxxus }   # Page<Product>
+```
 
 `indexes[].fields` are ids of stored fields of the same model. Give each index an `id`
 (`sdv id`) so a [scenario](scenario.md) can change or drop it.
@@ -85,7 +102,9 @@ impact can be traced.
 - { id: f5pyjr5xh9, name: summary, type: string, from: [qxc7jxeb84], derived: first 160 chars }
 ```
 
-`from` must name fields, never models; cycles are errors.
+`from` must name fields, never models; cycles are errors, through api fields too. A field of an
+api's own shape can be a source, so a model filled from what another system's api returns
+traces back to that api.
 
 ## Rendering
 

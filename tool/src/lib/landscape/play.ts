@@ -115,6 +115,49 @@ export function runOf(
 					if (target && into.has(key)) unit(target, self, [...frame, target], `${key}>`);
 					else if (s.gets && !sends)
 						push({ key: `${key}<`, kind: 'gets', text: s.gets, from: t.id, to: self }, frame);
+				} else if (s.render !== undefined) {
+					const t = el(s.render);
+					if (!t) continue;
+					// Rendering is stepped into like a call; then each event the child may emit is
+					// a choice: did it, and so did the parent run its steps for it?
+					const target = intoOf(t.id, frame);
+					push(
+						{
+							key,
+							kind: 'call',
+							text: withNote(`renders ${t.name}${s.with ? ` (${s.with})` : ''}`, s),
+							from: self,
+							to: t.id,
+							...(target && {
+								into: target,
+								intoSteps: el(target)!.def.steps!.length,
+								entered: into.has(key)
+							})
+						},
+						frame
+					);
+					if (target && into.has(key)) unit(target, self, [...frame, target], `${key}>`);
+					for (const [event, steps] of Object.entries(s.events ?? {})) {
+						const k = `${key}@${event}`;
+						const options = [
+							{ label: 'yes', short: 'yes' },
+							{ label: 'no', short: 'no' }
+						];
+						const guard = `[${t.name} emits ${event}]`;
+						if (choose(k, { label: 'alt', guard, options }, frame, self) === 0)
+							if (walk(steps, `${k}d`)) return true;
+					}
+				} else if (s.emit !== undefined) {
+					push(
+						{
+							key,
+							kind: 'call',
+							text: withNote(`emits ${s.emit}${s.with ? ` (${s.with})` : ''}`, s),
+							from: self,
+							to: caller ?? self
+						},
+						frame
+					);
 				} else if (s.send !== undefined) {
 					const c = el(s.send);
 					if (!c) continue;

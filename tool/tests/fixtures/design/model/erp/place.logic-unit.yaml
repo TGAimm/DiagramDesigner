@@ -1,5 +1,6 @@
 id: place
 parent: order
 name: place
+handles: [order-api]
 inputs: []
 outputs: []

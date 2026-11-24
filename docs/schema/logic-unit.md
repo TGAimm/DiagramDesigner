@@ -28,21 +28,69 @@ steps:                           # the sequence, top to bottom
 ```
 
 - `inputs` and `outputs` are fields with the keys of an api's own-shape field: `id`, `name`,
-  `type` or `model`, `many`, `required`, `nullable`, `description`. Ids share the design's
-  id namespace (`sdv id`).
+  `type`, `model` or `oneOf`, `many`, `required`, `nullable`, `description`,
+  `constraints`, and the shape keys `values`, `map`, `discriminator` and `of` (see
+  [model](model.md#field-keys)). Ids share the design's id namespace (`sdv id`).
 - Step kinds, one per step: `call` (a unit or api, in any system), `send` (a message on a
   [channel](channel.md), without waiting: no `gets`), `read` and `write` (a model, or one
   field; `does: create | update | delete` or a list of them says what a write does, so which
   [trigger](trigger.md) events it raises), `if` with `then`/`else`, `each` with `do`, `flag` with `on`/`off`
-  (see [flag](flag.md)), `return` (an output's name), `fail` (a fail's name). A step with only `note` is work the unit does itself; on
+  (see [flag](flag.md)), `render` (a unit that is a UI component, with `events`), `emit` (one of the
+  unit's `emits`), `return` (an output's name), `fail` (a fail's name). A step with only `note` is work the unit does itself; on
   other steps `note` adds a remark. `with` goes on `call`, `send` and `read`, `gets` on `call` and `read`; they, and
-  conditions, are free text.
+  conditions, are free text. `with` also goes on `render` (the props) and `emit` (what it passes).
 - Errors: a missing `inputs` or `outputs`; a step naming the wrong kind or nothing; a step
   with two kinds; a `return` or `fail` naming nothing declared. Warnings, when there are
   steps: an output never returned, a fail never raised.
 - `steps` is optional: a unit without them is shown by its signature only.
+- `dead: <why>`: nothing starts or calls the unit, on purpose (see [Dead code](#dead-code)).
 - `when: { flag, is }`: the unit exists only while the flag has that value (see [flag](flag.md)).
 - Only logic units have these keys.
+
+## Components: render and emit
+
+A UI component is a logic unit. A parent renders it with a `render` step, and runs steps when
+it emits an event; the component lists what it emits in `emits` and raises one with `emit`.
+
+```yaml
+# product-list.logic-unit.yaml
+emits:
+  - { id: q2m7cx0d4k, name: select, type: string, description: the sku picked }
+steps:
+  - { emit: select, with: the sku of the card clicked }
+
+# product-page.logic-unit.yaml
+steps:
+  - render: k8dfa7m2lp            # ProductList
+    with: the products found     # its props
+    events:
+      select:                    # one of ProductList's emits
+        - { call: x9ap2ld0mq, with: the sku, gets: product }
+```
+
+- A render counts as a call: it is in the unit's `calls`, so change impact, focus, lines and
+  the caller lifeline follow it. The sequence draws it as `renders ProductList (…)`, without
+  waiting, and each event as an `on` box `[ProductList emits select]`. Play steps into it, then
+  asks whether each event was emitted.
+- Errors: `events` on a step that is not a render, an event the rendered unit does not emit
+  (`render-event`), an `emit` naming nothing in `emits` (`logic-emit`). Warning: an event
+  never emitted.
+
+## Dead code
+
+Whether a unit or api runs is worked out from what starts it, not written down:
+
+- **Live**: a [trigger](trigger.md) handles it (a schedule, an event, or `by` a user, the
+  framework or something outside), an [api](api.md) called from outside handles it
+  (`external` on the api or a module round it), or live code calls or renders it.
+- **Dead**: it says `dead: <why>`, or only dead code calls it.
+- **Unreached**: nothing in the design starts or calls it, and it does not say why. A warning
+  (`unreached`): add the trigger that starts it, mark its api `external`, or mark it
+  `dead: <why>`.
+
+A unit marked `dead` that live code still calls is a warning (`dead-reached`). Dead units and
+apis are drawn faded where they are; the unit card's *Dead code* section and the api card say
+why, and which dead code uses them. Reach follows the flag state shown.
 
 ## Rendering
 

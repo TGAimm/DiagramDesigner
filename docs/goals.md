@@ -54,10 +54,9 @@ Interfaces and triggers:
 - Interfaces beyond HTTP: GraphQL operations, SQL endpoints, file exchange (CSV over SFTP:
   one row per line grouped into orders, error and archive files, folders owned by another
   system), hardware (card terminals, fiscal signing units).
-- Triggers beyond schedules, channels and stored models: user actions in a product's own UI
-  or on a device (Post › Receive, handheld scans, till), a vendor-hosted page; events a
-  vendor system raises without a channel in the design.
-- Move `examples/retail`'s scheduled units from `meta: { schedule }` to trigger entities.
+- Move `examples/retail`'s scheduled units from `meta: { schedule }` to trigger entities,
+  give its page, till and handheld handlers `by` triggers, and mark the vendor apis other
+  systems call `external`; its `unreached` warnings name each unit and api left.
 - Endpoints outside the landscape (carrier APIs) with no system to point at.
 - Browser redirects that carry results in the Location query (OAuth `code`, `state`).
 - Batch requests (`$batch`, multipart) holding other api calls; async work after the
@@ -68,27 +67,25 @@ Interfaces and triggers:
 Shapes:
 
 - Embedded objects stored in a JSON column of their holder (a held model is always its own
-  table today); keyed maps and free-form properties (`metadata`, attribute values).
-- Unions: polymorphic payloads by discriminator (webhook events, update actions, messages),
-  polymorphic references (`{typeId, id}`, `regardingobjectid`, `source` ch_/re_/po_).
-- Enums, and state machines with allowed transitions.
+  table today); free-form properties (`metadata`, attribute values).
+- Polymorphic references (`{typeId, id}`, `regardingobjectid`, `source` ch_/re_/po_).
+- Shared enums (`values` is per field), and state machines with allowed transitions.
 - Envelopes: list/paging (`{data, has_more}`, OData `value`/`nextLink`), batch envelopes;
   response projection (`$select`, `$expand`); partial bodies (any subset of a model).
-- Nested inline objects without a model of their own (now dotted field names); sub-fields of
-  them can't be lineage targets.
+- Nested inline objects without a model of their own are written as dotted field names,
+  not as a structure.
 - Table inheritance; one table holding several document kinds (Sales Header: order, return).
 - Runtime-typed custom fields; field names that vary per tenant; config records that drive
   behaviour (flows, segments, rules) as instances, not types.
 - Constant fields; request fields checked but never stored (`client_secret`, `code`).
-- A model field `description` key (api fields have one).
 - Storage: split storage (metadata in DB, bytes in blob), caches with expiry (counted as a
   second source of truth), one shape in many indices/replicas, parameterised computed fields
   (FlowFields).
 
 Lineage and impact:
 
-- Request fields can't carry `from`, and `from` can't name api own-shape fields, so lineage
-  breaks at every call between systems (Integration's ERP order draft, deep inserts).
+- Request fields can't carry `from`, so lineage breaks where a unit fills one api's request
+  from another's response (Integration's ERP order draft, deep inserts).
 - Lineage is per field, not per path or row: shared value types (`Money.centAmount`) and EAV
   attribute values collapse many sources into one; no row filters (`where locale = en_GB`),
   no union/survivorship rules, no grouping keys in aggregates, false cycles between a total

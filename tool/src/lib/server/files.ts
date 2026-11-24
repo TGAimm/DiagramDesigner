@@ -45,14 +45,22 @@ export function resolveInRoot(root: string, rel: string): string {
 	return abs;
 }
 
+// Opening every file at once fails with EMFILE on large designs, so read in batches.
+const READ_BATCH = 256;
+
 export async function readDesign(root: string): Promise<SourceFile[]> {
 	const files = await listDesignFiles(root);
-	return Promise.all(
-		files.map(async (p) => {
-			const text = await fs.readFile(path.join(root, p), 'utf8');
-			return { path: p, text, hash: sha256(text) };
-		})
-	);
+	const out: SourceFile[] = [];
+	for (let i = 0; i < files.length; i += READ_BATCH) {
+		const batch = await Promise.all(
+			files.slice(i, i + READ_BATCH).map(async (p) => {
+				const text = await fs.readFile(path.join(root, p), 'utf8');
+				return { path: p, text, hash: sha256(text) };
+			})
+		);
+		out.push(...batch);
+	}
+	return out;
 }
 
 export async function readText(abs: string): Promise<string | undefined> {

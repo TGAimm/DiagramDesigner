@@ -1,6 +1,7 @@
 id: d2907kn6i9
 parent: al7b2jxi6l
 name: onRemove
+handles: [wpf0l5qz04]
 inputs:
   - { id: q5rwrb4hny, name: lineId, type: uuid, required: true }
 outputs: []

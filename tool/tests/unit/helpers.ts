@@ -24,6 +24,15 @@ export function loadFixture(): LoadedDesign {
 	return loadDesign(fixtureSources());
 }
 
+/**
+ * Loads a partial design written for one feature's test. Nothing starts most of the units
+ * in such a snippet, so `unreached` warnings are left out; reach.test.ts tests them with
+ * `loadDesign`.
+ */
 export function loadStrings(files: Record<string, string>): LoadedDesign {
-	return loadDesign(Object.entries(files).map(([p, text]) => ({ path: p, text })));
+	const design = loadDesign(Object.entries(files).map(([p, text]) => ({ path: p, text })));
+	const runs = (d: { code: string }) => d.code !== 'unreached';
+	design.model.diagnostics = design.model.diagnostics.filter(runs);
+	design.diagnostics = design.diagnostics.filter(runs);
+	return design;
 }

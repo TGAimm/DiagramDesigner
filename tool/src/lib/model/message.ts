@@ -1,4 +1,4 @@
-import type { Element, Message, TriggerOn } from './schema';
+import type { By, Element, Message, TriggerOn } from './schema';
 import type { Model } from './model';
 import { scheduleWords } from './schedule';
 
@@ -45,14 +45,40 @@ export function onWords(model: Model, on: TriggerOn | undefined, self?: string):
 	return `${name}${sub} · ${on.event}${fields}`;
 }
 
-/** A trigger's source in words, whichever it is: its schedule, its event or its old message. */
+/** Who starts a `by` trigger, as a word for the card: User, Framework, Outside. */
+export const BY_WORDS = { user: 'User', framework: 'Framework', outside: 'Outside the design' };
+
+/** Which of user, framework and outside a `by` trigger names, and its text. */
+export function byOf(by: By | undefined): { who: keyof typeof BY_WORDS; how: string } | undefined {
+	const who = (['user', 'framework', 'outside'] as const).find((k) => by?.[k] !== undefined);
+	return who && { who, how: by![who]! };
+}
+
+/** A `by` source in words: `User · clicks Add to cart`. */
+export function byWords(by: By | undefined): string {
+	const b = byOf(by);
+	return b ? `${BY_WORDS[b.who]} · ${b.how}` : '';
+}
+
+/** A trigger's source in words, whichever it is: its schedule, its event, who starts it, or its old message. */
 export const triggerWords = (def: Element, model?: Model, name?: string): string =>
 	def.on && model
 		? onWords(model, def.on, name)
-		: def.message
-			? messageWords(def.message)
-			: scheduleWords(def.schedule);
+		: def.by
+			? byWords(def.by)
+			: def.message
+				? messageWords(def.message)
+				: scheduleWords(def.schedule);
 
-/** The glyph a trigger row wears: its event's, a clock for a schedule, an envelope for a message. */
+/**
+ * The glyph a trigger row wears: its event's, a person, sliders or an arrow out for `by`, a clock
+ * for a schedule, an envelope for a message.
+ */
 export const triggerGlyph = (def: Element): string =>
-	def.on ? def.on.event : def.message ? 'message' : 'trigger';
+	def.on
+		? def.on.event
+		: def.by
+			? (byOf(def.by)?.who ?? 'trigger')
+			: def.message
+				? 'message'
+				: 'trigger';

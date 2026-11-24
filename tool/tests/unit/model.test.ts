@@ -425,7 +425,7 @@ describe('logic units', () => {
 
 	it('needs inputs and outputs, written like api fields', () => {
 		expect(report(unit('inputs: [{ id: i1, name: x }, { id: i2, name: x, type: int }]'))).toEqual([
-			['error', 'field-type', 'input "x" needs exactly one of type and model'],
+			['error', 'field-type', 'input "x" needs exactly one of type, model and oneOf'],
 			['error', 'duplicate-field', 'inputs has "x" twice'],
 			['error', 'logic-signature', 'logic unit "u" needs outputs; use [] for none']
 		]);
@@ -469,7 +469,7 @@ describe('logic units', () => {
 			[
 				'error',
 				'logic-step',
-				'empty step; give call, send, read, write, if, each, flag, return, fail or note'
+				'empty step; give call, send, read, write, render, emit, if, each, flag, return, fail or note'
 			]
 		]);
 	});
@@ -508,7 +508,8 @@ describe('logic units', () => {
 			reads: ['c'],
 			writes: ['c-n'],
 			calls: ['v', 'a'],
-			sends: []
+			sends: [],
+			renders: []
 		});
 	});
 });
