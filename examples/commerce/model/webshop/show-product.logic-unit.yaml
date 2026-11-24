@@ -1,6 +1,7 @@
 id: yx5247xegg
 parent: yqhpbia7fs
 name: show
+handles: [z4cptofz5u]
 inputs:
   - { id: n8dfsrzud5, name: sku, type: string, required: true }
 outputs:

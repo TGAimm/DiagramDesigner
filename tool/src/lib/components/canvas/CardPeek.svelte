@@ -63,7 +63,8 @@
 		shownRows,
 		TABLE,
 		typeCell,
-		typeText
+		typeText,
+		constraintsOf
 	} from '#lib/landscape/layout.ts';
 	import { changes } from '#lib/client/changes.svelte.ts';
 	import EntityGlyph, { type GlyphKind } from './EntityGlyph.svelte';
@@ -215,11 +216,11 @@
 										{#each fit.shown as k, i (i)}<span
 												class="badge plain"
 												style:font-size="{TABLE.badge}px"
-												title={f.constraints?.[i]}>{k}</span
+												title={constraintsOf(f)[i]}>{k}</span
 											>{/each}{#if fit.more}<span
 												class="badge more"
 												style:font-size="{TABLE.badge}px"
-												title={f.constraints?.slice(fit.shown.length).join('\n')}>+{fit.more}</span
+												title={constraintsOf(f).slice(fit.shown.length).join('\n')}>+{fit.more}</span
 											>{/if}
 									{:else}
 										{#each c.slots ?? [] as s (s)}

@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { sequenceOf } from '../../src/lib/landscape/sequence';
+import { triggerGlyph, triggerWords } from '../../src/lib/model/message';
+import type { Element } from '../../src/lib/model/schema';
 import { loadStrings } from './helpers';
 
 const base: Record<string, string> = {
@@ -140,5 +143,37 @@ describe('render and emit', () => {
 		expect(diags(files('  - { call: c, events: { select: [] } }')).map(([c]) => c)).toEqual([
 			'logic-step'
 		]);
+	});
+});
+
+describe('render and emit, drawn and played', () => {
+	const unit = (id: string, extra: string[]) =>
+		[`id: ${id}`, 'parent: m', 'inputs: []', 'outputs: []', ...extra].join('\n');
+	const files = {
+		...base,
+		's/p.logic-unit.yaml': unit('p', [
+			'steps:',
+			'  - { render: c, with: items, events: { select: [{ note: open it }] } }'
+		]),
+		's/c.logic-unit.yaml': unit('c', [
+			'emits: [{ id: c-sel, name: select, type: string }]',
+			'steps: [{ emit: select, with: the id }]'
+		])
+	};
+
+	it('draws a render as an async message and each event as an on box', () => {
+		const seq = sequenceOf(loadStrings(files).model, 'p');
+		expect(seq.messages.map((m) => m.text)).toContain('renders c (items)');
+		expect(seq.frags).toMatchObject([{ label: 'on', guard: '[c emits select]' }]);
+		expect(seq.notes.map((n) => n.text)).toEqual(['open it']);
+		expect(sequenceOf(loadStrings(files).model, 'c').messages.map((m) => m.text)).toContain(
+			'emits select (the id)'
+		);
+	});
+
+	it('words a by trigger and gives it its glyph', () => {
+		const def = { by: { user: 'clicks Add to cart' } } as Element;
+		expect(triggerWords(def)).toBe('User · clicks Add to cart');
+		expect(triggerGlyph(def)).toBe('user');
 	});
 });

@@ -58,6 +58,7 @@
 		cardRows,
 		cellRoom,
 		constraintBadges,
+		constraintsOf,
 		fieldRowY,
 		FOLD,
 		foldable,
@@ -139,6 +140,8 @@
 
 	const viewport = getCamera();
 	const DIM_OPACITY = 0.2;
+	/** How faded dead code (see reachOf) is drawn. */
+	const DEAD_ALPHA = 0.5;
 	/** Names drawn in front keep this size on screen. */
 	const NAME_PX = 13;
 	/** The dots' spacing in canvas px, and the size their tile is drawn at. */
@@ -999,11 +1002,13 @@
 					x + (b.logic ? 10 : mark.width) + TABLE.badgeGap,
 					y,
 					TABLE.row,
-					r.idle ? 'text-muted' : 'model-text',
+					r.idle || r.dead ? 'text-muted' : 'model-text',
 					{ op: marks.glyph.get(r.id), gap: CELL_GAP }
 				);
 				const sig = at(r.signature, b.absX + nameW + TABLE.pad, y, TABLE.signature, 'text-muted');
 				if (r.idle) mark.alpha *= 0.6;
+				// Dead code stays where it is, faded, so it is seen and not mistaken for live code.
+				if (r.dead) for (const t of [mark, name, sig]) t.alpha *= DEAD_ALPHA;
 				if (comparing && !marked(r.id)) for (const t of [mark, name, sig]) t.alpha *= 0.38;
 				if (marks.dropped.has(r.id)) strike(name, y);
 			});
@@ -1071,7 +1076,7 @@
 					texts.push(at(TABLE.check, x, y, TABLE.row, 'model-text'));
 				else if (c.key === 'nullable' && f.nullable)
 					texts.push(at(TABLE.check, x, y, TABLE.row, 'model-text'));
-				else if (c.key === 'constraints' && f.constraints?.length) {
+				else if (c.key === 'constraints' && constraintsOf(f).length) {
 					const { shown, more } = constraintBadges(f, cellRoom(c));
 					let bx = x;
 					for (const k of shown) bx += badge(k, bx, y, true, texts) + TABLE.badgeGap;
@@ -1271,6 +1276,10 @@
 					'api-text'
 				);
 				if (comparing && !marked(a)) m.alpha = p.alpha = 0.38;
+				if ((model.reach?.get(a)?.state ?? 'live') !== 'live') {
+					m.alpha *= DEAD_ALPHA;
+					p.alpha *= DEAD_ALPHA;
+				}
 				if (marks.dropped.has(a))
 					g.moveTo(p.x, ry)
 						.lineTo(p.x + p.width, ry)

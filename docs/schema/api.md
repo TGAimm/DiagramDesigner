@@ -52,11 +52,15 @@ responses:
 ```
 
 - `omit` and `pick` name fields of `model`; give one of them, not both.
-- Own-shape fields have the keys of a model field (`id`, `name`, `type` or `model`, `many`,
-  `required`, `nullable`) plus `description`. Their ids share the design's id namespace.
+- Own-shape fields have the keys of a model field (`id`, `name`, `type`, `model` or `oneOf`,
+  `many`, `required`, `nullable`, `description`, `constraints`, and the shape keys `values`,
+  `map`, `discriminator` and `of`: see [model](model.md#field-keys)). Their ids share the
+  design's id namespace.
 - Traceability: a request field says which model fields its value goes into (`to`), a
-  response field which fields it comes from (`from`, with `derived` when changed). Both name
-  model fields, by id, so renaming either side breaks nothing silently. A field with neither
+  response field which fields it comes from (`from`, with `derived` when changed). `to` names
+  model fields; `from` names model fields or another api's own-shape fields (a proxy, or a
+  front end passing on what a backend returned). Both go by id, so renaming either side breaks
+  nothing silently, and a model field's `from` may name an api field the same way. A field with neither
   (and holding no model) is warned about. `to` on a response or `from` on a request is an
   error.
 - A response field computed where the api answers, with no field to come from (a literal
@@ -64,6 +68,9 @@ responses:
   `{ id: k3n0q8vy2c, name: canShow, type: bool, derived: "days since the last dismissal >= the delay" }`.
   It is not warned about. A request field with only `derived` still is: its value has to go
   somewhere.
+- `dead: <why>`: nothing calls the api, on purpose. An api nothing in the design calls, that is
+  not `external` (on it or a module round it) and not marked dead, is warned about
+  (`unreached`); see [logic-unit](logic-unit.md#dead-code).
 - An own shape several endpoints share can become a model of its own; point at it with
   `model` (case 1).
 

@@ -47,7 +47,8 @@ export interface SeqMessage {
 
 /** An alt, loop or flag box, from its header row to its last row. */
 export interface SeqFrag {
-	label: 'alt' | 'loop' | 'flag';
+	/** `on`: the steps run when a rendered unit emits an event. */
+	label: 'alt' | 'loop' | 'flag' | 'on';
 	guard: string;
 	top: number;
 	bottom: number;
@@ -218,6 +219,45 @@ export function sequenceOf(model: Model, unitId: string): Sequence {
 					msg({ to, tone: 'call', text: withNote(`${t.name}(${s.with ?? ''})`, s), target: t.id });
 					ret(to, s.gets);
 				}
+			} else if (s.render !== undefined) {
+				const t = el(s.render);
+				if (!t) continue;
+				// Rendering builds the child and hands it its props; nothing comes back. What
+				// the parent does on each of its events follows in an `on` box.
+				const to = lane(t.id, () => ({
+					kind: 'unit',
+					name: el(t.parentId ?? '')?.name ?? '',
+					subs: [{ text: t.name, target: t.id }]
+				}));
+				msg({
+					to,
+					tone: 'call',
+					async: true,
+					text: withNote(`renders ${t.name}${s.with ? ` (${s.with})` : ''}`, s),
+					target: t.id
+				});
+				for (const [event, steps] of Object.entries(s.events ?? {})) {
+					const f: SeqFrag = {
+						label: 'on',
+						guard: `[${t.name} emits ${event}]`,
+						top: row++,
+						bottom: 0,
+						depth,
+						dividers: []
+					};
+					frags.push(f);
+					walk(steps, depth + 1);
+					f.bottom = row - 1;
+				}
+			} else if (s.emit !== undefined) {
+				// Raised to whatever renders the unit, without waiting.
+				msg({
+					to: 0,
+					tone: 'call',
+					async: true,
+					dashed: true,
+					text: withNote(`emits ${s.emit}${s.with ? ` (${s.with})` : ''}`, s)
+				});
 			} else if (s.send !== undefined) {
 				const c = el(s.send);
 				if (!c) continue;

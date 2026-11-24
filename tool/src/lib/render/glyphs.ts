@@ -31,6 +31,19 @@ export const GLYPHS: Record<string, string[]> = {
 	triggers: [
 		'M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z'
 	],
+	// Who starts a `by` trigger: a person, the framework, something outside the design.
+	user: ['M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2', 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0z'],
+	framework: [
+		'M20 7h-9',
+		'M14 17H5',
+		'M20 17a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
+		'M10 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0z'
+	],
+	outside: [
+		'M15 3h6v6',
+		'M10 14 21 3',
+		'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'
+	],
 	trigger: ['M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0z', 'M12 6v6l4 2'],
 	message: [
 		'M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z',

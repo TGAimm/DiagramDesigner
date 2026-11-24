@@ -1,6 +1,7 @@
 id: d0al0vmxcl
 parent: j0a3hfh8jp
 name: onPlaceOrder
+handles: [wfoiwnjfxh]
 inputs:
   - { id: k4bkfzm11o, name: note, type: string, nullable: true }
 outputs:

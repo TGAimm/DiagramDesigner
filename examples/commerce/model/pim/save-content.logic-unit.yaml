@@ -1,6 +1,7 @@
 id: xjx82wjcs8
 parent: ooj6znxkc9
 name: saveContent
+handles: [ft6gr7ntqq]
 inputs:
   - { id: edtqu528cr, name: sku, type: string, required: true }
   - { id: kbuexp54q1, name: locale, type: string, required: true }

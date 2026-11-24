@@ -4,6 +4,7 @@ name: Get order
 method: GET
 path: /orders/{orderNo}
 auth: bearer
+external: true
 params:
   - { id: d6rqyc8lb4, name: orderNo, in: path, type: string }
 responses:
